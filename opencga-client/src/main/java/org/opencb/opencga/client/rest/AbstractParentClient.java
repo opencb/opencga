@@ -24,6 +24,7 @@
  import org.apache.commons.collections4.CollectionUtils;
  import org.apache.commons.lang3.StringUtils;
  import org.glassfish.jersey.client.ClientProperties;
+ import org.glassfish.jersey.client.RequestEntityProcessing;
  import org.glassfish.jersey.media.multipart.FormDataMultiPart;
  import org.glassfish.jersey.media.multipart.MultiPartFeature;
  import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
@@ -42,6 +43,7 @@
 
  import javax.net.ssl.*;
  import javax.ws.rs.client.*;
+ import javax.ws.rs.core.Cookie;
  import javax.ws.rs.core.HttpHeaders;
  import javax.ws.rs.core.Response;
  import java.io.*;
@@ -66,19 +68,22 @@
      protected static final String GET = "GET";
      protected static final String POST = "POST";
      protected static final String DELETE = "DELETE";
-     private static final int DEFAULT_BATCH_SIZE = 200;
-     private static final int DEFAULT_LIMIT = 2000;
-     private static final int DEFAULT_SKIP = 0;
-     private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
-     private static final int DEFAULT_READ_TIMEOUT = 30000;
+     protected static final int DEFAULT_BATCH_SIZE = 200;
+     protected static final int DEFAULT_LIMIT = 2000;
+     protected static final int DEFAULT_SKIP = 0;
+     protected static final int DEFAULT_CONNECT_TIMEOUT = 1000;
+     protected static final int DEFAULT_READ_TIMEOUT = 30000;
+     protected static final int DEFAULT_UPLOAD_TIMEOUT = 5400000;
+     protected static final String COOKIES = "cookies";
+
      protected final Client client;
      protected final ObjectMapper jsonObjectMapper;
-     private final ClientConfiguration clientConfiguration;
-     private final int batchSize;
-     private final int defaultLimit;
+     protected final ClientConfiguration clientConfiguration;
+     protected final int batchSize;
+     protected final int defaultLimit;
      private final Logger privateLogger;
      protected Logger logger;
-     private String token;
+     protected String token;
      private boolean throwExceptionOnError = false;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
@@ -156,7 +161,7 @@
          return clientBuilder.build();
      }
 
-     protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+     public AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
          this.throwExceptionOnError = throwExceptionOnError;
          return this;
      }
@@ -296,11 +301,12 @@
          RestResponse<T> batchRestResponse;
          switch (action) {
              case "upload":
-                 if (isFileUploadServlet(params)) {
+                /* if (isFileUploadServlet(params)) {
                      batchRestResponse = uploadFile(path, params, clazz);
                  } else {
                      batchRestResponse = callUploadRest(path, params, clazz);
-                 }
+                 }*/
+                 batchRestResponse = callUploadRest(path, params, clazz);
                  break;
              case "download":
                  String destinyPath = params.getString("OPENCGA_DESTINY");
@@ -321,6 +327,22 @@
                  && Boolean.parseBoolean(String.valueOf(params.get("uploadServlet")));
      }
 
+     private void addCookies(Invocation.Builder builder) {
+         if (clientConfiguration.getAttributes() != null) {
+             Object cookies = clientConfiguration.getAttributes().get(COOKIES);
+             if (cookies instanceof Map) {
+                 Map<String, String> cookiesMap = (Map<String, String>) cookies;
+                 for (Map.Entry<String, String> entry : cookiesMap.entrySet()) {
+                     try {
+                         builder.cookie(new Cookie(entry.getKey(), entry.getValue(), "", clientConfiguration.getCurrentHost().getUrl()));
+                     } catch (ClientException e) {
+                         throw new RuntimeException(e);
+                     }
+                 }
+             }
+         }
+     }
+
      /**
       * Call to WS using get or post method.
       *
@@ -329,10 +351,12 @@
       * @param clazz  Expected return class.
       * @param method Method by which the query will be done (GET or POST).
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
+     protected <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
          Response response;
+         Invocation.Builder builder;
          switch (method) {
              case DELETE:
              case GET:
@@ -344,15 +368,15 @@
                  }
 
                  privateLogger.debug("{} URL: {}", method, path.getUri());
-                 Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                 builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                 addCookies(builder);
                  if (method.equals(GET)) {
-                     response = header.get();
+                     response = builder.get();
                  } else {
-                     response = header.delete();
+                     response = builder.delete();
                  }
                  break;
              case POST:
-                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                  if (params != null) {
                      for (String key : params.keySet()) {
                          if (!key.equals("body")) {
@@ -363,9 +387,9 @@
 
                  Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
                  privateLogger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
-                 response = path.request()
-                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
-                         .post(Entity.json(paramBody));
+                 builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                 addCookies(builder);
+                 response = builder.post(Entity.json(paramBody));
                  break;
              default:
                  throw new IllegalArgumentException("Unsupported REST method " + method);
@@ -382,7 +406,7 @@
       * @param params         Params to be passed to the WS.
       * @param outputFilePath Path where the file will be written (downloaded).
       */
-     private void callRestDownload(WebTarget path, Map<String, Object> params, String outputFilePath) {
+     protected void callRestDownload(WebTarget path, Map<String, Object> params, String outputFilePath) {
          if (Files.isDirectory(Paths.get(outputFilePath))) {
              outputFilePath += ("/" + new File(path.getUri().getPath().replace(":", "/")).getParentFile().getName());
          } else if (Files.notExists(Paths.get(outputFilePath).getParent())) {
@@ -395,9 +419,9 @@
              }
          }
 
-         Response response = path.request()
-                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
-                 .get();
+         Invocation.Builder builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+         addCookies(builder);
+         Response response = builder.get();
 
          if (response.getStatus() == Response.Status.OK.getStatusCode()) {
              ReadableByteChannel readableByteChannel = Channels.newChannel(response.readEntity(InputStream.class));
@@ -420,19 +444,20 @@
       * @param params Params to be passed to the WS.
       * @param clazz  Expected return class.
       * @return A queryResponse object containing the results of the query.
+      * @param <T> Any entity
       * @throws ClientException if the path is wrong and cannot be converted to a proper url.
       */
-     private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
          String filePath = ((String) params.get("file"));
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_READ_TIMEOUT * 10);
+         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
+         client.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
          path.register(MultiPartFeature.class);
-
+         path.property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.CHUNKED);
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
-
          // Add the rest of the parameters to the form
          for (Map.Entry<String, Object> stringObjectEntry : params.entrySet()) {
              formDataMultiPart.field(stringObjectEntry.getKey(), stringObjectEntry.getValue().toString());
@@ -440,9 +465,9 @@
          final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
          privateLogger.debug(POST + " URL: {}", path.getUri());
-         Response response = path.request()
-                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
-                 .post(Entity.entity(multipart, multipart.getMediaType()));
+         Invocation.Builder builder = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+         addCookies(builder);
+         Response response = builder.post(Entity.entity(multipart, multipart.getMediaType()));
          RestResponse<T> restResponse = parseResult(response, clazz);
 
          try {
@@ -455,6 +480,32 @@
          checkErrors(restResponse, response.getStatusInfo(), POST, path);
          return restResponse;
      }
+
+
+   /*  public <T> RestResponse<T> upload(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
+
+         RestResponse<T> restResponse = null;
+         try {
+             Client client = ClientBuilder.newBuilder().build();
+             client.register(MultiPartFeature.class);
+             client.property(ClientProperties.REQUEST_ENTITY_PROCESSING,
+                     RequestEntityProcessing.CHUNKED);
+             // WebTarget target = client.target("http://myexample.com").path("/upload");
+             Invocation.Builder builder = path.request();
+             String filePath = ((String) params.get("file"));
+             File binaryFile = new File(filePath);
+             InputStream targetStream = new FileInputStream(binaryFile);
+             FormDataMultiPart form = new FormDataMultiPart();
+             form.bodyPart(new StreamDataBodyPart("file", targetStream, binaryFile.getName()));
+             Response response = builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
+                     .post(Entity.entity(form, form.getMediaType()));
+             restResponse = parseResult(response, clazz);
+         } catch (Exception e) {
+             throw new ClientException(e.getMessage(), e);
+         }
+         return restResponse;
+     }
+*/
 
      /**
       * Call to upload WS.
@@ -550,7 +601,7 @@
          return result.toString();
      }
 
-     private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
+     protected <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
          String json = response.readEntity(String.class);
          if (StringUtils.isNotEmpty(json) && json.startsWith("<")) {
              return new RestResponse<>("", 0, Collections.singletonList(
@@ -573,7 +624,7 @@
          }
      }
 
-     private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
+     protected <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
              throws ClientException {
          if (restResponse != null && restResponse.getEvents() != null) {
              for (Event event : restResponse.getEvents()) {
@@ -618,4 +669,5 @@
          this.token = token;
          return this;
      }
+
  }

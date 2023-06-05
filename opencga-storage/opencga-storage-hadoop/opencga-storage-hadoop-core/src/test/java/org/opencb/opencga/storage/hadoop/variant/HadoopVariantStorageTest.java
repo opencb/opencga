@@ -72,10 +72,12 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -114,7 +116,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         Logger logger = LoggerFactory.getLogger(this.getClass());
         @Override
-        public void before() throws Throwable {
+        public void before() throws Exception {
             if (utility.get() == null) {
 
                 // Disable most of the useless loggers
@@ -349,7 +351,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 manager.set(new HadoopVariantStorageEngine());
             }
         }
-        HadoopVariantStorageEngine manager = HadoopVariantStorageTest.manager.get();
+        HadoopVariantStorageEngine engine = HadoopVariantStorageTest.manager.get();
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
@@ -359,10 +361,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 .getOptions()
                 .putAll(otherStorageConfigurationOptions);
 
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        manager.mrExecutor = new TestMRExecutor(configuration.get());
-        manager.conf = conf;
-        return manager;
+        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
+        if (cellBaseUtils.supportsDataRelease()) {
+            storageConfiguration.getCellbase().setDataRelease("1");
+        }
+
+        engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
+        engine.mrExecutor = new TestMRExecutor(configuration.get());
+        engine.conf = conf;
+        return engine;
     }
 
     default TestMRExecutor getMrExecutor() {
@@ -423,6 +430,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         options.put(VariantStorageOptions.SPECIES.key(), "hsapiens");
         options.put(VariantStorageOptions.ASSEMBLY.key(), "grch37");
+//        storageConfiguration.getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
+//        storageConfiguration.getCellbase().setVersion("v5.2");
+//        storageConfiguration.getCellbase().setDataRelease("1");
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;
@@ -435,25 +445,23 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     default void clearHBase() throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
             for (TableName tableName : admin.listTableNames()) {
-                utility.get().deleteTableIfAny(tableName);
+                if (!tableName.getNameAsString().startsWith("SYSTEM")) {
+                    deleteTable(tableName.getNameAsString());
+                }
             }
         }
     }
 
     @Override
     default void clearDB(String tableName) throws Exception {
-        if (Objects.equals(tableName, VariantStorageBaseTest.DB_NAME)) {
-            try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
-                for (TableName table : admin.listTableNames()) {
-                    if (table.getNameAsString().startsWith(tableName)) {
-                        deleteTable(table.getNameAsString());
-                    }
+        try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
+            for (TableName table : admin.listTableNames()) {
+                if (table.getNameAsString().startsWith(tableName)) {
+                    deleteTable(table.getNameAsString());
                 }
             }
-            getVariantStorageEngine().getMetadataManager().clearCaches();
-        } else {
-            deleteTable(tableName);
         }
+        getVariantStorageEngine().close();
     }
 
     default void deleteTable(String tableName) throws Exception {

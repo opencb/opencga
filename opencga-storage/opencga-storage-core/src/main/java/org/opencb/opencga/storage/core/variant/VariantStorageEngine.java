@@ -81,8 +81,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -459,7 +459,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata(params);
+        ProjectMetadata projectMetadata = getMetadataManager().getAndUpdateProjectMetadata(params);
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, projectMetadata, getMergedOptions(params));
         return newVariantAnnotationManager(annotator);
@@ -1106,7 +1106,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = getMetadataManager().getProjectMetadata(getOptions());
+            final ProjectMetadata metadata = getMetadataManager().getAndUpdateProjectMetadata(getOptions());
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();
@@ -1116,7 +1116,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 species = clientConfiguration.getDefaultSpecies();
             }
             species = toCellBaseSpeciesName(species);
-            cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration), assembly);
+            cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, configuration.getCellbase().getDataRelease(),
+                    configuration.getCellbase().getToken(), clientConfiguration));
         }
         return cellBaseUtils;
     }
@@ -1158,7 +1159,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
-                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration, getOptions()));
+                    variantSearchManager.set(
+                            new VariantSearchManager(getMetadataManager(), getCellBaseUtils(), configuration, getOptions()));
                 }
             }
         }
@@ -1258,6 +1260,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
                 if (executor.canUseThisExecutor(query, options)) {
+                    logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
+                    logger.info("  Query : " + VariantQueryUtils.printQuery(query));
+                    logger.info("  Options : " + options.toJson());
                     return executor;
                 }
             }
@@ -1310,12 +1315,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query, QueryOptions.empty());
-        VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
-        return variantQueryExecutor.count(query);
+        VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID)
+                .append(QueryOptions.LIMIT, 1)
+                .append(QueryOptions.COUNT, true));
+        return new DataResult<>(
+                result.getTime(),
+                result.getEvents(),
+                1,
+                Collections.singletonList(result.getNumMatches()), 1L, result.getAttributes());
     }
-
-
 
     public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query, QueryOptions options)
             throws StorageEngineException {

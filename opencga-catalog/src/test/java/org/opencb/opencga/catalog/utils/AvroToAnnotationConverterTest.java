@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
@@ -9,6 +10,7 @@ import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+@Category(ShortTests.class)
 public class AvroToAnnotationConverterTest {
 
     @Test

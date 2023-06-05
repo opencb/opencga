@@ -843,7 +843,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             final Future<Long> deleteFromSampleIndex;
             if (allSampleIds.isEmpty()) {
                 deleteFromSampleIndex = null;
-            } else if (getDBAdaptor().getHBaseManager().tableExists(sampleIndexTable)) {
+            } else if (!getDBAdaptor().getHBaseManager().tableExists(sampleIndexTable)) {
                 // Might not exist if the initial index was executed without sample-index (--load-sample-index no)
                 logger.info("Sample index table '{}' does not exist. Skip delete!", sampleIndexTable);
                 deleteFromSampleIndex = null;

@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -51,7 +52,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,16 +115,17 @@ public class CatalogStorageMetadataSynchronizer {
             throws CatalogException, StorageEngineException {
         final Project p = catalog.getProjectManager().get(project,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                                ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
+                                ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key(),
+                                ProjectDBAdaptor.QueryParams.CELLBASE.key())),
                         sessionId)
                 .first();
 
-        updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
+        updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease(), p.getCellbase());
     }
 
-    public static void updateProjectMetadata(VariantStorageMetadataManager scm, ProjectOrganism organism, int release)
+    public static void updateProjectMetadata(VariantStorageMetadataManager scm, ProjectOrganism organism, int release, CellBaseConfiguration cellbase)
             throws StorageEngineException {
-        String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
+        String scientificName = CellBaseUtils.toCellBaseSpeciesName(organism.getScientificName());
 
         scm.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
@@ -131,6 +133,7 @@ public class CatalogStorageMetadataSynchronizer {
             }
             projectMetadata.setSpecies(scientificName);
             projectMetadata.setAssembly(organism.getAssembly());
+            projectMetadata.setDataRelease(cellbase.getDataRelease());
             projectMetadata.setRelease(release);
             return projectMetadata;
         });

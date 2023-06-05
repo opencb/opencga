@@ -63,8 +63,20 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
             }
         }
 
+        // Check invalid positional filter
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+        boolean withGeneAliasFilter = VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER)
+                || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_GO)
+                || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION);
+        if (withGeneAliasFilter && xrefs.getGenes().isEmpty()) {
+            // We have geneAliasFilter, but it didn't produce any actual gene.
+            // If there is no other region or variant filter, we should return no variants.
+            if (!VariantQueryUtils.isValidParam(query, REGION) && xrefs.getVariants().isEmpty()) {
+                return true;
+            }
+        }
+
         if (VariantQueryUtils.NON_EXISTING_REGION.equals(query.getString(REGION.key()))) {
-            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
                 // Nothing to return
                 return true;

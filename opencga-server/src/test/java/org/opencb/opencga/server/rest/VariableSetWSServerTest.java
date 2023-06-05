@@ -18,12 +18,14 @@ package org.opencb.opencga.server.rest;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -35,6 +37,8 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 11/04/16.
  */
+@Ignore
+@Category(MediumTests.class)
 public class VariableSetWSServerTest {
 
     private WebTarget webTarget;

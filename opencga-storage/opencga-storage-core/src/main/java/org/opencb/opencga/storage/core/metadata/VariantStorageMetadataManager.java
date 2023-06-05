@@ -64,8 +64,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
 
@@ -588,7 +588,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectDBAdaptor.getProjectMetadata().first();
     }
 
-    public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
+    public ProjectMetadata getAndUpdateProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(SPECIES.key())

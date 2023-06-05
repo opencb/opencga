@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -89,6 +90,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.HRDetectCommandOptions.HRDETECT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
@@ -217,6 +219,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case HRDETECT_RUN_COMMAND:
+                hrDetect();
                 break;
             case GENOME_PLOT_RUN_COMMAND:
                 genomePlot();
@@ -796,27 +801,50 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
         // Check signature release
-        checkSignatureVersion(cliOptions.sigVersion);
+        checkSignatureVersion(cliOptions.fitSigVersion);
 
         ObjectMap params = new MutationalSignatureAnalysisParams(
                 cliOptions.id,
                 cliOptions.description,
+                cliOptions.sample,
                 cliOptions.query,
-                cliOptions.catalogues,
-                cliOptions.cataloguesContent,
+                cliOptions.fitId,
                 cliOptions.fitMethod,
-                cliOptions.nBoot,
-                cliOptions.sigVersion,
-                cliOptions.organ,
-                cliOptions.thresholdPerc,
-                cliOptions.thresholdPval,
-                cliOptions.maxRareSigs,
-                cliOptions.signaturesFile,
-                cliOptions.rareSignaturesFile,
+                cliOptions.fitNBoot,
+                cliOptions.fitSigVersion,
+                cliOptions.fitOrgan,
+                cliOptions.fitThresholdPerc,
+                cliOptions.fitThresholdPval,
+                cliOptions.fitMaxRareSigs,
+                cliOptions.fitSignaturesFile,
+                cliOptions.fitRareSignaturesFile,
+                cliOptions.skip,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(MutationalSignatureAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void hrDetect() throws Exception {
+        VariantCommandOptions.HRDetectCommandOptions cliOptions = variantCommandOptions.hrDetectCommandOptions;
+
+        ObjectMap params = new HRDetectAnalysisParams(
+                cliOptions.id,
+                cliOptions.description,
+                cliOptions.sample,
+                cliOptions.snvFittingId,
+                cliOptions.svFittingId,
+                cliOptions.cnvQuery,
+                cliOptions.indelQuery,
+                cliOptions.snv3CustomName,
+                cliOptions.snv8CustomName,
+                cliOptions.sv3CustomName,
+                cliOptions.sv8CustomName,
+                cliOptions.bootstrap,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(HRDetectAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void genomePlot() throws Exception {
@@ -911,7 +939,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Check signature release
-        checkSignatureVersion(cliOptions.signatureSigVersion);
+        checkSignatureVersion(cliOptions.signatureFitSigVersion);
 
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
@@ -925,18 +953,20 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
                 cliOptions.signatureQuery,
+                cliOptions.signatureFitId,
                 cliOptions.signatureFitMethod,
-                cliOptions.signatureNBoot,
-                cliOptions.signatureSigVersion,
-                cliOptions.signatureOrgan,
-                cliOptions.signatureThresholdPerc,
-                cliOptions.signatureThresholdPval,
-                cliOptions.signatureMaxRareSigs,
-                cliOptions.signatureSignaturesFile,
-                cliOptions.signatureRareSignaturesFile,
+                cliOptions.signatureFitNBoot,
+                cliOptions.signatureFitSigVersion,
+                cliOptions.signatureFitOrgan,
+                cliOptions.signatureFitThresholdPerc,
+                cliOptions.signatureFitThresholdPval,
+                cliOptions.signatureFitMaxRareSigs,
+                cliOptions.signatureFitSignaturesFile,
+                cliOptions.signatureFitRareSignaturesFile,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
+                cliOptions.skip,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

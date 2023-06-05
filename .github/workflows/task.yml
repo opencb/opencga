@@ -8,48 +8,47 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
     with:
-      maven_opts: -P storage-hadoop,hdp3.1,RClient -Dopencga.war.name=opencga
-
-  sonar:
-    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
-    needs: build
-    with:
-      sonarProjectKey: opencb_opencga
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
   test:
-    name: Test OpenCGA
-    runs-on: ubuntu-20.04
+    uses: ./.github/workflows/test-analysis.yml
     needs: build
-    strategy:
-      matrix:
-        mongodb: ["4.2"]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '10'
-      - name: Set up JDK 8
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Start MongoDB v${{ matrix.mongodb }}
-        uses: supercharge/mongodb-github-action@1.7.0
-        with:
-          mongodb-version: ${{ matrix.mongodb }}
-          mongodb-replica-set: rs-test
-      - name: Run Maven Tests
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
+    secrets: inherit
+    with:
+      test_profile: runShortTests
+      report_context: development
+
+  deploy-maven:
+    name: Deploy in maven only for renamed versions
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.8.x
+    needs: [ build, test ]
+    if: contains( needs.build.outputs.version ,'TASK')
+    secrets: inherit
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.8.x
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
-    secrets:
-      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    secrets: inherit
+
+  # The following jobs are to see that the previous 'if' doesn't fail and that the maven deploy is executed because it is true
+  snapshot-version:
+    name: Check SNAPSHOT version
+    needs: [ build, test ]
+    if: contains(needs.build.outputs.version ,'SNAPSHOT')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: test-version-from-check
+        run: echo "Project version is " ${{ needs.build.outputs.version }}
+
+  task-version:
+    name: Check TASK version
+    needs: [ build, test ]
+    if: contains(needs.build.outputs.version ,'TASK')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: test-version-from-check
+        run: echo "Project version is " ${{ needs.build.outputs.version }}

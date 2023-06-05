@@ -21,9 +21,11 @@ import io.jsonwebtoken.impl.TextCodec;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
@@ -35,6 +37,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by wasim on 06/06/17.
  */
+@Category(ShortTests.class)
 public class JwtSessionManagerTest extends GenericTest {
 
     private JwtManager jwtSessionManager;

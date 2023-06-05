@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.GrpcServerConfiguration;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.config.RestServerConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,6 +36,7 @@ import java.nio.file.Paths;
 /**
  * Created by imedina on 01/05/15.
  */
+@Category(ShortTests.class)
 public class StorageConfigurationTest {
 
     @Test

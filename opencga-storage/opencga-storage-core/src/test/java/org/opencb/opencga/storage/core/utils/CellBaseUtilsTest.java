@@ -1,12 +1,16 @@
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.commons.lang.StringUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -17,6 +21,8 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -25,7 +31,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -35,6 +41,7 @@ import static org.junit.Assert.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @RunWith(Parameterized.class)
+@Category(MediumTests.class)
 public class CellBaseUtilsTest {
 
     public static final String UNKNOWN_GENE = "UNKNOWN_GENE";
@@ -45,16 +52,22 @@ public class CellBaseUtilsTest {
     private CellBaseUtils cellBaseUtils;
     private CellBaseClient cellBaseClient;
 
-    @Parameters(name = "{0}")
+    @Parameters(name = "{0}{1}/?assembly={2}%dataRelease={3}")
     public static List<Object[]> data() {
         return Arrays.asList(
-                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37"},
-                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37"},
-//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38"});
+                new Object[]{"http://ws.opencb.org/cellbase-4.7.3/", "v4", "grch37", null},
+                new Object[]{"http://ws.opencb.org/cellbase-4.8.2/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
+//                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
+
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"});
     }
 
     @Parameter(0)
@@ -66,12 +79,26 @@ public class CellBaseUtilsTest {
     @Parameter(2)
     public String assembly;
 
+    @Parameter(3)
+    public String dataRelease;
+
     @Before
     public void setUp() throws Exception {
-        cellBaseClient = new CellBaseClient("hsapiens", assembly,
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
-        cellBaseUtils = new CellBaseUtils(cellBaseClient, assembly);
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        try {
+            cellBaseUtils.validate();
+        } catch (RuntimeException e) {
+            Assume.assumeNoException("Cellbase '" + url + "' not available", e);
+        }
+    }
+
+    @Test
+    public void testValidateCellBaseConnection() throws IOException {
+        cellBaseUtils.validate();
     }
 
     @Test
@@ -81,6 +108,26 @@ public class CellBaseUtilsTest {
         assertNotNull(region);
         assertEquals(1, region.getStart());
         assertEquals(region, new Region(region.toString()));
+    }
+
+    @Test
+    public void testGetGo() throws IOException {
+        Assume.assumeFalse("GO ids not supported in GRCH37 and v5", assembly.equalsIgnoreCase("grch37") && cellBaseUtils.isMinVersion("5.0.0"));
+        Set<String> genesByGo = cellBaseUtils.getGenesByGo(Arrays.asList("GO:0006508"));
+        assertNotNull(genesByGo);
+        assertNotEquals(0, genesByGo.size());
+        System.out.println("GO:0006508 = " + genesByGo.size());
+    }
+
+    @Test
+    public void testGetRoleInCancer() throws IOException {
+        Assume.assumeTrue(VersionUtils.isMinVersion("5.2.7-SNAPSHOT", cellBaseUtils.getVersionFromServer()));
+        Assume.assumeFalse("GRCH37", assembly.equalsIgnoreCase("grch37"));
+
+        Set<String> genesByGo = cellBaseUtils.getGenesByRoleInCancer(Arrays.asList("ONCOGENE"));
+        assertNotNull(genesByGo);
+        assertNotEquals(0, genesByGo.size());
+        System.out.println("genesByGo = " + genesByGo);
     }
 
     @Test
@@ -104,14 +151,21 @@ public class CellBaseUtilsTest {
     }
 
     @Test
-    public void testGetGeneByTranscriptName() {
+    public void testGetGeneByTranscriptName() throws IOException {
         Assume.assumeTrue(version.startsWith("v5"));
-        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("BRCA2-206"), false).get(0));
+        String transcriptName = cellBaseUtils.getCellBaseClient().getGeneClient().get(Collections.singletonList("BRCA2"), new QueryOptions()).firstResult().getTranscripts()
+                .stream()
+                .map(Transcript::getName)
+                .filter(t -> t.startsWith("BRCA2-"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList(transcriptName), false).get(0));
     }
 
     @Test
-    public void convertGeneToRegionHGNC() {
-        Assume.assumeTrue(version.startsWith("v5"));
+    public void convertGeneToRegionHGNC() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.0.0"));
+        Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         assertNotNull(cellBaseUtils.getGeneRegion("HGNC:12363"));
     }
 
@@ -152,6 +206,7 @@ public class CellBaseUtilsTest {
     @Test
     public void validateGeneNames() {
         Assume.assumeTrue(!version.startsWith("v4"));
+        Assume.assumeFalse("HGNC ids not supported in GRCH37", assembly.equalsIgnoreCase("grch37"));
         List<String> validated = cellBaseUtils.validateGenes(Arrays.asList("BRCA2", "NonExistingGene", "HGNC:12363"), true);
         assertEquals(Arrays.asList("BRCA2", "TSC2"), validated);
     }
@@ -184,6 +239,7 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testGetTranscriptFlags() throws IOException {
+        Assume.assumeTrue("The variant tested here is from GRCH38", assembly.equalsIgnoreCase("grch38"));
         CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
                 .getAnnotationByVariantIds(Collections.singletonList("1:26644214:T:C"), new QueryOptions());
         VariantAnnotation variantAnnotation = v.firstResult();
@@ -197,4 +253,42 @@ public class CellBaseUtilsTest {
         assertTrue(withTranscriptFlags);
     }
 
+    @Test
+    public void testAnnotationWithHGMDToken() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
+        Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(2, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+        assertEquals("hgmd", variantAnnotation.getTraitAssociation().get(1).getSource().getName());
+    }
+
+    @Test
+    public void testAnnotationWithoutHGMDToken() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(1, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+    }
 }

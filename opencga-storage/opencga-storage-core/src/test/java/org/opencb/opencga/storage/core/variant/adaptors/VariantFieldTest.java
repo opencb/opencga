@@ -2,9 +2,11 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.avro.Schema;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -18,6 +20,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(ShortTests.class)
 public class VariantFieldTest {
 
     @Test

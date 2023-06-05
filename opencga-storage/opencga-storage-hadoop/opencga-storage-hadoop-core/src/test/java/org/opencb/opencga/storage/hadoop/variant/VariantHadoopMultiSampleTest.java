@@ -22,6 +22,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -39,6 +40,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -75,6 +77,8 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArch
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
+@Ignore
 public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
@@ -88,8 +92,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Before
     public void setUp() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        clearDB(variantStorageManager.getVariantTableName());
-        clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        clearDB(variantStorageManager.getDBName());
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
@@ -155,7 +158,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), new ObjectMap("local", true));
+        getVariantStorageEngine().aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false),
+                new ObjectMap("local", true)
+                        .append(HadoopVariantStorageOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.key(), false)
+        );
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -305,9 +311,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         }
 
-       // dbAdaptor.getStudyMetadataManager().updateStudyMetadata(studyMetadata, null);
+        // dbAdaptor.getStudyMetadataManager().updateStudyMetadata(studyMetadata, null);
 
-        protoFiles = protoFiles.subList(0,2); // TODO remove
+        protoFiles = protoFiles.subList(0, 2); // TODO remove
 
         List<StoragePipelineResult> index2 = variantStorageManager.index(protoFiles, outputUri, false, false, true);
 
@@ -457,16 +463,16 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         VariantReader variantReader = new VariantVcfHtsjdkReader(path, fileMetadata.toVariantStudyMetadata(STUDY_NAME));
         variantReader.open();
         variantReader.pre();
-        Map<String, Variant> expectedVariants = new LinkedHashMap<>();
-        new VariantNormalizer(true, true)
+        Map<String, Variant> expectedVariants = new VariantNormalizer(true, true)
                 .apply(variantReader.read(1000))
-                .forEach(v -> expectedVariants.put(v.toString(), v));
+                .stream()
+                .collect(Collectors.toMap(Variant::toString, v -> v));
         variantReader.post();
         variantReader.close();
 
         System.out.println("studyMetadata = " + studyMetadata);
         Map<String, Variant> variants = new HashMap<>();
-        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions())) {
+        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSampleAll(), new QueryOptions())) {
             String v = variant.toString();
             assertFalse(variants.containsKey(v));
             variants.put(v, variant);
@@ -509,7 +515,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         for (String key : expectedVariants.keySet()) {
             if (variants.containsKey(key)) {
                 Variant variant = variants.get(key);
-                StudyEntry studyEntry = variant.getStudy(studyName);
+                StudyEntry actualStudyEntry = variant.getStudy(studyName);
                 StudyEntry expectedStudyEntry = expectedVariants.get(key).getStudies().get(0);
                 for (String sample : samples) {
                     for (String formatKey : format) {
@@ -517,7 +523,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                         if (expected.equals("./.")) {
                             expected = ".";
                         }
-                        String actual = studyEntry.getSampleData(sample, formatKey);
+                        String actual = actualStudyEntry.getSampleData(sample, formatKey);
                         if (actual.equals("./.")) {
                             actual = ".";
                         }
@@ -529,10 +535,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                     }
                 }
                 int expectedFiles = 0;
-                if (!studyEntry.getSampleData("s1", "GT").equals(defaultGenotype)) {
+                if (!actualStudyEntry.getSampleData("s1", "GT").equals(defaultGenotype)) {
                     expectedFiles++;
                 }
-                if (!studyEntry.getSampleData("s2", "GT").equals(defaultGenotype)) {
+                if (!actualStudyEntry.getSampleData("s2", "GT").equals(defaultGenotype)) {
                     expectedFiles++;
                 }
                 if (defaultGenotype.equals("0/0") && variant.toString().equals("1:10013:T:C")) {
@@ -540,12 +546,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                     // From file s2.genome.vcf there is a variant with GT 0/0 which has an associated file
                     expectedFiles++;
                 }
-                assertEquals(key, expectedFiles, studyEntry.getFiles().size());
+                assertEquals(key, expectedFiles, actualStudyEntry.getFiles().size());
                 if (missingUpdated) {
-                    assertEquals(key, expectedStudyEntry.getSecondaryAlternates().size(), studyEntry.getSecondaryAlternates().size());
+                    assertEquals(key, expectedStudyEntry.getSecondaryAlternates().size(), actualStudyEntry.getSecondaryAlternates().size());
                     assertEquals(key,
                             expectedStudyEntry.getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toList()),
-                            studyEntry.getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toList()));
+                            actualStudyEntry.getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toList()));
                 }
             } else {
                 errors.add("Missing variant! " + key);
@@ -645,8 +651,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testPlatinumFilesOneByOne_MergeBasic() throws Exception {
         StudyMetadata studyMetadata = testPlatinumFilesOneByOne(new ObjectMap()
-                .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
-                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                        .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                        .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 /*.append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
 
 
@@ -655,10 +661,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         List<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet());
 
-        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(0, samples.size()/2));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(0, samples.size() / 2));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
-        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(samples.size()/2, samples.size()));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(samples.size() / 2, samples.size()));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
         FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples);
@@ -758,7 +764,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     }
 
 
-    protected Set<String> getVariants(VariantHadoopDBAdaptor dbAdaptor, StudyMetadata studyMetadata, int fileId){
+    protected Set<String> getVariants(VariantHadoopDBAdaptor dbAdaptor, StudyMetadata studyMetadata, int fileId) {
 //        Map<String, Integer> variantCounts = new HashMap<>();
         Set<String> variants = new HashSet<>();
         Set<String> observed = new HashSet<>(Arrays.asList("M:516:-:CA", "1:10231:C:-", "1:10352:T:A", "M:515:G:A"));

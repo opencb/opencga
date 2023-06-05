@@ -20,9 +20,11 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -36,6 +38,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 /**
  * Created by jtarraga on 03/03/17.
  */
+@Category(ShortTests.class)
 public class SolrQueryParserTest {
 
     private String studyName = "platinum";
@@ -869,9 +872,11 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign;likely_benign");
 
+        thrown.expectMessage("Unable to filter values with logical AND (;)");
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-        display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
+//        display(query, queryOptions, solrQuery);
+//        System.out.println("solrQuery = " + solrQuery);
+//        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
     }
 
     @Test

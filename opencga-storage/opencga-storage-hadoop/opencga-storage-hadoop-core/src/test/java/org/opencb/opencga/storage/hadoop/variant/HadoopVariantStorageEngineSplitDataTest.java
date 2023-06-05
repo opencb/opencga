@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -12,6 +13,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -42,6 +44,7 @@ import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor.NATIVE;
 
+@Category(LongTests.class)
 public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     public static final List<String> SAMPLES = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
@@ -419,22 +422,22 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME + "_split");
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
+        String studyActual = "study_actual_split";
 
-        int studyId_actual = mm.getStudyId(STUDY_NAME + "_split");
-
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), studyActual);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.REGION);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outputUri);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outDir);
+        variantStorageEngine.removeFiles(studyActual, Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"), outDir);
 
-        variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"), outputUri);
 
-
+        String studyExpected = "study_expected";
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), studyExpected);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
 
-        int studyId_expected = mm.getStudyId(STUDY_NAME);
+        int studyId_actual = mm.getStudyId(studyActual);
+        int studyId_expected = mm.getStudyId(studyExpected);
 
         checkVariantsTable(studyId_actual, studyId_expected, new Query(VariantQueryParam.FILE.key(), "chr22_1-1.variant-test-file.vcf.gz"),
                 new QueryOptions());

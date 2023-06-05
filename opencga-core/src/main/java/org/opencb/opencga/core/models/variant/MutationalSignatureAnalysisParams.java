@@ -21,51 +21,62 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class MutationalSignatureAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Mutational signature analysis params";
 
+    public static final String SIGNATURE_CATALOGUE_SKIP_VALUE = "catalogue";
+    public static final String SIGNATURE_FITTING_SKIP_VALUE = "fitting";
+
+    public static final String DESCRIPTION = "Mutational signature analysis parameters to index the genome context for that sample, and"
+            + " to compute both catalogue counts and signature fitting. In order to skip one of them, , use the following keywords: "
+            + ", " + SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SIGNATURE_FITTING_SKIP_VALUE + ".";
+
+    // For counts (i.e., catalogue file)
     @DataField(id = "id", description = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION)
     private String id;
 
     @DataField(id = "description", description = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "sample", description = FieldConstants.MUTATIONAL_SIGNATURE_SAMPLE_DESCRIPTION)
+    private String sample;
+
     @DataField(id = "query", description = FieldConstants.MUTATIONAL_SIGNATURE_QUERY_DESCRIPTION)
     private String query;
 
     // For fitting method
-
-    @DataField(id = "catalogues", description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_DESCRIPTION)
-    private String catalogues;
-
-    @DataField(id = "cataloguesContent", description = FieldConstants.MUTATIONAL_SIGNATURE_CATALOGUES_CONTENT_DESCRIPTION)
-    private String cataloguesContent;
+    @DataField(id = "fitId", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ID_DESCRIPTION)
+    private String fitId;
 
     @DataField(id = "fitMethod", defaultValue = "FitMS", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_METHOD_DESCRIPTION)
     private String fitMethod;
 
-    @DataField(id = "nBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_N_BOOT_DESCRIPTION)
-    private Integer nBoot;
+    @DataField(id = "fitNBoot", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_N_BOOT_DESCRIPTION)
+    private Integer fitNBoot;
 
-    @DataField(id = "sigVersion", defaultValue = "RefSigv2", description = FieldConstants.MUTATIONAL_SIGNATURE_SIG_VERSION_DESCRIPTION)
-    private String sigVersion;
+    @DataField(id = "fitSigVersion", defaultValue = "RefSigv2", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIG_VERSION_DESCRIPTION)
+    private String fitSigVersion;
 
-    @DataField(id = "organ", description = FieldConstants.MUTATIONAL_SIGNATURE_ORGAN_DESCRIPTION)
-    private String organ;
+    @DataField(id = "fitOrgan", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_ORGAN_DESCRIPTION)
+    private String fitOrgan;
 
-    @DataField(id = "thresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PERC_DESCRIPTION)
-    private Float thresholdPerc;
+    @DataField(id = "fitThresholdPerc", defaultValue = "5f", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PERC_DESCRIPTION)
+    private Float fitThresholdPerc;
 
-    @DataField(id = "thresholdPval", defaultValue = "0.05f", description = FieldConstants.MUTATIONAL_SIGNATURE_THRESHOLD_PVAL_DESCRIPTION)
-    private Float thresholdPval;
+    @DataField(id = "fitThresholdPval", defaultValue = "0.05f",
+            description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_THRESHOLD_PVAL_DESCRIPTION)
+    private Float fitThresholdPval;
 
-    @DataField(id = "maxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_MAX_RARE_SIGS_DESCRIPTION)
-    private Integer maxRareSigs;
+    @DataField(id = "fitMaxRareSigs", defaultValue = "1", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_MAX_RARE_SIGS_DESCRIPTION)
+    private Integer fitMaxRareSigs;
 
-    @DataField(id = "signaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_SIGNATURES_FILE_DESCRIPTION)
-    private String signaturesFile;
+    @DataField(id = "fitSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_SIGNATURES_FILE_DESCRIPTION)
+    private String fitSignaturesFile;
 
-    @DataField(id = "rareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_RARE_SIGNATURES_FILE_DESCRIPTION)
-    private String rareSignaturesFile;
+    @DataField(id = "fitRareSignaturesFile", description = FieldConstants.MUTATIONAL_SIGNATURE_FIT_RARE_SIGNATURES_FILE_DESCRIPTION)
+    private String fitRareSignaturesFile;
+
+    // Other
+    @DataField(id = "skip", description = FieldConstants.MUTATIONAL_SIGNATURE_SKIP_DESCRIPTION)
+    private String skip;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
@@ -73,24 +84,25 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String id, String description, String query, String catalogues, String cataloguesContent,
-                                             String fitMethod, Integer nBoot, String sigVersion, String organ, Float thresholdPerc,
-                                             Float thresholdPval, Integer maxRareSigs, String signaturesFile, String rareSignaturesFile,
-                                             String outdir) {
+    public MutationalSignatureAnalysisParams(String id, String description, String sample, String query, String fitId, String fitMethod,
+                                             Integer fitNBoot, String fitSigVersion, String fitOrgan, Float fitThresholdPerc,
+                                             Float fitThresholdPval, Integer fitMaxRareSigs, String fitSignaturesFile,
+                                             String fitRareSignaturesFile, String skip, String outdir) {
         this.id = id;
         this.description = description;
+        this.sample = sample;
         this.query = query;
-        this.catalogues = catalogues;
-        this.cataloguesContent = cataloguesContent;
+        this.fitId = fitId;
         this.fitMethod = fitMethod;
-        this.nBoot = nBoot;
-        this.sigVersion = sigVersion;
-        this.organ = organ;
-        this.thresholdPerc = thresholdPerc;
-        this.thresholdPval = thresholdPval;
-        this.maxRareSigs = maxRareSigs;
-        this.signaturesFile = signaturesFile;
-        this.rareSignaturesFile = rareSignaturesFile;
+        this.fitNBoot = fitNBoot;
+        this.fitSigVersion = fitSigVersion;
+        this.fitOrgan = fitOrgan;
+        this.fitThresholdPerc = fitThresholdPerc;
+        this.fitThresholdPval = fitThresholdPval;
+        this.fitMaxRareSigs = fitMaxRareSigs;
+        this.fitSignaturesFile = fitSignaturesFile;
+        this.fitRareSignaturesFile = fitRareSignaturesFile;
+        this.skip = skip;
         this.outdir = outdir;
     }
 
@@ -99,18 +111,19 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("MutationalSignatureAnalysisParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", sample='").append(sample).append('\'');
         sb.append(", query='").append(query).append('\'');
-        sb.append(", catalogues='").append(catalogues).append('\'');
-        sb.append(", cataloguesContent='").append(cataloguesContent).append('\'');
+        sb.append(", fitId='").append(fitId).append('\'');
         sb.append(", fitMethod='").append(fitMethod).append('\'');
-        sb.append(", nBoot=").append(nBoot);
-        sb.append(", sigVersion='").append(sigVersion).append('\'');
-        sb.append(", organ='").append(organ).append('\'');
-        sb.append(", thresholdPerc=").append(thresholdPerc);
-        sb.append(", thresholdPval=").append(thresholdPval);
-        sb.append(", maxRareSigs=").append(maxRareSigs);
-        sb.append(", signaturesFile='").append(signaturesFile).append('\'');
-        sb.append(", rareSignaturesFile='").append(rareSignaturesFile).append('\'');
+        sb.append(", fitNBoot=").append(fitNBoot);
+        sb.append(", fitSigVersion='").append(fitSigVersion).append('\'');
+        sb.append(", fitOrgan='").append(fitOrgan).append('\'');
+        sb.append(", fitThresholdPerc=").append(fitThresholdPerc);
+        sb.append(", fitThresholdPval=").append(fitThresholdPval);
+        sb.append(", fitMaxRareSigs=").append(fitMaxRareSigs);
+        sb.append(", fitSignaturesFile='").append(fitSignaturesFile).append('\'');
+        sb.append(", fitRareSignaturesFile='").append(fitRareSignaturesFile).append('\'');
+        sb.append(", skip='").append(skip).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -134,6 +147,15 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
+    public String getSample() {
+        return sample;
+    }
+
+    public MutationalSignatureAnalysisParams setSample(String sample) {
+        this.sample = sample;
+        return this;
+    }
+
     public String getQuery() {
         return query;
     }
@@ -143,21 +165,12 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getCatalogues() {
-        return catalogues;
+    public String getFitId() {
+        return fitId;
     }
 
-    public MutationalSignatureAnalysisParams setCatalogues(String catalogues) {
-        this.catalogues = catalogues;
-        return this;
-    }
-
-    public String getCataloguesContent() {
-        return cataloguesContent;
-    }
-
-    public MutationalSignatureAnalysisParams setCataloguesContent(String cataloguesContent) {
-        this.cataloguesContent = cataloguesContent;
+    public MutationalSignatureAnalysisParams setFitId(String fitId) {
+        this.fitId = fitId;
         return this;
     }
 
@@ -170,75 +183,84 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Integer getnBoot() {
-        return nBoot;
+    public Integer getFitNBoot() {
+        return fitNBoot;
     }
 
-    public MutationalSignatureAnalysisParams setnBoot(Integer nBoot) {
-        this.nBoot = nBoot;
+    public MutationalSignatureAnalysisParams setFitNBoot(Integer fitNBoot) {
+        this.fitNBoot = fitNBoot;
         return this;
     }
 
-    public String getSigVersion() {
-        return sigVersion;
+    public String getFitSigVersion() {
+        return fitSigVersion;
     }
 
-    public MutationalSignatureAnalysisParams setSigVersion(String sigVersion) {
-        this.sigVersion = sigVersion;
+    public MutationalSignatureAnalysisParams setFitSigVersion(String fitSigVersion) {
+        this.fitSigVersion = fitSigVersion;
         return this;
     }
 
-    public String getOrgan() {
-        return organ;
+    public String getFitOrgan() {
+        return fitOrgan;
     }
 
-    public MutationalSignatureAnalysisParams setOrgan(String organ) {
-        this.organ = organ;
+    public MutationalSignatureAnalysisParams setFitOrgan(String fitOrgan) {
+        this.fitOrgan = fitOrgan;
         return this;
     }
 
-    public Float getThresholdPerc() {
-        return thresholdPerc;
+    public Float getFitThresholdPerc() {
+        return fitThresholdPerc;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPerc(Float thresholdPerc) {
-        this.thresholdPerc = thresholdPerc;
+    public MutationalSignatureAnalysisParams setFitThresholdPerc(Float fitThresholdPerc) {
+        this.fitThresholdPerc = fitThresholdPerc;
         return this;
     }
 
-    public Float getThresholdPval() {
-        return thresholdPval;
+    public Float getFitThresholdPval() {
+        return fitThresholdPval;
     }
 
-    public MutationalSignatureAnalysisParams setThresholdPval(Float thresholdPval) {
-        this.thresholdPval = thresholdPval;
+    public MutationalSignatureAnalysisParams setFitThresholdPval(Float fitThresholdPval) {
+        this.fitThresholdPval = fitThresholdPval;
         return this;
     }
 
-    public Integer getMaxRareSigs() {
-        return maxRareSigs;
+    public Integer getFitMaxRareSigs() {
+        return fitMaxRareSigs;
     }
 
-    public MutationalSignatureAnalysisParams setMaxRareSigs(Integer maxRareSigs) {
-        this.maxRareSigs = maxRareSigs;
+    public MutationalSignatureAnalysisParams setFitMaxRareSigs(Integer fitMaxRareSigs) {
+        this.fitMaxRareSigs = fitMaxRareSigs;
         return this;
     }
 
-    public String getSignaturesFile() {
-        return signaturesFile;
+    public String getFitSignaturesFile() {
+        return fitSignaturesFile;
     }
 
-    public MutationalSignatureAnalysisParams setSignaturesFile(String signaturesFile) {
-        this.signaturesFile = signaturesFile;
+    public MutationalSignatureAnalysisParams setFitSignaturesFile(String fitSignaturesFile) {
+        this.fitSignaturesFile = fitSignaturesFile;
         return this;
     }
 
-    public String getRareSignaturesFile() {
-        return rareSignaturesFile;
+    public String getFitRareSignaturesFile() {
+        return fitRareSignaturesFile;
     }
 
-    public MutationalSignatureAnalysisParams setRareSignaturesFile(String rareSignaturesFile) {
-        this.rareSignaturesFile = rareSignaturesFile;
+    public MutationalSignatureAnalysisParams setFitRareSignaturesFile(String fitRareSignaturesFile) {
+        this.fitRareSignaturesFile = fitRareSignaturesFile;
+        return this;
+    }
+
+    public String getSkip() {
+        return skip;
+    }
+
+    public MutationalSignatureAnalysisParams setSkip(String skip) {
+        this.skip = skip;
         return this;
     }
 

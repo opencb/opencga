@@ -1,13 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.load;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantHadoopDBWriterTest {
 
     @Test

@@ -2,12 +2,15 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class VariantMapReduceUtilTest {
 
     @Test

@@ -433,7 +433,7 @@ public class AnalysisAlignmentCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"qc-run"}, commandDescription ="Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics)")
+    @Parameters(commandNames = {"qc-run"}, commandDescription ="Compute quality control (QC) metrics for a given alignment file: samtools stats, samtools flag stats and FastQC metrics.")
     public class RunQcCommandOptions {
     
         @ParametersDelegate
@@ -460,22 +460,16 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--bam-file"}, description = "The body web service bamFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--bam-file"}, description = "ID for the BAM file to process.", required = false, arity = 1)
         public String bamFile;
     
-        @Parameter(names = {"--bed-file"}, description = "The body web service bedFile parameter", required = false, arity = 1)
-        public String bedFile;
-    
-        @Parameter(names = {"--dict-file"}, description = "The body web service dictFile parameter", required = false, arity = 1)
-        public String dictFile;
-    
-        @Parameter(names = {"--skip"}, description = "The body web service skip parameter", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "To skip any alignment QC metrics use the following keywords (separated by commas): stats, flagstats, fastqc", required = false, arity = 1)
         public String skip;
     
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite"}, description = "To overwrite the QC metrics already computed.", required = false, help = true, arity = 0)
         public boolean overwrite = false;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }

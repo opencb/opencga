@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,6 +49,7 @@ import static org.junit.Assert.*;
 /**
  * Created by jacobo on 28/01/15.
  */
+@Category(MediumTests.class)
 public class CatalogFileUtilsTest {
 
     @Rule
@@ -72,10 +75,12 @@ public class CatalogFileUtilsTest {
 
         CatalogManagerExternalResource.clearCatalog(configuration);
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, false);
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true, true);
+
+        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         //Create USER
-        catalogManager.getUserManager().create("user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         userSessionId = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",

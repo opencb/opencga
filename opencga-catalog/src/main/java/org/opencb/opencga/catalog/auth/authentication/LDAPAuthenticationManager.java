@@ -62,13 +62,12 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private final int connectTimeout;
     private final Hashtable<String, Object> env;
 
-    private final long expiration;
     private final boolean sslInvalidCertificatesAllowed;
     private String host;
     private boolean ldaps;
 
     public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
-        super();
+        super(expiration);
         this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
         this.host = authenticationOrigin.getHost();
 
@@ -108,7 +107,6 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         logger.info("Init LDAP AuthenticationManager. Host: {}, env:{}", host, envToStringRedacted(getDefaultEnv()));
 
-        this.expiration = expiration;
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
     }
@@ -145,7 +143,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw wrapException(e);
         }
 
-        return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
+        return new AuthenticationResponse(createToken(userId, claims));
     }
 
     @Override
@@ -222,8 +220,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String userId) {
-        return jwtManager.createJWTToken(userId, expiration);
+    public String createToken(String userId, Map<String, Object> claims, long expiration) {
+        return jwtManager.createJWTToken(userId, claims, expiration);
+    }
+
+    @Override
+    public String createNonExpiringToken(String userId, Map<String, Object> claims) {
+        return jwtManager.createJWTToken(userId, claims, 0L);
     }
 
     /* Private methods */

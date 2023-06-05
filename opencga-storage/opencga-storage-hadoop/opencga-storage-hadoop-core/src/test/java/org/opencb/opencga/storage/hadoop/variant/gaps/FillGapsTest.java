@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -16,6 +17,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -51,6 +53,7 @@ import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.re
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(LongTests.class)
 public class FillGapsTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -25,6 +26,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -32,12 +34,10 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Category(MediumTests.class)
 public class AbstractClinicalManagerTest extends GenericTest {
 
     public final static String PASSWORD = "Password1234;";
@@ -74,14 +75,13 @@ public class AbstractClinicalManagerTest extends GenericTest {
     @Before
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerResource.getCatalogManager();
-        setUpCatalogManager(catalogManager);
+        setUpCatalogManager();
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
-        URI vcf;
+    public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
 
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
@@ -92,25 +92,21 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 null, null, null, token).first();
         studyFqn = study.getFqn();
 
-//        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
 //
-//        // Clinical analysis
-//        ClinicalAnalysis auxClinicalAnalysis = new ClinicalAnalysis()
-//                .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-//                .setDueDate("20180510100000")
-//                .setDisorder(getDisorder())
-//                .setProband(getChild())
-//                .setFamily(getFamily());
+        // Clinical analysis
+        auxClinicalAnalysis = new ClinicalAnalysis()
+                .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setDisorder(getDisorder())
+                .setProband(getChild())
+                .setFamily(getFamily());
 //
-//        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
-//                .first();
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis,
+                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
+                .first();
 //
-//        URI vcf = getClass().getResource("/biofiles/family.vcf").toURI();
-//
-//        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-//            catalogManager.getFileManager().upload(studyFqn, inputStream,
-//                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-//        }
+        catalogUploadFile("/biofiles/family.vcf");
 
         //---------------------------------------------------------------------
         // Clinical analysis for exomiser test (SINGLE, manuel)
@@ -124,15 +120,11 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setDisorder(getDisorder())
                 .setProband(getMamuel());
 
-        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager()
+                .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 
-        vcf = getClass().getResource("/biofiles/exomiser.vcf.gz").toURI();
-
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
+        catalogUploadFile("/biofiles/exomiser.vcf.gz");
 
         //---------------------------------------------------------------------
         // Chinese trio (clinicalAnalysis3)
@@ -156,8 +148,15 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId("HG005")));
 
+        Individual hg004Individual =  new Individual().setId("HG004_individual")
+                .setFather(hg006Individual)
+                .setMother(hg007Individual)
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG004")));
+
         Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
-                Arrays.asList(hg005Individual, hg006Individual, hg007Individual), "", 3, Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
+                Collections.emptyMap());
         catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -172,22 +171,16 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
 
-        vcf = getClass().getResource("/biofiles/HG005.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
+        catalogUploadFile("/biofiles/HG004.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG007.1k.vcf.gz");
+    }
 
-        vcf = getClass().getResource("/biofiles/HG006.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
+    private void catalogUploadFile(String path) throws IOException, CatalogException {
+        try (InputStream inputStream = getClass().getResource(path).openStream()) {
             catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
-        }
-
-        vcf = getClass().getResource("/biofiles/HG007.1k.vcf.gz").toURI();
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcf)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(vcf).getFileName().toString()), false, true, false, token);
+                    new File().setPath(Paths.get(path).getFileName().toString()), false, true, false, token);
         }
     }
 

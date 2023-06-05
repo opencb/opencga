@@ -79,6 +79,8 @@ public final class VariantQueryUtils {
             "List of VariantIds that should be intersected with the rest of positional filters", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam ANNOT_GENE_ROLE_IN_CANER_GENES = QueryParam.create("annot_role_in_cancer_genes", "",
+            QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS_MAP = QueryParam.create("annot_gene_regions_map", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
@@ -100,6 +102,7 @@ public final class VariantQueryUtils {
             ID_INTERSECT,
             ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
+            ANNOT_GENE_ROLE_IN_CANER_GENES,
             ANNOT_GENE_REGIONS,
             ANNOT_GENE_REGIONS_MAP,
             VARIANTS_TO_INDEX,
@@ -341,7 +344,7 @@ public final class VariantQueryUtils {
             return;
         }
         List<VariantQueryParam> acceptedParams = Arrays.asList(ID, REGION);
-        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE);
+        List<VariantQueryParam> ignoredParams = Arrays.asList(INCLUDE_STUDY, INCLUDE_SAMPLE, INCLUDE_FILE, SAMPLE_LIMIT);
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
         queryParams.removeAll(acceptedParams);
         queryParams.removeAll(ignoredParams);
@@ -1389,13 +1392,16 @@ public final class VariantQueryUtils {
     }
 
     public static <T extends Enum<T>> List<T> getAsEnumList(Query query, QueryParam queryParam, Class<T> enumClass) {
-        return getAsEnumValues(query, queryParam, enumClass).getValues();
+        Values<T> values = getAsEnumValues(query, queryParam, enumClass);
+        if (values.getOperation() == QueryOperation.AND) {
+            throw VariantQueryException.malformedParam(queryParam, query.getString(queryParam.key()),
+                    "Unable to filter values with logical AND (;)");
+        }
+        return values.getValues();
     }
 
     public static <T extends Enum<T>> Values<T> getAsEnumValues(Query query, QueryParam queryParam, Class<T> enumClass) {
-        Values<String> values = splitValues(query.getString(queryParam.key()));
-        return new Values<>(values.getOperation(), values.getValues()
-                .stream()
+        return splitValues(query.getString(queryParam.key()))
                 .map(enumName -> {
                     String simplified = StringUtils.replaceChars(enumName, "_-", "");
                     for (final T each : enumClass.getEnumConstants()) {
@@ -1405,12 +1411,15 @@ public final class VariantQueryUtils {
                         }
                     }
                     throw VariantQueryException.malformedParam(queryParam, enumName, "Unknown value");
-                })
-                .collect(Collectors.toList()));
+                });
     }
 
     public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
         if (cellBaseUtils == null) {
+            return;
+        }
+        if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+            // GENE_REGIONS already present in query!
             return;
         }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
@@ -1436,6 +1445,10 @@ public final class VariantQueryUtils {
         if (cellBaseUtils == null) {
             return;
         }
+        if (isValidParam(query, ANNOT_GO_GENES)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
             String value = query.getString(VariantQueryParam.ANNOT_GO.key());
             // Check if comma separated of semi colon separated (AND or OR)
@@ -1452,6 +1465,30 @@ public final class VariantQueryUtils {
                 genesByGo = Collections.singleton(NONE);
             }
             query.put(ANNOT_GO_GENES.key(), genesByGo);
+        }
+    }
+
+    public static void convertRoleInCancerToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
+        if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
+        if (isValidParam(query, VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER)) {
+            ParsedQuery<String> value = splitValue(query, ANNOT_GENE_ROLE_IN_CANCER);
+
+            if (value.getOperation() == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GENE_ROLE_IN_CANCER, value.toQuery(),
+                        "Unimplemented AND operator");
+            }
+//            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            Set<String> genes = cellBaseUtils.getGenesByRoleInCancer(value.getValues());
+            if (genes.isEmpty()) {
+                genes = Collections.singleton(NONE);
+            }
+            query.put(ANNOT_GENE_ROLE_IN_CANER_GENES.key(), genes);
         }
     }
 

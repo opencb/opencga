@@ -20,8 +20,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +35,7 @@ import java.util.Date;
 
 import static org.junit.Assert.*;
 
+@Category(ShortTests.class)
 public class ExecutionManagerTest {
 
     private ExecutionResultManager erm;

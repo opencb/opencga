@@ -135,9 +135,7 @@ public class TemplateManager {
             versionShort = version;
         }
         String templateVersion = manifest.getConfiguration().getVersion();
-        if (!version.equals(templateVersion) && !versionShort.equals(templateVersion)) {
-            throw new IllegalArgumentException("Version mismatch! Expected " + templateVersion + " but found " + versionShort);
-        }
+        checkVersion(versionShort, templateVersion);
 
         // Study should already exist
         Study study = getStudy(manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
@@ -150,6 +148,25 @@ public class TemplateManager {
 //                throw new CatalogException("Study '" + manifest.getStudy().getId() + "' already exists. Do you want to resume?");
 //            }
 //        }
+    }
+
+    private void checkVersion(String opencgaVersion, String templateVersion) {
+        if (opencgaVersion.equals(templateVersion)) {
+            return;
+        }
+        String[] ocgaVersionSplit = opencgaVersion.split("\\.");
+        String[] templateVersionSplit = templateVersion.split("\\.");
+
+        for (int i = 0; i < templateVersionSplit.length; i++) {
+            int ocgaV = Integer.parseInt(ocgaVersionSplit[i]);
+            int tplV = Integer.parseInt(templateVersionSplit[i]);
+            if (ocgaV < tplV) {
+                throw new IllegalArgumentException("Cannot use a template with version higher than the OpenCGA installation version. "
+                        + "Template version: " + templateVersion + ", OpenCGA version: " + opencgaVersion);
+            }
+        }
+        logger.warn("Using a template version lower than the OpenCGA installation version. Some things may not work properly. "
+                + "Template version: " + templateVersion + ", OpenCGA version: " + opencgaVersion);
     }
 
     private Study getStudy(String projectId, String studyId) throws CatalogException {
@@ -228,7 +245,7 @@ public class TemplateManager {
                 }
             }
         }
-        if (CollectionUtils.isNotEmpty(tmplStudy.getAcl().getAcl())) {
+        if (tmplStudy.getAcl() != null && CollectionUtils.isNotEmpty(tmplStudy.getAcl().getAcl())) {
             // Set permissions
             for (AclEntry<StudyPermissions.Permissions> studyAclEntry : tmplStudy.getAcl().getAcl()) {
                 logger.info("Setting permissions for '{}'", studyAclEntry.getMember());

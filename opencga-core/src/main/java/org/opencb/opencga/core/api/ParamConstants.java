@@ -74,12 +74,16 @@ public class ParamConstants {
 
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
-    public static final String CELLBASE_VERSION = "v5";
+    public static final String CELLBASE_VERSION = "v5.1";
+    public static final String CELLBASE_DATA_RELEASE = "2";
+    public static final String CELLBASE_TOKEN = "";
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
     public static final String POP_FREQ_1000G = POP_FREQ_1000G_CB_V5;
     public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
+
+    public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
 
     // ---------------------------------------------
     public static final String FORCE = "force";
@@ -326,7 +330,9 @@ public class ParamConstants {
     public static final String INDIVIDUAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
     public static final String INDIVIDUAL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
     public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
+    public static final String FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM = "updatePedigreeGraph";
     public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
+    public static final String FAMILY_UPDATE_PEDIGREE_GRAPH_DESCRIPTION = "Update the family pedigree graph";
     public static final String FAMILY_VERSION_PARAM = "version";
     public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
             + "family versions. Not supported if multiple family ids are provided";
@@ -579,8 +585,8 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
             "germline)";
     // ---------------------------------------------
-    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including " +
-            "samtools stats, samtools flag stats, FastQC and HS metrics)";
+    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file:" +
+            " samtools stats, samtools flag stats and FastQC metrics.";
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given " +
             "alignment file";

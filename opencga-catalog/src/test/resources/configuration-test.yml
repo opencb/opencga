@@ -2,12 +2,10 @@
 logLevel: "INFO"
 logDir: null
 
-openRegister: true
-
 databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 
-jobDir: "/tmp/opencga/jobs"
+jobDir: "/tmp/opencga/JOBS"
 
 admin:
   secretKey: "asidnadh19rh230qncfascd1.rffzasf.asd.ad.12ddeASDAsd12e1d.adsx"
@@ -18,7 +16,7 @@ audit:
   maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
 
 analysis:
-  scratchDir: ""    # Scratch folder for the analysis.
+  scratchDir: "/tmp/"    # Scratch folder for the analysis.
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

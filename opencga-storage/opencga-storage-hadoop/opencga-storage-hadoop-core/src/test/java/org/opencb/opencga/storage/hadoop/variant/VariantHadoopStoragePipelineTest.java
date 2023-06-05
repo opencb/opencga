@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -30,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -55,6 +57,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
@@ -69,8 +72,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName());
-        externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        externalResource.clearDB(variantStorageManager.getDBName());
 
 //        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
@@ -29,6 +30,7 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
@@ -43,16 +45,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CellBaseUtils {
+public class CellBaseUtils extends CellBaseValidator {
 
     private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
-    private final CellBaseClient cellBaseClient;
-    private final String assembly;
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
     private final ConcurrentHashMap<String, GeneReference> cache = new ConcurrentHashMap<>();
+
+    public CellBaseUtils(CellBaseClient cellBaseClient) {
+        super(cellBaseClient);
+    }
 
     public static class GeneReference {
         private final Region region;
@@ -93,11 +97,6 @@ public class CellBaseUtils {
                     .append("name", name)
                     .toString();
         }
-    }
-
-    public CellBaseUtils(CellBaseClient cellBaseClient, String assembly) {
-        this.cellBaseClient = cellBaseClient;
-        this.assembly = assembly;
     }
 
     public Region getGeneRegion(String geneStr) {
@@ -180,7 +179,10 @@ public class CellBaseUtils {
                 }
                 if (gene == null) {
                     Query query = new Query();
-                    if (cellBaseClient.getClientConfiguration().getVersion().startsWith("v4")) {
+                    if (isMinVersion("5.0.0")) {
+                        // Filter by XREF is only available starting in CellBase V5
+                        query.put("xref", geneStr);
+                    } else {
                         if (geneStr.startsWith("ENSG")) {
                             query.put("id", geneStr);
                         } else if (geneStr.startsWith("ENST")) {
@@ -188,9 +190,6 @@ public class CellBaseUtils {
                         } else {
                             query.put("name", geneStr);
                         }
-                    } else {
-                        // Filter by XREF is only available starting in CellBase V5
-                        query.put("xref", geneStr);
                     }
                     QueryOptions searchQueryOptions = new QueryOptions(options).append(QueryOptions.LIMIT, 2);
                     CellBaseDataResponse<Gene> thisGeneResponse = cellBaseClient.getGeneClient().search(query, searchQueryOptions);
@@ -206,15 +205,8 @@ public class CellBaseUtils {
                     missingGenes.add(geneStr);
                     continue;
                 }
-                GeneReference geneRef = new GeneReference(gene);
+                GeneReference geneRef = cacheGene(gene, geneStr);
                 genesMap.put(geneStr, geneRef);
-                if (gene.getName() != null) {
-                    cache.put(gene.getName(), geneRef);
-                }
-                if (gene.getId() != null) {
-                    cache.put(gene.getId(), geneRef);
-                }
-                cache.put(geneStr, geneRef);
             }
             if (!skipMissing && missingGenes != null) {
                 throw VariantQueryException.geneNotFound(String.join(",", missingGenes),
@@ -227,6 +219,23 @@ public class CellBaseUtils {
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    private GeneReference cacheGene(Gene gene, String geneStr) {
+        GeneReference geneRef = cacheGene(gene);
+        cache.put(geneStr, geneRef);
+        return geneRef;
+    }
+
+    private GeneReference cacheGene(Gene gene) {
+        GeneReference geneRef = new GeneReference(gene);
+        if (gene.getName() != null) {
+            cache.put(gene.getName(), geneRef);
+        }
+        if (gene.getId() != null) {
+            cache.put(gene.getId(), geneRef);
+        }
+        return geneRef;
     }
 
     public List<String> validateGenes(List<String> geneStrs, boolean skipMissing) {
@@ -253,13 +262,20 @@ public class CellBaseUtils {
 
     public Set<String> getGenesByGo(List<String> goValues) {
         Set<String> genes = new HashSet<>();
-        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
         try {
-            List<CellBaseDataResult<Gene>> responses = checkNulls(cellBaseClient.getGeneClient().get(goValues, params))
-                    .getResponses();
+            List<CellBaseDataResult<Gene>> responses;
+            QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
+            if (isMinVersion("5.0.0")) {
+                Query query = new Query("transcriptAnnotationOntologiesId", String.join(",", goValues));
+                responses = checkNulls(cellBaseClient.getGeneClient().search(query, options))
+                        .getResponses();
+            } else {
+                responses = checkNulls(cellBaseClient.getGeneClient().get(goValues, options))
+                        .getResponses();
+            }
             for (CellBaseDataResult<Gene> response : responses) {
                 for (Gene gene : response.getResults()) {
-                    genes.add(gene.getName());
+                    genes.add(cacheGene(gene).getName());
                 }
             }
         } catch (IOException e) {
@@ -294,8 +310,29 @@ public class CellBaseUtils {
         return genes;
     }
 
-    public CellBaseClient getCellBaseClient() {
-        return cellBaseClient;
+    public Set<String> getGenesByRoleInCancer(List<String> roleInCancer) {
+        if (CollectionUtils.isEmpty(roleInCancer)) {
+            return Collections.emptySet();
+        }
+        Set<String> genes = new HashSet<>();
+        try {
+            if (!isMinVersion("5.2.7-SNAPSHOT")) {
+                throw new VariantQueryException("Unable to fetch genes by role-in-cancer. "
+                        + "Requires at least cellbase version 5.2.7");
+            }
+            Query query = new Query("roleInCancer", String.join(",", roleInCancer));
+            QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
+            List<CellBaseDataResult<Gene>> responses =
+                    checkNulls(cellBaseClient.getGeneClient().search(query, options)).getResponses();
+            for (CellBaseDataResult<Gene> response : responses) {
+                for (Gene gene : response.getResults()) {
+                    genes.add(cacheGene(gene).getName());
+                }
+            }
+        } catch (IOException e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return genes;
     }
 
     public Variant getVariant(String variantStr) {
@@ -356,11 +393,4 @@ public class CellBaseUtils {
         return response;
     }
 
-    public String getAssembly() {
-        return assembly;
-    }
-
-    public String getSpecies() {
-        return cellBaseClient.getSpecies();
-    }
 }

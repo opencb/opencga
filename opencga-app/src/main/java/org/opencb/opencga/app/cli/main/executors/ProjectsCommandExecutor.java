@@ -18,7 +18,6 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.ProjectsCommandOptions;
 
-import java.lang.Object;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
@@ -43,7 +42,7 @@ import org.opencb.opencga.core.models.study.Study;
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
-    private ProjectsCommandOptions projectsCommandOptions;
+    public ProjectsCommandOptions projectsCommandOptions;
 
     public ProjectsCommandExecutor(ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
         super(projectsCommandOptions.commonCommandOptions);
@@ -91,7 +90,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> create() throws Exception {
-
         logger.debug("Executing create in Projects command line");
 
         ProjectsCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
@@ -102,7 +100,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectCreateParams projectCreateParams= null;
+        ProjectCreateParams projectCreateParams = null;
         if (commandOptions.jsonDataModel) {
             projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
@@ -115,18 +113,19 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
-             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
-             putNestedIfNotEmpty(beanParams, "cellbase.preferred",commandOptions.cellbasePreferred, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.token",commandOptions.cellbaseToken, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectCreateParams.class);
@@ -135,7 +134,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> search() throws Exception {
-
         logger.debug("Executing search in Projects command line");
 
         ProjectsCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
@@ -164,7 +162,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-
         logger.debug("Executing aggregationStats in Projects command line");
 
         ProjectsCommandOptions.AggregationStatsCommandOptions commandOptions = projectsCommandOptions.aggregationStatsCommandOptions;
@@ -182,7 +179,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> info() throws Exception {
-
         logger.debug("Executing info in Projects command line");
 
         ProjectsCommandOptions.InfoCommandOptions commandOptions = projectsCommandOptions.infoCommandOptions;
@@ -195,7 +191,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Integer> incRelease() throws Exception {
-
         logger.debug("Executing incRelease in Projects command line");
 
         ProjectsCommandOptions.IncReleaseCommandOptions commandOptions = projectsCommandOptions.incReleaseCommandOptions;
@@ -203,7 +198,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Study> studies() throws Exception {
-
         logger.debug("Executing studies in Projects command line");
 
         ProjectsCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
@@ -218,7 +212,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> update() throws Exception {
-
         logger.debug("Executing update in Projects command line");
 
         ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
@@ -229,7 +222,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        ProjectUpdateParams projectUpdateParams= null;
+        ProjectUpdateParams projectUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
@@ -242,14 +235,14 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
-             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
-             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
-             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
-             putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
-             putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
-             putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
-             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
- 
+            putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
+            putNestedIfNotEmpty(beanParams, "organism.scientificName",commandOptions.organismScientificName, true);
+            putNestedIfNotEmpty(beanParams, "organism.commonName",commandOptions.organismCommonName, true);
+            putNestedIfNotEmpty(beanParams, "organism.assembly",commandOptions.organismAssembly, true);
+            putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
+
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ProjectUpdateParams.class);

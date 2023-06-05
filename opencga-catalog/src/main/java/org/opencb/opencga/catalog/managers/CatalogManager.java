@@ -171,7 +171,12 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force, boolean wholeIndexes)
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force)
+            throws CatalogException {
+        installCatalogDB(secretKey, password, email, organization, force, false);
+    }
+
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force, boolean test)
             throws CatalogException {
         if (existsCatalogDB()) {
             if (force) {
@@ -193,9 +198,9 @@ public class CatalogManager implements AutoCloseable {
 
         try {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-            installCatalogDB(secretKey, password, email, organization);
+            privateInstall(secretKey, password, email, organization, test);
             String token = userManager.loginAsAdmin(password).getToken();
-            installIndexes(token, wholeIndexes);
+            installIndexes(token);
         } catch (Exception e) {
             try {
                 clearCatalog();
@@ -206,7 +211,8 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
-    private void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
+    private void privateInstall(String secretKey, String password, String email, String organization, boolean test)
+            throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -216,10 +222,12 @@ public class CatalogManager implements AutoCloseable {
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
         JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
-
         configuration.getAdmin().setSecretKey(secretKey);
 
-        catalogDBAdaptorFactory.installCatalogDB(configuration);
+        if (!test) {
+            catalogDBAdaptorFactory.createAllCollections(configuration);
+        }
+        catalogDBAdaptorFactory.initialiseMetaCollection(configuration.getAdmin());
         catalogIOManager.createDefaultOpenCGAFolders();
 
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
@@ -236,14 +244,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes(String token) throws CatalogException {
-        installIndexes(token, false);
-    }
-
-    public void installIndexes(String token, boolean wholeIndexes) throws CatalogException {
         if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
-        catalogDBAdaptorFactory.createIndexes(wholeIndexes);
+        catalogDBAdaptorFactory.createIndexes();
     }
 
     public void deleteCatalogDB(String password) throws CatalogException {

@@ -8,15 +8,15 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
     with:
       maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.8.x
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
-    secrets:
-      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    secrets: inherit
+#      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+#      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

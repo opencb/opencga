@@ -583,6 +583,9 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             if (createParams.getType().equals(File.Type.FILE)) {
+                if (path.endsWith("/")) {
+                    throw new CatalogException("Provided path points to a folder but the type was set to FILE. Please check your input.");
+                }
                 // Ensure path is a full path pointing to a file, not a folder
                 String[] split = path.split("/");
                 String fileName = split[split.length - 1];
@@ -2349,7 +2352,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
                 e.addSuppressed(e2);
-                throw new CatalogException(e.getMessage(), e);
+                throw e;
             }
         }
     }
@@ -3522,7 +3525,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
                     }
                 } catch (CatalogException e) {
-                    throw new IOException(e);
+                    throw new IOException("An error occurred when trying to create folder " + dir, e);
                 }
 
                 return FileVisitResult.CONTINUE;

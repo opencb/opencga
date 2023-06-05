@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+@Category(ShortTests.class)
 public class ToolExecutorTest extends GenericTest {
 
 //    public final static String PASSWORD = "asdf";

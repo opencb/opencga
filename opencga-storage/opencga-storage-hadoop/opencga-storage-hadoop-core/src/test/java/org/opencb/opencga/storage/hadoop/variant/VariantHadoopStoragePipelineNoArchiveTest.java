@@ -17,8 +17,10 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -31,6 +33,7 @@ import java.net.URI;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class VariantHadoopStoragePipelineNoArchiveTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
@@ -41,8 +44,7 @@ public class VariantHadoopStoragePipelineNoArchiveTest extends VariantStorageBas
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName());
-        externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+        externalResource.clearDB(variantStorageManager.getDBName());
     }
 
     @Before

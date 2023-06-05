@@ -89,10 +89,17 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
             logger.info("Execute julie tool for region " + region);
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
+        if (overwrite) {
+            logger.info("PopulationFrequency overwrite: " + overwrite
+                    + " --> Remove existing population frequency values before inserting new ones");
+        } else {
+            logger.info("PopulationFrequency overwrite: " + overwrite
+                    + " --> Keep existing population frequency. Add new values, replacing the matching ones.");
+        }
+        job.getConfiguration().setBoolean(OVERWRITE, overwrite);
+
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         logger.info("Scan: " + scan);
-
-        job.getConfiguration().setBoolean(OVERWRITE, overwrite);
 
         VariantMapReduceUtil.initVariantRowMapperJobFromHBase(job, variantTable, scan, JulieToolMapper.class, false);
         VariantMapReduceUtil.setOutputHBaseTable(job, variantTable);

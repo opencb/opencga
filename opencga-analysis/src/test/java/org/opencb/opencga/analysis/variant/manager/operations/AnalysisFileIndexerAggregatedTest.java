@@ -18,10 +18,12 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class AnalysisFileIndexerAggregatedTest extends AbstractVariantOperationManagerTest {
 
     private List<File> files = new ArrayList<>();

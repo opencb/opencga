@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,6 +29,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
@@ -36,6 +38,7 @@ import java.util.HashSet;
 
 import static org.junit.Assert.*;
 
+@Category(MediumTests.class)
 public class VariantStorageManagerTest extends AbstractVariantOperationManagerTest {
 
     @Override

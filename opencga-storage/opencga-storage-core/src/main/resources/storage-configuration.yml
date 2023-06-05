@@ -1,11 +1,17 @@
 ---
 
+## Storage mode. Either READ_WRITE or READ_ONLY
+## When configured in READ_ONLY mode, it won't allow to make any modifications to the storage.
+## If undefined, the value is "READ_WRITE"
+mode: READ_WRITE
+
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
+  ## URL host to annotate variants, for example: https://uk.ws.zettagenomics.com/cellbase/
   url: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
+  dataRelease: "2"
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port.
@@ -126,25 +132,6 @@ variant:
 
   ## The following section defines all available storage engine plugins installed
   engines:
-    ## MongoDB Storage Engine
-    - id: "mongodb"
-      engine: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
-      database:
-        hosts:
-          - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-        user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
-        password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
-        options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
-          authenticationDatabase: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE}
-          connectionsPerHost: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST}
-          readPreference: "secondaryPreferred"
-      options:
-        storage.mongodb.parallelWrite: false
-        storage.mongodb.stage.parallelWrite: false
-        storage.mongodb.directLoad.parallelWrite: false
-        storage.mongodb.merge.parallelWrite: false
-        storage.mongodb.merge.batchSize: 10 #Number of files to merge directly from first to second collection
-
     ## Hadoop Storage Engine
     - id: "hadoop"
       engine: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine"

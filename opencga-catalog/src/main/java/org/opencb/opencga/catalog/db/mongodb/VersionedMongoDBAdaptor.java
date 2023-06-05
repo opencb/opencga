@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -179,17 +178,15 @@ public class VersionedMongoDBAdaptor {
                             Filters.eq(VERSION, version)
                     );
                     // Update previous version
-                    logger.debug("Updating previous version: query : {}, update: {}",
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            archiveCollectionUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    logger.debug("Updating previous version: query : {}, update: {}", bsonQuery.toBsonDocument(),
+                            archiveCollectionUpdate.toBsonDocument());
                     archiveCollection.update(session, bsonQuery, new Document("$set", archiveCollectionUpdate), QueryOptions.empty());
 
                     // Add current transaction id to the document so we don't enter here twice in the same transaction
                     collectionUpdate.put(PRIVATE_TRANSACTION_ID, uuid);
                     // Update current version
-                    logger.debug("Updating current version: query : {}, update: {}",
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            collectionUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    logger.debug("Updating current version: query : {}, update: {}", bsonQuery.toBsonDocument(),
+                            collectionUpdate.toBsonDocument());
                     collection.update(session, bsonQuery, new Document("$set", collectionUpdate), QueryOptions.empty());
                 }
             }
@@ -218,8 +215,7 @@ public class VersionedMongoDBAdaptor {
                         Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
                         Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
-                logger.debug("Copying current document to archive: query : {}",
-                        tmpBsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                logger.debug("Copying current document to archive: query : {}", tmpBsonQuery.toBsonDocument());
                 archiveCollection.update(session, tmpBsonQuery, fixedResult, upsertOptions);
             }
         }

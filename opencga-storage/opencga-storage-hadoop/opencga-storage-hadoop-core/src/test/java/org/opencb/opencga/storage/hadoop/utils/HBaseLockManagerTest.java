@@ -18,11 +18,10 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -38,6 +37,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Category(MediumTests.class)
 public class HBaseLockManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
@@ -55,10 +55,24 @@ public class HBaseLockManagerTest extends VariantStorageBaseTest implements Hado
         HBaseManager hbaseManager = new HBaseManager(configuration.get());
         hbaseManager.createTableIfNeeded(DB_NAME, Bytes.toBytes("0"), Compression.Algorithm.NONE);
         hbaseLock = new HBaseLockManager(hbaseManager, DB_NAME, Bytes.toBytes("0"), Bytes.toBytes("R"));
+
+        ThreadPoolExecutor threadPool = (ThreadPoolExecutor) HBaseLockManager.buildThreadPool();
+        HBaseLockManager.threadPool = threadPool;
+        assertEquals(0, threadPool.getActiveCount());
+        assertEquals(0, threadPool.getPoolSize());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        ThreadPoolExecutor threadPool = (ThreadPoolExecutor) HBaseLockManager.threadPool;
+        if (!thrown.isAnyExceptionExpected()) {
+            assertEquals(0, threadPool.getActiveCount());
+        }
     }
 
     @Test
     public void testLock() throws Exception {
+        ThreadPoolExecutor threadPool = (ThreadPoolExecutor) HBaseLockManager.threadPool;
         int lockId = 1;
         for (int i = 0; i < 10; i++) {
             int millis = 248 + (i % 13);
@@ -68,7 +82,8 @@ public class HBaseLockManagerTest extends VariantStorageBaseTest implements Hado
             System.out.println("lock = " + lock);
             lock.unlock();
         }
-        assertEquals(1, ((ThreadPoolExecutor) HBaseLockManager.THREAD_POOL).getPoolSize());
+        assertEquals(1, threadPool.getPoolSize());
+        assertEquals(0, threadPool.getActiveCount());
     }
 
     @Test
