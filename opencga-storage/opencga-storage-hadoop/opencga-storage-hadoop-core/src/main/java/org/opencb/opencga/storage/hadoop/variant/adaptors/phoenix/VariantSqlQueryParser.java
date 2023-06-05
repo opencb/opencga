@@ -247,7 +247,7 @@ public class VariantSqlQueryParser {
                         sb.append('"');
                     }
                 }
-                System.out.println("study = " + study.toString());
+
                 if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
                     for (Integer sampleId : study.getSamples()) {
                         if (study.getMultiFileSamples().contains(sampleId)) {
