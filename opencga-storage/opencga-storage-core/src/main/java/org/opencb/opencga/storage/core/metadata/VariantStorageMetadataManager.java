@@ -1456,6 +1456,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileIds;
     }
 
+    public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId, boolean requireIndexed) {
+        List<Integer> fileIds = getFileIdsFromSampleId(studyId, sampleId);
+
+        if (requireIndexed) {
+            fileIds = new LinkedList<>(fileIds);
+            fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
+        }
+        return fileIds;
+    }
+
     public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId) {
         return fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList());
     }
