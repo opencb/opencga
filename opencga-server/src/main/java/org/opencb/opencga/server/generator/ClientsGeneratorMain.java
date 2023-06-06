@@ -20,14 +20,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 
 public class ClientsGeneratorMain {
 
     private static Logger logger;
 
-    public static void main(String[] args) throws URISyntaxException {
+    public static void main(String[] args) throws Exception {
         logger = LoggerFactory.getLogger(ClientsGeneratorMain.class);
         System.setProperty("opencga.log.file.enabled", "false");
         System.setProperty("opencga.log.level", "info");
@@ -70,6 +69,7 @@ public class ClientsGeneratorMain {
             clientsGenerator.cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new Exception("ERROR: Generating clients and CLI ::: " + e.getMessage(), e);
         }
     }
 

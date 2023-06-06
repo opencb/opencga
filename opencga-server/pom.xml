@@ -284,6 +284,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <useMavenLogger>true</useMavenLogger>
                             <mainClass>org.opencb.opencga.server.generator.ClientsGeneratorMain</mainClass>
                         </configuration>
                     </plugin>

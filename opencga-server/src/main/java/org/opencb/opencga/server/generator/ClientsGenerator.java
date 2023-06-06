@@ -58,6 +58,7 @@ public class ClientsGenerator {
         try {
             p = processBuilder.start();
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             String line;
             while ((line = input.readLine()) != null) {
                 logger.info("{} library generator: {}", language, line);
@@ -65,13 +66,18 @@ public class ClientsGenerator {
             }
             p.waitFor();
             input.close();
+            if (p.exitValue() != 0) {
+                String lineError;
+                while ((lineError = error.readLine()) != null) {
+                    logger.error("{} library generator: {}", language, lineError);
+                    System.err.println(language + " library generator: " + lineError);
+                }
+                throw new RuntimeException("Error with " + language + " library generator");
+            }
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Error executing cli: " + e.getMessage(), e);
         }
 
-        if (p.exitValue() != 0) {
-            throw new RuntimeException("Error with " + language + " library generator");
-        }
     }
 
     public void cli(RestApi flatRestApi) {

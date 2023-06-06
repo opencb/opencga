@@ -207,6 +207,9 @@ class RestClientGenerator(ABC):
                 method_name = '_'.join(
                     [items[4], items[0], items[1], items[2], items[3]])  # configure-variant-secondary-sample-index
         if not method_name:
+            sys.stderr.write("Processing " + self.get_endpoint_path(endpoint))
+            sys.stderr.write("items :::: ", items)
+            sys.stderr.write("subpath " + subpath)
             raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()
 
