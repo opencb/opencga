@@ -52,7 +52,7 @@ import org.opencb.opencga.core.response.RestResponse;
 
 /**
  * This class contains methods for the File webservices.
- *    Client version: 2.10.0-SNAPSHOT
+ *    Client version: 2.8.0-SNAPSHOT
  *    PATH: files
  */
 public class FileClient extends AbstractParentClient {

@@ -37,7 +37,7 @@ import org.opencb.opencga.core.response.RestResponse;
 
 /**
  * This class contains methods for the Meta webservices.
- *    Client version: 2.10.0-SNAPSHOT
+ *    Client version: 2.8.0-SNAPSHOT
  *    PATH: meta
  */
 public class MetaClient extends AbstractParentClient {

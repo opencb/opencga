@@ -45,7 +45,7 @@ import org.opencb.opencga.core.response.RestResponse;
 
 /**
  * This class contains methods for the User webservices.
- *    Client version: 2.10.0-SNAPSHOT
+ *    Client version: 2.8.0-SNAPSHOT
  *    PATH: users
  */
 public class UserClient extends AbstractParentClient {

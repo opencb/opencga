@@ -36,7 +36,7 @@ import org.opencb.opencga.core.response.RestResponse;
 
 /**
  * This class contains methods for the GA4GH webservices.
- *    Client version: 2.10.0-SNAPSHOT
+ *    Client version: 2.8.0-SNAPSHOT
  *    PATH: ga4gh
  */
 public class GA4GHClient extends AbstractParentClient {

@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
-* Copyright 2015-2022 OpenCB
-=======
-* Copyright 2015-2023-04-18 OpenCB
->>>>>>> develop
+* Copyright 2015-2023 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -43,7 +39,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
-    private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -180,18 +175,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
-
-        adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("admin", adminCommandOptions);
-        JCommander adminSubCommands = jCommander.getCommands().get("admin");
-        adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
-        adminSubCommands.addCommand("catalog-index-stats", adminCommandOptions.indexStatsCatalogCommandOptions);
-        adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
-        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
-        adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
-        adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
-        adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
-        adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -406,11 +389,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public JobsCommandOptions getJobsCommandOptions() {
         return jobsCommandOptions;
-    }
-    
-    
-    public AdminCommandOptions getAdminCommandOptions() {
-        return adminCommandOptions;
     }
     
     

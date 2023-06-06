@@ -69,7 +69,7 @@ public class ClientsGeneratorMain {
             clientsGenerator.cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            throw new Exception("ERROR: Generating clients and CLI ::: " + e.getMessage(), e);
+            throw new RuntimeException("ERROR: Generating clients and CLI ::: " + e.getMessage(), e);
         }
     }
 

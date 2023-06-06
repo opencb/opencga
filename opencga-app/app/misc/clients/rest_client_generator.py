@@ -195,6 +195,9 @@ class RestClientGenerator(ABC):
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
                 method_name = '_'.join([items[0], items[1], items[2], items[3]])
+            # /{apiVersion}/admin/users/{user}/groups/update
+            elif self.all_arg([items[1]]) and not self.any_arg([items[0], items[2], items[3]]):
+                method_name = '_'.join([items[3], items[0], items[2]])
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
             elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
                 method_name = '_'.join([items[3], items[1]])

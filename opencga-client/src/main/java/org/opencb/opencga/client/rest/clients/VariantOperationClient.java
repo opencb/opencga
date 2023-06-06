@@ -59,7 +59,7 @@ import org.opencb.opencga.core.response.RestResponse;
 
 /**
  * This class contains methods for the VariantOperation webservices.
- *    Client version: 2.10.0-SNAPSHOT
+ *    Client version: 2.8.0-SNAPSHOT
  *    PATH: operation
  */
 public class VariantOperationClient extends AbstractParentClient {
