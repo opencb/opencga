@@ -126,14 +126,6 @@
                 <version>${opencga.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpclient</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-collections</groupId>
-                        <artifactId>commons-collections</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.opencb.opencga</groupId>
                         <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
                     </exclusion>
@@ -159,6 +151,14 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <!-- This dependency version conflicts with opencga-core's same dependency version. -->
+                    <!-- Exclude this, so the actual dependency can be taken from opencga-core -->
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpclient</artifactId>
+                    </exclusion>
+                </exclusions>
                 <classifier>shaded</classifier>
             </dependency>
             <dependency>
