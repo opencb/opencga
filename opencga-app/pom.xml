@@ -33,7 +33,6 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
-        <dep.jline.version>3.12.1</dep.jline.version>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
     </properties>
 
@@ -53,7 +52,6 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
-            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -82,9 +80,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
-            <version>${project.parent.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-lib</artifactId>
@@ -120,7 +116,6 @@
         <dependency>
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
-            <version>0.6.0a5</version>
             <exclusions>
                 <exclusion>
                     <groupId>arg.apache.avro</groupId>
@@ -169,17 +164,14 @@
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-reader</artifactId>
-            <version>${dep.jline.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal</artifactId>
-            <version>${dep.jline.version}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-api</artifactId>
-            <version>1.28.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -188,7 +180,6 @@
         <dependency>
             <groupId>org.fusesource.jansi</groupId>
             <artifactId>jansi</artifactId>
-            <version>2.4.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
@@ -201,12 +192,10 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>${mongodb-driver-core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>bson</artifactId>
-            <version>${mongodb-driver-core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.avro</groupId>
@@ -219,12 +208,10 @@
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
-            <version>2.1.6</version>
         </dependency>
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
-            <version>1.69</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

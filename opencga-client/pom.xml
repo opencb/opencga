@@ -49,7 +49,6 @@
         <dependency>
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
-            <version>0.6.0a5</version>
             <exclusions>
                 <exclusion>
                     <groupId>arg.apache.avro</groupId>
@@ -86,12 +85,10 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-multipart</artifactId>
-            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -100,9 +97,7 @@
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
-            <version>2.1.6</version>
         </dependency>
-
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
@@ -111,14 +106,12 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${project.parent.version}</version>
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
-            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -129,19 +122,16 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>9.4.17.v20190418</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>2.30.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
-            <version>2.30.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>

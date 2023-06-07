@@ -63,7 +63,7 @@
         <jetty.version>9.4.17.v20190418</jetty.version>
         <guava.version>19.0</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
-        <mongodb-driver-core.version>4.8.2</mongodb-driver-core.version>
+        <mongodb-driver.version>4.8.2</mongodb-driver.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-io.version>2.5</commons-io.version>
         <commons-codec.version>1.7</commons-codec.version>
@@ -72,6 +72,30 @@
         <commons-lang26.version>2.6</commons-lang26.version>
         <findbugs-annotations.version>2.0.1</findbugs-annotations.version>
         <junit.version>4.13.2</junit.version>
+        <dep.jline.version>3.12.1</dep.jline.version>
+        <javax-mail.version>1.4.7</javax-mail.version>
+        <hamcrest-core.version>1.3</hamcrest-core.version>
+        <ga4gh.version>0.6.0a5</ga4gh.version>
+        <jansi.version>2.4.0</jansi.version>
+        <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
+        <jcommander.version>1.69</jcommander.version>
+        <jackson-codehaus.version>1.9.13</jackson-codehaus.version>
+        <adal4j.version>1.6.3</adal4j.version>
+        <microsoft-graph.version>1.4.0</microsoft-graph.version>
+        <json-smart.version>2.3</json-smart.version>
+        <gson.version>2.8.0</gson.version>
+        <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
+        <azure-client-authentication.version>1.5.4</azure-client-authentication.version>
+        <httpclient.version>4.5.6</httpclient.version>
+        <oauth2-oidc-sdk.version>5.64.4</oauth2-oidc-sdk.version>
+        <passay.version>1.6.1</passay.version>
+        <azure-batch.version>4.0.1</azure-batch.version>
+        <kubernetes.version>4.3.0</kubernetes.version>
+        <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
+        <ant.version>1.10.12</ant.version>
+        <httpcore.version>4.4.13</httpcore.version>
+        <log4j.version>1.2.17</log4j.version>
+
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
@@ -98,7 +122,7 @@
         <surefire.skipDefaultTestExecution>false</surefire.skipDefaultTestExecution>
         <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
-        <javax-mail.version>1.4.7</javax-mail.version>
+
     </properties>
 
     <scm>
@@ -174,42 +198,42 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-catalog</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-master</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-client</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-app</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.opencb.opencga</groupId>
@@ -220,7 +244,7 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
                 <exclusions>
@@ -229,6 +253,35 @@
                         <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-deps-hdp3.1</artifactId>
+                <version>${project.version}</version>
+                <classifier>shaded</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-analysis</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-server</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <!-- OpenCB dependencies -->
@@ -394,6 +447,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.solr</groupId>
+                <artifactId>solr-core</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
                 <artifactId>solr-test-framework</artifactId>
                 <version>${solr.version}</version>
                 <scope>test</scope>
@@ -419,6 +477,16 @@
                         <artifactId>log4j-web</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-reader</artifactId>
+                <version>${dep.jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-terminal</artifactId>
+                <version>${dep.jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
@@ -481,6 +549,26 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-multipart</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-server</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet-core</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
                 <version>${jjwt.version}</version>
@@ -518,6 +606,21 @@
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
                 <version>${avro.version}</version>
@@ -542,7 +645,17 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-core</artifactId>
-                <version>${mongodb-driver-core.version}</version>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-sync</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${mongodb-driver.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.mail</groupId>
@@ -566,6 +679,121 @@
                 <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
                 <!--See #1086-->
                 <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.ga4gh</groupId>
+                <artifactId>ga4gh</artifactId>
+                <version>${ga4gh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.ws.rs</groupId>
+                <artifactId>jakarta.ws.rs-api</artifactId>
+                <version>${jakarta.ws.rs-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>${jcommander.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>adal4j</artifactId>
+                <version>${adal4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.graph</groupId>
+                <artifactId>microsoft-graph</artifactId>
+                <version>${microsoft-graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-client-authentication</artifactId>
+                <version>${azure-client-authentication.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>oauth2-oidc-sdk</artifactId>
+                <version>${oauth2-oidc-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.passay</groupId>
+                <artifactId>passay</artifactId>
+                <version>${passay.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-batch</artifactId>
+                <version>${azure-batch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>${javax.servlet-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.ant</groupId>
+                <artifactId>ant</artifactId>
+                <version>${ant.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-mapper-asl</artifactId>
+                <version>${jackson-codehaus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-core-asl</artifactId>
+                <version>${jackson-codehaus.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>

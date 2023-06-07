@@ -41,7 +41,6 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -52,7 +51,6 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -70,11 +68,9 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <version>${project.parent.version}</version>
             <classifier>shaded</classifier>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-lib</artifactId>
@@ -119,7 +115,6 @@
         <dependency>
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
-            <version>0.6.0a5</version>
             <exclusions>
                 <exclusion>
                     <groupId>arg.apache.avro</groupId>
@@ -176,7 +171,6 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
-            <version>${solr.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -206,7 +200,6 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
-            <version>1.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>

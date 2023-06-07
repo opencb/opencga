@@ -45,11 +45,6 @@
         <dependencies>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-core</artifactId>
-                <version>${project.parent.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-server</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
@@ -57,18 +52,6 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-benchmark</artifactId>
                 <version>${project.parent.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-all</artifactId>
-                <version>${grpc.version}</version>
-            </dependency>
-            <!--Ensure commons-io with version 2.5. Required for solr-->
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>2.5</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
