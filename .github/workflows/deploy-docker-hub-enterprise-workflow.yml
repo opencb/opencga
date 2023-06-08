@@ -2,6 +2,10 @@ name: Deploy OpenCGA Enterprise HDP to DockerHub
 
 on:
   workflow_call:
+    inputs:
+      options:
+        type: string
+        required: false
     secrets:
       DOCKER_HUB_USER:
         required: true
@@ -24,4 +28,4 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Push in Docker Hub
-        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base ${{ inputs.options }}

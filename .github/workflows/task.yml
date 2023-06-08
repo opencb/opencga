@@ -16,4 +16,6 @@ jobs:
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
+    with:
+      options: --tag ${{ github.ref_name }}
     secrets: inherit
