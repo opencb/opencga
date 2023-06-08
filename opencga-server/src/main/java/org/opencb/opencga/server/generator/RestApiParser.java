@@ -231,10 +231,6 @@ public class RestApiParser {
                     restParameters.add(restParameter);
                 }
             }
-            if (clazz.getName().contains("Meta")) {
-                System.out.println("Adding Meta method :::::::::::::: " + method.getName());
-                System.out.println(restEndpoint);
-            }
             // 5. Save all REST Parameters found: ApiImplicitParams and ApiParam
             restEndpoint.setParameters(restParameters);
             restEndpoints.add(restEndpoint);

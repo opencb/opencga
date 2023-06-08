@@ -115,7 +115,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             String commandName = getCommandName(restCategory, restEndpoint);
             //    if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
             if (config.isAvailableCommand(commandName)) {
-                sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions "
+               sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions "
                         + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions;\n");
             }
             //   }
@@ -236,11 +236,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                         sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                 + getVariableName(bodyRestParameter) + ";\n");
                                         sb.append("    \n");
-                                    } else {
+                                    }/* else {
                                         logger.warn("Skipping parameter '{}' value '{}' at command '{} {}'",
                                                 bodyRestParameter.getName(), getValidValue(bodyRestParameter),
                                                 getCategoryCommandName(restCategory, config), reverseCommandName(commandName));
-                                    }
+                                    }*/
                                 }
                             }
                         }

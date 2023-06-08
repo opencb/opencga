@@ -43,29 +43,22 @@ public class ClientsGenerator {
         generateLibrary(clientsGeneratorDir, "javascript", restApiFilePath, clientOutputDir + "/src/main/javascript/");
         generateLibrary(clientsGeneratorDir, "r", restApiFilePath, clientOutputDir + "/src/main/R/R/");
 
-        logger.info("Deleting temporal RestApi object from {}", restApiFilePath);
+        //logger.info("Deleting temporal RestApi object from {}", restApiFilePath);
         Files.delete(outDir.toPath());
     }
 
     private void generateLibrary(String clientsGeneratorDir, String language, String restFilePath, String outDir) {
-        System.out.println("clientsGeneratorDir " + clientsGeneratorDir);
-        System.out.println("language " + language);
-        System.out.println("restFilePath " + restFilePath);
-        System.out.println("outDir " + outDir);
+        logger.info("clientsGeneratorDir " + clientsGeneratorDir);
+        logger.info("language " + language);
+        logger.info("restFilePath " + restFilePath);
+        logger.info("outDir " + outDir);
         String binary = clientsGeneratorDir + "/" + language + "_client_generator.py";
         ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
         Process p;
         try {
             p = processBuilder.start();
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            String line;
-            while ((line = input.readLine()) != null) {
-                logger.info("{} library generator: {}", language, line);
-                System.out.println(language + " library generator: " + line);
-            }
             p.waitFor();
-            input.close();
             if (p.exitValue() != 0) {
                 String lineError;
                 while ((lineError = error.readLine()) != null) {

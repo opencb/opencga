@@ -195,5 +195,5 @@ apiConfig:
       ignore: True
       key: GA4GH
     - name: admin
-      ignore: True
+      ignore: False
       key: Admin

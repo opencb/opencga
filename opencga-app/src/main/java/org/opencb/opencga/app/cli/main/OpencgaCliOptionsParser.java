@@ -39,6 +39,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final DiseasePanelsCommandOptions diseasePanelsCommandOptions;
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
+    private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -175,6 +176,19 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
+
+        adminCommandOptions = new AdminCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("admin", adminCommandOptions);
+        JCommander adminSubCommands = jCommander.getCommands().get("admin");
+        adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
+        adminSubCommands.addCommand("catalog-index-stats", adminCommandOptions.indexStatsCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
+        adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
+        adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
+        adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
+        adminSubCommands.addCommand("users-groups-update", adminCommandOptions.updateUsersGroupsCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -389,6 +403,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public JobsCommandOptions getJobsCommandOptions() {
         return jobsCommandOptions;
+    }
+    
+    
+    public AdminCommandOptions getAdminCommandOptions() {
+        return adminCommandOptions;
     }
     
     

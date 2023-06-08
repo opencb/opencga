@@ -110,7 +110,7 @@ public class ClientsGeneratorMain {
                         }
                     }
                     if (overlappingParamNames) {
-                        logger.info("Overlapping param names at " + restEndpoint.getPath());
+                        //logger.info("Overlapping param names at " + restEndpoint.getPath());
                         // To avoid confusion, add "body_" to params has name conflict
                         for (RestParameter bodyParam : body.getData()) {
                             if (!bodyParam.isInnerParam() && aux.contains(bodyParam.getName())) {
