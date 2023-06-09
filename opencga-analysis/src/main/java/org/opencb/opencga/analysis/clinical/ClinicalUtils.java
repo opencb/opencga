@@ -309,57 +309,76 @@ public class ClinicalUtils {
         return null;
     }
 
-    public static boolean matchEvidence(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+    public static boolean matchEvidences(ClinicalVariantEvidence ev1, ClinicalVariantEvidence ev2) {
+        int count = 0;
+
         // Check panel ID
-        if (StringUtils.isNotEmpty(ev1.getPanelId()) && StringUtils.isNotEmpty(ev2.getPanelId())) {
-            if (!ev1.getPanelId().equals(ev2.getPanelId())) {
-                return false;
-            }
-        } else if (StringUtils.isNotEmpty(ev1.getPanelId()) || StringUtils.isNotEmpty(ev2.getPanelId())) {
+        if (!matchValues(ev1.getPanelId(), ev2.getPanelId())) {
             return false;
         }
+        count += (areNotEmptyValues(ev1.getPanelId(), ev2.getPanelId()) ? 1 : 0);
 
         // Check genomic feature
         if (ev1.getGenomicFeature() != null && ev2.getGenomicFeature() != null) {
             GenomicFeature gf1 = ev1.getGenomicFeature();
             GenomicFeature gf2 = ev2.getGenomicFeature();
 
-            // Type
-            if (StringUtils.isNotEmpty(gf1.getType()) && StringUtils.isNotEmpty(gf2.getType())) {
-                if (!gf1.getType().equals(gf2.getType())) {
-                    return false;
-                }
-            } else if (StringUtils.isNotEmpty(gf1.getType()) || StringUtils.isNotEmpty(gf2.getType())) {
+            // ID, i.e., gene ID
+            if (!matchValues(gf1.getId(), gf2.getId())) {
                 return false;
             }
+            count += (areNotEmptyValues(gf1.getId(), gf2.getId()) ? 1 : 0);
 
-            // Gene and transcript
-            if (StringUtils.isNotEmpty(gf1.getId()) && StringUtils.isNotEmpty(gf2.getId())
-                    && StringUtils.isNotEmpty(gf1.getTranscriptId()) && StringUtils.isNotEmpty(gf2.getTranscriptId())) {
-                if (gf1.getId().equals(gf2.getId()) && gf1.getTranscriptId().equals(gf2.getTranscriptId())) {
-                    return true;
-                }
-            } else {
-                if (StringUtils.isNotEmpty(gf1.getId()) && StringUtils.isNotEmpty(gf2.getId())) {
-                    if (gf1.getId().equals(gf2.getId())) {
-                        return true;
-                    }
-                } else if (StringUtils.isNotEmpty(gf1.getId()) || StringUtils.isNotEmpty(gf2.getId())) {
-                    return false;
-                }
-
-
-                if (StringUtils.isNotEmpty(gf1.getTranscriptId()) && StringUtils.isNotEmpty(gf2.getTranscriptId())) {
-                    if (gf1.getTranscriptId().equals(gf2.getTranscriptId())) {
-                        return true;
-                    } else if (StringUtils.isNotEmpty(gf1.getTranscriptId()) || StringUtils.isNotEmpty(gf2.getTranscriptId())) {
-                        return false;
-                    }
-                }
-
-                return true;
+            // Type
+            if (!matchValues(gf1.getType(), gf2.getType())) {
+                return false;
             }
+            count += (areNotEmptyValues(gf1.getType(), gf2.getType()) ? 1 : 0);
+
+            // Gene name
+            if (!matchValues(gf1.getGeneName(), gf2.getGeneName())) {
+                return false;
+            }
+            count += (areNotEmptyValues(gf1.getGeneName(), gf2.getGeneName()) ? 1 : 0);
+
+            // Transcript
+            String transcriptId1 = null;
+            String transcriptId2 = null;
+            if (StringUtils.isNotEmpty(gf1.getTranscriptId())) {
+                transcriptId1 = removeVersion(gf1.getTranscriptId());
+            }
+            if (StringUtils.isNotEmpty(gf2.getTranscriptId())) {
+                transcriptId2 = removeVersion(gf2.getTranscriptId());
+            }
+            if (!matchValues(transcriptId1, transcriptId2)) {
+                return false;
+            }
+            count += (areNotEmptyValues(transcriptId1, transcriptId2) ? 1 : 0);
+        }
+        return count > 0 ? true : false;
+    }
+
+    public static String removeVersion(String value) {
+        return value.split("\\.")[0];
+    }
+
+    private static boolean areNotEmptyValues(String value1, String value2) {
+        if (StringUtils.isNotEmpty(value1) && StringUtils.isNotEmpty(value2)) {
+            return true;
         }
         return false;
+    }
+
+    private static boolean matchValues(String value1, String value2) {
+        boolean value1IsNotEmpty = StringUtils.isNotEmpty(value1);
+        boolean value2IsNotEmpty = StringUtils.isNotEmpty(value2);
+        if (value1IsNotEmpty && value2IsNotEmpty) {
+            if (!value1.equals(value2)) {
+                return false;
+            }
+        } else if (value1IsNotEmpty || value2IsNotEmpty) {
+            return false;
+        }
+        return true;
     }
 }

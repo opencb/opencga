@@ -85,18 +85,20 @@ public final class VariantQueryProjection {
     public static class StudyVariantQueryProjection {
         private StudyMetadata studyMetadata;
         private List<Integer> samples = Collections.emptyList();
-        private Map<Integer, List<Integer>> multiFileSamples = Collections.emptyMap();
+        private Map<Integer, List<Integer>> multiFileSampleFiles = Collections.emptyMap();
+        private Set<Integer> multiFileSamples = Collections.emptySet();
         private List<Integer> files = Collections.emptyList();
         private List<Integer> cohorts = Collections.emptyList();
 
         public StudyVariantQueryProjection() {
         }
 
-        public StudyVariantQueryProjection(StudyMetadata studyMetadata, List<Integer> samples, Map<Integer, List<Integer>> multiFileSamples,
+        public StudyVariantQueryProjection(StudyMetadata studyMetadata, List<Integer> samples,
+                                           Map<Integer, List<Integer>> multiFileSampleFiles,
                                            List<Integer> files, List<Integer> cohorts) {
             this.studyMetadata = studyMetadata;
             this.samples = samples;
-            this.multiFileSamples = multiFileSamples;
+            this.multiFileSampleFiles = multiFileSampleFiles;
             this.files = files;
             this.cohorts = cohorts;
         }
@@ -127,11 +129,20 @@ public final class VariantQueryProjection {
             return this;
         }
 
-        public Map<Integer, List<Integer>> getMultiFileSamples() {
+        public Map<Integer, List<Integer>> getMultiFileSampleFiles() {
+            return multiFileSampleFiles;
+        }
+
+        public StudyVariantQueryProjection setMultiFileSampleFiles(Map<Integer, List<Integer>> multiFileSampleFiles) {
+            this.multiFileSampleFiles = multiFileSampleFiles;
+            return this;
+        }
+
+        public Set<Integer> getMultiFileSamples() {
             return multiFileSamples;
         }
 
-        public StudyVariantQueryProjection setMultiFileSamples(Map<Integer, List<Integer>> multiFileSamples) {
+        public StudyVariantQueryProjection setMultiFileSamples(Set<Integer> multiFileSamples) {
             this.multiFileSamples = multiFileSamples;
             return this;
         }
@@ -160,6 +171,7 @@ public final class VariantQueryProjection {
             sb.append("studyMetadata=").append(studyMetadata);
             sb.append(", samples=").append(samples);
             sb.append(", multiFileSamples=").append(multiFileSamples);
+            sb.append(", multiFileSampleFiles=").append(multiFileSampleFiles);
             sb.append(", files=").append(files);
             sb.append(", cohortIds=").append(cohorts);
             sb.append('}');

@@ -387,7 +387,7 @@ public class VariantHBaseQueryParser {
                 }
 
                 for (Integer sampleId : study.getSamples()) {
-                    Collection<Integer> requiredFilesFromSample = study.getMultiFileSamples().get(sampleId);
+                    Collection<Integer> requiredFilesFromSample = study.getMultiFileSampleFiles().get(sampleId);
                     List<Integer> allFilesFromSample = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
                     if (requiredFilesFromSample == null || requiredFilesFromSample.isEmpty()) {
                         scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
