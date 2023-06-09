@@ -38,13 +38,11 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
-            <version>${opencga.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <classifier>shaded</classifier>
         </dependency>
 
         <!--JLINE Terminal dependencies-->
@@ -95,7 +93,7 @@
                     <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
-                            <id>opencga-enterprise.sh</id>
+                            <id>opencga.sh</id>
                             <mainClass>com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaEnterpriseMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
@@ -108,6 +106,27 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
+                        <program>
+                            <id>opencga-internal.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.internal.InternalMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-clicompletion.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.utils.CliCompletionMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+<!--                        <program>-->
+<!--                            <id>opencga-test.sh</id>-->
+<!--                            <mainClass>org.opencb.opencga.test.manager.TestGeneratorManager</mainClass>-->
+<!--                            <platforms>-->
+<!--                                <platform>unix</platform>-->
+<!--                            </platforms>-->
+<!--                        </program>-->
                     </programs>
                 </configuration>
             </plugin>
@@ -156,11 +175,10 @@
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/analysis"/>
-                                    <arg value="${opencga.build.dir}/bin"/>
                                     <arg value="${opencga.build.dir}/cloud"/>
                                     <arg value="${opencga.build.dir}/conf"/>
-                                    <arg value="${opencga.build.dir}/libs"/>
                                     <arg value="${opencga.build.dir}/misc"/>
+                                    <arg value="${opencga.build.dir}/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
@@ -360,11 +378,11 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-                                <exec executable="cp">
-                                    <arg value="${build.dir}/bin/opencga.sh"/>
-                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>
-                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
-                                </exec>
+<!--                                <exec executable="cp">-->
+<!--                                    <arg value="${build.dir}/bin/opencga.sh"/>-->
+<!--                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
+<!--                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>-->
+<!--                                </exec>-->
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
