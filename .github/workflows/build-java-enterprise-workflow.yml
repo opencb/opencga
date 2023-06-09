@@ -19,24 +19,6 @@ on:
       version:
         description: "XetaBase project version"
         value: ${{ jobs.build-workflow.outputs.version }}
-  workflow_dispatch:
-    inputs:
-      maven_opts:
-        type: string
-        required: false
-      opencga_maven_opts:
-        type: string
-        required: false
-      artifact_name:
-        type: string
-        required: false
-      release:
-        type: string
-        required: false
-    outputs:
-      version:
-        description: "XetaBase project version"
-        value: ${{ jobs.build-workflow.outputs.version }}
 
 jobs:
   build:
