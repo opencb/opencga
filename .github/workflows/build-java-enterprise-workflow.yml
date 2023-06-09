@@ -34,8 +34,8 @@ jobs:
         name: Get OpenCGA branch from pom.xml property
         run: |
           chmod +x ./.github/workflows/scripts/opencga_branch.sh
-          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release }})" >> $GITHUB_OUTPUT
-          echo "$opencga_branch"
+          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )" >> $GITHUB_OUTPUT
+          echo "$GITHUB_OUTPUT"
           if [ -n "${{ inputs.release }}" ]; then
             echo "IS RELEASE"
           else

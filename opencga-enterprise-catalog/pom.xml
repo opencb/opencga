@@ -5,7 +5,7 @@
     <parent>
         <artifactId>opencga-enterprise</artifactId>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
-        <version>1.6.3-SNAPSHOT</version>
+        <version>1.6.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
