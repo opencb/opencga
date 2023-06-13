@@ -8,12 +8,12 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.9.x
     with:
       maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init

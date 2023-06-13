@@ -22,11 +22,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -66,7 +68,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     private void removeFile(String file, StudyMetadata studyMetadata, Map<? extends String, ?> map) throws Exception {
         Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file);
         System.out.printf("Remove File ID %s for %s", fileId, file);
-        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, file, studyMetadata, map, outputUri);
+        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), file, studyMetadata, map, outputUri);
     }
 
     @Test
@@ -117,7 +119,6 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     @Test
     public void removeFileTestMergeBasic() throws Exception {
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
-        System.out.println("studyMetadata = " + studyMetadata);
         String studyName = studyMetadata.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
@@ -151,12 +152,34 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         }
         checkSampleIndexTable(studyMetadata, getVariantStorageEngine().getDBAdaptor(), "s2.genome.vcf");
 
-        // FIXME: This variant should be removed!
-        // assertThat(variants.keySet(), not(hasItem("1:10014:A:G")));
-
         assertThat(variants.keySet(), hasItem("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertThat(variants.keySet(), hasItem("1:10014:A:G"));
+        variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+        getVariantStorageEngine().variantsPrune(false, false, newOutputUri());
+        variants = buildVariantsIdx();
+        assertThat(variants.keySet(), not(hasItem("1:10014:A:G")));
+    }
+
+    @Test
+    public void removeFileTestMultiFile() throws Exception {
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+
+        loadFile("s1.genome.vcf", studyMetadata, new ObjectMap());
+        loadFile("s2.genome.vcf", studyMetadata, new ObjectMap());
+        loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+        removeFile("s2.genome.vcf", studyMetadata, Collections.emptyMap());
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+        variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+
+        List<Variant> results = variantStorageEngine.getDBAdaptor().get(new VariantQuery().sample("s2"), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, false)).getResults();
+        assertNotEquals(0, results.size());
+
+        results = variantStorageEngine.getDBAdaptor().get(new VariantQuery().sample("s2").includeFile(ParamConstants.NONE), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, false)).getResults();
+        assertNotEquals(0, results.size());
     }
 
     @Test

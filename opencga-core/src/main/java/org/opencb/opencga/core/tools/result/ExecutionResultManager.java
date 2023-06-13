@@ -21,10 +21,12 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -34,34 +36,37 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ExecutionResultManager {
-    public static final String FILE_EXTENSION = ".result.json";
-    public static final String SWAP_FILE_EXTENSION = ".swap" + FILE_EXTENSION;
 
-    private final Path outDir;
+    private static final String FILE_EXTENSION = ".result.json";
+    private static final String SWAP_FILE_EXTENSION = ".swap" + FILE_EXTENSION;
+
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
 
     private Thread thread;
     private File file;
-    private File swapFile;
+    private final File swapFile;
+    private final List<File> oldRollingFiles;
+    private int rollingFilesCounter;
+    private final String rollingFileFormat;
     private boolean initialized;
     private boolean closed;
-    private final Logger logger = LoggerFactory.getLogger(ExecutionResultManager.class);
-    private int monitorThreadPeriod = 60000;
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionResultManager.class);
+    private long monitorThreadPeriod = TimeUnit.MINUTES.toMillis(1);
 
     public ExecutionResultManager(String toolId, Path outDir) throws ToolException {
-        this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         objectWriter = objectMapper.writerFor(ExecutionResult.class).withDefaultPrettyPrinter();
@@ -85,15 +90,21 @@ public class ExecutionResultManager {
         }
 
         file = outDir.resolve(toolId + FILE_EXTENSION).toFile();
+        rollingFileFormat = outDir.resolve(toolId + ".%d" + FILE_EXTENSION).toAbsolutePath().toString();
+        oldRollingFiles = new LinkedList<>();
+        rollingFilesCounter = 0;
         swapFile = outDir.resolve(toolId + SWAP_FILE_EXTENSION).toFile();
     }
 
     public synchronized ExecutionResultManager init(ObjectMap params, ObjectMap executorParams) throws ToolException {
+        return init(params, executorParams, true);
+    }
+
+    public synchronized ExecutionResultManager init(ObjectMap params, ObjectMap executorParams, boolean startMonitor) throws ToolException {
         if (initialized) {
             throw new ToolException(getClass().getName() + " already initialized!");
         }
         initialized = true;
-
         Date now = now();
         ExecutionResult execution = new ExecutionResult()
                 .setExecutor(new ExecutorInfo()
@@ -105,7 +116,9 @@ public class ExecutionResultManager {
                 .setName(Status.Type.RUNNING);
 
         write(execution);
-        startMonitorThread();
+        if (startMonitor) {
+            startMonitorThread();
+        }
         return this;
     }
 
@@ -136,7 +149,9 @@ public class ExecutionResultManager {
         if (closed) {
             throw new ToolException(getClass().getName() + " already closed!");
         }
-        thread.interrupt();
+        if (thread != null) {
+            thread.interrupt();
+        }
 
         ExecutionResult execution = read();
 
@@ -181,6 +196,7 @@ public class ExecutionResultManager {
         }
 
         write(execution);
+        cleanRollingFiles(new ArrayList<>(), 0);
         closed = true;
         return execution;
     }
@@ -305,50 +321,204 @@ public class ExecutionResultManager {
 
     public ExecutionResult read() throws ToolException {
         try {
-            return objectReader.readValue(file);
+            return read(file);
         } catch (IOException e) {
             if (Files.exists(swapFile.toPath())) {
                 try {
-                    return objectReader.readValue(swapFile);
+                    return read(swapFile);
                 } catch (IOException ioException) {
                     e.addSuppressed(ioException);
                 }
             }
             throw new ToolException("Error reading ExecutionResult", e);
         }
-
     }
 
     private synchronized void write(ExecutionResult execution) throws ToolException {
         int maxAttempts = 3;
         int attempts = 0;
-        while (attempts < maxAttempts) {
+        List<Exception> suppressed = new LinkedList<>();
+        while (true) {
             attempts++;
             try {
-                if (attempts < maxAttempts) {
-                    // Perform atomic writes using an intermediate temporary swap file
-                    try (OutputStream os = new BufferedOutputStream(new FileOutputStream(swapFile))) {
-                        objectWriter.writeValue(os, execution);
-                    }
-                    Files.move(swapFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                } else {
-                    try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
-                        objectWriter.writeValue(os, execution);
-                    }
+                if (attempts > 1) {
+                    increaseRollingFile();
+                    cleanRollingFiles(suppressed, 2);
                 }
+                // Perform atomic writes using an intermediate temporary swap file
+                write(swapFile, execution);
+//                logger.info("Moving '{}' -> '{}'", swapFile.toPath(), file.toPath());
+                Files.move(swapFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                return;
             } catch (IOException e) {
                 if (attempts < maxAttempts) {
-                    logger.warn("Error writing ExecutionResult: " + e.toString());
+                    if (attempts == 1) {
+                        // Reduce verbosity on the first failed attempt
+                        logger.debug("Error writing ExecutionResult: " + e);
+                    } else {
+                        logger.warn("Error writing ExecutionResult: " + e);
+                    }
+                    suppressed.add(e);
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(100);
                     } catch (InterruptedException interruption) {
                         // Ignore interruption
                         Thread.currentThread().interrupt();
+                        suppressed.add(interruption);
                     }
                 } else {
-                    throw new ToolException("Error writing ExecutionResult", e);
+                    ToolException exception = new ToolException("Error writing ExecutionResult", e);
+                    suppressed.forEach(exception::addSuppressed);
+                    throw exception;
+                }
+            } catch (Exception e) {
+                suppressed.forEach(e::addSuppressed);
+                throw e;
+            }
+        }
+    }
+
+    private void cleanRollingFiles(List<Exception> suppressed, int keeptFiles) {
+        try {
+            while (oldRollingFiles.size() > keeptFiles) {
+                File rollingFile = oldRollingFiles.get(0);
+                if (rollingFile != this.file && rollingFile.exists()) {
+                    Files.delete(rollingFile.toPath());
+                }
+//                logger.debug("Old file '{}' deleted", rollingFile);
+                oldRollingFiles.remove(0);
+            }
+        } catch (IOException e) {
+            suppressed.add(e);
+        }
+    }
+
+    private void increaseRollingFile() {
+        rollingFilesCounter++;
+        String fileName = String.format(rollingFileFormat, rollingFilesCounter);
+//        logger.info("Increase rolling file " + fileName);
+        oldRollingFiles.add(file);
+        file = Paths.get(fileName).toFile();
+    }
+
+    public static Path getExecutionResultPath(Path dir) throws IOException {
+        Path resultJson;
+        try (Stream<Path> stream = Files.list(dir)) {
+            resultJson = stream
+                    .filter(path -> isExecutionResultFile(path.toString()))
+                    .filter(path -> !isExecutionResultSwapFile(path.toString()))
+                    .max(Comparator.comparingInt(p -> {
+                        String s = StringUtils.removeEnd(p.toString(), FILE_EXTENSION);
+                        int nextDot = s.lastIndexOf('.');
+                        if (nextDot < 0) {
+                            return 0;
+                        } else {
+                            s = s.substring(nextDot + 1);
+                            try {
+                                return Integer.parseInt(s);
+                            } catch (NumberFormatException e) {
+                                // assume there was no number
+                                return 0;
+                            }
+                        }
+                    }))
+                    .orElse(null);
+        }
+        return resultJson;
+    }
+
+    public static boolean isExecutionResultFile(String file) {
+        return file.endsWith(FILE_EXTENSION);
+    }
+
+    public static boolean isExecutionResultSwapFile(String file) {
+        return file.endsWith(SWAP_FILE_EXTENSION);
+    }
+
+    public static ExecutionResult findAndRead(Path dir, int expirationTimeInSeconds) {
+        Pair<Path, ExecutionResult> pair = findAndReadPair(dir);
+        if (pair == null) {
+            return null;
+        } else {
+            ExecutionResult result = pair.getValue();
+            Instant lastStatusUpdate = result.getStatus().getDate().toInstant();
+            if (lastStatusUpdate.until(Instant.now(), ChronoUnit.SECONDS) > expirationTimeInSeconds) {
+                logger.warn("Ignoring file '" + pair.getKey() + "'. The file is more than " + expirationTimeInSeconds + " seconds old");
+                return null;
+            } else {
+                return result;
+            }
+        }
+    }
+
+    public static ExecutionResult findAndRead(Path dir) {
+        Pair<Path, ExecutionResult> pair = findAndReadPair(dir);
+        if (pair != null) {
+            return pair.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    private static Pair<Path, ExecutionResult> findAndReadPair(Path dir) {
+        int attempts = 0;
+        int maxAttempts = 3;
+        List<Exception> supressed = new ArrayList<>(0);
+        while (attempts < maxAttempts) {
+            Path file = null;
+            try {
+                attempts++;
+                file = getExecutionResultPath(dir);
+                if (file == null) {
+                    return null;
+                }
+                try (InputStream is = new BufferedInputStream(new FileInputStream(file.toFile()))) {
+                    ExecutionResult result = JacksonUtils.getDefaultObjectMapper().readValue(is, ExecutionResult.class);
+                    return Pair.of(file, result);
+                }
+            } catch (IOException e) {
+                String errorMessage;
+                if (file == null) {
+                    // Exception looking for the ExecutionResultPath
+                    errorMessage = "Could not find ExecutionResult file at dir: " + dir.toAbsolutePath();
+                } else {
+                    // Exception reading the ExecutionResult file
+                    if (Files.exists(file)) {
+                        errorMessage = "Could not read ExecutionResult file, file seems corrupted: '" + file.toAbsolutePath() + "'";
+                    } else {
+                        errorMessage = "Could not read ExecutionResult file, file not found: '" + file.toAbsolutePath() + "'";
+                    }
+                }
+                if (attempts == maxAttempts) {
+                    supressed.forEach(e::addSuppressed);
+                    logger.error(errorMessage, e);
+                } else {
+                    logger.warn(errorMessage + ". Retry " + attempts + "/" + maxAttempts + ". " + e.getMessage());
+                    supressed.add(e);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException interruption) {
+                        // Ignore interruption
+                        Thread.currentThread().interrupt();
+                        supressed.add(interruption);
+                    }
                 }
             }
+        }
+        return null;
+    }
+
+    private ExecutionResult read(File file) throws IOException {
+        ExecutionResult executionResult;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            executionResult = objectReader.readValue(fis);
+        }
+        return executionResult;
+    }
+
+    private void write(File file, ExecutionResult execution) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(file); OutputStream os = new BufferedOutputStream(fos)) {
+            objectWriter.writeValue(os, execution);
         }
     }
 
