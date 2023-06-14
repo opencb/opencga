@@ -112,7 +112,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     }
 
     @GET
-    @Path("/sso")
+    @Path("/sso/login")
     @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class)
     public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
