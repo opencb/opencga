@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -13,6 +14,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
@@ -27,10 +29,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -148,5 +147,51 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             return createErrorResponse(e);
         }
         return Response.temporaryRedirect(targetURIForRedirection).build();
+    }
+
+    @GET
+    @Path("/sso/logout")
+    @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class)
+    public Response singleSignOnLogout(
+            @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
+    ) {
+        if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
+            return createErrorResponse(new CatalogException("SSO is not enabled."));
+        }
+        if (StringUtils.isEmpty(enterpriseConfiguration.getSso().getCasServerPrefixUrl())) {
+            return createErrorResponse(new CatalogException("Server error: SSO server prefix url is not properly set."));
+        }
+
+        // Logout is performed in 2 steps. Users must call to /logout without any query parameter. This will redirect to
+        // CAS logout WS with a callback url to this same WS adding the query paramter "logout=true". When it reaches
+        // the WS with the query parameter, it will return an empty response but will remove local cookies.
+        if (!logout) {
+            UriBuilder uriBuilder = UriBuilder.fromPath(enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+            uriBuilder.path("logout");
+            UriBuilder callbackUri = uriInfo.getAbsolutePathBuilder();
+            callbackUri.queryParam("logout", true);
+            uriBuilder.queryParam("service", callbackUri.build());
+
+            logger.debug("Callback uri: {}", callbackUri.build());
+
+            URI uri = uriBuilder.build();
+            logger.debug("Redirecting to {}", uri.getPath());
+            return Response.temporaryRedirect(uri).build();
+        } else {
+            logger.debug("Deleting session cookies");
+            // Simply delete cookies
+            RestResponse<?> response = new RestResponse<>(new ObjectMap(), Collections.emptyList());
+            Response.ResponseBuilder responseBuilder = Response.fromResponse(createJsonResponse(response))
+                    .status(Response.Status.OK);
+            for (Cookie cookie : httpServletRequest.getCookies()) {
+                NewCookie newCookie = new NewCookie(cookie.getName(), "", "/", cookie.getDomain(), cookie.getComment(),
+                        0, cookie.getSecure());
+                responseBuilder.cookie(newCookie);
+                newCookie = new NewCookie(cookie.getName(), "", "/opencga", cookie.getDomain(), cookie.getComment(), 0,
+                        cookie.getSecure());
+                responseBuilder.cookie(newCookie);
+            }
+            return responseBuilder.build();
+        }
     }
 }
