@@ -67,11 +67,11 @@ public class GwasAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Boolean isIndex() {
+    public boolean isIndex() {
         return index;
     }
 
-    public GwasAnalysisParams setIndex(Boolean index) {
+    public GwasAnalysisParams setIndex(boolean index) {
         this.index = index;
         return this;
     }

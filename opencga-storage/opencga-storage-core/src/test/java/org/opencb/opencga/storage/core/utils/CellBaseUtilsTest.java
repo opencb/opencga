@@ -90,7 +90,7 @@ public class CellBaseUtilsTest {
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
 
         try {
-            cellBaseUtils.validateCellBaseConnection();
+            cellBaseUtils.validate();
         } catch (RuntimeException e) {
             Assume.assumeNoException("Cellbase '" + url + "' not available", e);
         }
@@ -98,7 +98,7 @@ public class CellBaseUtilsTest {
 
     @Test
     public void testValidateCellBaseConnection() throws IOException {
-        cellBaseUtils.validateCellBaseConnection();
+        cellBaseUtils.validate();
     }
 
     @Test
