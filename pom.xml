@@ -6,7 +6,7 @@
 
     <groupId>com.zettagenomics.opencga-enterprise</groupId>
     <artifactId>opencga-enterprise</artifactId>
-    <version>1.7.0</version>
+    <version>1.7.1</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -19,13 +19,13 @@
     </modules>
 
     <properties>
-        <opencga.version>2.9.0</opencga.version>
-        <pyopencga.version>1.7.0</pyopencga.version>
-        <opencgar.version>1.7.0</opencgar.version>
+        <opencga.version>2.9.1</opencga.version>
+        <pyopencga.version>1.7.1</pyopencga.version>
+        <opencgar.version>1.7.1</opencgar.version>
         <cellbase.version>5.5.0</cellbase.version>
         <biodata.version>2.9.0</biodata.version>
         <java-common-libs.version>4.9.0</java-common-libs.version>
-        <iva.version>1.7.0</iva.version>
+        <iva.version>1.7.1</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
 
@@ -45,12 +45,9 @@
 <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
-        <opencga-storage-hadoop-deps.artifactId-default>
-            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
-        </opencga-storage-hadoop-deps.artifactId-default>
+        <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
         <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
-        </opencga-storage-hadoop-deps.artifactId>
+        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -92,6 +89,12 @@
                 <groupId>com.zettagenomics.opencga-enterprise</groupId>
                 <artifactId>opencga-enterprise-server</artifactId>
                 <version>${project.parent.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-collections</groupId>
+                        <artifactId>commons-collections</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- OpenCB dependencies -->
@@ -117,13 +120,44 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-app</artifactId>
+                <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-server</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                <version>${opencga.version}</version>
+                <exclusions>
+                    <!-- This dependency version conflicts with opencga-core's same dependency version. -->
+                    <!-- Exclude this, so the actual dependency can be taken from opencga-core -->
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpclient</artifactId>
+                    </exclusion>
+                </exclusions>
+                <classifier>shaded</classifier>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
