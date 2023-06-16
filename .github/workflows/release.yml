@@ -8,12 +8,12 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.9.x
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
   deploy-docker-ext-tools:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
@@ -28,23 +28,21 @@ jobs:
       report_context: xetabase
 
   deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@release-4.9.x
     needs: test
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
     secrets: inherit
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit
 
-
-
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@release-4.9.x
     needs: test
     with:
       cli: ./clients/python/python-build.sh push
@@ -52,7 +50,7 @@ jobs:
     secrets: inherit
 
   release:
-    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@release-4.9.x
     needs: [ build,test ]
     with:
       artifact: build-folder

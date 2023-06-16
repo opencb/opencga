@@ -1066,6 +1066,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             return studyMetadata;
         });
+        // Invalidate caches
+        metadataManager.clearCaches();
     }
 
     /**
