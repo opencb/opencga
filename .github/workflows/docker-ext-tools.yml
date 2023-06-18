@@ -1,4 +1,4 @@
-name: Deploy Docker Tools
+name: Deploy Docker Ext-Tools
 
 on:
   push:
@@ -13,8 +13,8 @@ on:
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.9.x
-    with:
-      maven_opts:
+#    with:
+#      maven_opts:
 
   deploy-docker-ext-tools:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
