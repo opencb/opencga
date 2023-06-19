@@ -12,13 +12,13 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.9.x
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts:
 
-  deploy-docker-ext-tools:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
-    needs: build
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
-    secrets: inherit
+#  deploy-docker-ext-tools:
+#    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+#    needs: build
+#    with:
+#      cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
+#    secrets: inherit
