@@ -51,6 +51,10 @@
             <artifactId>cellbase-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.cellbase</groupId>
+            <artifactId>cellbase-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.oskar</groupId>
             <artifactId>oskar-analysis</artifactId>
         </dependency>
