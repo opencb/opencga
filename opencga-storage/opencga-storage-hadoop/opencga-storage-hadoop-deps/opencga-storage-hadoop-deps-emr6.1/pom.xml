@@ -53,7 +53,7 @@
         <commons-net.version>3.6</commons-net.version>
         <curator.version>2.12.0</curator.version>
 
-        <guava.version>28.0-jre</guava.version>
+        <guava.version>32.0.0-jre</guava.version>
     </properties>
 
     <!-- See:
