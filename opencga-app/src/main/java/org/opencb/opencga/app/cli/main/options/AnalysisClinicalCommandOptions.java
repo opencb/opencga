@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandOptions;
+
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 
@@ -28,10 +30,8 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/analysis/clinical
  */
 @Parameters(commandNames = {"clinical"}, commandDescription = "Analysis - Clinical commands")
-public class AnalysisClinicalCommandOptions {
+public class AnalysisClinicalCommandOptions extends CustomAnalysisClinicalCommandOptions {
 
-        public JCommander jCommander;
-        public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
@@ -45,6 +45,7 @@ public class AnalysisClinicalCommandOptions {
         public RunInterpreterTeamCommandOptions runInterpreterTeamCommandOptions;
         public RunInterpreterTieringCommandOptions runInterpreterTieringCommandOptions;
         public RunInterpreterZettaCommandOptions runInterpreterZettaCommandOptions;
+        public LoadCommandOptions loadCommandOptions;
         public AggregationStatsRgaCommandOptions aggregationStatsRgaCommandOptions;
         public QueryRgaGeneCommandOptions queryRgaGeneCommandOptions;
         public SummaryRgaGeneCommandOptions summaryRgaGeneCommandOptions;
@@ -68,8 +69,7 @@ public class AnalysisClinicalCommandOptions {
 
     public AnalysisClinicalCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
-        this.jCommander = jCommander;
-        this.commonCommandOptions = commonCommandOptions;
+        super(commonCommandOptions,jCommander);
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
@@ -82,6 +82,7 @@ public class AnalysisClinicalCommandOptions {
         this.runInterpreterTeamCommandOptions = new RunInterpreterTeamCommandOptions();
         this.runInterpreterTieringCommandOptions = new RunInterpreterTieringCommandOptions();
         this.runInterpreterZettaCommandOptions = new RunInterpreterZettaCommandOptions();
+        this.loadCommandOptions = new LoadCommandOptions();
         this.aggregationStatsRgaCommandOptions = new AggregationStatsRgaCommandOptions();
         this.queryRgaGeneCommandOptions = new QueryRgaGeneCommandOptions();
         this.summaryRgaGeneCommandOptions = new SummaryRgaGeneCommandOptions();

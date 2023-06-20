@@ -18,6 +18,40 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
+import java.io.InputStream;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -132,6 +166,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "interpreter-zetta-run":
                 queryResponse = runInterpreterZetta();
+                break;
+            case "load":
+                queryResponse = load();
                 break;
             case "rga-aggregation-stats":
                 queryResponse = aggregationStatsRga();
@@ -687,6 +724,25 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> load() throws Exception {
+        logger.debug("Executing load in Analysis - Clinical command line");
+
+        CustomAnalysisClinicalCommandOptions.LoadCommandOptions commandOptions = analysisClinicalCommandOptions.loadCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+        CustomAnalysisClinicalCommandExecutor customAnalysisClinicalCommandExecutor = new CustomAnalysisClinicalCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customAnalysisClinicalCommandExecutor.load();
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {

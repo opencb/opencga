@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-29 OpenCB
+* Copyright 2015-2023-06-20 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -139,6 +139,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpreter-team-run", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-tiering-run", analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
+        analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-query", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-summary", analysisClinicalCommandOptions.summaryRgaGeneCommandOptions);

@@ -17,15 +17,20 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -38,6 +43,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -51,9 +57,11 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
@@ -64,12 +72,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.PRIMARY;
+import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.SECONDARY;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
@@ -579,6 +592,109 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    public int load(String studyStr, Path filePath, String token) throws CatalogException, IOException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        // Check gzip format
+        int counter = 0;
+        ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class);
+
+        try (BufferedReader br = FileUtils.newBufferedReader(filePath)) {
+            while (true) {
+                String line = br.readLine();
+                if (line == null) {
+                    break;
+                }
+                ClinicalAnalysis clinicalAnalysis = null;
+                try {
+                    clinicalAnalysis = objectReader.readValue(line);
+                    logger.info("Loading clinical analysis {}...", clinicalAnalysis.getId());
+                    load(clinicalAnalysis, studyStr, token);
+                    logger.info("... clinical analysis {} loaded !", clinicalAnalysis.getId());
+                    counter++;
+                } catch (Exception e) {
+                    logger.error("Error loading clinical analysis" + (clinicalAnalysis != null ? (": " + clinicalAnalysis.getId()) : "")
+                    + ": " + e.getMessage());
+                }
+            }
+        }
+        return counter;
+    }
+
+    private void load(ClinicalAnalysis clinicalAnalysis, String study, String token) throws CatalogException {
+        Map<String, List<String>> individualSamples = new HashMap<>();
+
+        // Create samples
+        for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+            if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                individualSamples.put(member.getId(), member.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+                for (Sample sample : member.getSamples()) {
+                    try {
+                        catalogManager.getSampleManager().create(study, sample, QueryOptions.empty(), token);
+                    } catch (CatalogException e) {
+                        if (!e.getMessage().contains("already exists")) {
+                            throw e;
+                        }
+                    }
+                }
+                member.setSamples(null);
+            }
+        }
+
+        // Create family with individuals
+        try {
+            catalogManager.getFamilyManager().create(study, clinicalAnalysis.getFamily(), QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            if (!e.getMessage().contains("already exists")) {
+                throw e;
+            }
+        }
+
+        // Associate individuals and samples
+        for (Map.Entry<String, List<String>> entry : individualSamples.entrySet()) {
+            catalogManager.getIndividualManager().update(study, entry.getKey(), new IndividualUpdateParams().setSamples(
+                            entry.getValue().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                    QueryOptions.empty(), token);
+        }
+
+        for (Panel panel : clinicalAnalysis.getPanels()) {
+            try {
+                catalogManager.getPanelManager().create(study, panel, QueryOptions.empty(), token);
+            } catch (CatalogException e) {
+                if (!e.getMessage().contains("already exists")) {
+                    throw e;
+                }
+            }
+        }
+
+        List<Interpretation> interpretationList = clinicalAnalysis.getSecondaryInterpretations();
+        clinicalAnalysis.setSecondaryInterpretations(null);
+
+        Interpretation interpretation = clinicalAnalysis.getInterpretation();
+        clinicalAnalysis.setInterpretation(null);
+
+        // Create Clinical Analysis
+        catalogManager.getClinicalAnalysisManager().create(study, clinicalAnalysis, QueryOptions.empty(), token);
+
+        if (interpretation == null) {
+            interpretation = interpretationList.get(0);
+            interpretationList = interpretationList.subList(1, interpretationList.size());
+        }
+
+        // Add interpretations
+        interpretation.setId(null);
+        catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), interpretation, PRIMARY, QueryOptions.empty(),
+                token);
+
+        for (int i = 0, interpretationListSize = interpretationList.size(); i < interpretationListSize; i++) {
+            Interpretation tmpInterpretation = interpretationList.get(i);
+            tmpInterpretation.setId(null);
+            catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), tmpInterpretation, SECONDARY,
+                    QueryOptions.empty(), token);
         }
     }
 
