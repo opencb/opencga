@@ -185,8 +185,10 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags) {
         try {
             // Prepare input file
-            java.nio.file.Path scratchDir = Paths.get(catalogManager.getConfiguration().getAnalysis().getScratchDir());
-            File inputFile = scratchDir.resolve(ClinicalAnalysisLoadTask.ID + "_" + RandomStringUtils.randomAlphanumeric(10)).toFile();
+            java.nio.file.Path scratchDir = Paths.get(catalogManager.getConfiguration().getAnalysis().getScratchDir())
+                    .resolve(ClinicalAnalysisLoadTask.ID + "_" + RandomStringUtils.randomAlphanumeric(10));
+            scratchDir.toFile().mkdirs();
+            File inputFile = scratchDir.resolve(fileMetaData.getFileName()).toFile();
             logger.info("Uploaded clinical analyses file at {}", inputFile.getAbsolutePath());
             IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
             ioManager.copy(fileInputStream, inputFile.toURI());

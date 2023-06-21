@@ -315,7 +315,11 @@
                  batchRestResponse = new RestResponse<>();
                  break;
              default:
-                 batchRestResponse = callRest(path, params, clazz, method);
+                 if (action.equals("load") && path.toString().contains("analysis/clinical")) {
+                     batchRestResponse = callUploadRest(path, params, clazz);
+                 } else {
+                     batchRestResponse = callRest(path, params, clazz, method);
+                 }
                  break;
          }
          return batchRestResponse;
