@@ -37,19 +37,19 @@ jobs:
     with:
       artifact_name: emr-build-folder
 
-  release:
-    name: Create GitHub Release
-    runs-on: ubuntu-22.04
-    needs: build
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: build-folder
-      - name: GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref }}
-          generate_release_notes: true
-          files: |
-            opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz
+#  release:
+#    name: Create GitHub Release
+#    runs-on: ubuntu-22.04
+#    needs: build
+#    steps:
+#      - uses: actions/download-artifact@v3
+#        with:
+#          name: build-folder
+#      - name: GitHub Release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          name: ${{ github.ref_name }}
+#          tag_name: ${{ github.ref }}
+#          generate_release_notes: true
+#          files: |
+#            opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz
