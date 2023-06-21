@@ -2,7 +2,7 @@ name: "Reusable workflow to push in DockerHub"
 
 on:
   workflow_call:
-    input:
+    inputs:
       artifact_name:
         type: string
         required: true
