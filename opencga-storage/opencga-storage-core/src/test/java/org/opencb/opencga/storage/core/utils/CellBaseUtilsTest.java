@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.commons.lang.StringUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
@@ -58,11 +60,15 @@ public class CellBaseUtilsTest {
 //                new Object[]{"http://ws.opencb.org/cellbase-4.8.3/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase-4.9.0/", "v4", "grch37", null},
 //                new Object[]{"http://ws.opencb.org/cellbase/", "v4", "grch37", null},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
+
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch37", "1"},
+//                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.3", "grch38", "2"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5", "grch38", null},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
-                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"});
+                new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.4", "grch38", "3"});
     }
 
     @Parameter(0)
@@ -79,15 +85,21 @@ public class CellBaseUtilsTest {
 
     @Before
     public void setUp() throws Exception {
-        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease,
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)
                         .setRest(new RestConfig(Collections.singletonList(url), 10000)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        try {
+            cellBaseUtils.validate();
+        } catch (RuntimeException e) {
+            Assume.assumeNoException("Cellbase '" + url + "' not available", e);
+        }
     }
 
     @Test
     public void testValidateCellBaseConnection() throws IOException {
-        cellBaseUtils.validateCellBaseConnection();
+        cellBaseUtils.validate();
     }
 
     @Test
@@ -242,4 +254,42 @@ public class CellBaseUtilsTest {
         assertTrue(withTranscriptFlags);
     }
 
+    @Test
+    public void testAnnotationWithHGMDToken() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
+        Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(2, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+        assertEquals("hgmd", variantAnnotation.getTraitAssociation().get(1).getSource().getName());
+    }
+
+    @Test
+    public void testAnnotationWithoutHGMDToken() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+
+        cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
+                new ClientConfiguration().setVersion(version)
+                        .setRest(new RestConfig(Collections.singletonList(url), 10000)));
+        cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
+        QueryOptions queryOptions = new QueryOptions("include", "clinical");
+        CellBaseDataResponse<VariantAnnotation> v = cellBaseClient.getVariantClient()
+                .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
+        VariantAnnotation variantAnnotation = v.firstResult();
+        assertEquals(1, variantAnnotation.getTraitAssociation().size());
+        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
+    }
 }

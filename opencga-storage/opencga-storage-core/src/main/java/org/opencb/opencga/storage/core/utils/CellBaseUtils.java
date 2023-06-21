@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.core.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
@@ -27,12 +26,11 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.ParentRestClient;
 import org.opencb.cellbase.core.ParamConstants;
-import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
@@ -47,17 +45,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CellBaseUtils {
+public class CellBaseUtils extends CellBaseValidator {
 
     private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
-    private final CellBaseClient cellBaseClient;
-    private final String assembly;
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
     private final ConcurrentHashMap<String, GeneReference> cache = new ConcurrentHashMap<>();
-    private String serverVersion;
+
+    public CellBaseUtils(CellBaseClient cellBaseClient) {
+        super(cellBaseClient);
+    }
 
     public static class GeneReference {
         private final Region region;
@@ -98,19 +97,6 @@ public class CellBaseUtils {
                     .append("name", name)
                     .toString();
         }
-    }
-
-    public CellBaseUtils(CellBaseClient cellBaseClient) {
-        this.cellBaseClient = cellBaseClient;
-        this.assembly = cellBaseClient.getAssembly();
-    }
-
-    public static String toCellBaseSpeciesName(String scientificName) {
-        if (scientificName != null && scientificName.contains(" ")) {
-            String[] split = scientificName.split(" ", 2);
-            scientificName = (split[0].charAt(0) + split[1]).toLowerCase();
-        }
-        return scientificName;
     }
 
     public Region getGeneRegion(String geneStr) {
@@ -349,10 +335,6 @@ public class CellBaseUtils {
         return genes;
     }
 
-    public CellBaseClient getCellBaseClient() {
-        return cellBaseClient;
-    }
-
     public Variant getVariant(String variantStr) {
         return getVariants(Collections.singletonList(variantStr)).get(0);
     }
@@ -411,113 +393,4 @@ public class CellBaseUtils {
         return response;
     }
 
-    public String getAssembly() {
-        return assembly;
-    }
-
-    public String getSpecies() {
-        return cellBaseClient.getSpecies();
-    }
-
-    public String getDataRelease() {
-        return cellBaseClient.getDataRelease();
-    }
-
-    public String getURL() {
-        return cellBaseClient.getClientConfiguration().getRest().getHosts().get(0);
-    }
-
-    public String getVersion() {
-        return cellBaseClient.getClientConfiguration().getVersion();
-    }
-
-    public void validateCellBaseConnection() throws IOException {
-        CellBaseDataResponse<SpeciesProperties> species = cellBaseClient.getMetaClient().species();
-        if (species == null || species.firstResult() == null) {
-            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + getVersion() + "'");
-        }
-        String serverVersion = getVersionFromServerMajorMinor();
-        if (!supportsDataRelease(serverVersion)) {
-            logger.warn("DataRelease not supported on version '" + serverVersion + ".x'");
-        } else {
-            if (getDataRelease() == null) {
-                throw new IllegalArgumentException("Missing DataRelease for cellbase "
-                        + "url: '" + getURL() + "'"
-                        + ", version: '" + getVersion()
-                        + "', species: '" + getSpecies()
-                        + "', assembly: '" + getAssembly() + "'");
-            }
-            boolean dataReleaseExists = cellBaseClient.getMetaClient().dataReleases()
-                    .allResults()
-                    .stream()
-                    .anyMatch(dataRelease -> {
-                        return getDataRelease().equals(String.valueOf(dataRelease.getRelease()));
-                    });
-            if (!dataReleaseExists) {
-                throw new IllegalArgumentException("DataRelease '" + getDataRelease() + "' not found on cellbase "
-                        + "url: '" + getURL() + "'"
-                        + ", version: '" + getVersion()
-                        + "', species: '" + getSpecies()
-                        + "', assembly: '" + getAssembly() + "'");
-            }
-        }
-    }
-
-    public boolean supportsDataRelease() throws IOException {
-        return supportsDataRelease(getVersionFromServer());
-    }
-
-    public static boolean supportsDataRelease(String serverVersion) {
-        return !majorMinor(serverVersion).equals("5.0") && !major(serverVersion).equals("4");
-    }
-
-    public String getVersionFromServerMajor() throws IOException {
-        return major(getVersionFromServer());
-    }
-
-    public String getVersionFromServerMajorMinor() throws IOException {
-        String serverVersion = getVersionFromServer();
-        serverVersion = majorMinor(serverVersion);
-        return serverVersion;
-    }
-
-    private static String major(String version) {
-        return version.split("\\.")[0];
-    }
-
-    private static String majorMinor(String version) {
-        String[] split = version.split("\\.");
-        if (split.length > 1) {
-            version = split[0] + "." + split[1];
-        }
-        return version;
-    }
-
-    public String getVersionFromServer() throws IOException {
-        if (serverVersion == null) {
-            synchronized (this) {
-                String serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version");
-                if (StringUtils.isEmpty(serverVersion)) {
-                    serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version: ");
-                }
-                this.serverVersion = serverVersion;
-            }
-        }
-        return serverVersion;
-    }
-
-    public boolean isMinVersion(String minVersion) throws IOException {
-        String serverVersion = getVersionFromServer();
-        return VersionUtils.isMinVersion(minVersion, serverVersion);
-    }
-
-    @Override
-    public String toString() {
-        return "URL: '" + getURL() + "', "
-                + "version '" + getVersion() + "', "
-                + "species '" + getSpecies() + "', "
-                + "assembly '" + getAssembly() + "', "
-                + "dataRelease '" + getDataRelease() + "'";
-
-    }
 }

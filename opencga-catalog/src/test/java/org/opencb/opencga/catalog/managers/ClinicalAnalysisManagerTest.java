@@ -32,6 +32,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -127,18 +128,23 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Disorder disease1 = new Disorder("dis1", "Disease 1", "HPO", null, "", null);
         Disorder disease2 = new Disorder("dis2", "Disease 2", "HPO", null, "", null);
 
-        Individual father = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "",
-                null)));
-        Individual mother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
+        Individual father = new Individual().setId("father")
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)));
+        Individual mother = new Individual().setId("mother")
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
                 null)));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "",
-                        null)))
+        Individual relFather = new Individual().setId("father")
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setSamples(Collections.singletonList(new Sample().setId("sample1")));
-        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                        null)))
+        Individual relMother = new Individual().setId("mother")
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "", null)))
                 .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
         Individual relChild1 = new Individual().setId("child1")
@@ -146,6 +152,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         "", null)))
                 .setFather(father)
                 .setMother(mother)
+                .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample2"),
                         new Sample().setId("sample4")
@@ -155,6 +162,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setFather(father)
                 .setMother(mother)
+                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample5"),
                         new Sample().setId("sample6")
@@ -164,6 +172,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setFather(father)
                 .setMother(mother)
+                .setSex(SexOntologyTermAnnotation.initFemale())
                 .setSamples(Arrays.asList(
                         new Sample().setId("sample7"),
                         new Sample().setId("sample8")
@@ -249,6 +258,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("")), INCLUDE_RESULT, sessionIdUser);
         assertEquals("", result.first().getStatus().getId());
+    }
+
+    @Test
+    public void createMultipleCasesSameFamily() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+        createDummyEnvironment(false, true).first();
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(), new ClinicalAnalysisUpdateParams().setLocked(true), QueryOptions.empty(), sessionIdUser);
+        // Update proband's sample
+        catalogManager.getSampleManager().update(STUDY, case1.getProband().getSamples().get(0).getId(),
+                new SampleUpdateParams().setDescription("new description"), QueryOptions.empty(), sessionIdUser);
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(), new QueryOptions(),
+                sessionIdUser);
+        assertEquals(5, search.getNumResults());
+        for (ClinicalAnalysis casee : search.getResults()) {
+            if (casee.getId().equals(case1.getId())) {
+                assertEquals(1, casee.getProband().getVersion());
+                assertEquals(1, casee.getProband().getSamples().get(0).getVersion());
+                assertEquals(1, casee.getFamily().getVersion());
+            } else {
+                assertEquals(2, casee.getProband().getVersion());
+                assertEquals(2, casee.getProband().getSamples().get(0).getVersion());
+                assertEquals(2, casee.getFamily().getVersion());
+            }
+        }
     }
 
     @Test
@@ -2648,7 +2686,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void testQueriesInCancerCase() throws CatalogException {
         Sample sample = DummyModelUtils.getDummySample("sample");
         sample.setSomatic(true);
-        Individual individual = DummyModelUtils.getDummyIndividual("individual", Collections.singletonList(sample), null, null);
+        Individual individual = DummyModelUtils.getDummyIndividual("individual", SexOntologyTermAnnotation.initMale(),
+                Collections.singletonList(sample), null, null);
         catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -3430,7 +3469,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Sample sample1 = DummyModelUtils.getDummySample("sample1");
         Sample sample2 = DummyModelUtils.getDummySample("sample2");
 
-        Individual proband = DummyModelUtils.getDummyIndividual("proband", Arrays.asList(sample1, sample2), null, null);
+        Individual proband = DummyModelUtils.getDummyIndividual("proband", SexOntologyTermAnnotation.initMale(),
+                Arrays.asList(sample1, sample2), null, null);
         catalogManager.getIndividualManager().create(STUDY, proband, QueryOptions.empty(), sessionIdUser);
 
         Individual probandCopy = JacksonUtils.copy(proband, Individual.class);

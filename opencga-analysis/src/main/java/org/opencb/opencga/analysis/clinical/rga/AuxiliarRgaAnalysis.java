@@ -6,7 +6,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
-@Tool(id = AuxiliarRgaAnalysis.ID, resource = Enums.Resource.CLINICAL, type = Tool.Type.OPERATION,
+@Tool(id = AuxiliarRgaAnalysis.ID, resource = Enums.Resource.RGA, type = Tool.Type.OPERATION,
         description = AuxiliarRgaAnalysis.DESCRIPTION)
 public class AuxiliarRgaAnalysis extends OperationTool {
     public final static String ID = "rga-aux-index";

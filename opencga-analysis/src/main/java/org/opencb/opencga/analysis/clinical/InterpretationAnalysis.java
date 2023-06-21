@@ -79,8 +79,8 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 .setName(name)
                 .setDependencies(Collections.singletonList(new Software()
                         .setName("OpenCGA")
-                        .setVersion(GitRepositoryState.get().getBuildVersion())
-                        .setCommit(GitRepositoryState.get().getCommitId())));
+                        .setVersion(GitRepositoryState.getInstance().getBuildVersion())
+                        .setCommit(GitRepositoryState.getInstance().getCommitId())));
         return method;
     }
 
@@ -114,8 +114,8 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
 
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), null, null,
-                Collections.singletonList(new Software().setName("OpenCGA").setVersion(GitRepositoryState.get().getBuildVersion())
-                        .setCommit(GitRepositoryState.get().getCommitId())));
+                Collections.singletonList(new Software().setName("OpenCGA").setVersion(GitRepositoryState.getInstance().getBuildVersion())
+                        .setCommit(GitRepositoryState.getInstance().getCommitId())));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);

@@ -6,6 +6,10 @@ import org.apache.hadoop.hbase.TableName;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Created on 02/02/18.
  *
@@ -16,7 +20,9 @@ public class HBaseVariantTableNameGenerator {
     private static final String VARIANTS_SUFIX = "_variants";
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
+    private static final Pattern ARCHIVE_PATTERN = Pattern.compile("^(.*)" + ARCHIVE_SUFIX + "([0-9]+)$");
     private static final String SAMPLE_SUFIX = "_variant_sample_index_";
+    private static final Pattern SAMPLE_INDEX_PATTERN = Pattern.compile("^(.*)" + SAMPLE_SUFIX + "([0-9]+)(_v[0-9]+)?$");
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final String PENDING_SECONDARY_INDEX_SUFIX = "_pending_secondary_index";
     private static final String PENDING_SECONDARY_INDEX_PRUNE_SUFIX = "_pending_secondary_index_prune";
@@ -80,21 +86,47 @@ public class HBaseVariantTableNameGenerator {
         return metaTableName;
     }
 
+    public static boolean isValidTable(String namespace, String dbName, String tableName) {
+        String tableNamespace = null;
+        if (tableName.contains(":")) {
+            String[] split = tableName.split(":", 2);
+            tableNamespace = split[0];
+            tableName = split[1];
+            if (tableNamespace.equals("default")) {
+                tableNamespace = null;
+            }
+        }
+        if (StringUtils.isEmpty(namespace) || namespace.equals("default")) {
+            namespace = null;
+        }
+
+        if (!Objects.equals(namespace, tableNamespace)) {
+            // Not same namespace
+            return false;
+        }
+        // Namespace already checked.
+        return getMetaTableName("", dbName).equals(tableName)
+                || isValidArchiveTableName(dbName, tableName)
+                || getVariantTableName("", dbName).equals(tableName)
+                || isValidSampleIndexTableName(dbName, tableName)
+                || getPendingSecondaryIndexTableName("", dbName).equals(tableName)
+                || getPendingSecondaryIndexPruneTableName("", dbName).equals(tableName)
+                || getPendingAnnotationTableName("", dbName).equals(tableName);
+    }
+
     public static String getDBNameFromArchiveTableName(String archiveTableName) {
-        int endIndex = checkValidArchiveTableNameGetEndIndex(archiveTableName);
-        return archiveTableName.substring(0, endIndex);
+        Matcher matcher = ARCHIVE_PATTERN.matcher(archiveTableName);
+        if (matcher.matches()) {
+            return matcher.group(1);
+        } else {
+            throw new IllegalArgumentException("Invalid archive table name : " + archiveTableName);
+        }
     }
 
     public static void checkValidArchiveTableName(String archiveTableName) {
-        checkValidArchiveTableNameGetEndIndex(archiveTableName);
-    }
-
-    private static int checkValidArchiveTableNameGetEndIndex(String archiveTableName) {
-        int endIndex = archiveTableName.lastIndexOf(archiveTableName);
-        if (endIndex <= 0 || !StringUtils.isNumeric(archiveTableName.substring(endIndex + ARCHIVE_SUFIX.length()))) {
+        if (!isValidArchiveTableName(archiveTableName)) {
             throw new IllegalArgumentException("Invalid archive table name : " + archiveTableName);
         }
-        return endIndex;
     }
 
     public static String getDBNameFromVariantsTableName(String variantsTableName) {
@@ -103,9 +135,13 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static void checkValidVariantsTableName(String variantsTableName) {
-        if (!validSuffix(variantsTableName, VARIANTS_SUFIX)) {
+        if (!isValidVariantsTable(variantsTableName)) {
             throw new IllegalArgumentException("Invalid variants table name : " + variantsTableName);
         }
+    }
+
+    public static boolean isValidVariantsTable(String variantsTableName) {
+        return validSuffix(variantsTableName, VARIANTS_SUFIX);
     }
 
     public static String getDBNameFromPendingAnnotationTableName(String pendingAnnotationTableName) {
@@ -226,6 +262,19 @@ public class HBaseVariantTableNameGenerator {
         return buildTableName(namespace, dbName, ARCHIVE_SUFIX + studyId);
     }
 
+    public static boolean isValidArchiveTableName(String archiveTable) {
+        return ARCHIVE_PATTERN.matcher(archiveTable).matches();
+    }
+
+    public static boolean isValidArchiveTableName(String dbName, String archiveTable) {
+        Matcher matcher = ARCHIVE_PATTERN.matcher(archiveTable);
+        if (matcher.matches()) {
+            return matcher.group(1).equals(dbName);
+        } else {
+            return false;
+        }
+    }
+
     public static int getStudyIdFromArchiveTable(String archiveTable) {
         int idx = archiveTable.lastIndexOf(ARCHIVE_SUFIX.charAt(ARCHIVE_SUFIX.length() - 1));
         return Integer.valueOf(archiveTable.substring(idx + 1));
@@ -235,8 +284,26 @@ public class HBaseVariantTableNameGenerator {
         return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId + (version > 1 ? ("_v" + version) : ""));
     }
 
-    public static boolean isSampleIndexTableName(String tableName) {
+    public static boolean isValidSampleIndexTableName(String tableName) {
         return tableName.contains(SAMPLE_SUFIX);
+    }
+
+    public static boolean isValidSampleIndexTableName(String dbName, String tableName) {
+        Matcher matcher = SAMPLE_INDEX_PATTERN.matcher(tableName);
+        if (matcher.matches()) {
+            return matcher.group(1).equals(dbName);
+        } else {
+            return false;
+        }
+    }
+
+    public static String getDBNameFromSampleIndexTableName(String tableName) {
+        Matcher matcher = SAMPLE_INDEX_PATTERN.matcher(tableName);
+        if (matcher.matches()) {
+            return matcher.group(1);
+        } else {
+            throw new IllegalArgumentException("Invalid sample index table name : " + tableName);
+        }
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {

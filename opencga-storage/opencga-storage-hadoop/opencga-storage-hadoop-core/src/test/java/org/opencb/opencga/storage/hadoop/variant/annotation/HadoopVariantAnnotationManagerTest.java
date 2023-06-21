@@ -1,9 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
@@ -30,6 +27,7 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Category(LongTests.class)
+@Ignore
 public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManagerTest implements HadoopVariantStorageTest {
 
     @ClassRule

@@ -230,6 +230,7 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
 
         for (String geneName : geneNames) {
 
@@ -250,8 +251,8 @@ public class AlignmentStorageManager extends StorageManager {
 
 
             // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-            CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, projectQueryResult.first().getCellbase()
-                    .toClientConfiguration());
+            CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
+                    projectQueryResult.first().getCellbase().toClientConfiguration());
             GeneClient geneClient = cellBaseClient.getGeneClient();
             Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
             if (gene != null) {
@@ -450,8 +451,9 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
-        CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, projectQueryResult.first().getCellbase()
-                .toClientConfiguration());
+        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
+                projectQueryResult.first().getCellbase().toClientConfiguration());
         GeneClient geneClient = cellBaseClient.getGeneClient();
         List<Gene> response = geneClient.get(genes, QueryOptions.empty()).allResults();
         if (CollectionUtils.isNotEmpty(response)) {

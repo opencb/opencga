@@ -11,7 +11,9 @@ public abstract class Main {
         executor.addSubCommand(Arrays.asList("hbase", "hb"), "Run hbase utility commands", args -> {
             new HBaseMain().run(args);
         });
-        executor.addSubCommand(Arrays.asList("metadata", "mm", "metadatamanager"), "Interact with HBase metadata manager",
+        executor.addSubCommand(Arrays.asList("variant-engine", "variants", "ve", "variant"), "General variant engine utilities",
+                new VariantEngineUtilsMain.VariantEngineUtilsCommandExecutor());
+        executor.addSubCommand(Arrays.asList("metadata", "mm", "metadatamanager"), "Interact with HBase Variant metadata manager",
                 new VariantMetadataMain.VariantMetadataCommandExecutor());
         executor.addSubCommand(Arrays.asList("sample-index", "si"), "Debug options for scanning the SampleIndex", args -> {
             new SampleIndexMain().run(args);

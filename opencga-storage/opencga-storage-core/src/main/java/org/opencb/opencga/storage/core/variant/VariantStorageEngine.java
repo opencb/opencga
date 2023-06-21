@@ -459,7 +459,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata(params);
+        ProjectMetadata projectMetadata = getMetadataManager().getAndUpdateProjectMetadata(params);
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, projectMetadata, getMergedOptions(params));
         return newVariantAnnotationManager(annotator);
@@ -1066,6 +1066,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             return studyMetadata;
         });
+        // Invalidate caches
+        metadataManager.clearCaches();
     }
 
     /**
@@ -1104,7 +1106,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
-            final ProjectMetadata metadata = getMetadataManager().getProjectMetadata(getOptions());
+            final ProjectMetadata metadata = getMetadataManager().getAndUpdateProjectMetadata(getOptions());
 
             String species = metadata.getSpecies();
             String assembly = metadata.getAssembly();
@@ -1115,7 +1117,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             species = toCellBaseSpeciesName(species);
             cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, configuration.getCellbase().getDataRelease(),
-                    clientConfiguration));
+                    configuration.getCellbase().getToken(), clientConfiguration));
         }
         return cellBaseUtils;
     }

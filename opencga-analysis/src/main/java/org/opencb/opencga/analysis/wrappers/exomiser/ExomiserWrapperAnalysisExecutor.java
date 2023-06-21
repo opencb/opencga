@@ -51,7 +51,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private static final String EXOMISER_OUTPUT_OPTIONS_FILENAME = "output.yml";
 
     public final static String DOCKER_IMAGE_NAME = "exomiser/exomiser-cli";
-    public final static String DOCKER_IMAGE_VERSION = "13.1.0-SNAPSHOT"; // with "13.1.0", the docker exomiser/exomiser-cli crashes !!!
+    public final static String DOCKER_IMAGE_VERSION = "13.1.0";
 
     private String studyId;
     private String sampleId;

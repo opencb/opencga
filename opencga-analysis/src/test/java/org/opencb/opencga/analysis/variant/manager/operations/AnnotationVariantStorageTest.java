@@ -127,7 +127,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantOperationManage
         config.append(OperationTool.KEEP_INTERMEDIATE_FILES, true);
         variantManager.annotate(studyFqn, null, outdir, config, sessionId);
 
-        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(ExecutionResultManager.FILE_EXTENSION));
+        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !ExecutionResultManager.isExecutionResultFile(name));
         assertEquals(1, files.length);
         config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, Paths.get(outdir, files[0]).toAbsolutePath().toString());
 

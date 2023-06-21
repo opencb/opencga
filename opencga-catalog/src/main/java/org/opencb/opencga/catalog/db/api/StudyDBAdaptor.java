@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
@@ -287,9 +288,28 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param groupList  List containing possible groups that are synced and where the user should be added to.
      * @param authOrigin Authentication origin of the synced groups.
      * @return OpenCGAResult object.
-     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogDBException CatalogDBException
+     * @throws CatalogParameterException CatalogParameterException
+     * @throws CatalogAuthorizationException CatalogAuthorizationException
      */
-    OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
+    OpenCGAResult<Group> resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    /**
+     * ADD or REMOVE user to list of provided groups.
+     *
+     * @param user       User id.
+     * @param studyUids  List of study uids.
+     * @param groupList  List of group ids.
+     * @param action     Update action [ADD, REMOVE]
+     * @return OpenCGAResult object.
+     * @throws CatalogDBException CatalogDBException
+     * @throws CatalogParameterException CatalogParameterException
+     * @throws CatalogAuthorizationException CatalogAuthorizationException
+     */
+    OpenCGAResult<Group> updateUserFromGroups(String user, List<Long> studyUids, List<String> groupList,
+                                              ParamUtils.AddRemoveAction action)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Create the permission rule to the list of permission rules defined for the entry in the studyId.
