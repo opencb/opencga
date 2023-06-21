@@ -19,11 +19,23 @@ jobs:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
+    with:
+      artifact_name: build-folder
+
+  build-emr:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      maven_opts: -Dopencga.war.name=opencga
+      opencga_maven_opts: -P storage-hadoop,emr6.1
+      artifact_name: emr-build-folder
+      release: true
 
   deploy-emr-docker:
-    uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
+    with:
+      artifact_name: emr-build-folder
 
   release:
     name: Create GitHub Release

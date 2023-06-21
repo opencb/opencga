@@ -34,13 +34,10 @@ jobs:
         name: Get OpenCGA branch from pom.xml property
         run: |
           chmod +x ./.github/workflows/scripts/opencga_branch.sh
-          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )" >> $GITHUB_OUTPUT
-          echo "$GITHUB_OUTPUT"
-          if [ -n "${{ inputs.release }}" ]; then
-            echo "IS RELEASE"
-          else
-            echo "IS NOT A RELEASE"
-          fi
+          opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )
+          echo "OpenCGA Branch inferred: \"__${opencga_branch}__\"" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "  input.release : \"__${{ inputs.release }}__\"" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga

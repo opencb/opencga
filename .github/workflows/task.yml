@@ -23,3 +23,5 @@ jobs:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
+    with:
+      artifact_name: build-folder
