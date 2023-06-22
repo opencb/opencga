@@ -13,7 +13,7 @@ jobs:
       maven_opts: -Dopencga.war.name=opencga
       opencga_maven_opts: -P storage-hadoop,hdp3.1
       artifact_name: build-folder
-#      release: true
+      release: true
 
   deploy-hdp-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -29,7 +29,7 @@ jobs:
       maven_opts: -Dopencga.war.name=opencga
       opencga_maven_opts: -P storage-hadoop,emr6.1
       artifact_name: emr-build-folder
-#      release: true
+      release: true
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -38,19 +38,19 @@ jobs:
     with:
       artifact_name: emr-build-folder
 
-#  release:
-#    name: Create GitHub Release
-#    runs-on: ubuntu-22.04
-#    needs: [ build, deploy-emr-docker ]
-#    steps:
-#      - uses: actions/download-artifact@v3
-#        with:
-#          name: build-folder
-#      - name: GitHub Release
-#        uses: softprops/action-gh-release@v1
-#        with:
-#          name: ${{ github.ref_name }}
-#          tag_name: ${{ github.ref }}
-#          generate_release_notes: true
-#          files: |
-#            opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    needs: [ build, deploy-emr-docker ]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-folder
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          generate_release_notes: true
+          files: |
+            opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz
