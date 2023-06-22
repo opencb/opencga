@@ -10,8 +10,7 @@ jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: -Dopencga.war.name=opencga
-      opencga_maven_opts: -P storage-hadoop,hdp3.1
+      storage_hadoop: hdp3.1
       artifact_name: build-folder
       release: true
 
@@ -26,8 +25,7 @@ jobs:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     needs: deploy-hdp-docker
     with:
-      maven_opts: -Dopencga.war.name=opencga
-      opencga_maven_opts: -P storage-hadoop,emr6.1
+      storage_hadoop: emr6.1
       artifact_name: emr-build-folder
       release: true
 
