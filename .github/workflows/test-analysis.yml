@@ -5,9 +5,9 @@ on:
       test_profile:
         type: string
         required: true
-      report_context:
-        type: string
-        required: true
+#      report_context:
+#        type: string
+#        required: true
       mvn_opts:
         type: string
         required: false
@@ -15,16 +15,16 @@ on:
     secrets:
       SONAR_TOKEN:
         required: true
-      SSH_TESTING_SERVER_HOST:
-        required: true
-      SSH_TESTING_SERVER_PORT:
-        required: true
-      SSH_TESTING_SERVER_USER:
-        required: true
-      SSH_TESTING_SERVER_PASSWORD:
-        required: true
-env:
-  xb_version: "1.7.1"
+#      SSH_TESTING_SERVER_HOST:
+#        required: true
+#      SSH_TESTING_SERVER_PORT:
+#        required: true
+#      SSH_TESTING_SERVER_USER:
+#        required: true
+#      SSH_TESTING_SERVER_PASSWORD:
+#        required: true
+#env:
+#  xb_version: "1.7.1"
 
 jobs:
   analysis:
