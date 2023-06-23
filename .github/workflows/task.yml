@@ -22,6 +22,7 @@ jobs:
   deploy-docker-hub:
     name: Push Docker image
     runs-on: ubuntu-22.04
+    needs: build
     steps:
       - name: Download build dir
         uses: actions/download-artifact@v3
