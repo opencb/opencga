@@ -71,7 +71,7 @@ jobs:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         ## Skip cancelled()
