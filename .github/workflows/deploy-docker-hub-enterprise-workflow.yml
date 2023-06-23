@@ -1,7 +1,11 @@
-name: Reusable workflow to push in DockerHub
+name: "Reusable workflow to push in DockerHub"
 
 on:
   workflow_call:
+    inputs:
+      artifact_name:
+        type: string
+        required: true
     secrets:
       DOCKER_HUB_USER:
         required: true
@@ -16,7 +20,7 @@ jobs:
       - name: Download build dir
         uses: actions/download-artifact@v3
         with:
-          name: build-folder
+          name: ${{ inputs.artifact_name }}
           path: build
       - name: Docker Login
         uses: docker/login-action@v2
