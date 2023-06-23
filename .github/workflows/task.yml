@@ -15,14 +15,12 @@ jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: -Dopencga.war.name=opencga
-      opencga_maven_opts: -P storage-hadoop,hdp3.1
+      storage_hadoop: hdp3.1
       artifact_name: build-folder
 
   deploy-docker-hub:
     name: Push Docker image
     runs-on: ubuntu-22.04
-    needs: build
     steps:
       - name: Download build dir
         uses: actions/download-artifact@v3

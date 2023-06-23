@@ -3,10 +3,7 @@ name: Reusable workflow to build Java application
 on:
   workflow_call:
     inputs:
-      maven_opts:
-        type: string
-        required: false
-      opencga_maven_opts:
+      storage_hadoop:
         type: string
         required: false
       artifact_name:
@@ -34,13 +31,10 @@ jobs:
         name: Get OpenCGA branch from pom.xml property
         run: |
           chmod +x ./.github/workflows/scripts/opencga_branch.sh
-          echo "opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )" >> $GITHUB_OUTPUT
-          echo "$GITHUB_OUTPUT"
-          if [ -n "${{ inputs.release }}" ]; then
-            echo "IS RELEASE"
-          else
-            echo "IS NOT A RELEASE"
-          fi
+          opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )
+          echo "OpenCGA ref: __\"${opencga_branch}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "Is release: __\"${{ inputs.release }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: opencb/opencga
@@ -53,11 +47,8 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-      - name: OpenCGA Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests ${{ inputs.opencga_maven_opts }} -f opencga-home/pom.xml
-#        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,opencga-storage-hadoop-deps -DskipTests -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' -f opencga-home/pom.xml
       - name: OpenCGA Enterprise Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests ${{ inputs.maven_opts }}
+        run: ./build.sh --storage-hadoop  ${{ inputs.storage_hadoop }} --opencga-home ./opencga-home/
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.artifact_name }}

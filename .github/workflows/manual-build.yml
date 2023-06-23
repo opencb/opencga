@@ -5,12 +5,14 @@ name: Manual build workflow
 on:
   workflow_dispatch:
     inputs:
-      maven_opts:
+      storage_hadoop:
         type: string
         required: false
+        default: hdp3.1
         
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: ${{ inputs.maven_opts }}
+      storage_hadoop: ${{ inputs.storage_hadoop }}
+      artifact_name: build-folder
