@@ -15,7 +15,7 @@ on:
     outputs:
       version:
         description: "XetaBase project version"
-        value: ${{ jobs.build-workflow.outputs.version }}
+        value: ${{ jobs.build.outputs.version }}
 
 jobs:
   build:
