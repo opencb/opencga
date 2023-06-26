@@ -1,11 +1,7 @@
-name: "Reusable workflow to push in DockerHub"
+name: Reusable workflow to push in DockerHub
 
 on:
   workflow_call:
-    inputs:
-      artifact_name:
-        type: string
-        required: true
     secrets:
       DOCKER_HUB_USER:
         required: true
@@ -20,8 +16,10 @@ jobs:
       - name: Download build dir
         uses: actions/download-artifact@v3
         with:
-          name: ${{ inputs.artifact_name }}
+          name: build-folder
           path: build
+      - name: Chmod
+        run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
       - name: Docker Login
         uses: docker/login-action@v2
         with:
