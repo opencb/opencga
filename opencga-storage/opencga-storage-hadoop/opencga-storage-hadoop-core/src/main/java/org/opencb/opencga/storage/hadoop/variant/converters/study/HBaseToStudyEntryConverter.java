@@ -399,10 +399,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         if (configuration.getProjection() != null
                 && !configuration.getProjection().getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
-            // TODO: Should we return the original CALL?
-//            if (call != null && !call.isEmpty()) {
-//                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
-//            }
+            if (call != null && !call.isEmpty()) {
+                OriginalCall originalCall = parseOriginalCall(call);
+                studyEntry.getFiles().add(new FileEntry(fileName, originalCall, Collections.emptyMap()));
+            }
             return;
         }
 
@@ -412,8 +412,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         VariantOverlappingStatus overlappingStatus =
                 VariantOverlappingStatus.valueFromShortString((String) (fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX)));
         if (call != null && !call.isEmpty()) {
-            int i = call.lastIndexOf(':');
-            originalCall = new OriginalCall(call.substring(0, i), Integer.valueOf(call.substring(i + 1)));
+            originalCall = parseOriginalCall(call);
         } else if (overlappingStatus.equals(VariantOverlappingStatus.MULTI)) {
             attributes.put(StudyEntry.FILTER, "SiteConflict");
             AlternateCoordinate alternateCoordinate = getAlternateCoordinate(alternateRaw);
@@ -425,6 +424,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     alternateCoordinate.getAlternate()).toString(), 0);
         }
         studyEntry.getFiles().add(new FileEntry(fileName, originalCall, attributes));
+    }
+
+    private OriginalCall parseOriginalCall(String call) {
+        int i = call.lastIndexOf(':');
+        OriginalCall originalCall = new OriginalCall(call.substring(0, i), Integer.valueOf(call.substring(i + 1)));
+        return originalCall;
     }
 
     public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {

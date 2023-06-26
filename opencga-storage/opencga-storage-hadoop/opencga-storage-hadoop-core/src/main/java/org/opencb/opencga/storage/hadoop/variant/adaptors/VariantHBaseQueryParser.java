@@ -225,7 +225,8 @@ public class VariantHBaseQueryParser {
         }
 
         List<Scan> scans;
-        if ((regions.isEmpty() || regions.size() == 1) && variants.isEmpty() && idIntersect.isEmpty()) {
+        int numLocusFilters = regions.size() + variants.size() + idIntersect.size();
+        if (numLocusFilters <= 1) {
             scans = Collections.singletonList(parseQuery(selectElements, query, options));
         } else {
             scans = new ArrayList<>(regions.size() + variants.size() + idIntersect.size());
@@ -254,7 +255,7 @@ public class VariantHBaseQueryParser {
                 subQuery.put(ID.key(), variant);
                 try {
                     Scan scan = new Scan(templateScan);
-                    scan.setSmall(true);
+                    scan.setOneRowLimit();
                     addVariantIdFilter(scan, variant);
                     scans.add(scan);
                 } catch (IOException e) {
@@ -301,6 +302,17 @@ public class VariantHBaseQueryParser {
             Variant variant = VariantQueryUtils.toVariant(ids.get(0));
             addVariantIdFilter(scan, variant);
             regionOrVariant = variant;
+            scan.setOneRowLimit();
+        }
+        if (isValidParam(query, ID_INTERSECT)) {
+            List<String> ids = query.getAsStringList(ID_INTERSECT.key());
+            if (ids.size() != 1) {
+                throw VariantQueryException.malformedParam(ID_INTERSECT, ids.toString(), "Unsupported multiple variant ids filter");
+            }
+            Variant variant = VariantQueryUtils.toVariant(ids.get(0));
+            addVariantIdFilter(scan, variant);
+            regionOrVariant = variant;
+            scan.setOneRowLimit();
         }
 
 //        if (isValidParam(query, ID)) {

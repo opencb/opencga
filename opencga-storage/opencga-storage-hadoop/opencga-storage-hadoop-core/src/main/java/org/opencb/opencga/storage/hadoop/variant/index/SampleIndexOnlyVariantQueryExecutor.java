@@ -6,6 +6,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.datastore.core.DataResult;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
 import static org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE;
 
@@ -265,16 +267,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
 
-    private static class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
+    enum FamilyRole {
+        MOTHER,
+        FATHER,
+        SAMPLE
+    }
 
-        enum FamilyRole {
-            MOTHER,
-            FATHER,
-            SAMPLE
-        }
-
+    private class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
         private final boolean includeStudy;
         private String studyName;
+        private List<String> files;
         private List<FamilyRole> familyRoleOrder;
         private String sampleName;
         private String motherName;
@@ -297,6 +299,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 }
                 sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
                 Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
+                List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+                files = new ArrayList<>(fileIds.size());
+                for (Integer fileId : fileIds) {
+                    files.add(metadataManager.getFileName(studyId, fileId));
+                }
 
 
                 familyRoleOrder = new ArrayList<>();
@@ -364,9 +371,29 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     }
                 }
                 studyEntry.setSortedSamplesPosition(samplesPosition);
+                if (v.getLengthReference() == 0 || v.getLengthAlternate() == 0) {
+                    studyEntry.setFiles(getOriginalCall(v, studyName, files));
+                }
                 v.setStudies(Collections.singletonList(studyEntry));
             }
             return v;
         }
     }
+
+    private List<FileEntry> getOriginalCall(Variant v, String study, List<String> files) {
+        Variant variant = dbAdaptor.get(Collections.singletonList(v).iterator(),
+                new Query()
+                        .append(VariantQueryParam.INCLUDE_FILE.key(), files)
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE)
+                        .append(VariantQueryParam.INCLUDE_STUDY.key(), study),
+                new QueryOptions()
+                        .append(VariantHadoopDBAdaptor.NATIVE, true)
+                        .append(QueryOptions.INCLUDE, Arrays.asList(VariantField.STUDIES_FILES))).first();
+        List<FileEntry> fileEntries = variant.getStudies().get(0).getFiles();
+        fileEntries.forEach(fileEntry -> {
+            fileEntry.setData(Collections.emptyMap());
+        });
+        return fileEntries;
+    }
+
 }
