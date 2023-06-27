@@ -13,6 +13,8 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -42,9 +44,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER;
 import static org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE;
 
 /**
@@ -63,6 +68,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
             .namingPattern("sample-index-async-count-%s")
             .build());
+    private static final ExecutorService THREAD_POOL_ORIG_CALL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+            .namingPattern("sample-index-fetch-call-%s")
+            .build());
+    private int missingOriginalCallBufferSize;
+    private int missingOriginalCallBatchSize;
 
     public SampleIndexOnlyVariantQueryExecutor(VariantHadoopDBAdaptor dbAdaptor, SampleIndexDBAdaptor sampleIndexDBAdaptor,
                                                String storageEngineId, ObjectMap options) {
@@ -71,6 +81,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         this.dbAdaptor = dbAdaptor;
         variantQueryParser = new VariantQueryParser(null, getMetadataManager());
         variantQueryProjectionParser = new VariantQueryProjectionParser(getMetadataManager());
+        missingOriginalCallBufferSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER.key(),
+                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER.defaultValue());
+        missingOriginalCallBatchSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH.key(),
+                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH.defaultValue());
     }
 
     @Override
@@ -162,6 +176,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             SampleVariantIndexEntryToVariantConverter converter =
                     new SampleVariantIndexEntryToVariantConverter(parseQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
+            AddMissingOriginalCallTask task = new AddMissingOriginalCallTask(
+                    parseQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
+            variantIterator = variantIterator.mapBuffered(task::apply, missingOriginalCallBufferSize);
             variantIterator.addCloseable(rawIterator);
         }
         return variantIterator;
@@ -267,16 +284,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
 
-    enum FamilyRole {
-        MOTHER,
-        FATHER,
-        SAMPLE
-    }
+    private static class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
 
-    private class SampleVariantIndexEntryToVariantConverter implements Converter<SampleVariantIndexEntry, Variant> {
+        enum FamilyRole {
+            MOTHER,
+            FATHER,
+            SAMPLE
+        }
+
         private final boolean includeStudy;
         private String studyName;
-        private List<String> files;
         private List<FamilyRole> familyRoleOrder;
         private String sampleName;
         private String motherName;
@@ -299,12 +316,6 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 }
                 sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
                 Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
-                List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
-                files = new ArrayList<>(fileIds.size());
-                for (Integer fileId : fileIds) {
-                    files.add(metadataManager.getFileName(studyId, fileId));
-                }
-
 
                 familyRoleOrder = new ArrayList<>();
                 samplesPosition = new LinkedHashMap<>();
@@ -371,29 +382,94 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     }
                 }
                 studyEntry.setSortedSamplesPosition(samplesPosition);
-                if (v.getLengthReference() == 0 || v.getLengthAlternate() == 0) {
-                    studyEntry.setFiles(getOriginalCall(v, studyName, files));
-                }
                 v.setStudies(Collections.singletonList(studyEntry));
             }
             return v;
         }
     }
 
-    private List<FileEntry> getOriginalCall(Variant v, String study, List<String> files) {
-        Variant variant = dbAdaptor.get(Collections.singletonList(v).iterator(),
-                new Query()
-                        .append(VariantQueryParam.INCLUDE_FILE.key(), files)
-                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE)
-                        .append(VariantQueryParam.INCLUDE_STUDY.key(), study),
-                new QueryOptions()
-                        .append(VariantHadoopDBAdaptor.NATIVE, true)
-                        .append(QueryOptions.INCLUDE, Arrays.asList(VariantField.STUDIES_FILES))).first();
-        List<FileEntry> fileEntries = variant.getStudies().get(0).getFiles();
-        fileEntries.forEach(fileEntry -> {
-            fileEntry.setData(Collections.emptyMap());
-        });
-        return fileEntries;
+    private class AddMissingOriginalCallTask implements Task<Variant, Variant> {
+        private String studyName;
+        private List<String> files;
+
+        AddMissingOriginalCallTask(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
+                                                  VariantStorageMetadataManager metadataManager) {
+            VariantQueryProjection projection = parseQuery.getProjection();
+
+            int studyId = projection.getStudyIds().get(0); // only one study
+            VariantQueryProjection.StudyVariantQueryProjection projectionStudy = projection.getStudy(studyId);
+            studyName = projectionStudy.getStudyMetadata().getName();
+
+            if (sampleIndexQuery.getSamplesMap().size() != 1) {
+                // This should never happen
+                throw new IllegalStateException("Unexpected number of samples. Expected one, found "
+                        + sampleIndexQuery.getSamplesMap().keySet());
+            }
+            String sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
+            Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
+            List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+            files = new ArrayList<>(fileIds.size());
+            for (Integer fileId : fileIds) {
+                files.add(metadataManager.getFileName(studyId, fileId));
+            }
+        }
+
+        @Override
+        public List<Variant> apply(List<Variant> variants) {
+            List<Variant> indels = variants.stream()
+                    .filter(v -> v.getLengthReference() == 0 || v.getLengthAlternate() == 0)
+                    .collect(Collectors.toList());
+            if (!indels.isEmpty()) {
+                StopWatch stopWatch = StopWatch.createStarted();
+                List<List<Variant>> batches = BatchUtils.splitBatches(indels, missingOriginalCallBatchSize);
+                List<Future<Map<String, List<FileEntry>>>> futures = new ArrayList<>(batches.size());
+                for (List<Variant> batch : batches) {
+                    futures.add(THREAD_POOL_ORIG_CALL.submit(() -> getOriginalCall(batch, studyName, files)));
+                }
+
+                Map<String, List<FileEntry>> map = new HashMap<>(variants.size());
+                for (Future<Map<String, List<FileEntry>>> future : futures) {
+                    try {
+                        map.putAll(future.get(60, TimeUnit.SECONDS));
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        throw new VariantQueryException("Error fetching original call for INDELs");
+                    }
+                }
+                logger.info("Fetch {} INDEL original call in {} in {} threads", map.size(), TimeUtils.durationToString(stopWatch),
+                        futures.size());
+
+                for (Variant v : indels) {
+                    List<FileEntry> fileEntries = map.get(v.toString());
+                    v.getStudies().get(0).setFiles(fileEntries);
+                }
+            }
+            return variants;
+        }
+
+        private Map<String, List<FileEntry>> getOriginalCall(List<Variant> variants, String study, List<String> files) {
+//            StopWatch stopWatch = StopWatch.createStarted();
+            Map<String, List<FileEntry>> filesMap = new HashMap<>(variants.size());
+            for (Variant variant : dbAdaptor.iterable(
+                    new Query()
+                            .append(VariantQueryParam.ID.key(), variants)
+                            .append(VariantQueryParam.INCLUDE_FILE.key(), files)
+                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE)
+                            .append(VariantQueryParam.INCLUDE_STUDY.key(), study),
+                    new QueryOptions()
+                            .append(VariantHadoopDBAdaptor.NATIVE, true)
+                            .append(VariantHadoopDBAdaptor.QUIET, true)
+                            .append(QueryOptions.INCLUDE, Arrays.asList(VariantField.STUDIES_FILES)))) {
+
+                List<FileEntry> fileEntries = variant.getStudies().get(0).getFiles();
+                // Remove data, as we only want the original call
+                fileEntries.forEach(fileEntry -> fileEntry.setData(Collections.emptyMap()));
+                filesMap.put(variant.toString(), fileEntries);
+            }
+//            logger.info(" # Fetch {} INDEL original call in {}", filesMap.size(), TimeUtils.durationToString(stopWatch));
+            return filesMap;
+        }
+
+
     }
 
 }
