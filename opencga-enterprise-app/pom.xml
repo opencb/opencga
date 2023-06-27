@@ -198,11 +198,11 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Copying to ${build.dir}/cloud/docker/opencga-base</echo>
+                                <echo>Copying to ${build.dir}/cloud/docker/opencga-enterprise</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${app.dir}/cloud/docker/opencga-base/Dockerfile"/>
-                                    <arg value="${build.dir}/cloud/docker/opencga-base/"/>
+                                    <arg value="${app.dir}/cloud/docker/opencga-enterprise/Dockerfile"/>
+                                    <arg value="${build.dir}/cloud/docker/oopencga-enterprise/"/>
                                 </exec>
 
                                 <echo>Copying SSO to ${build.dir}</echo>
