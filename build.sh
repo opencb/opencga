@@ -62,6 +62,7 @@ done
 
 
 cd "$(dirname "$0")" || exit 2
+OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
 if [ -d "$OPENCGA_HOME_DIR" ]; then
 
@@ -85,7 +86,22 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
       exit 1
     fi
   else
-    red "Opencga version no match! You must checkout the $OPENCGA_DENDENCY_VERSION of opencga"
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
+    OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
+
+    REF_TYPE=
+    REF=
+    if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
+      REF_TYPE="tag"
+      REF="$OPENCGA_EXPECTED_TAG"
+    else
+      REF_TYPE="branch"
+      REF="$OPENCGA_EXPECTED_BRANCH"
+    fi
+    red "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DENDENCY_VERSION\" of opencga"
+    red "Please, execute bellow command and retry:"
+    echo "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
     exit 1
   fi
 else
@@ -96,6 +112,6 @@ else
   exit 1
 fi
 
-cd - || exit 2
+cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
-mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS"
+mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga

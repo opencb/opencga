@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Navigate to the root folder where the pom.xml is
-cd /home/runner/work/opencga-enterprise/opencga-enterprise || exit 2
+cd "$(dirname "$0")"/../../../ || exit 2
 
 ## Read the opencga version from the pom.xml
 BUILD_VERSION=$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)
@@ -16,7 +16,7 @@ fi
 CLEAN_BUILD_VERSION=$(echo "$BUILD_VERSION" | cut -d "-" -f 1)
 
 ## Read the numbers separately to compose the name of the branch
-  MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
+MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
 MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
 PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
@@ -29,8 +29,8 @@ fi
 
 ## It's develop branch
 if [[ "$PATCH" ==  "0" ]]; then
-    echo "develop"
-    exit 0
+  echo "develop"
+  exit 0
 else #Is release branch
   echo "release-$MAJOR.$MINOR.x"
   exit 0
