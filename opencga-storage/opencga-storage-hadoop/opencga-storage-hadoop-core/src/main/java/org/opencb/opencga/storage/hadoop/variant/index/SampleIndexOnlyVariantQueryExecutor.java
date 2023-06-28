@@ -21,9 +21,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -48,8 +46,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER;
 import static org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE;
 
 /**
@@ -68,11 +66,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
             .namingPattern("sample-index-async-count-%s")
             .build());
-    private static final ExecutorService THREAD_POOL_ORIG_CALL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+    private static final ExecutorService THREAD_POOL_FETCH_CALL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
             .namingPattern("sample-index-fetch-call-%s")
             .build());
-    private int missingOriginalCallBufferSize;
-    private int missingOriginalCallBatchSize;
+    private int partialDataBufferSize;
+    private int partialDataBatchSize;
 
     public SampleIndexOnlyVariantQueryExecutor(VariantHadoopDBAdaptor dbAdaptor, SampleIndexDBAdaptor sampleIndexDBAdaptor,
                                                String storageEngineId, ObjectMap options) {
@@ -81,10 +79,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         this.dbAdaptor = dbAdaptor;
         variantQueryParser = new VariantQueryParser(null, getMetadataManager());
         variantQueryProjectionParser = new VariantQueryProjectionParser(getMetadataManager());
-        missingOriginalCallBufferSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER.key(),
-                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BUFFER.defaultValue());
-        missingOriginalCallBatchSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH.key(),
-                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_MOC_BATCH.defaultValue());
+        partialDataBufferSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER.key(),
+                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER.defaultValue());
+        partialDataBatchSize = options.getInt(SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH.key(),
+                SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH.defaultValue());
     }
 
     @Override
@@ -159,9 +157,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     }
 
     private VariantDBIterator getVariantDBIterator(SampleIndexQuery sampleIndexQuery, Query inputQuery, QueryOptions options) {
-        ParsedVariantQuery parseQuery = variantQueryParser.parseQuery(inputQuery, options, true);
+        ParsedVariantQuery parsedQuery = variantQueryParser.parseQuery(inputQuery, options, true);
         VariantDBIterator variantIterator;
-        if (parseQuery.getProjection().getStudyIds().isEmpty()) {
+        if (parsedQuery.getProjection().getStudyIds().isEmpty()) {
             logger.info("Using sample index iterator Iterator<Variant>");
             variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery, options);
             variantIterator = variantIterator.map(v -> v.setId(v.toString()));
@@ -174,11 +172,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 throw VariantQueryException.internalException(e).setQuery(inputQuery);
             }
             SampleVariantIndexEntryToVariantConverter converter =
-                    new SampleVariantIndexEntryToVariantConverter(parseQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
+                    new SampleVariantIndexEntryToVariantConverter(parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
-            AddMissingOriginalCallTask task = new AddMissingOriginalCallTask(
-                    parseQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
-            variantIterator = variantIterator.mapBuffered(task::apply, missingOriginalCallBufferSize);
+            AddMissingDataTask task = new AddMissingDataTask(
+                    parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
+            variantIterator = variantIterator.mapBuffered(task::apply, partialDataBufferSize);
             variantIterator.addCloseable(rawIterator);
         }
         return variantIterator;
@@ -220,7 +218,6 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 || includeFields.contains(VariantField.STUDIES_FILES)
                 || includeFields.contains(VariantField.STUDIES_ISSUES)
                 || includeFields.contains(VariantField.STUDIES_SCORES)
-                || includeFields.contains(VariantField.STUDIES_SECONDARY_ALTERNATES)
         ) {
             return false;
         }
@@ -388,13 +385,17 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         }
     }
 
-    private class AddMissingOriginalCallTask implements Task<Variant, Variant> {
-        private String studyName;
-        private List<String> files;
+    private class AddMissingDataTask implements Task<Variant, Variant> {
+        private final ParsedVariantQuery parsedQuery;
+        private final String studyName;
+        private final List<String> samples;
+        private final List<String> files;
+        private final List<String> allFiles;
 
-        AddMissingOriginalCallTask(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
-                                                  VariantStorageMetadataManager metadataManager) {
-            VariantQueryProjection projection = parseQuery.getProjection();
+        AddMissingDataTask(ParsedVariantQuery parsedQuery, SampleIndexQuery sampleIndexQuery,
+                           VariantStorageMetadataManager metadataManager) {
+            this.parsedQuery = parsedQuery;
+            VariantQueryProjection projection = this.parsedQuery.getProjection();
 
             int studyId = projection.getStudyIds().get(0); // only one study
             VariantQueryProjection.StudyVariantQueryProjection projectionStudy = projection.getStudy(studyId);
@@ -405,6 +406,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 throw new IllegalStateException("Unexpected number of samples. Expected one, found "
                         + sampleIndexQuery.getSamplesMap().keySet());
             }
+            samples = new ArrayList<>(projectionStudy.getSamples().size());
+            for (Integer sample : projectionStudy.getSamples()) {
+                samples.add(metadataManager.getSampleName(studyId, sample));
+            }
+            Set<Integer> allFileIds = metadataManager.getFileIdsFromSampleIds(studyId, projectionStudy.getSamples(), true);
+            allFiles = new ArrayList<>(allFileIds.size());
+            for (Integer fileId : allFileIds) {
+                allFiles.add(metadataManager.getFileName(studyId, fileId));
+            }
+
             String sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
             Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
             List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
@@ -416,37 +427,94 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
         @Override
         public List<Variant> apply(List<Variant> variants) {
-            List<Variant> indels = variants.stream()
-                    .filter(v -> v.getLengthReference() == 0 || v.getLengthAlternate() == 0)
-                    .collect(Collectors.toList());
-            if (!indels.isEmpty()) {
-                StopWatch stopWatch = StopWatch.createStarted();
-                List<List<Variant>> batches = BatchUtils.splitBatches(indels, missingOriginalCallBatchSize);
-                List<Future<Map<String, List<FileEntry>>>> futures = new ArrayList<>(batches.size());
-                for (List<Variant> batch : batches) {
-                    futures.add(THREAD_POOL_ORIG_CALL.submit(() -> getOriginalCall(batch, studyName, files)));
-                }
-
-                Map<String, List<FileEntry>> map = new HashMap<>(variants.size());
-                for (Future<Map<String, List<FileEntry>>> future : futures) {
-                    try {
-                        map.putAll(future.get(60, TimeUnit.SECONDS));
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        throw new VariantQueryException("Error fetching original call for INDELs");
+            // Multi allelic variants, to be read entirely
+            List<Variant> multiAllelic = new ArrayList<>();
+            // INDELs (non multiallelic) variants, to fetch the original call
+            List<Variant> indels = new ArrayList<>();
+            for (Variant variant : variants) {
+                boolean secAlt = false;
+                for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
+                    if (GenotypeClass.SEC.test(sample.getData().get(0))) {
+                        secAlt = true;
+                        break;
                     }
                 }
-                logger.info("Fetch {} INDEL original call in {} in {} threads", map.size(), TimeUtils.durationToString(stopWatch),
-                        futures.size());
-
-                for (Variant v : indels) {
-                    List<FileEntry> fileEntries = map.get(v.toString());
-                    v.getStudies().get(0).setFiles(fileEntries);
+                if (secAlt) {
+                    multiAllelic.add(variant);
+                } else {
+                    if (variant.getLengthReference() == 0 || variant.getLengthAlternate() == 0) {
+                        indels.add(variant);
+                    }
                 }
             }
+            // Process in multiple treads
+            List<Future<?>> futures = new ArrayList<>(10);
+            if (!multiAllelic.isEmpty()) {
+                List<List<Variant>> batches = BatchUtils.splitBatches(multiAllelic, partialDataBatchSize);
+                for (List<Variant> batch : batches) {
+                    futures.add(THREAD_POOL_FETCH_CALL.submit(() -> addSecondaryAlternates(batch)));
+                }
+            }
+            if (!indels.isEmpty()) {
+                List<List<Variant>> batches = BatchUtils.splitBatches(indels, partialDataBatchSize);
+                for (List<Variant> batch : batches) {
+                    futures.add(THREAD_POOL_FETCH_CALL.submit(() -> addOriginalCall(batch, studyName)));
+                }
+            }
+
+            StopWatch stopWatch = StopWatch.createStarted();
+            for (Future<?> future : futures) {
+                try {
+                    // Should end in few seconds
+                    future.get(90, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    throw new VariantQueryException("Error fetching original call for INDELs");
+                }
+            }
+            logger.info("Fetch {} partial variants in {} in {} threads",
+                    multiAllelic.size() + indels.size(),
+                    TimeUtils.durationToString(stopWatch),
+                    futures.size());
             return variants;
         }
 
-        private Map<String, List<FileEntry>> getOriginalCall(List<Variant> variants, String study, List<String> files) {
+        private void addSecondaryAlternates(List<Variant> toReadFull) {
+//            StopWatch stopWatch = StopWatch.createStarted();
+            QueryOptions options = new QueryOptions(parsedQuery.getInputOptions());
+            Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(options));
+            includeFields.add(VariantField.STUDIES_SECONDARY_ALTERNATES);
+            includeFields.add(VariantField.STUDIES_FILES);
+            options.remove(QueryOptions.EXCLUDE);
+            options.remove(VariantField.SUMMARY);
+            options.put(QueryOptions.INCLUDE, includeFields);
+            options.put(VariantHadoopDBAdaptor.QUIET, true);
+
+            Map<String, Variant> fullVariants = dbAdaptor.get(new VariantQuery()
+                                    .id(toReadFull)
+                                    .study(studyName)
+                                    .includeSample(samples)
+                                    .includeSampleData(VariantQueryUtils.getIncludeSampleData(parsedQuery.getInputQuery()))
+                                    .includeFile(allFiles),
+                            options)
+                    .getResults().stream().collect(Collectors.toMap(Variant::toString, v -> v));
+
+            for (Variant variant : toReadFull) {
+                Variant fullVariant = fullVariants.get(variant.toString());
+                if (fullVariant == null) {
+                    // TODO: Should we fail here?
+//                    throw new VariantQueryException("Variant " + variant + " not found!");
+                    logger.warn("Variant " + variant + " not found!");
+                    continue;
+                }
+                StudyEntry fullStudy = fullVariant.getStudies().get(0);
+                fullStudy.getFiles().forEach(f -> f.setData(Collections.emptyMap()));
+                fullStudy.setStats(Collections.emptyList());
+                variant.setStudies(Collections.singletonList(fullStudy));
+            }
+//            logger.info(" # Fetch {} SEC_ALTS in {}", toReadFull.size(), TimeUtils.durationToString(stopWatch));
+        }
+
+        private void addOriginalCall(List<Variant> variants, String study) {
 //            StopWatch stopWatch = StopWatch.createStarted();
             Map<String, List<FileEntry>> filesMap = new HashMap<>(variants.size());
             for (Variant variant : dbAdaptor.iterable(
@@ -465,8 +533,18 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 fileEntries.forEach(fileEntry -> fileEntry.setData(Collections.emptyMap()));
                 filesMap.put(variant.toString(), fileEntries);
             }
+
+            for (Variant variant : variants) {
+                List<FileEntry> fileEntries = filesMap.get(variant.toString());
+                if (fileEntries == null) {
+                    // TODO: Should we fail here?
+//                    throw new VariantQueryException("Variant " + variant + " not found!");
+                    logger.warn("Variant " + variant + " not found!");
+                    continue;
+                }
+                variant.getStudies().get(0).setFiles(fileEntries);
+            }
 //            logger.info(" # Fetch {} INDEL original call in {}", filesMap.size(), TimeUtils.durationToString(stopWatch));
-            return filesMap;
         }
 
 

@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -193,6 +194,12 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), value);
         return this;
     }
+
+    public VariantQuery includeSampleData(Collection<String> value) {
+        put(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), value);
+        return this;
+    }
+
     public String includeSampleData() {
         return getString(VariantQueryParam.INCLUDE_SAMPLE_DATA.key());
     }
@@ -257,6 +264,12 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_FILE.key(), value);
         return this;
     }
+
+    public VariantQuery includeFile(Collection<String> value) {
+        put(VariantQueryParam.INCLUDE_FILE.key(), value);
+        return this;
+    }
+
     public VariantQuery includeFileAll() {
         return includeFile(ParamConstants.ALL);
     }
