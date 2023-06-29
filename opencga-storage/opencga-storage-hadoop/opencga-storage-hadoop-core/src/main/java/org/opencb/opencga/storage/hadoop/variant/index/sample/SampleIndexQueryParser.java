@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtFtCombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
@@ -51,15 +52,18 @@ public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
     private final SampleIndexSchemaFactory schemaFactory;
+    private final int extendedFilteringRegionDefault;
 
     public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
-        this.metadataManager = metadataManager;
-        this.schemaFactory = new SampleIndexSchemaFactory(metadataManager);
+        this(metadataManager, new SampleIndexSchemaFactory(metadataManager));
     }
 
     public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchemaFactory schemaFactory) {
         this.metadataManager = metadataManager;
         this.schemaFactory = schemaFactory;
+        this.extendedFilteringRegionDefault = metadataManager.getConfiguration().getInt(
+                HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER.key(),
+                HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER.defaultValue());
     }
 
     /**
@@ -528,9 +532,19 @@ public class SampleIndexQueryParser {
 //            }
         }
 
-        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants);
+        int extendedFilteringRegion = 0;
+        for (String sample : sampleGenotypeQuery.keySet()) {
+            SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sample, studyId);
+            extendedFilteringRegion = Math.max(extendedFilteringRegion, sampleMetadata.getAttributes()
+                    .getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, -1));
+        }
+        if (extendedFilteringRegion <= 0) {
+            extendedFilteringRegion = extendedFilteringRegionDefault;
+        }
 
-        return new SampleIndexQuery(schema, regionGroups, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
+        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants, extendedFilteringRegion);
+
+        return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation);
     }
@@ -563,13 +577,14 @@ public class SampleIndexQueryParser {
      *
      * @param regions List of regions to group
      * @param variants List of variants to group
+     * @param extendedFilteringRegion number of positions to start filtering before any actual region filter start
      * @return Locus Queries
      */
-    public static Collection<LocusQuery> buildLocusQueries(List<Region> regions, List<Variant> variants) {
+    public static Collection<LocusQuery> buildLocusQueries(List<Region> regions, List<Variant> variants, int extendedFilteringRegion) {
         regions = mergeRegions(regions);
         Map<Region, LocusQuery> groupsMap = new HashMap<>();
         for (Region region : regions) {
-            Region chunkRegion = SampleIndexSchema.getChunkRegion(region);
+            Region chunkRegion = SampleIndexSchema.getChunkRegion(region, extendedFilteringRegion);
             groupsMap.computeIfAbsent(chunkRegion, LocusQuery::new).getRegions().add(region);
         }
         for (Variant variant : variants) {

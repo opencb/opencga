@@ -185,6 +185,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
+    public ObjectMap getConfiguration() {
+        return dbAdaptorFactory.getConfiguration();
+    }
+
     public Lock lockGlobal(long lockDuration, long timeout, String lockName)
             throws StorageEngineException {
         try {

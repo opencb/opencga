@@ -84,7 +84,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";
-    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3, STUDY_NAME_4);
+    public static final String STUDY_NAME_5 = "study_5";
+    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3, STUDY_NAME_4, STUDY_NAME_5);
     private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
         put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
@@ -182,6 +183,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         runETL(engine, getResourceUri("variant-test-dense.vcf.gz"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_4, trios, new ObjectMap());
+
+        // Study 5, large SV
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_5)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getResourceUri("variant-large-sv.vcf"), outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME_5, trios, new ObjectMap());
 
 
         // ---------------- Annotate
@@ -425,6 +434,36 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         .append(STUDY.key(), STUDY_NAME_2)
                         .append(SAMPLE.key(), "NA19600")
                         .append(SAMPLE_DATA.key(), "NA19600:DS=1.005"));
+    }
+
+    @Test
+    public void testLocusQueryOverlap() throws Exception {
+
+        VariantQuery query = new VariantQuery().study(STUDY_NAME_5).sample("NA19600");
+        System.out.println("query = " + query.toJson());
+        List<Variant> variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
+                .toDataResult().getResults();
+        assertEquals(2, variants.size());
+
+        query.region("1:2000200-5500000");
+        System.out.println("query = " + query.toJson());
+        variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
+                .toDataResult().getResults();
+        assertEquals(2, variants.size());
+
+        query.region("1:200-2500000");
+        System.out.println("query = " + query.toJson());
+        variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
+                .toDataResult().getResults();
+        assertEquals(1, variants.size());
+        assertEquals("1:1000001:4000000:-:<DUP>", variants.get(0).toString());
+
+        query.region("1:2000200-2500000");
+        System.out.println("query = " + query.toJson());
+        variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
+                .toDataResult().getResults();
+        assertEquals(1, variants.size());
+        assertEquals("1:1000001:4000000:-:<DUP>", variants.get(0).toString());
     }
 
     @Test
