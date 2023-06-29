@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 # WARNING Develop branch needed for prod
+
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
@@ -19,7 +20,6 @@ jobs:
     secrets: inherit
     with:
       test_profile: runShortTests
-      report_context: development
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

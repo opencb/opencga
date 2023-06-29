@@ -1,5 +1,6 @@
 name: Long test for run only on weekend
 
+
 ## Every Saturday at 01:10
 on:
   schedule:
@@ -12,4 +13,5 @@ jobs:
     with:
       test_profile: runLongTests,runMediumTests,runShortTests
       report_context: development
+
 
