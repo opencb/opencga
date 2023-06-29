@@ -440,30 +440,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void testLocusQueryOverlap() throws Exception {
 
         VariantQuery query = new VariantQuery().study(STUDY_NAME_5).sample("NA19600");
-        System.out.println("query = " + query.toJson());
+//        System.out.println("query = " + query.toJson());
         List<Variant> variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
                 .toDataResult().getResults();
         assertEquals(2, variants.size());
 
         query.region("1:2000200-5500000");
-        System.out.println("query = " + query.toJson());
+//        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
                 .toDataResult().getResults();
         assertEquals(2, variants.size());
 
         query.region("1:200-2500000");
-        System.out.println("query = " + query.toJson());
+//        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
                 .toDataResult().getResults();
         assertEquals(1, variants.size());
-        assertEquals("1:1000001:4000000:-:<DUP>", variants.get(0).toString());
+        assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
 
         query.region("1:2000200-2500000");
-        System.out.println("query = " + query.toJson());
+//        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
                 .toDataResult().getResults();
         assertEquals(1, variants.size());
-        assertEquals("1:1000001:4000000:-:<DUP>", variants.get(0).toString());
+        assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
     }
 
     @Test

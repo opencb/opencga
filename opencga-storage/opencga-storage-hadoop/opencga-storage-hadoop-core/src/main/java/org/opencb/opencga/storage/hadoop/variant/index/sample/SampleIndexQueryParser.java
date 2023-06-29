@@ -544,7 +544,8 @@ public class SampleIndexQueryParser {
 
         Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants, extendedFilteringRegion);
 
-        return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study, sampleGenotypeQuery, multiFileSamples, negatedSamples,
+        return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study,
+                sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation);
     }
