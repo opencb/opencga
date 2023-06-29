@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
@@ -32,9 +33,8 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
@@ -47,15 +47,11 @@ import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
-import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
@@ -64,7 +60,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -82,7 +77,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         super.setUp();
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", Collections.emptyMap(), expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager,
@@ -338,7 +333,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
+        createAnalysisResult(jobId, "myTest", false);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         daemon.checkJobs();
@@ -438,7 +433,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
+        createAnalysisResult(jobId, "myTest", false);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
@@ -463,7 +458,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
             assertTrue(Arrays.asList(outDir + "file1.txt", outDir + "file2.txt", outDir + "A/", outDir + "A/file3.txt")
                     .contains(file.getPath()));
         }
-        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
+        assertEquals(0, job.getOutput().stream().filter(f -> ExecutionResultManager.isExecutionResultFile(f.getName()))
                 .collect(Collectors.toList()).size());
 
         assertEquals(job.getId() + ".log", job.getStdout().getName());
@@ -511,7 +506,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.ERROR, null, TimeUtils.getDate())));
+        createAnalysisResult(jobId, "myTest", true);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
 
         daemon.checkJobs();
@@ -552,11 +547,14 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         return catalogManager.getJobManager().get(studyFqn, jobId, new QueryOptions(), token).first();
     }
 
-    private void createAnalysisResult(String jobId, String analysisId, Consumer<ExecutionResult> c) throws CatalogException, IOException {
-        ExecutionResult ar = new ExecutionResult();
-        c.accept(ar);
-        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + ExecutionResultManager.FILE_EXTENSION).toFile();
-        JacksonUtils.getDefaultObjectMapper().writeValue(resultFile, ar);
+    private void createAnalysisResult(String jobId, String analysisId, boolean error) throws CatalogException, ToolException {
+        ExecutionResultManager erm = new ExecutionResultManager(analysisId, Paths.get(getJob(jobId).getOutDir().getUri()));
+        erm.init(new ObjectMap(), new ObjectMap(), false);
+        if (error) {
+            erm.close(new Exception());
+        } else {
+            erm.close();
+        }
     }
 
     private static class DummyBatchExecutor implements BatchExecutor {

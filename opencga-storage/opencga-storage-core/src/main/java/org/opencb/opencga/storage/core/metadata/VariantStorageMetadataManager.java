@@ -185,6 +185,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
+    public ObjectMap getConfiguration() {
+        return dbAdaptorFactory.getConfiguration();
+    }
+
     public Lock lockGlobal(long lockDuration, long timeout, String lockName)
             throws StorageEngineException {
         try {
@@ -1451,6 +1455,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList()));
         }
         if (requireIndexed) {
+            fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
+        }
+        return fileIds;
+    }
+
+    public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId, boolean requireIndexed) {
+        List<Integer> fileIds = getFileIdsFromSampleId(studyId, sampleId);
+
+        if (requireIndexed) {
+            fileIds = new LinkedList<>(fileIds);
             fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
         }
         return fileIds;

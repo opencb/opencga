@@ -311,7 +311,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                             query.getString(ParamConstants.INCLUDE_INTERPRETATION));
                     for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                         for (ClinicalVariant clinicalVariant : clinicalVariants) {
-                            if (clinicalVariant.toStringSimple().equals(primaryFinding.toStringSimple())) {
+                            if (clinicalVariant.sameGenomicVariant(primaryFinding)) {
                                 // Only it's updated the following fields
                                 // Important to note that the results include the "new" clinical evidences
                                 clinicalVariant.setComments(primaryFinding.getComments())
@@ -321,13 +321,31 @@ public class ClinicalInterpretationManager extends StorageManager {
                                         .setAttributes(primaryFinding.getAttributes());
 
                                 // Update clinical evidence review if it is necessary
-                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())
-                                        && CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
-                                    for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
-                                        for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
-                                            if (ClinicalUtils.matchEvidence(primaryFindingEvidence, clinicalVariantEvidence)) {
-                                                clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                if (CollectionUtils.isNotEmpty(primaryFinding.getEvidences())) {
+                                    if (CollectionUtils.isEmpty(clinicalVariant.getEvidences())) {
+                                        clinicalVariant.setEvidences(primaryFinding.getEvidences());
+                                    } else {
+                                        List<ClinicalVariantEvidence> evidencesToAdd = new ArrayList<>();
+                                        for (ClinicalVariantEvidence primaryFindingEvidence : primaryFinding.getEvidences()) {
+                                            boolean found = false;
+                                            for (ClinicalVariantEvidence clinicalVariantEvidence : clinicalVariant.getEvidences()) {
+                                                if (ClinicalUtils.matchEvidences(primaryFindingEvidence, clinicalVariantEvidence)) {
+                                                    clinicalVariantEvidence.setInterpretationMethodName(primaryFindingEvidence
+                                                            .getInterpretationMethodName());
+                                                    clinicalVariantEvidence.setModeOfInheritances(primaryFindingEvidence
+                                                            .getModeOfInheritances());
+                                                    clinicalVariantEvidence.setReview(primaryFindingEvidence.getReview());
+                                                    clinicalVariantEvidence.setAttributes(primaryFindingEvidence.getAttributes());
+                                                    found = true;
+                                                    break;
+                                                }
                                             }
+                                            if (!found) {
+                                                evidencesToAdd.add(primaryFindingEvidence);
+                                            }
+                                        }
+                                        if (CollectionUtils.isNotEmpty(evidencesToAdd)) {
+                                            clinicalVariant.getEvidences().addAll(evidencesToAdd);
                                         }
                                     }
                                 }

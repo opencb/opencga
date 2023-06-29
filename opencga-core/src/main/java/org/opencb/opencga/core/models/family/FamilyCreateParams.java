@@ -97,7 +97,7 @@ public class FamilyCreateParams {
 
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
         return new Family(id, name, null, null, relatives, creationDate, modificationDate, description, familyExpectedSize, 1, 1,
-                annotationSets, status != null ? status.toStatus() : null, null, null, attributes);
+                annotationSets, status != null ? status.toStatus() : null, null, null, null, attributes);
     }
 
     public String getId() {

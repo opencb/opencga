@@ -45,7 +45,6 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSecondarySampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -59,6 +58,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
@@ -69,8 +69,10 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
-import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -78,7 +80,6 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -165,6 +166,7 @@ public class VariantAnalysisTest {
 
             catalogManager = opencga.getCatalogManager();
             variantStorageManager = opencga.getVariantStorageManager();
+            variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE);
 
 
             setUpCatalogManager();
@@ -243,6 +245,7 @@ public class VariantAnalysisTest {
         opencga.getStorageEngineFactory().close();
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = opencga.getVariantStorageManager();
+        variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY);
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
     }
@@ -380,7 +383,7 @@ public class VariantAnalysisTest {
     private java.io.File getOutputFile(Path outDir) {
         return FileUtils.listFiles(outDir.toFile(), null, false)
                 .stream()
-                .filter(f -> !f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
+                .filter(f -> !ExecutionResultManager.isExecutionResultFile(f.getName()))
                 .findFirst().orElse(null);
     }
 
@@ -637,39 +640,6 @@ public class VariantAnalysisTest {
     }
 
     @Test
-    public void testGwasIndex() throws Exception {
-        // Variant scores can not be loaded in mongodb
-        Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
-
-        ObjectMap executorParams = new ObjectMap();
-        GwasAnalysis analysis = new GwasAnalysis();
-        Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
-        System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
-
-        List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
-        samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(2, 4), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
-
-        analysis.setStudy(STUDY)
-                .setCaseCohort("CASE")
-                .setControlCohort("CONTROL")
-                .setIndex(true)
-                .setIndexScoreId("GwasScore");
-        checkExecutionResult(analysis.start());
-
-        List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, token);
-        System.out.println("scores.get(0) = " + JacksonUtils.getDefaultObjectMapper().writeValueAsString(scores));
-        assertEquals(1, scores.size());
-        assertEquals("GwasScore", scores.get(0).getName());
-
-        variantStorageManager.iterator(new Query(VariantQueryParam.STUDY.key(), STUDY), new QueryOptions(), token).forEachRemaining(variant -> {
-            assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
-        });
-    }
-
-    @Test
     public void testKnockoutGenes() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes"));
         System.out.println("outDir = " + outDir);
@@ -773,20 +743,6 @@ public class VariantAnalysisTest {
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
         ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class,
-                params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
-//        checkExecutionResult(er, false);
-    }
-
-    @Test
-    public void testVariantSecondarySampleIndex() throws Exception {
-        Path outDir = Paths.get(opencga.createTmpOutdir("_VariantSecondarySampleIndex"));
-        System.out.println("outDir = " + outDir);
-        VariantSecondarySampleIndexParams params = new VariantSecondarySampleIndexParams();
-        params.setFamilyIndex(true);
-        params.setSample(Arrays.asList(son, daughter));
-
-
-        ExecutionResult er = toolRunner.execute(VariantSecondarySampleIndexOperationTool.class,
                 params.toObjectMap().append(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 //        checkExecutionResult(er, false);
     }

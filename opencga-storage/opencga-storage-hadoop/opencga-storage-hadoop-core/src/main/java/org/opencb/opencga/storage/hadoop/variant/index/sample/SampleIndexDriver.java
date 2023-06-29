@@ -538,7 +538,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         public void flush(Context context, String chromosome, int position) throws IOException, InterruptedException {
             logger.info("Flush {}:{}-{} with {} variants", chromosome,
                     SampleIndexSchema.getChunkStart(position),
-                    SampleIndexSchema.getChunkStart(position) + SampleIndexSchema.BATCH_SIZE,
+                    SampleIndexSchema.getChunkStartNext(position),
                     variantsInBatch);
             variantsInBatch = 0;
             for (SampleIndexEntryPutBuilder builder : samplesMap.values()) {
