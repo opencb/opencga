@@ -6,7 +6,8 @@ on:
       - TASK-*
   workflow_dispatch:
 
-#WARNING Develop branch needed for prod
+# WARNING Develop branch needed for prod
+
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
