@@ -51,6 +51,5 @@ jobs:
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
-      report_context: development
       mvn_opts: ${{ inputs.mvn_opts }}
     secrets: inherit

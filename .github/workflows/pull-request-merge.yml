@@ -10,7 +10,7 @@ on:
 
 jobs:
   delete-docker:
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.9.x
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
     with:
       cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
     secrets: inherit
