@@ -126,6 +126,11 @@
 
         <!-- Added dependencies -->
         <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
         </dependency>
@@ -576,8 +581,8 @@
                         <configuration>
                             <failOnWarning>true</failOnWarning>
                             <ignoredUnusedDeclaredDependencies>
-                                <ignoredUnusedDeclaredDependency>org.opencb.opencga:opencga-storage-hadoop-core:jar:*</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.opencb.opencga:opencga-storage-hadoop-deps-hdp3.1:jar:*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.opencb.opencga:opencga-storage-hadoop-*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>jakarta.ws.rs:jakarta.ws.rs-api:jar:2.1.6</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
