@@ -125,7 +125,7 @@ public class TemplateManager {
         }
 
         // Check version
-        GitRepositoryState gitRepositoryState = GitRepositoryState.get();
+        GitRepositoryState gitRepositoryState = GitRepositoryState.getInstance();
         String version = gitRepositoryState.getBuildVersion();
         String versionShort;
         if (version.contains("-")) {

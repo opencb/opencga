@@ -16,31 +16,21 @@
 
 package org.opencb.opencga.analysis.variant.hrdetect;
 
-import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
-import htsjdk.samtools.reference.FastaSequenceIndex;
-import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResultWriter;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.HRDetectAnalysisExecutor;
-import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -53,14 +43,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.CATALOGUES_FILENAME_DEFAULT;
-
 @ToolExecutor(id="opencga-local", tool = HRDetectAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
     private final static String CNV_FILENAME = "cnv.tsv";
     private final static String INDEL_FILENAME = "indel.vcf";
