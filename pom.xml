@@ -42,11 +42,13 @@
     </modules>
 
     <properties>
+
         <pyopencga.version>2.10.0_dev</pyopencga.version>
         <opencgar.version>2.10.0_dev</opencgar.version>
         <cellbase.version>5.6.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.10.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.10.0-SNAPSHOT</java-common-libs.version>
+        <oskar.version>0.2.1</oskar.version>
         <iva.version>2.10.0-SNAPSHOT</iva.version>
 
 
