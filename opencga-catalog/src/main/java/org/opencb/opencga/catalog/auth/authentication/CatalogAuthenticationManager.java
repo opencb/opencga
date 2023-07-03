@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.Key;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -45,15 +46,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     private final UserDBAdaptor userDBAdaptor;
 
-    private long expiration;
-
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String secretKeyString, long expiration) {
-        super();
+        super(expiration);
 
         this.emailConfig = emailConfig;
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
-
-        this.expiration = expiration;
 
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
@@ -65,7 +62,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         try {
             userDBAdaptor.authenticate(userId, password);
-            return new AuthenticationResponse(jwtManager.createJWTToken(userId, expiration));
+            return new AuthenticationResponse(createToken(userId));
         } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not validate '" + userId + "' password\n" + e.getMessage(), e);
         }
@@ -107,8 +104,13 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String userId) {
-        return jwtManager.createJWTToken(userId, expiration);
+    public String createToken(String userId, Map<String, Object> claims, long expiration) {
+        return jwtManager.createJWTToken(userId, claims, expiration);
+    }
+
+    @Override
+    public String createNonExpiringToken(String userId, Map<String, Object> claims) {
+        return jwtManager.createJWTToken(userId, claims, 0L);
     }
 
     @Override

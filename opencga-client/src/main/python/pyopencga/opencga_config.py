@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 import yaml
@@ -6,11 +7,6 @@ import yaml
 class ClientConfiguration(object):
     """
     Configuration class shared between OpenCGA python clients
-
-    usage:     
-        >>> from pyopencga.opencga_config import ClientConfiguration
-        >>> config_file = "/opt/opencga/conf/client-configuration.yml" # it can accept .json
-        >>> ClientConfiguration(configuration)
     """
     
     def __init__(self, config_input):
@@ -29,17 +25,13 @@ class ClientConfiguration(object):
 
         self._validate_configuration(self._config)
 
-    def _get_dictionary_from_file(self, config_fpath):
-        try:
-            config_fhand = open(config_fpath, 'r')
-        except:
-            msg = 'Unable to read file "' + config_fpath + '"'
-            raise IOError(msg)
+    @staticmethod
+    def _get_dictionary_from_file(config_fpath):
+        config_fhand = open(config_fpath, 'r')
 
         config_dict = None
         if config_fpath.endswith('.yml') or config_fpath.endswith('.yaml'):
             config_dict = yaml.safe_load(config_fhand)
-
         if config_fpath.endswith('.json'):
             config_dict = json.loads(config_fhand.read())
 
@@ -59,7 +51,8 @@ class ClientConfiguration(object):
 
         self._validate_host(config['rest']['host'])
 
-    def _validate_host(self, host):
+    @staticmethod
+    def _validate_host(host):
         if not (host.startswith('http://') or host.startswith('https://')):
             host = 'http://' + host
         try:
@@ -81,7 +74,16 @@ class ClientConfiguration(object):
 
     @property
     def version(self):
-        return 'v2'
+        return self._config['version'] if 'version' in self._config else 'v2'
+
+    @property
+    def cookies(self):
+        if 'cookies' in self._config and self._config['cookies']:
+            python_session_fhand = open(os.path.expanduser("~/.opencga/python_session.json"), 'r')
+            session_info = json.loads(python_session_fhand.read())
+            return session_info['cookies']
+        else:
+            return None
 
     @property
     def configuration(self):

@@ -938,7 +938,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         // If there is nothing to update, we fail
-        if (parameters.isEmpty() && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)) {
+        if (parameters.isEmpty() && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)
+                && !options.getBoolean(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
 

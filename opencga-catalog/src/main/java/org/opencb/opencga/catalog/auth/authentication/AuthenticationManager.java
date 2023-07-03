@@ -31,6 +31,7 @@ import java.security.Key;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -39,12 +40,16 @@ public abstract class AuthenticationManager {
 
     protected JwtManager jwtManager;
 
+    private final long expiration;
+
     protected Logger logger;
 
     protected int DEFAULT_CONNECTION_TIMEOUT = 500; // In milliseconds
     protected int DEFAULT_READ_TIMEOUT = 1000; // In milliseconds
 
-    AuthenticationManager() {
+    AuthenticationManager(long expiration) {
+        this.expiration = expiration;
+
         // Any class extending this one must properly initialise JwtManager
         this.logger = LoggerFactory.getLogger(this.getClass());
     }
@@ -131,18 +136,41 @@ public abstract class AuthenticationManager {
      * @param userId user.
      * @return A token.
      */
-    public abstract String createToken(String userId);
+    public String createToken(String userId) {
+        return createToken(userId, Collections.emptyMap(), expiration);
+    }
+
+    /**
+     * Create a token for the user with default expiration time.
+     *
+     * @param userId user.
+     * @param expiration expiration time.
+     * @return A token.
+     */
+    public String createToken(String userId, long expiration) {
+        return createToken(userId, Collections.emptyMap(), expiration);
+    }
+
+    /**
+     * Create a token for the user with default expiration time.
+     *
+     * @param userId user.
+     * @param claims claims.
+     * @return A token.
+     */
+    public String createToken(String userId, Map<String, Object> claims) {
+        return createToken(userId, claims, expiration);
+    }
 
     /**
      * Create a token for the user.
      *
      * @param userId user.
+     * @param claims claims.
      * @param expiration Expiration time in seconds.
      * @return A token.
      */
-    public String createToken(String userId, long expiration) {
-        return jwtManager.createJWTToken(userId, Collections.emptyMap(), expiration);
-    }
+    public abstract String createToken(String userId, Map<String, Object> claims, long expiration);
 
     /**
      * Create a token for the user with no expiration time.
@@ -151,8 +179,17 @@ public abstract class AuthenticationManager {
      * @return A token.
      */
     public String createNonExpiringToken(String userId) {
-        return jwtManager.createJWTToken(userId, Collections.emptyMap(), 0L);
+        return createNonExpiringToken(userId, Collections.emptyMap());
     }
+
+    /**
+     * Create a token for the user with no expiration time.
+     *
+     * @param userId user.
+     * @param claims claims.
+     * @return A token.
+     */
+    public abstract String createNonExpiringToken(String userId, Map<String, Object> claims);
 
     public Date getExpirationDate(String token) throws CatalogAuthenticationException {
         return jwtManager.getExpiration(token);

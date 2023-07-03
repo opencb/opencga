@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>2.8.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     <description>OenCGA projects implements a big data platform for genomic data analysis</description>
@@ -42,12 +42,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.8.0_dev</pyopencga.version>
-        <opencgar.version>2.8.0_dev</opencgar.version>
-        <cellbase.version>5.3.1-SNAPSHOT</cellbase.version>
-        <biodata.version>2.8.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.8.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.8.0-SNAPSHOT</iva.version>
+        <pyopencga.version>2.8.3</pyopencga.version>
+        <opencgar.version>2.8.3</opencgar.version>
+        <cellbase.version>5.4.0</cellbase.version>
+        <biodata.version>2.8.0</biodata.version>
+        <java-common-libs.version>4.8.0</java-common-libs.version>
+        <iva.version>2.8.2</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
         <jackson.version>2.11.4</jackson.version>
@@ -143,6 +143,13 @@
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/opencb</url>
+            <snapshots>
+                <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>
@@ -503,6 +510,12 @@
                 <version>2.2.27</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <type>maven-plugin</type>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -521,6 +534,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>2.4.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -773,7 +791,17 @@
         </profile>
 
         <profile>
-            <id>deploy</id>
+            <id>deploy-maven</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -839,16 +867,6 @@
                     </plugin>
                 </plugins>
             </build>
-            <distributionManagement>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
         </profile>
         <profile>
             <id>hdp3.1</id>
@@ -987,12 +1005,26 @@
                                     <testFailureIgnore>${surefire.testFailureIgnore}</testFailureIgnore>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <excludedGroups>org.opencb.opencga.core.testclassification.duration.ShortTests,org.opencb.opencga.core.testclassification.duration.MediumTests,org.opencb.opencga.core.testclassification.duration.LongTests</excludedGroups>
+                                    <excludedGroups>
+                                        org.opencb.opencga.core.testclassification.duration.ShortTests,org.opencb.opencga.core.testclassification.duration.MediumTests,org.opencb.opencga.core.testclassification.duration.LongTests
+                                    </excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>deploy-github</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub OpenCB Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/opencb/opencga</url>
+                </repository>
+            </distributionManagement>
+            <build>
             </build>
         </profile>
     </profiles>

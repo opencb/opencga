@@ -7,6 +7,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.SnapshotDescription;
+import org.apache.hadoop.hbase.client.TableState;
 import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -31,6 +33,13 @@ public class HBaseMain extends AbstractMain {
     public static final String REGIONS_PER_TABLE = "regions-per-table";
     public static final String CLONE_TABLES = "clone-tables";
     public static final String SNAPSHOT_TABLES = "snapshot-tables";
+    public static final String SNAPSHOT_TABLE = "snapshot-table";
+    public static final String DELETE_SNAPSHOTS = "delete-snapshots";
+    public static final String CLONE_SNAPSHOTS = "clone-snapshots";
+    public static final String DISABLE_TABLE = "disable-table";
+    public static final String DROP_TABLE = "drop-table";
+    public static final String ENABLE_TABLE = "enable-table";
+    public static final String DELETE_TABLE = "delete-table";
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseMain.class);
     private final HBaseManager hBaseManager;
@@ -71,7 +80,7 @@ public class HBaseMain extends AbstractMain {
             case LIST_SNAPSHOTS: {
                 ObjectMap objectMap = getArgsMap(args, 1, "filter", "tree");
                 String filter = objectMap.getString("filter");
-                Map<String, TreeMap<Date, String>> tablesMap = listSnapshots(filter);
+                Map<String, TreeMap<Date, String>> tablesMap = listSnapshots(filter, true);
                 if (objectMap.getBoolean("tree")) {
                     for (Map.Entry<String, TreeMap<Date, String>> entry : tablesMap.entrySet()) {
                         println(entry.getKey());
@@ -101,9 +110,51 @@ public class HBaseMain extends AbstractMain {
             }
             case SNAPSHOT_TABLES: {
                 ObjectMap argsMap = getArgsMap(args, 2, "snapshotSuffix", "dryRun", "skipTablesWithSnapshot");
+                String tableNamePattern = getArg(args, 1) + ".*";
+                snapshotTables(tableNamePattern,
+                        argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
+                        argsMap.getBoolean("dryRun"), argsMap.getBoolean("skipTablesWithSnapshot"));
+                break;
+            }
+            case SNAPSHOT_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "snapshotSuffix", "dryRun", "skipTablesWithSnapshot");
                 snapshotTables(getArg(args, 1),
                         argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
                         argsMap.getBoolean("dryRun"), argsMap.getBoolean("skipTablesWithSnapshot"));
+                break;
+            }
+            case DELETE_SNAPSHOTS: {
+                ObjectMap argsMap = getArgsMap(args, 2, "dryRun", "skipMissing");
+                deleteSnapshots(Arrays.asList(getArg(args, 1).split(",")), argsMap.getBoolean("dryRun"), argsMap.getBoolean("skipMissing"));
+                break;
+            }
+            case CLONE_SNAPSHOTS: {
+                ObjectMap argsMap = getArgsMap(args, 2, "tablePrefixChange", "dryRun", "onExistingTables");
+                cloneSnapshots(getArg(args, 1),
+                        argsMap.getString("tablePrefixChange"),
+                        argsMap.getBoolean("dryRun"),
+                        argsMap.getString("onExistingTables", "fail").toLowerCase()
+                        );
+                break;
+            }
+            case DISABLE_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "dryRun");
+                disableTables(getArg(args, 1), argsMap.getBoolean("dryRun"));
+                break;
+            }
+            case DROP_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "dryRun");
+                dropTables(getArg(args, 1), argsMap.getBoolean("dryRun"));
+                break;
+            }
+            case ENABLE_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "dryRun");
+                enableTables(getArg(args, 1), argsMap.getBoolean("dryRun"));
+                break;
+            }
+            case DELETE_TABLE: {
+                ObjectMap argsMap = getArgsMap(args, 2, "dryRun");
+                deleteTable(getArg(args, 1), argsMap.getBoolean("dryRun"));
                 break;
             }
             case "help":
@@ -126,7 +177,23 @@ public class HBaseMain extends AbstractMain {
                 System.out.println("        Optionally remove the intermediate snapshot.");
                 System.out.println("  " + SNAPSHOT_TABLES + " <table-name-prefix> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>] "
                                         + "[--skipTablesWithSnapshot]");
-                System.out.println("      Create a sapshot for all selected tables.");
+                System.out.println("  " + SNAPSHOT_TABLE  + " <table-name> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>] "
+                                        + "[--skipTablesWithSnapshot]");
+                System.out.println("  " + DELETE_SNAPSHOTS + " <snapshots-list> [--dryRun] [--skipMissing]");
+                System.out.println("      Create a snapshot for all selected tables.");
+                System.out.println("  " + CLONE_SNAPSHOTS + " <snapshot-name-regex> [--dryRun] "
+                                        + "[--tablePrefixChange <oldPrefix>:<newPrefix>] "
+                                        + "[--onExistingTables [fail|skip|drop] ]");
+                System.out.println("      Clone all snapshots into tables matching the regex. "
+                                        + "Generated tables can have a table prefix change.");
+                System.out.println("  " + DISABLE_TABLE + " <table-name-regex> [--dryRun]");
+                System.out.println("      Disable all tables matching the regex.");
+                System.out.println("  " + DROP_TABLE + " <table-name-regex> [--dryRun]");
+                System.out.println("      Drop all tables matching the regex. Must be disabled first.");
+                System.out.println("  " + ENABLE_TABLE + " <table-name-regex> [--dryRun]");
+                System.out.println("      Enable all tables matching the regex. Ignore enabled tables.");
+                System.out.println("  " + DELETE_TABLE + " <table-name-regex> [--dryRun]");
+                System.out.println("      Disable (if needed) and drop all tables matching the regex.");
                 break;
         }
 
@@ -276,11 +343,11 @@ public class HBaseMain extends AbstractMain {
         return tableNames.get(0);
     }
 
-    private Map<String, TreeMap<Date, String>> listSnapshots(String snapshotFilter) throws Exception {
+    private Map<String, TreeMap<Date, String>> listSnapshots(String snapshotFilter, boolean failOnMissing) throws Exception {
         try (Admin admin = hBaseManager.getConnection().getAdmin()) {
             Map<String, TreeMap<Date, String>> tablesMap = new TreeMap<>();
             List<?> snapshots = StringUtils.isBlank(snapshotFilter) ? admin.listSnapshots() : admin.listSnapshots(snapshotFilter);
-            if (CollectionUtils.isEmpty(snapshots)) {
+            if (failOnMissing && CollectionUtils.isEmpty(snapshots)) {
                 throw new IllegalArgumentException("Snapshot not found!");
             }
             for (Object snapshot : snapshots) {
@@ -379,12 +446,13 @@ public class HBaseMain extends AbstractMain {
         });
     }
 
-    private void snapshotTables(String tableNamePrefix, String snapshotSuffix, boolean dryRun, boolean skipTablesWithSnapshot)
+    private void snapshotTables(String tableNamePattern, String snapshotSuffix, boolean dryRun, boolean skipTablesWithSnapshot)
             throws Exception {
         Connection connection = hBaseManager.getConnection();
-        Map<String, TreeMap<Date, String>> tablesWithSnapshots = listSnapshots(tableNamePrefix + ".*");
+        Map<String, TreeMap<Date, String>> tablesWithSnapshots = listSnapshots(tableNamePattern, false);
+        Map<String, String> newSnapshots = new HashMap<>();
         try (Admin admin = connection.getAdmin()) {
-            for (TableName tableName : listTables(tableNamePrefix + ".*")) {
+            for (TableName tableName : listTables(tableNamePattern)) {
                 if (skipTablesWithSnapshot && tablesWithSnapshots.containsKey(tableName.getNameAsString())) {
                     TreeMap<Date, String> map = tablesWithSnapshots.get(tableName.getNameAsString());
                     LOGGER.info("Skip snapshot from table '{}' . Already has a snapshot: {}", tableName.getNameAsString(), map);
@@ -393,10 +461,113 @@ public class HBaseMain extends AbstractMain {
                 String snapshotName = tableName + snapshotSuffix;
                 LOGGER.info("Create snapshot '" + snapshotName + "' from table " + tableName);
                 if (dryRun) {
-                    LOGGER.info("admin.snapshot('{}', '{}');", snapshotName, tableName);
+                    LOGGER.info("[DRY-RUN] admin.snapshot('{}', '{}');", snapshotName, tableName);
                 } else {
                     admin.snapshot(snapshotName, tableName);
                 }
+                newSnapshots.put(tableName.getNameWithNamespaceInclAsString(), snapshotName);
+            }
+        }
+        print(newSnapshots);
+    }
+
+
+    private void deleteSnapshots(List<String> snapshots, boolean dryRun, boolean skipMissing)
+            throws Exception {
+        snapshots = new LinkedList<>(snapshots);
+        Map<String, SnapshotDescription> allSnapshots = new HashMap<>();
+        try (Admin admin = hBaseManager.getConnection().getAdmin()) {
+            for (SnapshotDescription snapshotDescription : admin.listSnapshots()) {
+                allSnapshots.put(snapshotDescription.getName(), snapshotDescription);
+            }
+            // Check all snapshots exist
+            Iterator<String> iterator = snapshots.iterator();
+            while (iterator.hasNext()) {
+                String snapshot = iterator.next();
+                if (!allSnapshots.containsKey(snapshot)) {
+                    if (skipMissing) {
+                        LOGGER.info("Snapshot '" + snapshot + "' missing. Skipping!");
+                        iterator.remove();
+                    } else {
+                        throw new IllegalArgumentException("Snapshot '" + snapshot + "' not found! Remove it from the list, "
+                                + "or use '--skipMissing' parameter. Available snapshots : " + allSnapshots.keySet());
+                    }
+                }
+            }
+            for (String snapshot : snapshots) {
+                deleteSnapshot(admin, snapshot, dryRun);
+            }
+        }
+    }
+
+    private void cloneSnapshots(String snapshotNamePrefix, String tablePrefixChange,
+                                boolean dryRun,
+                                String onExistingTables) throws Exception {
+        Map<String, TreeMap<Date, String>> tablesWithSnapshots = listSnapshots(snapshotNamePrefix, true);
+        List<String> tableNames = listTables(null).stream().map(TableName::toString).collect(Collectors.toList());
+        String oldPrefix = "";
+        String newPrefix = "";
+        if (!onExistingTables.equals("fail") && !onExistingTables.equals("skip") && !onExistingTables.equals("drop")) {
+            throw new IllegalArgumentException("Unknown param onExistingTables '"
+                    + onExistingTables + "'. Expected 'fail', 'skip' or 'drop'");
+        }
+
+        if (StringUtils.isNotEmpty(tablePrefixChange)) {
+            String[] split = tablePrefixChange.split(":");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Expect two values separated by `:` in the table prefix change. "
+                        + "<oldPrefix>:<newPrefix>");
+            }
+            oldPrefix = split[0];
+            newPrefix = split[1];
+        }
+        Map<String, String> restores = new LinkedHashMap<>();
+        Set<String> tablesToDrop = new LinkedHashSet<>();
+
+        for (Map.Entry<String, TreeMap<Date, String>> entry : tablesWithSnapshots.entrySet()) {
+            String sourceTable = entry.getKey();
+            TreeMap<Date, String> snapshotsMap = entry.getValue();
+            String snapshot = snapshotsMap.lastEntry().getValue();
+            if (!sourceTable.startsWith(oldPrefix)) {
+                throw new IllegalArgumentException("Unable to restore snapshot '" + snapshot + "'. "
+                        + "Its source table doesn't have the prefix '" + oldPrefix + "'");
+            }
+            String targetTable = StringUtils.replace(sourceTable, oldPrefix, newPrefix, 1);
+            if (tableNames.contains(targetTable)) {
+                switch (onExistingTables) {
+                    case "skip":
+                        LOGGER.info("Skip snapshot restore table '{}' from snapshot '{}'", targetTable, snapshot);
+                        continue;
+                    case "drop":
+                        LOGGER.warn("Table '{}' already found. Drop table before restoring from snapshot '{}'", targetTable, snapshot);
+                        tablesToDrop.add(targetTable);
+                        break;
+                    case "fail":
+                    default:
+                        throw new IllegalStateException("Table '" + targetTable + "' already exists! Unable to restore snapshot");
+                }
+            }
+
+            LOGGER.info("Clone snapshot '{}' into table '{}'", snapshot, targetTable);
+            restores.put(snapshot, targetTable);
+        }
+
+        LOGGER.info("------");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] List clone snapshot operations");
+        } else {
+            LOGGER.info("Executing clone snapshot operations");
+        }
+        Connection connection = hBaseManager.getConnection();
+        try (Admin admin = connection.getAdmin()) {
+            for (Map.Entry<String, String> entry : restores.entrySet()) {
+                String snapshot = entry.getKey();
+                String table = entry.getValue();
+                if (tablesToDrop.contains(table)) {
+                    disableTable(admin, TableName.valueOf(table), dryRun);
+                    dropTable(admin, TableName.valueOf(table), dryRun);
+                }
+                cloneSnapshot(admin, snapshot, table, dryRun);
             }
         }
     }
@@ -411,30 +582,144 @@ public class HBaseMain extends AbstractMain {
             for (TableName tableName : listTables(tableNamePrefix + ".*")) {
                 String snapshotName = tableName.getNameAsString() + snapshotSuffix;
                 String newTableName = tableName.getNameAsString().replace(tableNamePrefix, newTableNamePrefix);
-                LOGGER.info("Create snapshot '" + snapshotName + "' from table " + tableName.getNameAsString());
-                if (dryRun) {
-                    LOGGER.info("admin.snapshot('{}', '{}');", snapshotName, tableName);
-                } else {
-                    admin.snapshot(snapshotName, tableName);
-                }
-                LOGGER.info("Clone snapshot '" + snapshotName + "' into table " + newTableName);
-                if (dryRun) {
-                    LOGGER.info("admin.cloneSnapshot('{}', '{}')", snapshotName, newTableName);
-                } else {
-                    admin.cloneSnapshot(snapshotName, TableName.valueOf(tableName.getNamespaceAsString(), newTableName));
-                }
+                createSnapshot(admin, tableName, snapshotName, dryRun);
+                cloneSnapshot(admin, snapshotName, newTableName, dryRun);
                 if (keepSnapshot) {
                     LOGGER.info("Keep snapshot '" + snapshotName + "'");
                 } else {
-                    LOGGER.info("Delete snapshot '" + snapshotName + "'");
-                    if (dryRun) {
-                        LOGGER.info("admin.deleteSnapshot('{}');", snapshotName);
-                    } else {
-                        admin.deleteSnapshot(snapshotName);
-                    }
+                    deleteSnapshot(admin, snapshotName, dryRun);
                 }
             }
         }
     }
 
+    private void disableTables(String tableNameFilter, boolean dryRun) throws IOException {
+        Connection connection = hBaseManager.getConnection();
+        try (Admin admin = connection.getAdmin()) {
+            List<TableName> enabledTables = listTables(tableNameFilter, false, TableState.State.ENABLED);
+            for (TableName tableName : enabledTables) {
+                disableTable(admin, tableName, dryRun);
+            }
+        }
+    }
+
+    private void dropTables(String tableNameFilter, boolean dryRun) throws IOException {
+        try (Admin admin = hBaseManager.getConnection().getAdmin()) {
+            List<TableName> disabledTables = listTables(tableNameFilter, true, TableState.State.DISABLED);
+            for (TableName tableName : disabledTables) {
+                dropTable(admin, tableName, dryRun);
+            }
+        }
+    }
+
+    private void enableTables(String tableNameFilter, boolean dryRun) throws IOException {
+        try (Admin admin = hBaseManager.getConnection().getAdmin()) {
+            List<TableName> disabledTables = listTables(tableNameFilter, false, TableState.State.DISABLED);
+            for (TableName tableName : disabledTables) {
+                enableTable(admin, tableName, dryRun);
+            }
+        }
+    }
+
+    private void deleteTable(String tableNameFilter, boolean dryRun) throws IOException {
+        try (Admin admin = hBaseManager.getConnection().getAdmin()) {
+            List<TableName> tables = listTables(tableNameFilter, false, TableState.State.DISABLED, TableState.State.ENABLED);
+            for (TableName tableName : tables) {
+                if (admin.isTableEnabled(tableName)) {
+                    disableTable(admin, tableName, dryRun);
+                }
+                dropTable(admin, tableName, dryRun);
+            }
+        }
+    }
+
+    private void disableTable(Admin admin, TableName tableName, boolean dryRun) throws IOException {
+        System.out.println("disable '" + tableName.getNameWithNamespaceInclAsString() + "'");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.disableTable(" + tableName.getNameWithNamespaceInclAsString() + ")");
+        } else {
+            if (admin.isTableEnabled(tableName)) {
+                admin.disableTable(tableName);
+            }
+        }
+    }
+
+    private void dropTable(Admin admin, TableName tableName, boolean dryRun) throws IOException {
+        System.out.println("drop '" + tableName.getNameWithNamespaceInclAsString() + "'");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.deleteTable(" + tableName.getNameWithNamespaceInclAsString() + ")");
+        } else {
+            admin.deleteTable(tableName);
+        }
+    }
+
+    private void enableTable(Admin admin, TableName tableName, boolean dryRun) throws IOException {
+        System.out.println("enable '" + tableName.getNameWithNamespaceInclAsString() + "'");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.enableTable(" + tableName.getNameWithNamespaceInclAsString() + ")");
+        } else {
+            admin.enableTable(tableName);
+        }
+    }
+
+    private void createSnapshot(Admin admin, TableName tableName, String snapshotName, boolean dryRun) throws IOException {
+        LOGGER.info("Create snapshot '" + snapshotName + "' from table " + tableName.getNameAsString());
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.snapshot('{}', '{}');", snapshotName, tableName);
+        } else {
+            admin.snapshot(snapshotName, tableName);
+        }
+    }
+
+    private void cloneSnapshot(Admin admin, String snapshot, String table, boolean dryRun) throws IOException {
+        LOGGER.info("Clone snapshot '" + snapshot + "' into table " + table);
+        System.out.println("clone_snapshot '" + snapshot + "' , '" + table + "'");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.cloneSnapshot('{}', TableName.valueOf('{}'));", snapshot, table);
+        } else {
+            admin.cloneSnapshot(snapshot, TableName.valueOf(table));
+        }
+    }
+
+    private void deleteSnapshot(Admin admin, String snapshotName, boolean dryRun) throws IOException {
+        LOGGER.info("Delete snapshot '" + snapshotName + "'");
+        System.out.println("delete_snapshot '" + snapshotName + "'");
+        if (dryRun) {
+            LOGGER.info("[DRY-RUN] admin.deleteSnapshot('{}');", snapshotName);
+        } else {
+            admin.deleteSnapshot(snapshotName);
+        }
+    }
+
+    private List<TableName> listTables(String tableNameFilter, boolean failOnOthers, TableState.State... expectedStates)
+            throws IOException {
+        Connection connection = hBaseManager.getConnection();
+        Map<TableState.State, List<TableName>> tables = new HashMap<>();
+        List<TableName> allTableNames = listTables(tableNameFilter);
+        for (TableName tableName : allTableNames) {
+            TableState tableState = MetaTableAccessor.getTableState(connection, tableName);
+            tables.computeIfAbsent(tableState.getState(), k -> new LinkedList<>()).add(tableName);
+        }
+        List<TableName> expectedTables =new LinkedList<>();
+        for (TableState.State expectedState : expectedStates) {
+            List<TableName> list = tables.remove(expectedState);
+            if (list != null) {
+                expectedTables.addAll(list);
+            }
+        }
+
+        if (!tables.isEmpty()) {
+            LOGGER.warn("Found tables in non expected status.");
+            for (Map.Entry<TableState.State, List<TableName>> entry : tables.entrySet()) {
+                LOGGER.warn(" - {} : {} tables : ", entry.getKey(),  entry.getValue().size());
+                for (TableName tableName : entry.getValue()) {
+                    LOGGER.warn("   - {}", tableName.getNameWithNamespaceInclAsString());
+                }
+            }
+            if (failOnOthers) {
+                throw new RuntimeException("Found tables in non expected status.");
+            }
+        }
+        return expectedTables;
+    }
 }

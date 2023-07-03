@@ -588,7 +588,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectDBAdaptor.getProjectMetadata().first();
     }
 
-    public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
+    public ProjectMetadata getAndUpdateProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(SPECIES.key())
@@ -1451,6 +1451,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList()));
         }
         if (requireIndexed) {
+            fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
+        }
+        return fileIds;
+    }
+
+    public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId, boolean requireIndexed) {
+        List<Integer> fileIds = getFileIdsFromSampleId(studyId, sampleId);
+
+        if (requireIndexed) {
+            fileIds = new LinkedList<>(fileIds);
             fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
         }
         return fileIds;

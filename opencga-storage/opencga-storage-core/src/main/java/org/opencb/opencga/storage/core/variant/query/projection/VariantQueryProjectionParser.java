@@ -85,24 +85,26 @@ public class VariantQueryProjectionParser {
             int studyId = study.getId();
             List<Integer> filesInStudy = study.getFiles();
             Map<Integer, List<Integer>> multiMap = new HashMap<>();
-            study.setMultiFileSamples(multiMap);
+            Set<Integer> multiSet = new HashSet<>();
+            study.setMultiFileSampleFiles(multiMap);
+            study.setMultiFileSamples(multiSet);
 
             for (Integer sampleId : study.getSamples()) {
                 Set<Integer> filesFromSample = new HashSet<>(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 multiMap.put(sampleId, new ArrayList<>(filesFromSample.size()));
                 if (filesFromSample.size() > 1) {
                     if (VariantStorageEngine.SplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
-                        boolean hasAnyFile = false;
+                        multiSet.add(sampleId);
+                        boolean hasNoFile = true;
                         for (Integer fileFromSample : filesFromSample) {
                             if (filesInStudy.contains(fileFromSample)) {
-                                hasAnyFile = true;
+                                hasNoFile = false;
                                 multiMap.get(sampleId).add(fileFromSample);
                             }
                         }
-                        if (!hasAnyFile) {
-                            for (Integer fileFromSample : filesFromSample) {
-                                multiMap.get(sampleId).add(fileFromSample);
-                            }
+                        if (hasNoFile) {
+                            List<Integer> filesIndexedFromSample = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+                            multiMap.get(sampleId).addAll(filesIndexedFromSample);
                         }
                     }
                 }

@@ -247,30 +247,41 @@ public class VariantSqlQueryParser {
                         sb.append('"');
                     }
                 }
+
                 if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
-                    for (Map.Entry<Integer, List<Integer>> entry : study.getMultiFileSamples().entrySet()) {
-                        Integer sampleId = entry.getKey();
-                        List<Integer> fileIds = entry.getValue();
-                        sb.append(",\"");
-                        buildSampleColumnKey(studyId, sampleId, sb);
-                        sb.append('"');
-                        if (!fileIds.isEmpty()) {
+                    for (Integer sampleId : study.getSamples()) {
+                        if (study.getMultiFileSamples().contains(sampleId)) {
+                            // Files to be included
+                            List<Integer> fileIds = study.getMultiFileSampleFiles().get(sampleId);
+                            if (fileIds.isEmpty()) {
+                                // No files being returned.
+                                // Return sample information from all indexed files
+                                fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+                            }
+                            // Multi-file sample. May add multiple columns for this sample.
+                            // All sample files, including non-indexed files.
                             List<Integer> allFilesFromSampleId = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
                             for (Integer fileId : fileIds) {
-                                if (fileId.equals(allFilesFromSampleId.get(0))) {
-                                    // Skip the first one
-                                    continue;
-                                }
                                 sb.append(",\"");
-                                buildSampleColumnKey(studyId, sampleId, fileId, sb);
+                                if (fileId.equals(allFilesFromSampleId.get(0))) {
+                                    // Special scenario for the first file, missing the fileId
+                                    buildSampleColumnKey(studyId, sampleId, sb);
+                                } else {
+                                    buildSampleColumnKey(studyId, sampleId, fileId, sb);
+                                }
                                 sb.append('"');
                             }
+                        } else {
+                            // No multi-file sample
+                            sb.append(",\"");
+                            buildSampleColumnKey(studyId, sampleId, sb);
+                            sb.append('"');
                         }
                     }
 
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples());
+                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples(), true);
                     List<Integer> includeFiles = projection.getStudy(studyId).getFiles();
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {

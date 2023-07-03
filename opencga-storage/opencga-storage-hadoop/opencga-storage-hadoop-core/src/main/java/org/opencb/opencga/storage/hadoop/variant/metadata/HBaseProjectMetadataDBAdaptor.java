@@ -69,8 +69,10 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
 
     @Override
     public DataResult<ProjectMetadata> getProjectMetadata() {
+        if (!tableExists()) {
+            return new DataResult<>();
+        }
         try {
-            ensureTableExists();
             ProjectMetadata projectMetadata = hBaseManager.act(tableName, (table -> {
                 Result result = table.get(new Get(getProjectRowKey()));
                 if (result != null) {
