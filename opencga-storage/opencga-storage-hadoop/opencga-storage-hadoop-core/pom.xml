@@ -65,6 +65,11 @@
             <version>1.7.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+        </dependency>
+
         <!--Test dependencies-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -333,6 +338,8 @@
                                         <ignoredUnusedDeclaredDependency>org.glassfish.jersey.containers:jersey-container-servlet:jar:*
                                         </ignoredUnusedDeclaredDependency>
                                         <ignoredUnusedDeclaredDependency>org.apache.solr:solr*
+                                        </ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.glassfish.jersey.inject:jersey-hk2*
                                         </ignoredUnusedDeclaredDependency>
                                     </ignoredUnusedDeclaredDependencies>
                                 </configuration>
