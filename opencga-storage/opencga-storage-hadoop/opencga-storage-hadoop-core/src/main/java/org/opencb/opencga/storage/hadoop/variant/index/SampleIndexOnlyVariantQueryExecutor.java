@@ -480,14 +480,16 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
 
         private void addSecondaryAlternates(List<Variant> toReadFull) {
 //            StopWatch stopWatch = StopWatch.createStarted();
-            QueryOptions options = new QueryOptions(parsedQuery.getInputOptions());
-            Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(options));
+            Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(parsedQuery.getInputOptions()));
             includeFields.add(VariantField.STUDIES_SECONDARY_ALTERNATES);
             includeFields.add(VariantField.STUDIES_FILES);
+
+            QueryOptions options = new QueryOptions(parsedQuery.getInputOptions());
             options.remove(QueryOptions.EXCLUDE);
             options.remove(VariantField.SUMMARY);
             options.put(QueryOptions.INCLUDE, includeFields);
             options.put(VariantHadoopDBAdaptor.QUIET, true);
+            options.put(VariantHadoopDBAdaptor.NATIVE, true);
 
             Map<String, Variant> fullVariants = dbAdaptor.get(new VariantQuery()
                                     .id(toReadFull)
