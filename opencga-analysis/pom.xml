@@ -69,13 +69,19 @@
             <!-- Need dependency for running hadoop tests. -->
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <classifier>shaded</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
