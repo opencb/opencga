@@ -199,7 +199,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                         pw.println(variant.toString() + "\t" + sequence);
                     } catch (Exception e) {
                         logger.warn("When creating genome context file for mutational signature analysis, ignoring variant {}: {}",
-                                variant.toStringSimple(), e.getMessage());
+                                variant.toStringSimple(), Arrays.toString(e.getStackTrace()));
                     }
                 }
             }
@@ -227,7 +227,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
         } catch (Exception e) {
             logger.warn("When counting mutational signature substitutions, ignoring variant {} with sequence {}: {}",
-                    variant.toStringSimple(), sequence, e.getMessage());
+                    variant.toStringSimple(), sequence, Arrays.toString(e.getStackTrace()));
         }
     }
 
@@ -501,8 +501,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             case "TRANS":
             case "TRANSLOCATION":
                 return TYPE_TRANS;
-            default:
+            default: {
+                logger.warn("Unknown variant type {}, so this variant will be ignored in mutational signature analysis", variantType);
                 return null;
+            }
         }
     }
 
