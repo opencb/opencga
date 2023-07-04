@@ -224,6 +224,16 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <!--        RGA test dependencies -->
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+        </dependency>
+        <!--        /RGA -->
     </dependencies>
 
     <build>
@@ -268,6 +278,10 @@
                                 <ignoredUnusedDeclaredDependency>
                                     org.opencb.opencga:opencga-storage-hadoop-deps-*
                                 </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    org.apache.solr:*
+                                </ignoredUnusedDeclaredDependency>
+
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
