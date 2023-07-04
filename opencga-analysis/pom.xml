@@ -265,6 +265,9 @@
                                 <ignoredUnusedDeclaredDependency>
                                     javax.servlet:javax.servlet-api*
                                 </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    org.opencb.opencga:opencga-storage-hadoop-deps-*
+                                </ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
