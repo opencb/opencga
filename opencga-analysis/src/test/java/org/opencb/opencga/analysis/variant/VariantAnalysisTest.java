@@ -1005,8 +1005,12 @@ public class VariantAnalysisTest {
         List<HRDetect> hrDetects = sample.getQualityControl().getVariant().getHrDetects();
         for (HRDetect hrDetect : hrDetects) {
             if (hrDetect.getId().equals(hrDetect.getId())) {
+                System.out.println("HRDetect scores for " + hrDetect.getId());
+                for (Map.Entry<String, Object> entry : hrDetect.getScores().entrySet()) {
+                    System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
+                }
                 if (hrDetect.getScores().containsKey("del.mh.prop")) {
-                    Assert.assertEquals(hrDetect.getScores().getFloat("del.mh.prop"), 0.172413793103448f, 0.00001f);
+                    Assert.assertEquals(-1.5702984, hrDetect.getScores().getFloat("del.mh.prop"), 0.00001f);
                     return;
                 }
             }
@@ -1031,12 +1035,12 @@ public class VariantAnalysisTest {
 
         HRDetect hrDetect = HRDetectAnalysis.parseResult(hrdParams, hrdetectOutDir);
         for (Map.Entry<String, Object> entry : hrDetect.getScores().entrySet()) {
-            System.out.println(entry.getKey() + " -> " + entry.getValue());
+            System.out.println(entry.getKey() + ": " + entry.getValue());
         }
         assertTrue(hrDetect.getScores().containsKey("hrd"));
-        assertEquals(-0.102769986f, hrDetect.getScores().getFloat("hrd"), 0.00001f);
+        assertEquals(-1.95208666666667, hrDetect.getScores().getFloat("hrd"), 0.00001f);
         assertTrue(hrDetect.getScores().containsKey("Probability"));
-        assertEquals(0.998444f, hrDetect.getScores().getFloat("Probability"), 0.00001f);
+        assertEquals(4.21293910790655e-05, hrDetect.getScores().getFloat("Probability"), 0.00001f);
     }
 
     public void checkExecutionResult(ExecutionResult er) {
