@@ -240,11 +240,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
 
         Map<String, List<String>> alternateFileMap = new HashMap<>();
-        for (Pair<String, PhoenixArray> pair : filesMap) {
-            String fileId = pair.getKey();
-            PhoenixArray fileColumn = pair.getValue();
-            addFileEntry(studyMetadata, variant, studyEntry, fileId, fileColumn, alternateFileMap);
-        }
+        addFileEntries(filesMap, variant, studyMetadata, studyEntry, alternateFileMap);
         addSecondaryAlternates(variant, studyEntry, studyMetadata, alternateFileMap);
 
         fillEmptySamplesData(studyEntry, studyMetadata, fillMissingColumnValue);
@@ -386,8 +382,36 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void addFileEntry(StudyMetadata studyMetadata, Variant variant, StudyEntry studyEntry, String fileIdStr,
-                              PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap) {
+    private void addFileEntries(List<Pair<String, PhoenixArray>> filesMap, Variant variant, StudyMetadata studyMetadata,
+                                StudyEntry studyEntry, Map<String, List<String>> alternateFileMap) {
+        // Some file entries might be added only for their "OriginalCall" info.
+        // These would be added at the end, but only if the original call is not already present.
+        ArrayList<FileEntry> filesOnlyCall = new ArrayList<>();
+        for (Pair<String, PhoenixArray> pair : filesMap) {
+            String fileId = pair.getKey();
+            PhoenixArray fileColumn = pair.getValue();
+            addFileEntry(studyMetadata, variant, fileId, fileColumn, alternateFileMap, studyEntry.getFiles(), filesOnlyCall);
+        }
+        if (!filesOnlyCall.isEmpty()) {
+            // Create a set of original calls to avoid duplicates
+            Set<String> variantIds = new HashSet<>();
+            for (FileEntry fileEntry : studyEntry.getFiles()) {
+                if (fileEntry.getCall() != null) {
+                    variantIds.add(fileEntry.getCall().getVariantId());
+                }
+            }
+            for (FileEntry fileEntry : filesOnlyCall) {
+                if (variantIds.add(fileEntry.getCall().getVariantId())) {
+                    // Not seen, so add to the list of file entries
+                    studyEntry.getFiles().add(fileEntry);
+                }
+            }
+        }
+    }
+
+    private void addFileEntry(StudyMetadata studyMetadata, Variant variant, String fileIdStr,
+                              PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap,
+                              List<FileEntry> files, List<FileEntry> filesOnlyCall) {
         int fileId = Integer.parseInt(fileIdStr);
         String alternateRaw = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
         String alternate = normalizeNonRefAlternateCoordinate(variant, alternateRaw);
@@ -401,7 +425,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 && !configuration.getProjection().getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
             if (call != null && !call.isEmpty()) {
                 OriginalCall originalCall = parseOriginalCall(call);
-                studyEntry.getFiles().add(new FileEntry(fileName, originalCall, Collections.emptyMap()));
+                filesOnlyCall.add(new FileEntry(fileName, originalCall, Collections.emptyMap()));
             }
             return;
         }
@@ -423,7 +447,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     alternateCoordinate.getReference(),
                     alternateCoordinate.getAlternate()).toString(), 0);
         }
-        studyEntry.getFiles().add(new FileEntry(fileName, originalCall, attributes));
+        files.add(new FileEntry(fileName, originalCall, attributes));
     }
 
     private OriginalCall parseOriginalCall(String call) {
