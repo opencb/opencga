@@ -43,7 +43,6 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         // Utils and Filters
         enterpriseClasses.put("paramExceptionMapper", ParamExceptionMapper.class);
         enterpriseClasses.put("OpenCgaApplicationEventListener", OpenCgaApplicationEventListener.class);
-        enterpriseClasses.put("CORSFilter", CORSFilter.class);
     }
 
     public EnterpriseResourceConfig() {
