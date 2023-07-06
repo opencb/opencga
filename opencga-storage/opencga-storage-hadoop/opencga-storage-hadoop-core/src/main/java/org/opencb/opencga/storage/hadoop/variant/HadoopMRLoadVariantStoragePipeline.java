@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_HADOOP_BIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
@@ -96,29 +95,11 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
 
     protected void load(URI input, URI outdir, int studyId, int fileId) throws StorageEngineException {
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
-
-        String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
-        String jar = MRExecutor.getJarWithDependencies(getOptions());
-
-        Class execClass = ArchiveDriver.class;
-        String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
         String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta,
                 dbAdaptor.getVariantTable(), getArchiveTable(), studyId,
                 fileId, options);
-
-        long startTime = System.currentTimeMillis();
-        logger.info("------------------------------------------------------");
-        logger.info("Loading file {} into archive table '{}'", fileId, getArchiveTable());
-        logger.debug(executable + " " + args);
-        logger.info("------------------------------------------------------");
-        int exitValue = mrExecutor.run(executable, Commandline.translateCommandline(args));
-        logger.info("------------------------------------------------------");
-        logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-        if (exitValue != 0) {
-            throw new StorageEngineException("Error loading file " + input + " into archive table \""
-                    + getArchiveTable() + "\"");
-        }
+        mrExecutor.run(ArchiveDriver.class, Commandline.translateCommandline(args),
+                "Loading file " + fileId + " into archive table '" + getArchiveTable() + "'");
     }
 
 }
