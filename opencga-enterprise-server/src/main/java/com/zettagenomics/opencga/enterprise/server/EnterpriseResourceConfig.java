@@ -3,6 +3,7 @@ package com.zettagenomics.opencga.enterprise.server;
 import com.zettagenomics.opencga.enterprise.server.rest.CvaWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.opencb.opencga.server.CORSFilter;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -20,7 +21,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
     public static final Map<String, Class<?>> enterpriseClasses;
 
     static {
-        enterpriseClasses = new LinkedHashMap<>(20);
+        enterpriseClasses = new LinkedHashMap<>(25);
         enterpriseClasses.put("users", UserWSServer.class);
         enterpriseClasses.put("projects", ProjectWSServer.class);
         enterpriseClasses.put("studies", StudyWSServer.class);
@@ -38,6 +39,11 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseClasses.put("meta", EnterpriseMetaWSServer.class);
         enterpriseClasses.put("cva", CvaWSServer.class);
         enterpriseClasses.put("admin", AdminWSServer.class);
+
+        // Utils and Filters
+        enterpriseClasses.put("paramExceptionMapper", ParamExceptionMapper.class);
+        enterpriseClasses.put("OpenCgaApplicationEventListener", OpenCgaApplicationEventListener.class);
+        enterpriseClasses.put("CORSFilter", CORSFilter.class);
     }
 
     public EnterpriseResourceConfig() {
