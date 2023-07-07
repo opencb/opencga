@@ -95,6 +95,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 2000),
     SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR("storage.hadoop.sampleIndex.family.maxTriosPerMR", 1000),
+    SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER("storage.hadoop.sampleIndex.query.sampleIndexOnly.partialData.buffer", 10000),
+    SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH("storage.hadoop.sampleIndex.query.sampleIndexOnly.partialData.batch", 250),
     SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER("storage.hadoop.sampleIndex.query.extendedRegionFilter.default", 5_000_000),
 
     /////////////////////////

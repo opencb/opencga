@@ -130,7 +130,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         VariantQuery query = new VariantQuery()
                 .study(studyId)
-                .sample(sampleId + ":0/1,1/1")
+                .sample(sampleId)
                 .includeSample(samples)
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
