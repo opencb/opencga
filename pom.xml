@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.8.2-SNAPSHOT</version>
+    <version>2.8.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     <description>OenCGA projects implements a big data platform for genomic data analysis</description>
@@ -42,12 +42,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.8.2_dev</pyopencga.version>
-        <opencgar.version>2.8.2_dev</opencgar.version>
+        <pyopencga.version>2.8.3_dev</pyopencga.version>
+        <opencgar.version>2.8.3_dev</opencgar.version>
         <cellbase.version>5.4.1-SNAPSHOT</cellbase.version>
         <biodata.version>2.8.1-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.8.1-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.8.2-SNAPSHOT</iva.version>
+        <iva.version>2.8.3-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
         <jackson.version>2.11.4</jackson.version>
@@ -84,7 +84,7 @@
 
         <surefire.skipDefaultTestExecution>false</surefire.skipDefaultTestExecution>
         <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
-        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
     </properties>
 
     <scm>
@@ -510,6 +510,12 @@
                 <version>2.2.27</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <type>maven-plugin</type>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -528,6 +534,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>2.4.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
