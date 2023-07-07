@@ -33,6 +33,7 @@ public class SampleIndexQuery {
 
     private final SampleIndexSchema schema;
     private final Collection<LocusQuery> locusQueries;
+    private final int extendedFilteringRegion;
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
@@ -59,6 +60,7 @@ public class SampleIndexQuery {
     public SampleIndexQuery(Collection<LocusQuery> locusQueries, SampleIndexQuery query) {
         this.schema = query.schema;
         this.locusQueries = locusQueries;
+        this.extendedFilteringRegion = query.extendedFilteringRegion;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
@@ -74,14 +76,8 @@ public class SampleIndexQuery {
         this.queryOperation = query.queryOperation;
     }
 
-    public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, String study, Map<String,
-            List<String>> samplesMap, QueryOperation queryOperation) {
-        this(schema, locusQueries, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
-                Collections.emptyMap(),
-                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), null, false, queryOperation);
-    }
-
-    public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, Set<VariantType> variantTypes, String study,
+    public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, int extendedFilteringRegion,
+                            Set<VariantType> variantTypes, String study,
                             Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
@@ -90,6 +86,7 @@ public class SampleIndexQuery {
                             QueryOperation queryOperation) {
         this.schema = schema;
         this.locusQueries = locusQueries;
+        this.extendedFilteringRegion = extendedFilteringRegion;
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
@@ -111,6 +108,10 @@ public class SampleIndexQuery {
 
     public Collection<LocusQuery> getLocusQueries() {
         return locusQueries;
+    }
+
+    public int getExtendedFilteringRegion() {
+        return extendedFilteringRegion;
     }
 
     public List<Region> getAllRegions() {
@@ -162,7 +163,6 @@ public class SampleIndexQuery {
     public Set<String> getNegatedSamples() {
         return negatedSamples;
     }
-
 
     public boolean isNegated(String sample) {
         return getNegatedSamples().contains(sample);
