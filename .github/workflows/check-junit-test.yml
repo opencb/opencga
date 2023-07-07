@@ -10,11 +10,11 @@ on:
       medium_tests:
         type: boolean
         required: false
-        default: false
+        default: true
       long_tests:
         type: boolean
         required: false
-        default: false
+        default: true
       mvn_opts:
         type: string
         required: false
@@ -52,7 +52,7 @@ jobs:
           fi
 
   test:
-    needs: [ get_profiles, echo_log ]
+    needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
