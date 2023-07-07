@@ -40,22 +40,16 @@ jobs:
         run: |
           echo "## Run JUNIT tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo " - input ref = ${{ inputs.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo " - input mvn opts = ${{ inputs.mvn_opts }}" >> $GITHUB_STEP_SUMMARY
+          echo " - input ref : __\"${{ inputs.ref }}\"__" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.mvn_opts }}" ]; then
+            echo " - input mvn_opts : __\"${{ inputs.mvn_opts }}\"__" >> $GITHUB_STEP_SUMMARY
+          fi
           if [ -f "./.github/workflows/scripts/get_profiles.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_profiles.sh
             profiles="$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})"
             echo "profiles=${profiles}" >> $GITHUB_OUTPUT
-            echo " - profiles = ${profiles}" >> $GITHUB_STEP_SUMMARY
+            echo " - profiles : __\"${profiles}\"__" >> $GITHUB_STEP_SUMMARY
           fi
-
-  echo_log:
-    needs: get_profiles
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Echo profiles
-        id: log
-        run: echo "Executing testing profiles -> ${{ needs.get_profiles.outputs.profiles }}"
 
   test:
     needs: [ get_profiles, echo_log ]
