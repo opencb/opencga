@@ -631,7 +631,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;
-            this.otherTask = otherTask;
+            if (otherTask == null) {
+                this.otherTask = t -> t;
+            } else {
+                this.otherTask = otherTask;
+            }
         }
 
         @Override
