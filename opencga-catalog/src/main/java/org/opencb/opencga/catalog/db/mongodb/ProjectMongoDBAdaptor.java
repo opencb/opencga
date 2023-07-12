@@ -771,8 +771,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         aggregates.add(Aggregates.match(bsonQuery));
 
         // Check include
-        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        List<String> includeList = new ArrayList<>();
+        QueryOptions qOptions = addPrefixInOptions(options, "projects.");
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+
+        /*List<String> includeList = new ArrayList<>();
         if (options != null && options.get(QueryOptions.INCLUDE) != null) {
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
@@ -792,6 +794,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
             qOptions.put(QueryOptions.INCLUDE, includeList);
         }
+        */
 
         for (Bson aggregate : aggregates) {
             logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument());
