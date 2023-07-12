@@ -52,11 +52,14 @@ OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
 if [ -d "$OPENCGA_HOME_DIR" ]; then
 
-  OPENCGA_DENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
+  OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
   cd "$OPENCGA_HOME_DIR" || exit 2
   OPENCGA_CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
 
-  if [ "$OPENCGA_DENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
+  echo "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
+  echo "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
+
+  if [ "$OPENCGA_DEPENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
     echo "Compiling opencga..."
     if ! (mvn enforcer:enforce -Denforcer.rules=requireProfileIdsExist -P"$STORAGE_HADOOP_DEPS" -pl :opencga) ; then
       echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
@@ -85,7 +88,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
       REF_TYPE="branch"
       REF="$OPENCGA_EXPECTED_BRANCH"
     fi
-    echo "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DENDENCY_VERSION\" of opencga"
+    echo "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
     echo "Please, execute bellow command and retry:"
     echo "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
     exit 1
