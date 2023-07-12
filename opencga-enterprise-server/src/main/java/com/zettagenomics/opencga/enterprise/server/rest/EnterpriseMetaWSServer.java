@@ -116,10 +116,11 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
         }
-        AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
 
         URI targetURIForRedirection;
         try {
+            AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
+
             String token = getEnterpriseUserManager().ssoLogin(principal);
 
             Cookie[] cookies = httpServletRequest.getCookies();
@@ -141,7 +142,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
             targetURIForRedirection = new URI(service + queryParams);
             logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
-        } catch (CatalogException | URISyntaxException e) {
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
         return Response.temporaryRedirect(targetURIForRedirection).build();
