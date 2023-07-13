@@ -67,7 +67,8 @@ public class CellBaseUtilsTest {
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "1"},
                 new Object[]{"https://ws.zettagenomics.com/cellbase/", "v5.1", "grch38", "2"},
                 new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch37", "1"},
-                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"});
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "grch38", "2"},
+                new Object[]{"https://uk.ws.zettagenomics.com/cellbase/", "v5.4", "grch38", "3"});
     }
 
     @Parameter(0)

@@ -48,7 +48,7 @@ public class VariantMetadataConverter {
 //                .setDate(Date.from(Instant.now()).toString())
                 .setCreationDate(TimeUtils.getTime())
                 .setStudies(studies)
-                .setVersion(GitRepositoryState.get().getDescribeShort())
+                .setVersion(GitRepositoryState.getInstance().getDescribeShort())
                 .setSpecies(species)
                 .build();
 

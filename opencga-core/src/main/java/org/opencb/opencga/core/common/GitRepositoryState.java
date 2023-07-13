@@ -32,6 +32,7 @@ public class GitRepositoryState {
 
     public static final String DEFAULT_RESOURCE_NAME = "git.properties";
     private static GitRepositoryState gitRepositoryState;
+    private static Properties properties;
     private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
     private String tags;                    // =${git.tags} // comma separated tag names
@@ -57,9 +58,16 @@ public class GitRepositoryState {
     private String buildHost;               // =${git.build.host}
     private String buildVersion;            // =${git.build.version}
 
-    public static GitRepositoryState get() {
+    public static String get(String key) {
+        if (properties == null) {
+            getInstance();
+        }
+        return properties.getProperty(key);
+    }
+
+    public static GitRepositoryState getInstance() {
         if (gitRepositoryState == null) {
-            Properties properties = new Properties();
+            properties = new Properties();
             InputStream stream = null;
             try {
                 stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);

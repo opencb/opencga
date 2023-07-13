@@ -64,10 +64,11 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
         implements StorageToolExecutor {
 
-    public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
-
     private static final String SVCLASS = "SVCLASS";
     private static final String EXT_SVTYPE = "EXT_SVTYPE";
+
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
+            + GitRepositoryState.getInstance().getBuildVersion();
 
     private Path opencgaHome;
 
