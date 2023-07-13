@@ -1,9 +1,7 @@
-name: Push to TASK branch
+name: To test cicd
 
 on:
-  push:
-    branches:
-      - TASK-*
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,6 +14,9 @@ jobs:
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
-    with:
-      options: --tag ${{ github.ref_name }}
+    secrets: inherit
+
+  deploy-emr-docker:
+    uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
+    needs: build
     secrets: inherit
