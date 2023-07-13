@@ -19,17 +19,6 @@
     </modules>
 
     <properties>
-<<<<<<< HEAD
-        <opencga.version>2.8.2.1</opencga.version>
-        <pyopencga.version>1.6.3.post1</pyopencga.version>
-        <opencgar.version>1.6.3.1</opencgar.version>
-        <cellbase.version>5.5.0</cellbase.version>
-        <biodata.version>2.8.0</biodata.version>
-        <java-common-libs.version>4.8.0</java-common-libs.version>
-        <!--Currently not used but must have the same value as the project because
-          IVA-enterprise is expected to exist shortly-->
-        <iva.version>1.6.3</iva.version>
-=======
         <opencga.version>2.10.0-SNAPSHOT</opencga.version>
         <pyopencga.version>1.8.0_dev</pyopencga.version>
         <opencgar.version>1.8.0_dev</opencgar.version>
@@ -38,7 +27,6 @@
         <java-common-libs.version>4.10.0-SNAPSHOT</java-common-libs.version>
         <iva.version>1.8.0_dev</iva.version>
 
->>>>>>> develop
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.11.4</jackson.version>
