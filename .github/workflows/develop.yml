@@ -1,11 +1,10 @@
-name: Push opencga-enterprise develop or release branch
+name: Push to develop or release branch
 
 on:
   push:
     branches:
       - develop
       - release-*
-  workflow_dispatch:
 
 jobs:
   build:
