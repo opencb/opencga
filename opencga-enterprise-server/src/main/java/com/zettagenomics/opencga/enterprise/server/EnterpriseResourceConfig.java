@@ -3,46 +3,48 @@ package com.zettagenomics.opencga.enterprise.server;
 import com.zettagenomics.opencga.enterprise.server.rest.CvaWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.opencb.opencga.server.rest.*;
-import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
-import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
-import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.ApplicationPath;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 @ApplicationPath("resources")
 public class EnterpriseResourceConfig extends ResourceConfig {
 
+    private final static Logger logger;
     public static final Map<String, Class<?>> enterpriseClasses;
 
     static {
-        enterpriseClasses = new LinkedHashMap<>(20);
-        enterpriseClasses.put("users", UserWSServer.class);
-        enterpriseClasses.put("projects", ProjectWSServer.class);
-        enterpriseClasses.put("studies", StudyWSServer.class);
-        enterpriseClasses.put("files", FileWSServer.class);
-        enterpriseClasses.put("jobs", JobWSServer.class);
-        enterpriseClasses.put("samples", SampleWSServer.class);
-        enterpriseClasses.put("individuals", IndividualWSServer.class);
-        enterpriseClasses.put("families", FamilyWSServer.class);
-        enterpriseClasses.put("cohorts", CohortWSServer.class);
-        enterpriseClasses.put("panels", PanelWSServer.class);
-        enterpriseClasses.put("alignment", AlignmentWebService.class);
-        enterpriseClasses.put("variant", VariantWebService.class);
-        enterpriseClasses.put("clinical", ClinicalWebService.class);
-        enterpriseClasses.put("variantOperation", VariantOperationWebService.class);
+        logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
+
+        Set<String> excludedClasses = new HashSet<>();
+        excludedClasses.add("MetaWSServer");
+
+        Reflections reflections = new Reflections("org.opencb.opencga.server.rest", new SubTypesScanner(false));
+        Set<Class<?>> collect = new HashSet<>(reflections.getSubTypesOf(Object.class));
+        enterpriseClasses = new LinkedHashMap<>(collect.size());
+        for (Class<?> aClass : collect) {
+            if (excludedClasses.contains(aClass.getSimpleName())) {
+                logger.debug("Excluded class '{}'", aClass.getName());
+            } else {
+                enterpriseClasses.put(aClass.getSimpleName(), aClass);
+            }
+        }
+
         enterpriseClasses.put("meta", EnterpriseMetaWSServer.class);
         enterpriseClasses.put("cva", CvaWSServer.class);
-        enterpriseClasses.put("admin", AdminWSServer.class);
     }
 
     public EnterpriseResourceConfig() {
         for (Class<?> value : enterpriseClasses.values()) {
             register(value);
+            logger.debug("Registered class '{}'", value.getName());
         }
     }
 
