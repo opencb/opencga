@@ -3,26 +3,16 @@ name: Execute manual Java build and push to DockerHub
 on:
   workflow_dispatch:
     inputs:
-      maven_opts:
+      storage_hadoop:
         type: string
         default: '-Dopencga.war.name=opencga'
         description: 'OpenCGA Enterprise maven options'
-        required: false
-      opencga_maven_opts:
-        type: string
-        default: '-P storage-hadoop,hdp3.1'
-        description: 'OpenCGA maven options'
         required: false
 
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: ${{ inputs.maven_opts }}
-      opencga_maven_opts: ${{ inputs.opencga_maven_opts }}
+      storage_hadoop: ${{ inputs.storage_hadoop }}
       artifact_name: build-folder
 
-  deploy-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build
-    secrets: inherit
