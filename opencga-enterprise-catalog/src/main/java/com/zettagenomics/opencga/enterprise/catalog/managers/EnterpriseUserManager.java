@@ -35,9 +35,13 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
     }
 
     public String ssoLogin(AttributePrincipal principal) throws CatalogException {
-        for (Map.Entry<String, Object> entry : principal.getAttributes().entrySet()) {
-            // Print user attributes
-            logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
+        if (principal.getAttributes() != null) {
+            for (Map.Entry<String, Object> entry : principal.getAttributes().entrySet()) {
+                // Print user attributes
+                logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
+            }
+        } else {
+            logger.warn("No attributes found for user '{}'", principal.getName());
         }
 
         String userId = principal.getName();
@@ -58,7 +62,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
                     .setId(principal.getName())
                     .setAccount(new Account(Account.AccountType.GUEST, null, null, new Account.AuthenticationOrigin("CAS", false)))
                     .setAttributes(principal.getAttributes());
-            if (enterpriseConfiguration.getSso().getAttributes() != null) {
+            if (enterpriseConfiguration.getSso().getAttributes() != null && principal.getAttributes() != null) {
                 String name = getDefaultValue(principal.getAttributes(),
                         enterpriseConfiguration.getSso().getAttributes().getName(), principal.getName());
                 String surname = getDefaultValue(principal.getAttributes(),
@@ -96,13 +100,13 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         }
         if (principal.getAttributes() != null) {
             String msg = StringUtils.join(principal.getAttributes().keySet(), ",");
-            logger.debug("SAML1 keys: {}", msg);
+            logger.debug("Attribute keys: {}", msg);
         }
         String groupsKey = enterpriseConfiguration.getSso().getAttributes().getGroups();
         if (principal.getAttributes() == null || !principal.getAttributes().containsKey(groupsKey)) {
             logger.warn("No remote groups found under key '{}' for SSO user '{}'.", groupsKey, principal.getName());
             if (principal.getAttributes() == null) {
-                logger.warn("SAML1 object has no attributes");
+                logger.warn("Principal object has no attributes");
             }
             return Collections.emptyList();
         }

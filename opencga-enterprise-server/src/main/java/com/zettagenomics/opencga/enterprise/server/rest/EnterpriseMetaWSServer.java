@@ -124,6 +124,9 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             String token = getEnterpriseUserManager().ssoLogin(principal);
 
             Cookie[] cookies = httpServletRequest.getCookies();
+            if (cookies == null) {
+                throw new CatalogException("Unexpected event. Could not retrieve cookies");
+            }
             logger.debug("SSO cookies: ");
             for (Cookie cookie : cookies) {
                 logger.debug("{}: {}", cookie.getName(), cookie.getValue());
