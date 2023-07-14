@@ -46,6 +46,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
+    public static final String ORGANIZATION_COLLECTION = "organization";
     public static final String USER_COLLECTION = "user";
     public static final String STUDY_COLLECTION = "study";
     public static final String FILE_COLLECTION = "file";
@@ -87,6 +88,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Deprecated
     public static final String OLD_DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
 
+    public static final String DELETED_ORGANIZATION_COLLECTION = "organization_deleted";
     public static final String DELETED_USER_COLLECTION = "user_deleted";
     public static final String DELETED_STUDY_COLLECTION = "study_deleted";
     public static final String DELETED_FILE_COLLECTION = "file_deleted";
@@ -104,6 +106,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String AUDIT_COLLECTION = "audit";
 
     public static final List<String> COLLECTIONS_LIST = Arrays.asList(
+            ORGANIZATION_COLLECTION,
             USER_COLLECTION,
             STUDY_COLLECTION,
             FILE_COLLECTION,
@@ -122,6 +125,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             PANEL_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
+            DELETED_ORGANIZATION_COLLECTION,
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
@@ -147,6 +151,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private MongoDBCollection metaCollection;
     private Map<String, MongoDBCollection> collections;
+    private OrganizationMongoDBAdaptor organizationDBAdaptor;
     private UserMongoDBAdaptor userDBAdaptor;
     private StudyMongoDBAdaptor studyDBAdaptor;
     private IndividualMongoDBAdaptor individualDBAdaptor;
@@ -266,6 +271,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return metaDBAdaptor;
     }
 
+    public OrganizationMongoDBAdaptor getOrganizationDBAdaptor() {
+        return organizationDBAdaptor;
+    }
+
     @Override
     public UserMongoDBAdaptor getCatalogUserDBAdaptor() {
         return userDBAdaptor;
@@ -354,6 +363,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
+        MongoDBCollection organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
         MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
         MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
@@ -372,6 +382,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
+        MongoDBCollection deletedOrganizationCollection = mongoDataStore.getCollection(DELETED_ORGANIZATION_COLLECTION);
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
         MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
@@ -390,6 +401,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(METADATA_COLLECTION, metaCollection);
         collections.put(MIGRATION_COLLECTION, migrationCollection);
 
+        collections.put(ORGANIZATION_COLLECTION, organizationCollection);
         collections.put(USER_COLLECTION, userCollection);
         collections.put(STUDY_COLLECTION, studyCollection);
         collections.put(FILE_COLLECTION, fileCollection);
@@ -408,6 +420,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
         collections.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
 
+        collections.put(DELETED_ORGANIZATION_COLLECTION, deletedOrganizationCollection);
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
         collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
@@ -429,6 +442,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
         projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
+        organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, deletedOrganizationCollection, catalogConfiguration,
+                this);
         sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection,
                 catalogConfiguration, this);
         studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
