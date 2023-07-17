@@ -1,18 +1,4 @@
 #!/bin/bash
-function yellow (){
-   echo "$(tput setaf 3)$*$(tput sgr0)"
-}
-function green (){
-   echo "$(tput setaf 2)$*$(tput sgr0)"
-}
-function cyan (){
-   echo "$(tput setaf 6)$*$(tput sgr0)"
-}
-function red(){
-   echo "$(tput setaf 1)$*$(tput sgr0)"
-}
-
-
 
 function printUsage() {
   echo ""
@@ -53,7 +39,7 @@ while [[ $# -gt 0 ]]; do
     shift # past value
     ;;
   *) # unknown option
-    red "Unknown option $key"
+    echo "Unknown option $key"
     printUsage
     exit 1
     ;;
@@ -62,40 +48,59 @@ done
 
 
 cd "$(dirname "$0")" || exit 2
+OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
 if [ -d "$OPENCGA_HOME_DIR" ]; then
 
-  OPENCGA_DENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
+  OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
   cd "$OPENCGA_HOME_DIR" || exit 2
   OPENCGA_CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
 
-  if [ "$OPENCGA_DENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
-    green "Compiling opencga..."
+  echo "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
+  echo "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
+
+  if [ "$OPENCGA_DEPENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
+    echo "Compiling opencga..."
     if ! (mvn enforcer:enforce -Denforcer.rules=requireProfileIdsExist -P"$STORAGE_HADOOP_DEPS" -pl :opencga) ; then
-      red OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
+      echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
       exit 1
     fi
 
     mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
     # shellcheck disable=SC2181
     if [ $? -eq 0 ]; then
-      green "Opencga compilation success!"
+      echo "Opencga compilation success!"
     else
-      red "Opencga compilation ERROR"
+      echo "Opencga compilation ERROR"
       exit 1
     fi
   else
-    red "Opencga version no match! You must checkout the $OPENCGA_DENDENCY_VERSION of opencga"
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
+    OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
+
+    REF_TYPE=
+    REF=
+    if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
+      REF_TYPE="tag"
+      REF="$OPENCGA_EXPECTED_TAG"
+    else
+      REF_TYPE="branch"
+      REF="$OPENCGA_EXPECTED_BRANCH"
+    fi
+    echo "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
+    echo "Please, execute bellow command and retry:"
+    echo "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
     exit 1
   fi
 else
-  red "ERROR OPENCGA HOME NOT FOUND!!!"
-  yellow "You must create in the current directory a symbolic link to the directory where you have downloaded opencga and call it opencga-home"
-  cyan "         ln -s /path/to/opencga $OPENCGA_HOME_DIR    "
+  echo "ERROR OPENCGA HOME NOT FOUND!!!"
+  echo "You must create in the current directory a symbolic link to the directory where you have downloaded opencga and call it opencga-home"
+  echo "         ln -s /path/to/opencga $OPENCGA_HOME_DIR    "
   printUsage
   exit 1
 fi
 
-cd - || exit 2
+cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
-mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS"
+mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga

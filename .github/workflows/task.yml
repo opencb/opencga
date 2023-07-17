@@ -1,21 +1,39 @@
-name: Push to TASK branch
+name: Push OpenCGA TASK
 
 on:
   push:
     branches:
       - TASK-*
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Execute workflow'
+        default: 'develop'
+        required: true
 
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: -Dopencga.war.name=opencga
-      opencga_maven_opts: -P storage-hadoop,hdp3.1
+      storage_hadoop: hdp3.1
       artifact_name: build-folder
 
-  deploy-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+  deploy-docker-hub:
+    name: Push Docker image
+    runs-on: ubuntu-22.04
     needs: build
-    with:
-      options: --tag ${{ github.ref_name }}
-    secrets: inherit
+    steps:
+      - name: Download build dir
+        uses: actions/download-artifact@v3
+        with:
+          name: build-folder
+          path: build
+      - name: Chmod
+        run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Push in Docker Hub
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base --tag ${{ github.ref_name }}
