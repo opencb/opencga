@@ -120,7 +120,7 @@ public class PedigreeGraphUtils {
             StringBuilder sbDisorders = new StringBuilder();
             if (CollectionUtils.isNotEmpty(disorders) && disorders.size() > 1) {
                 for (Disorder disorder : family.getDisorders()) {
-                    sbDisorders.append("affected.").append(disorder.getId()).append("\t");
+                    sbDisorders.append("\"affected.").append(disorder.getId()).append("\"\t");
                 }
             } else {
                 sbDisorders.append("affected").append("\t");

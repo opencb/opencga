@@ -412,7 +412,8 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
         }
 
-        checkVariantsTable(studyId_split, studyId_normal, new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES));
+        checkVariantsTable(studyId_split, studyId_normal, new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES),
+                v -> v.getStudies().get(0).getFiles().forEach(file -> file.setFileId("")));
         checkSampleIndex(studyId_split, studyId_normal);
     }
 
