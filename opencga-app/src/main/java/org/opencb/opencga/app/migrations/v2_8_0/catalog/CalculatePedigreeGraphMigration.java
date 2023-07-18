@@ -73,7 +73,7 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
         for (Project project : catalogManager.getProjectManager().search(new Query(), projectOptions, token).getResults()) {
             if (CollectionUtils.isNotEmpty(project.getStudies())) {
                 for (Study study : project.getStudies()) {
-                    String id = project.getId() + ":" + study.getId();
+                    String id = study.getFqn();
                     for (Family family : catalogManager.getFamilyManager().search(id, new Query(), familyOptions, token).getResults()) {
                         if (PedigreeGraphUtils.hasMinTwoGenerations(family)
                                 && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64()))) {
