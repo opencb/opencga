@@ -24,7 +24,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
 
     protected SingleSampleIndexQuery(SampleIndexQuery query, String sample, List<String> gts) {
         super(query.getSchema(), query.getLocusQueries() == null ? null : new ArrayList<>(query.getLocusQueries()),
-                query.getVariantTypes() == null ? null : new HashSet<>(query.getVariantTypes()),
+                query.getExtendedFilteringRegion(), query.getVariantTypes() == null ? null : new HashSet<>(query.getVariantTypes()),
                 query.getStudy(),
                 Collections.singletonMap(sample, gts),
                 query.getMultiFileSamplesSet(),
