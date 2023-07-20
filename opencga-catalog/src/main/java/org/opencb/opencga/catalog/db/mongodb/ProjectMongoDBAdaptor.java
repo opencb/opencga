@@ -771,8 +771,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         aggregates.add(Aggregates.match(bsonQuery));
 
         // Check include
-        QueryOptions qOptions = addPrefixInOptions(options, "projects.");
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+        QueryOptions qOptions = filterQueryOptions(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+        qOptions = addPrefixInOptions(qOptions, "projects.");
 
         /*List<String> includeList = new ArrayList<>();
         if (options != null && options.get(QueryOptions.INCLUDE) != null) {

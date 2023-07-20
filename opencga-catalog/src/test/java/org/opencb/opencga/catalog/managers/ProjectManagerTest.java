@@ -176,6 +176,17 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         projects = catalogManager.getProjectManager().search(new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.STUDIES.key()), sessionIdUser);
+        assertEquals(1, projects.getNumResults());
+        for (Project project : projects.getResults()) {
+            assertNull(project.getId());
+            assertNull(project.getDescription());
+            assertNull(project.getName());
+            assertNotNull(project.getStudies());
+            assertTrue(CollectionUtils.isNotEmpty(project.getStudies()));
+        }
+
+        projects = catalogManager.getProjectManager().search(new Query(),
                 new QueryOptions(QueryOptions.EXCLUDE, ProjectDBAdaptor.QueryParams.NAME.key()), sessionIdUser);
         assertEquals(1, projects.getNumResults());
         for (Project project : projects.getResults()) {
