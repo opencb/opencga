@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
@@ -48,6 +49,7 @@ public class OpencgaMain {
             parser.printUsage();
             System.exit(0);
         }
+        PrintUtils.printSpace();
         checkLogLevel(args);
         checkMode(args);
         logger.debug(Arrays.toString(args));
