@@ -120,7 +120,7 @@ public class RangeIndexField extends IndexField<Double> {
 
         @Override
         public Double decode(int code) {
-            return code == thresholds.length ? max : code < 0 ? min : thresholds[code];
+            return code <= 0 ? min : thresholds[code - 1];
         }
 
         @Override

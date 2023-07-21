@@ -390,15 +390,15 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     switch (role) {
                         case MOTHER:
                             studyEntry.getSamples().add(new SampleEntry(motherName, null,
-                                    Collections.singletonList(GenotypeCodec.decodeMother(entry.getParentsCode()))));
+                                    Arrays.asList(GenotypeCodec.decodeMother(entry.getParentsCode()))));
                             break;
                         case FATHER:
                             studyEntry.getSamples().add(new SampleEntry(fatherName, null,
-                                    Collections.singletonList(GenotypeCodec.decodeFather(entry.getParentsCode()))));
+                                    Arrays.asList(GenotypeCodec.decodeFather(entry.getParentsCode()))));
                             break;
                         case SAMPLE:
                             studyEntry.getSamples().add(new SampleEntry(sampleName, null,
-                                    Collections.singletonList(entry.getGenotype())));
+                                    Arrays.asList(entry.getGenotype())));
                             break;
                         default:
                             throw new IllegalStateException("Unexpected value: " + role);
@@ -412,11 +412,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     filter = "NA";
                 }
                 fileAttributes.put(StudyEntry.FILTER, filter);
-//                String qual = qualField.readAndDecode(fileIndexBitBuffer);
-//                if (qual == null) {
-//                    qual = "NA";
-//                }
-//                fileAttributes.put(StudyEntry.QUAL, qual);
+                String qual = qualField.readAndDecode(fileIndexBitBuffer);
+                if (qual == null) {
+                    qual = "NA";
+                }
+                fileAttributes.put(StudyEntry.QUAL, qual);
                 String fileName = files.get(0);
                 studyEntry.setFiles(new ArrayList<>());
                 studyEntry.getFiles().add(new FileEntry(fileName, null, fileAttributes));
@@ -513,7 +513,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     // Should end in few seconds
                     future.get(90, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    throw new VariantQueryException("Error fetching original call for INDELs");
+                    throw new VariantQueryException("Error fetching extra data", e);
                 }
             }
             logger.info("Fetch {} partial variants in {} in {} threads",
@@ -564,8 +564,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     fe.setCall(newFe.getCall());
                 });
                 // merge sampleEntries
-                for (SampleEntry sampleExtra : studyExtra.getSamples()) {
-                    SampleEntry sample = study.getSample(sampleExtra.getSampleId());
+                for (int i = 0; i < samples.size(); i++) {
+//                    String sampleName = samples.get(i);
+                    SampleEntry sample = study.getSample(i);
+                    SampleEntry sampleExtra = studyExtra.getSample(i);
+
                     sample.getData().set(gtIdx, sampleExtra.getData().get(0));
 //                    if (sampleExtra.getFileIndex() != null) {
 //                        String fileIdFromFull = fullStudy.getFiles().get(sampleExtra.getFileIndex()).getFileId();
@@ -608,7 +611,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     continue;
                 }
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                mergeFileEntries(studyEntry, fileEntries, (fe, newFe)->{
+                mergeFileEntries(studyEntry, fileEntries, (fe, newFe) -> {
                     fe.setCall(newFe.getCall());
                 });
             }
