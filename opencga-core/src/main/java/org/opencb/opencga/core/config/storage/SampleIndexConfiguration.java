@@ -386,6 +386,15 @@ public class SampleIndexConfiguration {
             return customFields;
         }
 
+        public IndexFieldConfiguration getCustomField(IndexFieldConfiguration.Source source, String key) {
+            for (IndexFieldConfiguration s : customFields) {
+                if (s.getKey().equals(key) && s.getSource() == source) {
+                    return s;
+                }
+            }
+            return null;
+        }
+
         public int getFilePositionBits() {
             return filePositionBits;
         }
