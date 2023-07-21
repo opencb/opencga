@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -159,6 +160,42 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals(project2, result.first().getId());
         assertEquals("user2@pmp", result.first().getFqn());
 
+    }
+
+    @Test
+    public void searchProjectsUsingInclude() throws CatalogException {
+        OpenCGAResult<Project> projects = catalogManager.getProjectManager().search(new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key()), sessionIdUser);
+        assertEquals(1, projects.getNumResults());
+        for (Project project : projects.getResults()) {
+            assertNotNull(project.getId());
+            assertNull(project.getDescription());
+            assertNull(project.getName());
+            assertNull(project.getStudies());
+            assertTrue(CollectionUtils.isEmpty(project.getStudies()));
+        }
+
+        projects = catalogManager.getProjectManager().search(new Query(),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.STUDIES.key()), sessionIdUser);
+        assertEquals(1, projects.getNumResults());
+        for (Project project : projects.getResults()) {
+            assertNull(project.getId());
+            assertNull(project.getDescription());
+            assertNull(project.getName());
+            assertNotNull(project.getStudies());
+            assertTrue(CollectionUtils.isNotEmpty(project.getStudies()));
+        }
+
+        projects = catalogManager.getProjectManager().search(new Query(),
+                new QueryOptions(QueryOptions.EXCLUDE, ProjectDBAdaptor.QueryParams.NAME.key()), sessionIdUser);
+        assertEquals(1, projects.getNumResults());
+        for (Project project : projects.getResults()) {
+            assertNotNull(project.getId());
+            assertNull(project.getName());
+            assertNotNull(project.getDescription());
+            assertNotNull(project.getStudies());
+            assertFalse(CollectionUtils.isEmpty(project.getStudies()));
+        }
     }
 
     @Test

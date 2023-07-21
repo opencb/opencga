@@ -25,6 +25,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
     private final String user;
 
     private final QueryOptions options;
+    private boolean includeStudyInfo;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private QueryOptions studyQueryOptions;
 
@@ -44,6 +45,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
         this.studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
 
         this.options = options != null ? new QueryOptions(options) : new QueryOptions();
+        this.includeStudyInfo = includeStudyInfo();
         this.studyQueryOptions = createInnerQueryOptionsForVersionedEntity(this.options, ProjectDBAdaptor.QueryParams.STUDIES.key(), false);
         this.studyQueryOptions = MongoDBAdaptor.filterQueryOptions(this.studyQueryOptions,
                 Collections.singletonList(MongoDBAdaptor.PRIVATE_PROJECT));
@@ -90,8 +92,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
             projectListBuffer.add(projectDocument);
             counter++;
 
-            if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                    || !options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")) {
+            if (includeStudyInfo) {
                 projectUidSet.add(projectDocument.get(UID, Long.class));
             }
         }
@@ -128,6 +129,31 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
                     }
                 });
             }
+        }
+    }
+
+    private boolean includeStudyInfo() {
+        if (options == null) {
+            return true;
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> list = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : list) {
+                if (exclude.equals("studies") || exclude.equals("projects.studies")) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> list = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String exclude : list) {
+                if (exclude.equals("studies") || exclude.equals("projects.studies")) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return true;
         }
     }
 }
