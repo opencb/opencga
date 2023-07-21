@@ -268,7 +268,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 fileId, metadataManager, dbAdaptor.getHBaseManager(), false, false);
 
         // TaskMetadata
-        HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
+        HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null, null, null, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, Object> ptr =

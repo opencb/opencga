@@ -369,14 +369,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 long count = 0;
                 for (LocusQuery locusQuery : locusQueries) {
                     // Split region in countable regions
-                    List<LocusQuery> subLocusQueries;
-                    if (locusQuery != null && locusQuery.getVariants().isEmpty() && locusQuery.getRegions().size() == 1) {
-                        subLocusQueries = splitRegion(locusQuery.getRegions().get(0))
-                                .stream().map(LocusQuery::buildLocusQuery).collect(Collectors.toList());
-                    } else {
-                        // Do not split
-                        subLocusQueries = Collections.singletonList(locusQuery);
-                    }
+                    List<LocusQuery> subLocusQueries = splitLocusQuery(locusQuery);
+
                     for (LocusQuery subLocusQuery : subLocusQueries) {
                         boolean noLocusFilter = subLocusQuery == null
                                 || (subLocusQuery.getVariants().isEmpty()
@@ -466,36 +460,60 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     /**
      * Split region into regions that match with batches at SampleIndexTable.
      *
-     * @param region Region to split
+     * @param locusQuery Locus query to split
      * @return List of regions.
      */
-    protected static List<Region> splitRegion(Region region) {
-        List<Region> regions;
+    protected static List<LocusQuery> splitLocusQuery(LocusQuery locusQuery) {
+        if (locusQuery == null || !locusQuery.getVariants().isEmpty() || locusQuery.getRegions().size() != 1) {
+            // Do not split
+            return Collections.singletonList(locusQuery);
+        }
+        Region region = locusQuery.getRegions().get(0);
+        List<LocusQuery> locusQueries;
         if (region.getEnd() - region.getStart() < SampleIndexSchema.BATCH_SIZE) {
             // Less than one batch. Do not split region
-            regions = Collections.singletonList(region);
+            locusQueries = Collections.singletonList(locusQuery);
         } else if (region.getStart() / SampleIndexSchema.BATCH_SIZE + 1 == region.getEnd() / SampleIndexSchema.BATCH_SIZE
                 && !startsAtBatch(region)
                 && !endsAtBatch(region)) {
             // Consecutive partial batches. Do not split region
-            regions = Collections.singletonList(region);
+            locusQueries = Collections.singletonList(locusQuery);
         } else {
-            // Copy region before modifying
+            locusQueries = new ArrayList<>(3);
+//             Copy regions before modifying
             region = new Region(region.getChromosome(), region.getStart(), region.getEnd());
-            regions = new ArrayList<>(3);
+            Region chunkRegion = new Region(locusQuery.getChunkRegion().getChromosome(),
+                    locusQuery.getChunkRegion().getStart(),
+                    locusQuery.getChunkRegion().getEnd());
             if (!startsAtBatch(region)) {
-                int splitPoint = region.getStart() - region.getStart() % SampleIndexSchema.BATCH_SIZE + SampleIndexSchema.BATCH_SIZE;
-                regions.add(new Region(region.getChromosome(), region.getStart(), splitPoint - 1));
+                int splitPoint = SampleIndexSchema.getChunkStartNext(region.getStart());
+                Region startRegion = new Region(region.getChromosome(), region.getStart(), splitPoint - 1);
+                locusQueries.add(new LocusQuery(
+                        // Keep the exceeded start only for the first split.
+                        new Region(chunkRegion.getChromosome(), chunkRegion.getStart(), splitPoint),
+                        Collections.singletonList(startRegion),
+                        Collections.emptyList()));
                 region.setStart(splitPoint);
+                chunkRegion.setStart(splitPoint);
             }
-            regions.add(region);
             if (!endsAtBatch(region)) {
-                int splitPoint = region.getEnd() - region.getEnd() % SampleIndexSchema.BATCH_SIZE;
-                regions.add(new Region(region.getChromosome(), splitPoint, region.getEnd()));
+                int splitPoint = SampleIndexSchema.getChunkStart(region.getEnd());
+                Region endRegion = new Region(region.getChromosome(), splitPoint, region.getEnd());
+                locusQueries.add(new LocusQuery(
+                        SampleIndexSchema.getChunkRegion(endRegion, 0),
+                        Collections.singletonList(endRegion),
+                        Collections.emptyList()
+                ));
                 region.setEnd(splitPoint - 1);
+                chunkRegion.setEnd(splitPoint);
             }
+            locusQueries.add(new LocusQuery(
+                    chunkRegion,
+                    Collections.singletonList(region),
+                    Collections.emptyList()));
+            locusQueries.sort(LocusQuery::compareTo);
         }
-        return regions;
+        return locusQueries;
     }
 
     protected static boolean matchesWithBatch(Region region) {
@@ -711,7 +729,12 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public static void printQuery(LocusQuery locusQuery) {
         if (locusQuery != null) {
-            logger.info("ChunkRegion: [ " + locusQuery.getChunkRegion() + " )");
+            Region chunk = locusQuery.getChunkRegion();
+            if (chunk.getStart() == 0 && chunk.getEnd() == Integer.MAX_VALUE) {
+                logger.info("ChunkRegion: [ " + chunk.getChromosome() + " )");
+            } else {
+                logger.info("ChunkRegion: [ " + chunk.getChromosome() + ":" + chunk.getStart() + "-" + chunk.getEnd() + " )");
+            }
             if (!locusQuery.getRegions().isEmpty()) {
                 logger.info("  - Regions: " + locusQuery.getRegions());
             }
