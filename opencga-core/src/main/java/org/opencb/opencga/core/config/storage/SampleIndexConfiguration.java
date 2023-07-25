@@ -169,7 +169,7 @@ public class SampleIndexConfiguration {
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.FILE,
                         StudyEntry.FILTER,
-                        IndexFieldConfiguration.Type.CATEGORICAL,
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         VCFConstants.PASSES_FILTERS_v4))
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
