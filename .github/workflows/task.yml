@@ -5,10 +5,12 @@ on:
     branches:
       - TASK-*
   workflow_dispatch:
-#WARNING Develop branch needed for prod
+
+# WARNING Develop branch needed for prod
+
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.9.x
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
 
@@ -18,10 +20,9 @@ jobs:
     secrets: inherit
     with:
       test_profile: runShortTests
-      report_context: development
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.9.x
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}

@@ -3,14 +3,17 @@ name: "Pull Request Merge Workflow"
 on:
   pull_request:
     branches:
-      - "develop"
-      - "release-*"
+      - develop
+      - release-*
     types:
       - closed
 
 jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+
   delete-docker:
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.9.x
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
     with:
       cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
     secrets: inherit
