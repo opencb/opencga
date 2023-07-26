@@ -95,12 +95,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             STUDY_NAME_3,
             STUDY_NAME_4,
             STUDY_NAME_5,
-            STUDY_NAME_6);
+            STUDY_NAME_6
+    );
     private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
         put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_3, Arrays.asList("NA12877", "NA12878"));
         put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_5, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_6, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
@@ -204,7 +207,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Study 6, multiallelic
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
-        System.out.println("sampleIndexConfiguration.getFileIndexConfiguration() = " + sampleIndexConfiguration.getFileIndexConfiguration());
         sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(IndexFieldConfiguration.Source.FILE, "FILTER")
                 .setValues("PASS", "noPass", "noPass2");
         engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME_6, sampleIndexConfiguration, true);
@@ -1163,6 +1165,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
                 SampleIndexOnlyVariantQueryExecutor.class,
                 v -> {
+                    assertEquals(v.toString(), 1, v.getStudies().get(0).getFiles().size());
                     for (FileEntry fe : v.getStudies().get(0).getFiles()) {
                         assertNotNull(fe.getData().get(StudyEntry.FILTER));
                         fe.setData(Collections.emptyMap());
