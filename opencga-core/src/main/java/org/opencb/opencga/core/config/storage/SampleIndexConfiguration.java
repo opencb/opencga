@@ -169,7 +169,7 @@ public class SampleIndexConfiguration {
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.FILE,
                         StudyEntry.FILTER,
-                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        IndexFieldConfiguration.Type.CATEGORICAL,
                         VCFConstants.PASSES_FILTERS_v4))
                 .addFileIndexField(new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
@@ -713,5 +713,14 @@ public class SampleIndexConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(fileIndexConfiguration, annotationIndexConfiguration);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SampleIndexConfiguration{");
+        sb.append("fileIndexConfiguration=").append(fileIndexConfiguration);
+        sb.append(", annotationIndexConfiguration=").append(annotationIndexConfiguration);
+        sb.append('}');
+        return sb.toString();
     }
 }
