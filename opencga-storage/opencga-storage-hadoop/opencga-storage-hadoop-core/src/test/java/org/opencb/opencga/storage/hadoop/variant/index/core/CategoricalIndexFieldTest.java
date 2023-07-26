@@ -66,7 +66,9 @@ public class CategoricalIndexFieldTest {
     @Test
     public void testEncodeDecodeFilter() {
         SampleIndexConfiguration indexConfiguration = SampleIndexConfiguration.defaultConfiguration();
-        indexConfiguration.getFileIndexConfiguration().getCustomField(FILE, StudyEntry.FILTER).setValues("PASS", "noPass");
+        indexConfiguration.getFileIndexConfiguration().getCustomField(FILE, StudyEntry.FILTER)
+                .setType(IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
+                .setValues("PASS", "noPass");
         SampleIndexSchema indexSchema = new SampleIndexSchema(indexConfiguration, 0);
         IndexField<String> field = indexSchema.getFileIndex().getCustomField(FILE, StudyEntry.FILTER);
 
