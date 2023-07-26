@@ -66,7 +66,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final VariantQueryParser variantQueryParser;
     private final VariantQueryProjectionParser variantQueryProjectionParser;
-    private Logger logger = LoggerFactory.getLogger(SampleIndexOnlyVariantQueryExecutor.class);
+    private static Logger logger = LoggerFactory.getLogger(SampleIndexOnlyVariantQueryExecutor.class);
 
     private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
             .namingPattern("sample-index-async-count-%s")
@@ -372,6 +372,15 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                         sampleFiles = new ArrayList<>(sampleFileIds.size());
                         for (Integer fileId : sampleFileIds) {
                             sampleFiles.add(metadataManager.getFileName(studyId, fileId));
+                        }
+                    } else {
+                        List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+                        if (fileIds.isEmpty()) {
+                            logger.warn("Sample without indexed files!");
+                            sampleFiles = Collections.singletonList("sample_without_indexed_files.vcf");
+                        } else {
+                            String fileName = metadataManager.getFileName(studyId, fileIds.get(0));
+                            sampleFiles = Collections.singletonList(fileName);
                         }
                     }
                     filterField = schema.getFileIndex()
