@@ -459,7 +459,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             return true;
         }
         for (Region region : locusQuery.getRegions()) {
-            if (region.contains(variant.getChromosome(), variant.getStart())) {
+            if (region.overlaps(variant.getChromosome(), variant.getStart(), variant.getEnd())) {
                 return true;
             }
         }
