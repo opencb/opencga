@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "The branch, tag or SHA to build docker."
+        description: "The branch, tag or SHA of the source code to build docker."
         type: string
         required: true
       tag:
-        description: "The tag for the docker."
+        description: "The tag for the new docker."
         type: string
         required: true
 
