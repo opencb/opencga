@@ -1,48 +1,17 @@
 name: Deploy Docker Ext-Tools
+
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "The branch, tag or SHA to build docker. Otherwise, uses develop branch."
-        type: string
-        required: false
-        default: ""
+  push:
+    branches:
+      - develop
+      - release-*
+      - TASK-*
+    paths:
+      - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
 
 jobs:
   build:
-    name: Build Java app
-    runs-on: ubuntu-22.04
-    outputs:
-      version: ${{ steps.get_project_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: '10'
-          ref: "${{ inputs.ref }}"
-      - name: Set up JDK 8
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
-          fi
-      - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests
-      - uses: actions/upload-artifact@v3
-        with:
-          name: build-folder
-          path: build
-      - id: get_project_version
-        uses: avides/actions-project-version-check@v1.3.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          file-to-check: pom.xml
-          only-return-version: true
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
 
   deploy-docker-ext-tools:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
@@ -50,4 +19,3 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
     secrets: inherit
-
