@@ -1,9 +1,15 @@
-name: Push to TASK branch
+name: Push OpenCGA TASK
 
 on:
   push:
     branches:
       - TASK-*
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Execute workflow'
+        default: 'develop'
+        required: true
 
 jobs:
   build:
