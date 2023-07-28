@@ -100,6 +100,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private List<File> filesToIndex;
     private CatalogStorageMetadataSynchronizer synchronizer;
     private boolean fullSynchronize = false;
+    private boolean force;
 
     public VariantFileIndexerOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
@@ -138,6 +139,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         }
         resume = params.getBoolean(VariantStorageOptions.RESUME.key());
         skipIndexedFiles = params.getBoolean(SKIP_INDEXED_FILES);
+        force = params.getBoolean(VariantStorageOptions.FORCE.key());
 
         // Obtain the type of analysis (transform, load or index)
         step = getType(load, transform);
@@ -589,6 +591,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         break;
                     case VariantIndexStatus.INDEXING:
                     case VariantIndexStatus.TRANSFORMING:
+                    case VariantIndexStatus.LOADING:
                         if (resume) {
                             filteredFiles.add(file);
                         } else {
@@ -603,14 +606,17 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         }
                         break;
                     case VariantIndexStatus.TRANSFORMED:
-                    case VariantIndexStatus.LOADING:
                     case VariantIndexStatus.READY:
                     default:
                         String msg = "We can only " + step + " VCF files not transformed, the status is " + indexStatus;
-                        if (skipIndexedFiles) {
-                            logger.warn(msg);
+                        if (force) {
+                            filteredFiles.add(file);
                         } else {
-                            throw new StorageEngineException(msg);
+                            if (skipIndexedFiles) {
+                                logger.warn(msg);
+                            } else {
+                                throw new StorageEngineException(msg);
+                            }
                         }
                         break;
                 }

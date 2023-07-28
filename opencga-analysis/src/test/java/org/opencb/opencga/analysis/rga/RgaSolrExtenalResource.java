@@ -5,19 +5,21 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 public class RgaSolrExtenalResource extends ExternalResource {
 
@@ -25,6 +27,7 @@ public class RgaSolrExtenalResource extends ExternalResource {
 
     private SolrClient solrClient;
     protected boolean embeded = true;
+    private Class<?> testClass;
 
     public RgaSolrExtenalResource() {
         this(true);
@@ -35,15 +38,22 @@ public class RgaSolrExtenalResource extends ExternalResource {
     }
 
     @Override
+    public Statement apply(Statement base, Description description) {
+        testClass = description.getTestClass();
+        return super.apply(base, description);
+    }
+
+    @Override
     protected void before() throws Throwable {
         super.before();
 
-        Path rootDir = getTmpRootDir();
+        Path rootDir = Paths.get("target/test-data", "junit-rga-solr-" + TimeUtils.getTimeMillis());
+        Files.createDirectories(rootDir);
 
         String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion();
         String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.get().getBuildVersion();
-        copyConfigSetConfiguration(mainConfigSet, "managed-schema");
-        copyConfigSetConfiguration(auxConfigSet, "aux-managed-schema");
+        copyConfigSetConfiguration(mainConfigSet, "managed-schema", rootDir);
+        copyConfigSetConfiguration(auxConfigSet, "aux-managed-schema", rootDir);
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -80,15 +90,15 @@ public class RgaSolrExtenalResource extends ExternalResource {
         }
     }
 
-    private void copyConfigSetConfiguration(String configSet, String managedSchemaFile) throws IOException {
+    private void copyConfigSetConfiguration(String configSet, String managedSchemaFile, Path rootDir) throws IOException {
         // Copy configuration
-        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
-        getResourceUri("rga/" + managedSchemaFile, "configsets/" + configSet + "/managed-schema");
-        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
-        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
-        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
-        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
-        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
+        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml", rootDir);
+        getResourceUri("rga/" + managedSchemaFile, "configsets/" + configSet + "/managed-schema", rootDir);
+        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json", rootDir);
+        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt", rootDir);
     }
 
     public RgaEngine configure(StorageConfiguration storageConfiguration) {
