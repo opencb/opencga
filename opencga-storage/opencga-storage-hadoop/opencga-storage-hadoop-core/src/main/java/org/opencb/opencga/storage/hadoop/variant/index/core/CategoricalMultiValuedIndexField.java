@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<List<T>> {
 
-    private final int numBits;
+    private final int bitLength;
 
     public static CategoricalMultiValuedIndexField<String> createMultiValued(IndexFieldConfiguration configuration, int bitOffset) {
         return new CategoricalMultiValuedIndexField<>(
@@ -41,7 +41,7 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
 
     private CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, MaskValueCodec<T> codec) {
         super(configuration, bitOffset, values.length, codec);
-        numBits = codec.numBits;
+        bitLength = codec.numBits;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
 
     @Override
     public int getBitLength() {
-        return numBits;
+        return bitLength;
     }
 
     /**
@@ -145,6 +145,28 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
         public boolean ambiguous(int code) {
             return code == NA || (code & ambiguousValues) != 0;
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("MaskValueCodec{");
+            sb.append("values=").append(Arrays.toString(values));
+            sb.append(", otherValuePosition=").append(otherValuePosition);
+            sb.append(", valuesPosition=").append(valuesPosition);
+            sb.append(", numBits=").append(numBits);
+            sb.append(", ambiguousValues=").append(ambiguousValues);
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CategoricalMultiValuedIndexField{");
+        sb.append("configuration=").append(getConfiguration());
+        sb.append(", codec=").append(getCodec());
+        sb.append(", bitOffset=").append(getBitOffset());
+        sb.append(", bitLength=").append(bitLength);
+        sb.append('}');
+        return sb.toString();
+    }
 }
