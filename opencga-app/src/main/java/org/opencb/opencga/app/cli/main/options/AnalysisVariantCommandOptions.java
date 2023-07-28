@@ -925,8 +925,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--phenotype"}, description = "The body web service phenotype parameter", required = false, arity = 1)
         public String phenotype;
     
-        @Parameter(names = {"--index"}, description = "The body web service index parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body web service index parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
         @Parameter(names = {"--index-score-id"}, description = "The body web service indexScoreId parameter", required = false, arity = 1)
         public String indexScoreId;
@@ -1055,91 +1055,94 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
     
-        @Parameter(names = {"--transform"}, description = "The body web service transform parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed", required = false, help = true, arity = 0)
         public boolean transform = false;
     
-        @Parameter(names = {"--gvcf"}, description = "The body web service gvcf parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--gvcf"}, description = "Hint to indicate that the input file is in gVCF format.", required = false, help = true, arity = 0)
         public boolean gvcf = false;
     
-        @Parameter(names = {"--normalization-skip"}, description = "The body web service normalizationSkip parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--normalization-skip"}, description = "Do not execute the normalization process. WARN: INDELs will be stored with the context base", required = false, help = true, arity = 0)
         public boolean normalizationSkip = false;
     
-        @Parameter(names = {"--reference-genome"}, description = "The body web service referenceGenome parameter", required = false, arity = 1)
+        @Parameter(names = {"--reference-genome"}, description = "Reference genome in FASTA format used during the normalization step for a complete left alignment", required = false, arity = 1)
         public String referenceGenome;
     
-        @Parameter(names = {"--fail-on-malformed-lines"}, description = "The body web service failOnMalformedLines parameter", required = false, arity = 1)
+        @Parameter(names = {"--fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
         public boolean family = false;
     
-        @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)
         public boolean somatic = false;
     
-        @Parameter(names = {"--load"}, description = "The body web service load parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped", required = false, help = true, arity = 0)
         public boolean load = false;
     
-        @Parameter(names = {"--load-split-data"}, description = "The body web service loadSplitData parameter", required = false, arity = 1)
+        @Parameter(names = {"--force-reload"}, description = "If the file is already loaded, force a file reload", required = false, help = true, arity = 0)
+        public boolean forceReload = false;
+    
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.", required = false, arity = 1)
         public String loadSplitData;
     
-        @Parameter(names = {"--load-multi-file-data"}, description = "The body web service loadMultiFileData parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--load-multi-file-data"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", required = false, help = true, arity = 0)
         public boolean loadMultiFileData = false;
     
-        @Parameter(names = {"--load-sample-index"}, description = "The body web service loadSampleIndex parameter", required = false, arity = 1)
+        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto) [auto]", required = false, arity = 1)
         public String loadSampleIndex;
     
-        @Parameter(names = {"--load-archive"}, description = "The body web service loadArchive parameter", required = false, arity = 1)
+        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto) [auto]", required = false, arity = 1)
         public String loadArchive;
     
-        @Parameter(names = {"--load-hom-ref"}, description = "The body web service loadHomRef parameter", required = false, arity = 1)
+        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto) [auto]", required = false, arity = 1)
         public String loadHomRef;
     
-        @Parameter(names = {"--post-load-check"}, description = "The body web service postLoadCheck parameter", required = false, arity = 1)
+        @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto) [auto]", required = false, arity = 1)
         public String postLoadCheck;
     
-        @Parameter(names = {"--include-genotypes"}, description = "The body web service includeGenotypes parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-genotypes"}, description = "Load the genotype data for the current file. This only applies to the GT field from the FORMAT. All the rest of fields from the INFO and FORMAT will be loaded. Use this parameter skip load data when the GT field is not reliable, or its only value across the file is './.'. If 'auto', genotypes will be automatically excluded if all genotypes are either missing, ./. or 0/0. (yes, no, auto) [auto]", required = false, arity = 1)
         public String includeGenotypes;
     
-        @Parameter(names = {"--include-sample-data"}, description = "The body web service includeSampleData parameter", required = false, arity = 1)
+        @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields). Use 'all', 'none', or CSV with the fields to load.", required = false, arity = 1)
         public String includeSampleData;
     
-        @Parameter(names = {"--merge"}, description = "The body web service merge parameter", required = false, arity = 1)
+        @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: 'basic' mode merge genotypes of the same variants while 'advanced' merge multiallelic and overlapping variants.", required = false, arity = 1)
         public String merge;
     
-        @Parameter(names = {"--deduplication-policy"}, description = "The body web service deduplicationPolicy parameter", required = false, arity = 1)
+        @Parameter(names = {"--deduplication-policy"}, description = "Specify how duplicated variants should be handled. Available policies: 'discard', 'maxQual'", required = false, arity = 1)
         public String deduplicationPolicy;
     
-        @Parameter(names = {"--calculate-stats"}, description = "The body web service calculateStats parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step", required = false, help = true, arity = 0)
         public boolean calculateStats = false;
     
-        @Parameter(names = {"--aggregated"}, description = "The body web service aggregated parameter", required = false, arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", required = false, arity = 1)
         public String aggregated;
     
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "The body web service aggregationMappingFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file", required = false, arity = 1)
         public String aggregationMappingFile;
     
-        @Parameter(names = {"--annotate"}, description = "The body web service annotate parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step", required = false, help = true, arity = 0)
         public boolean annotate = false;
     
-        @Parameter(names = {"--annotator"}, description = "The body web service annotator parameter", required = false, arity = 1)
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", required = false, arity = 1)
         public String annotator;
     
-        @Parameter(names = {"--overwrite-annotations"}, description = "The body web service overwriteAnnotations parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present", required = false, help = true, arity = 0)
         public boolean overwriteAnnotations = false;
     
-        @Parameter(names = {"--index-search"}, description = "The body web service indexSearch parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--index-search"}, description = "Add files to the secondary search index", required = false, help = true, arity = 0)
         public boolean indexSearch = false;
     
-        @Parameter(names = {"--skip-indexed-files"}, description = "The body web service skipIndexedFiles parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--skip-indexed-files"}, description = "Do not fail if any of the input files was already indexed.", required = false, help = true, arity = 0)
         public boolean skipIndexedFiles = false;
     
     }
