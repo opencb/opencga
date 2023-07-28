@@ -90,6 +90,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public static final String NATIVE = "native";
+    public static final String QUIET = "quiet";
     public static final QueryParam ANNOT_NAME = QueryParam.create("annotName", "", Type.TEXT);
 
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);

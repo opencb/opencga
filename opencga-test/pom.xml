@@ -73,43 +73,6 @@
     </dependencies>
 
     <build>
-        <!--  <plugins>
-              <plugin>
-                  <groupId>org.codehaus.mojo</groupId>
-                  <artifactId>appassembler-maven-plugin</artifactId>
-                  <version>1.10</version>
-                  <executions>
-                      <execution>
-                          <phase>package</phase>
-                          <goals>
-                              <goal>assemble</goal>
-                          </goals>
-                      </execution>
-                  </executions>
-                  <configuration>
-                      <repositoryName>dependencies</repositoryName>
-                      <repositoryLayout>flat</repositoryLayout>
-                      <useWildcardClassPath>false</useWildcardClassPath>
-
-                      <configurationDirectory>conf</configurationDirectory>
-                      <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                      <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
-                      <programs>
-                          <program>
-                              <id>opencga-fitnesse.sh</id>
-                              <mainClass>fitnesseMain.FitNesseMain</mainClass>
-                              <platforms>
-                                  <platform>unix</platform>
-                              </platforms>
-                              <commandLineArguments>
-                                  <commandLineArgument>-p 7070</commandLineArgument>
-                                  <commandLineArgument>-d fitnesse</commandLineArgument>
-                              </commandLineArguments>
-                          </program>
-                      </programs>
-                  </configuration>
-              </plugin>
-          </plugins>-->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

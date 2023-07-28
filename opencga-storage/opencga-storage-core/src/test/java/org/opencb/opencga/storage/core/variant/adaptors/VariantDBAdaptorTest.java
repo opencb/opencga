@@ -2285,7 +2285,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = query(new Query(INCLUDE_FILE.key(), VariantQueryUtils.NONE).append(INCLUDE_SAMPLE.key(), ALL), new QueryOptions());
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
         for (Variant variant : queryResult.getResults()) {
-            assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            if (variant.getLengthReference() == 0 || variant.getLengthAlternate() == 0) {
+                assertThat(variant.getStudies().get(0).getFiles(), is(not(Collections.emptyList())));
+                assertThat(variant.getStudies().get(0).getFiles().get(0).getCall(), is(not(nullValue())));
+            } else {
+                assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            }
             assertThat(new HashSet<>(variant.getStudies().get(0).getSampleDataKeys()), is(FORMAT));
         }
     }

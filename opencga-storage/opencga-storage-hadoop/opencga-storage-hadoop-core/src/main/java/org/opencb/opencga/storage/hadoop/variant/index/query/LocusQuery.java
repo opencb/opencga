@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.query;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 /**
  * Sample index queries based on position, aligned to SampleIndex chunks.
  */
-public class LocusQuery {
+public class LocusQuery implements Comparable<LocusQuery> {
     /**
      * Region aligned with sampleIndex chunks covering all locus from regions and variants.
      */
@@ -32,12 +31,6 @@ public class LocusQuery {
         this.chunkRegion = chunkRegion;
         this.regions = regions;
         this.variants = variants;
-    }
-
-    public static LocusQuery buildLocusQuery(Region r) {
-        LocusQuery locusQuery = new LocusQuery(SampleIndexSchema.getChunkRegion(r));
-        locusQuery.getRegions().add(r);
-        return locusQuery;
     }
 
     public Region getChunkRegion() {
@@ -95,5 +88,10 @@ public class LocusQuery {
         sb.append(", variants=").append(variants);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public int compareTo(LocusQuery o) {
+        return REGION_COMPARATOR.compare(chunkRegion, o.chunkRegion);
     }
 }
