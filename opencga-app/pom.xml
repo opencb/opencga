@@ -34,6 +34,7 @@
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
+
     </properties>
 
     <dependencies>
@@ -128,7 +129,6 @@
         <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
