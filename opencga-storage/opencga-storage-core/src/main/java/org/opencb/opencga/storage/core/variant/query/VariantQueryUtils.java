@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.*;
@@ -515,9 +516,18 @@ public final class VariantQueryUtils {
      */
     public static boolean isVariantId(String value) {
         int count = StringUtils.countMatches(value, ':');
-        return count == 3
-                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>, or a breakend 4:100:C:]15:300]A
-                || count > 3 && StringUtils.containsAny(value, '<', '[', ']');
+        if (count == 3) {
+            return true;
+        }
+        if (count > 3) {
+            try {
+                new VariantBuilder(value);
+            } catch (RuntimeException e) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     /**
