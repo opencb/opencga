@@ -1,0 +1,20 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=noPass,Description="No pass">
+##FILTER=<ID=noPass2,Description="No pass other">
+##FILTER=<ID=.,Description="unknown filter state">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype likelihoods">
+##FORMAT=<ID=DS,Number=1,Type=Float,Description="">
+##command=seq 1000000 500 3000000 | while read i ; do echo -e "chr1\t$i\t.\tA\tC\t$RANDOM\tPASS\t.\tGT\t0/1\t1/1\t1|0\t0|1" ; done
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA19600	NA19660	NA19661	NA19685
+chr1	1000000	.	A	C,T	5	noPass,noPass2	.	GT	1/2	1/1	0|0	0|1
+chr1	1000010	.	A	AC,CA	20	PASS	.	GT	1/2	1/1	0|0	0|1
+chr1	1000020	.	AT	T,A	60	.	.	GT	1/2	1/1	0|0	0|1
+chr1	1000030	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000040	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000050	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000060	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000070	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000080	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1
+chr1	1000090	.	C	G	60	.	PASS	GT	1/0	1/1	0|0	0|1

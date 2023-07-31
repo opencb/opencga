@@ -14,8 +14,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -59,6 +61,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
@@ -84,13 +87,23 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";
-    public static final String STUDY_NAME_5 = "study_5";
-    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3, STUDY_NAME_4, STUDY_NAME_5);
+    public static final String STUDY_NAME_5 = "study_5"; // large SV
+    public static final String STUDY_NAME_6 = "study_6"; // multiallelic
+    private static final List<String> studies = Arrays.asList(
+            STUDY_NAME,
+            STUDY_NAME_2,
+            STUDY_NAME_3,
+            STUDY_NAME_4,
+            STUDY_NAME_5,
+            STUDY_NAME_6
+    );
     private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
         put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_3, Arrays.asList("NA12877", "NA12878"));
         put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_5, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_6, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
@@ -191,6 +204,19 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         runETL(engine, getResourceUri("variant-large-sv.vcf"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_5, trios, new ObjectMap());
+
+        // Study 6, multiallelic
+        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        sampleIndexConfiguration.getFileIndexConfiguration().getCustomField(IndexFieldConfiguration.Source.FILE, "FILTER")
+                .setValues("PASS", "noPass", "noPass2");
+        engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME_6, sampleIndexConfiguration, true);
+
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_6)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getResourceUri("variant-multiallelic.vcf"), outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME_6, trios, new ObjectMap());
 
 
         // ---------------- Annotate
@@ -1122,9 +1148,42 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
                 SampleIndexOnlyVariantQueryExecutor.class);
 
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_6)
+                        .sample("NA19600")
+                        .includeGenotype(true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class);
+
+        testSampleIndexOnlyVariantQueryExecutor(
+                new VariantQuery()
+                        .study(STUDY_NAME_6)
+                        .sample("NA19600")
+                        .includeGenotype(true)
+                        .append("includeAllFromSampleIndex", true),
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
+                SampleIndexOnlyVariantQueryExecutor.class,
+                v -> {
+                    assertEquals(v.toString(), 1, v.getStudies().get(0).getFiles().size());
+                    for (FileEntry fe : v.getStudies().get(0).getFiles()) {
+                        assertNotNull(fe.getData().get(StudyEntry.FILTER));
+                        fe.setData(Collections.emptyMap());
+                    }
+                    v.getStudies().get(0).getFiles().removeIf(fe -> fe.getCall() == null);
+                    if (v.getStudies().get(0).getFiles().isEmpty()) {
+                        v.getStudies().get(0).getSamples().forEach(s -> s.setFileIndex(null));
+                    }
+                    return v;
+                });
     }
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected) {
+        testSampleIndexOnlyVariantQueryExecutor(query, options, expected, v -> v);
+    }
+
+    private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
+                                                         Function<Variant, Variant> mapper) {
         VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(
                 query,
                 options);
@@ -1158,6 +1217,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (int i = 0; i < actualVariants.size(); i++) {
             Variant av = actualVariants.get(i);
             Variant ev = expectedVariants.get(i);
+            mapper.apply(av);
             if (!ev.getStudies().isEmpty()) {
                 if (av.getLengthAlternate() == 0 || av.getLengthReference() == 0) {
 //                    System.out.println("-------" + av + "----------");

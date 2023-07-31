@@ -74,4 +74,11 @@ public class VariantTypeIndexCodec implements IndexCodec<VariantType> {
     public boolean ambiguous(int code) {
         return code == TYPE_OTHER_CODE || code == TYPE_CNV_CODE;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantTypeIndexCodec{");
+        sb.append('}');
+        return sb.toString();
+    }
 }

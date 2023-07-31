@@ -6,7 +6,9 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
@@ -15,21 +17,18 @@ public class SampleVariantIndexEntry {
 
     private final Variant variant;
     private final String genotype;
+    @Deprecated
     private final BitBuffer fileIndex;
+    private final List<BitBuffer> filesIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
     private final Integer meCode;
     private final Byte parentsCode;
 
     public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex) {
-        this(variant, fileIndex, null, null, null);
+        this(variant, Collections.singletonList(fileIndex), null, null, null, null);
     }
 
-    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
-                                   Byte parentsCode) {
-        this(variant, fileIndex, genotype, annotationIndexEntry, parentsCode, null);
-    }
-
-    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
+    public SampleVariantIndexEntry(Variant variant, List<BitBuffer> filesIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
                                    Byte parentsCode, Integer meCode) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
@@ -48,7 +47,12 @@ public class SampleVariantIndexEntry {
                     variant.getType(),
                     null, null));
         }
-        this.fileIndex = fileIndex;
+        this.filesIndex = filesIndex;
+        if (filesIndex == null) {
+            this.fileIndex = null;
+        } else {
+            this.fileIndex = filesIndex.get(0);
+        }
         this.genotype = genotype;
         this.annotationIndexEntry = annotationIndexEntry;
         this.meCode = meCode;
@@ -59,8 +63,13 @@ public class SampleVariantIndexEntry {
         return variant;
     }
 
+    @Deprecated
     public BitBuffer getFileIndex() {
         return fileIndex;
+    }
+
+    public List<BitBuffer> getFilesIndex() {
+        return filesIndex;
     }
 
     public String getGenotype() {
@@ -88,7 +97,7 @@ public class SampleVariantIndexEntry {
             return false;
         }
         SampleVariantIndexEntry that = (SampleVariantIndexEntry) o;
-        return fileIndex.equals(that.fileIndex) && Objects.equals(variant, that.variant);
+        return filesIndex.equals(that.filesIndex) && Objects.equals(variant, that.variant);
     }
 
     @Override
@@ -106,7 +115,7 @@ public class SampleVariantIndexEntry {
         sb.append(separator).append("gt: ")
                 .append(this.getGenotype());
         sb.append(separator).append("file: ")
-                .append(this.getFileIndex());
+                .append(this.getFilesIndex());
         if (annotationIndexEntry != null) {
             annotationIndexEntry.toString(schema, separator, sb);
         }
