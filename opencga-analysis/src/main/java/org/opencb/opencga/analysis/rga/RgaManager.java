@@ -1446,6 +1446,9 @@ public class RgaManager implements AutoCloseable {
         excludeList.add(VariantField.ANNOTATION_DRUGS);
         excludeList.add(VariantField.ANNOTATION_GENE_EXPRESSION);
 
+        //Try to test
+        excludeList.add(VariantField.ANNOTATION_PHARMACOGENOMICS);
+
         if (!sampleIds.isEmpty()) {
             variantQuery.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds)
                     .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,DP");
