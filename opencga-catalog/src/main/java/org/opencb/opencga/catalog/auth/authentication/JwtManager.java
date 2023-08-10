@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +89,27 @@ public class JwtManager {
         return createJWTToken(userId, Collections.emptyMap(), expiration);
     }
 
+    public String createJWTToken(User user, Map<String, Object> claims, long expiration) {
+        long currentTime = System.currentTimeMillis();
+
+        JwtBuilder jwtBuilder = Jwts.builder();
+        if (claims != null && !claims.isEmpty()) {
+            jwtBuilder.setClaims(claims);
+        }
+        jwtBuilder.setSubject(user.getId())
+                .setIssuer(user.getOrganization())
+                .setAudience("OpenCGA")
+                .setIssuedAt(new Date(currentTime))
+                .signWith(privateKey, algorithm);
+
+        // Set the expiration in number of seconds only if 'expiration' is greater than 0
+        if (expiration > 0) {
+            jwtBuilder.setExpiration(new Date(currentTime + expiration * 1000L));
+        }
+
+        return jwtBuilder.compact();
+    }
+
     public String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
         long currentTime = System.currentTimeMillis();
 
@@ -113,6 +136,11 @@ public class JwtManager {
 
     public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
         parseClaims(token, publicKey);
+    }
+
+    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
+        Claims body = parseClaims(token, publicKey).getBody();
+        return new JwtPayload(body.getSubject(), body.getIssuer(), body.getAudience(), body.getIssuedAt(), body.getExpiration());
     }
 
     public String getAudience(String token) throws CatalogAuthenticationException {

@@ -109,6 +109,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
+    public String createToken(User user, Map<String, Object> claims, long expiration) {
+        return jwtManager.createJWTToken(user, claims, expiration);
+    }
+
+    @Override
     public String createNonExpiringToken(String userId, Map<String, Object> claims) {
         return jwtManager.createJWTToken(userId, claims, 0L);
     }

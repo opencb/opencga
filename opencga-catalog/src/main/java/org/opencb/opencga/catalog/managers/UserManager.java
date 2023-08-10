@@ -41,8 +41,10 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
@@ -153,7 +155,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<User> create(User user, String password, @Nullable String token) throws CatalogException {
+    public OpenCGAResult<User> create(String organizationId, User user, String password, @Nullable String token) throws CatalogException {
         // Check if the users can be registered publicly or just the admin.
         ObjectMap auditParams = new ObjectMap("user", user);
 
@@ -212,7 +214,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
 
-            catalogIOManager.createUser(user.getId());
+            catalogIOManager.createUser(organizationId, user.getId());
             userDBAdaptor.insert(user, password, QueryOptions.empty());
 
             auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
@@ -222,7 +224,92 @@ public class UserManager extends AbstractManager {
         } catch (CatalogIOException | CatalogDBException e) {
             if (userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
-                catalogIOManager.deleteUser(user.getId());
+                catalogIOManager.deleteUser(organizationId, user.getId());
+            }
+
+            auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<User> create(User user, String password, @Nullable String token) throws CatalogException {
+        // Check if the users can be registered publicly or just the admin.
+        ObjectMap auditParams = new ObjectMap("user", user);
+
+        // Initialise fields
+        ParamUtils.checkObj(user, "User");
+        ParamUtils.checkValidUserId(user.getId());
+        ParamUtils.checkParameter(user.getName(), "name");
+        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
+        if (StringUtils.isNotEmpty(user.getEmail())) {
+            checkEmail(user.getEmail());
+        }
+        user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
+        ParamUtils.checkObj(user.getAccount(), "account");
+        user.getAccount().setType(ParamUtils.defaultObject(user.getAccount().getType(), Account.AccountType.GUEST));
+        user.getAccount().setCreationDate(TimeUtils.getTime());
+        user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
+        user.setInternal(new UserInternal(new UserStatus(UserStatus.READY)));
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
+        user.setSharedProjects(ParamUtils.defaultObject(user.getSharedProjects(), Collections::emptyList));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
+
+        if (StringUtils.isEmpty(password)) {
+            // The authentication origin must be different than internal
+            Set<String> authOrigins = configuration.getAuthentication().getAuthenticationOrigins()
+                    .stream()
+                    .map(AuthenticationOrigin::getId)
+                    .collect(Collectors.toSet());
+            if (!authOrigins.contains(user.getAccount().getAuthentication().getId())) {
+                throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
+            }
+        } else {
+            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
+        }
+
+        String userId = OPENCGA;
+        Organization organization;
+        if (OPENCGA.equals(user.getId())) {
+            organization = catalogManager.getOrganizationManager().internalGet(ParamConstants.ADMIN_ORGANIZATION,
+                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, userId).first();
+        } else {
+            JwtPayload payload = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getPayload(token);
+            organization = catalogManager.getOrganizationManager().internalGet(ParamConstants.ADMIN_ORGANIZATION,
+                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, payload.getUserId()).first();
+            if (!OPENCGA.equals(payload.getUserId())) {
+                // Check owner or admin is trying to create a new user for the organization
+                if (!payload.getOrganization().equals(user.getOrganization())) {
+                    throw new CatalogException("Owner or admins can only create new users inside the organization");
+                }
+            }
+        }
+
+        checkUserExists(user.getId());
+
+        try {
+            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
+            }
+            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
+            }
+
+            catalogIOManager.createUser(Long.toString(organization.getUid()), user.getId());
+            userDBAdaptor.insert(user, password, QueryOptions.empty());
+
+            auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return userDBAdaptor.get(user.getId(), QueryOptions.empty());
+        } catch (CatalogIOException | CatalogDBException e) {
+            if (userDBAdaptor.exists(user.getId())) {
+                logger.error("ERROR! DELETING USER! " + user.getId());
+                catalogIOManager.deleteUser(user.getOrganization(), user.getId());
             }
 
             auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
@@ -799,6 +886,76 @@ public class UserManager extends AbstractManager {
 
     public AuthenticationResponse loginAsAdmin(String password) throws CatalogException {
         return login(OPENCGA, password);
+    }
+
+    public AuthenticationResponse login(String organizationId, String username, String password) throws CatalogException {
+        ParamUtils.checkParameter(organizationId, "organizationId");
+        ParamUtils.checkParameter(username, "userId");
+        ParamUtils.checkParameter(password, "password");
+
+        String authId = null;
+        AuthenticationResponse response = null;
+
+        OpenCGAResult<User> userOpenCGAResult = userDBAdaptor.get(username, INCLUDE_ACCOUNT);
+        if (userOpenCGAResult.getNumResults() == 1) {
+            authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
+            if (!authenticationManagerMap.containsKey(authId)) {
+                throw new CatalogException("Could not authenticate user '" + username + "'. The authentication origin '" + authId
+                        + "' could not be found.");
+            }
+            try {
+                response = authenticationManagerMap.get(authId).authenticate(username, password);
+            } catch (CatalogAuthenticationException e) {
+                auditManager.auditUser(username, Enums.Action.LOGIN, username,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                throw e;
+            }
+        } else {
+            // We attempt to login the user with the different authentication managers
+            for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+                AuthenticationManager authenticationManager = entry.getValue();
+                try {
+                    response = authenticationManager.authenticate(username, password);
+                    authId = entry.getKey();
+                    break;
+                } catch (CatalogAuthenticationException e) {
+                    logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                }
+            }
+        }
+
+        if (response == null) {
+            auditManager.auditUser(username, Enums.Action.LOGIN, username,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        }
+
+        auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        String userId = authenticationManagerMap.get(authId).getUserId(response.getToken());
+        if (!INTERNAL_AUTHORIZATION.equals(authId)) {
+            // External authorization
+            try {
+                // If the user is not registered, an exception will be raised
+                userDBAdaptor.checkId(userId);
+            } catch (CatalogDBException e) {
+                // The user does not exist so we register it
+                User user = authenticationManagerMap.get(authId).getRemoteUserInformation(Collections.singletonList(userId)).get(0);
+                // Generate a root token to be able to create the user even if the installation is private
+                String rootToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(OPENCGA);
+                create(user, null, rootToken);
+            }
+
+            try {
+                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(response.getToken());
+
+                // Resync synced groups of user in OpenCGA
+                studyDBAdaptor.resyncUserWithSyncedGroups(userId, remoteGroups, authId);
+            } catch (CatalogException e) {
+                logger.error("Could not update synced groups for user '" + userId + "'\n" + e.getMessage(), e);
+            }
+        }
+
+        return response;
     }
 
     public AuthenticationResponse login(String username, String password) throws CatalogException {
@@ -1392,6 +1549,26 @@ public class UserManager extends AbstractManager {
         } else {
             throw new CatalogAuthorizationException("User '" + userFromToken + "' cannot operate on behalf of user '" + userId + "'.");
         }
+    }
+
+    /**
+     * Get the token payload.
+     *
+     * @param token Token
+     * @return The token payload.
+     * @throws CatalogException when the token has expired.
+     */
+    public JwtPayload getTokenPayload(String token) throws CatalogException {
+        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+            AuthenticationManager authenticationManager = entry.getValue();
+            try {
+                return authenticationManager.getPayload(token);
+            } catch (Exception e) {
+                logger.debug("Could not get payload from token using authentication manager '{}'. {}", entry.getKey(), e.getMessage(), e);
+            }
+        }
+        // We make this call again to get the original exception
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getPayload(token);
     }
 
     /**

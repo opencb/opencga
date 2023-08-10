@@ -62,22 +62,22 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  */
 public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
 
-    private final MongoDBCollection userCollection;
+    private final MongoDBCollection projectCollection;
     private final MongoDBCollection deletedUserCollection;
     private ProjectConverter projectConverter;
 
-    public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
+    public ProjectMongoDBAdaptor(MongoDBCollection projectCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
                                  MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.userCollection = userCollection;
+        this.projectCollection = projectCollection;
         this.deletedUserCollection = deletedUserCollection;
         this.projectConverter = new ProjectConverter();
     }
 
     @Override
     public boolean exists(long projectId) {
-        DataResult<Long> count = userCollection.count(new Document(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId));
+        DataResult<Long> count = projectCollection.count(new Document(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId));
         return count.getNumMatches() != 0;
     }
 
@@ -88,7 +88,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson update = Updates.push("projects", getMongoDBDocument(project, "project"));
 
         //Update object
-        DataResult result = userCollection.update(query, update, null);
+        DataResult result = projectCollection.update(query, update, null);
         if (result.getNumInserted() == 0) { // Check if the project has been inserted
             throw new CatalogDBException("Project {" + project.get(QueryParams.ID.key()) + "\"} already exists for this user");
         }
@@ -96,34 +96,33 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult insert(Project project, String userId, QueryOptions options)
+    public OpenCGAResult<Project> insert(String organizationId, Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
 
-            insert(clientSession, project, userId);
+            insert(clientSession, organizationId, project);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
         }, e -> logger.error("Could not create project {}: {}", project.getId(), e.getMessage()));
     }
 
-    Project insert(ClientSession clientSession, Project project, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    Project insert(ClientSession clientSession, String organizationId, Project project) throws CatalogDBException,
+            CatalogParameterException, CatalogAuthorizationException {
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
         project.setStudies(Collections.emptyList());
 
-        Bson countQuery = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
-                Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.getId()));
-        DataResult<Long> count = userCollection.count(clientSession, countQuery);
+        Bson countQuery = Filters.eq(QueryParams.ID.key(), project.getId());
+        DataResult<Long> count = projectCollection.count(clientSession, countQuery);
         if (count.getNumMatches() != 0) {
-            throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists for this user");
+            throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists in this organization");
         }
 
         long projectUid = getNewUid();
         project.setUid(projectUid);
-        project.setFqn(userId + "@" + project.getId());
+        project.setFqn(organizationId + "@" + project.getId());
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
@@ -134,14 +133,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         projectDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(project.getModificationDate())
                 ? TimeUtils.toDate(project.getModificationDate()) : TimeUtils.getDate());
 
-        Bson update = Updates.push("projects", projectDocument);
-
-        //Update object
-        Bson query = Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId);
-
-        logger.debug("Inserting project. Query: {}, update: {}", query.toBsonDocument(), update.toBsonDocument());
-        userCollection.update(clientSession, query, update, null);
-
+        projectCollection.insert(clientSession, projectDocument, null);
         return project;
     }
 
@@ -151,7 +143,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Query query = new Query(QueryParams.UID.key(), projectId);
         Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
 
-        DataResult updateQR = userCollection.update(parseQuery(query), update, null);
+        DataResult updateQR = projectCollection.update(parseQuery(query), update, null);
         if (updateQR == null || updateQR.getNumMatches() == 0) {
             throw new CatalogDBException("Could not increment release number. Project id " + projectId + " not found");
         } else if (updateQR.getNumUpdated() == 0) {
@@ -174,7 +166,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 .append("projects.$." + QueryParams.ID.key(), newId)
                 .append("projects.$." + QueryParams.FQN.key(), owner + "@" + newId)
         );
-        DataResult result = userCollection.update(clientSession, query, update, null);
+        DataResult result = projectCollection.update(clientSession, query, update, null);
         if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
             throw new CatalogDBException("Project {id:\"" + newId + "\"} already exists");
         }
@@ -197,7 +189,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId)
         );
         Bson projection = Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId));
-        DataResult<Document> queryResult = userCollection.find(filter, projection, null);
+        DataResult<Document> queryResult = projectCollection.find(filter, projection, null);
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
@@ -215,7 +207,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson projection = Projections.include(UserDBAdaptor.QueryParams.ID.key());
 
 //        DataResult<DBObject> result = userCollection.find(query, projection, null);
-        DataResult<Document> result = userCollection.find(query, projection, null);
+        DataResult<Document> result = projectCollection.find(query, projection, null);
 
         if (result.getResults().isEmpty()) {
             throw CatalogDBException.uidNotFound("Project", projectId);
@@ -227,7 +219,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return new OpenCGAResult<>(userCollection.count(bson));
+        return new OpenCGAResult<>(projectCollection.count(bson));
     }
 
     @Override
@@ -238,7 +230,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return new OpenCGAResult(userCollection.distinct(field, bson));
+        return new OpenCGAResult(projectCollection.distinct(field, bson));
     }
 
     @Override
@@ -311,7 +303,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Bson finalQuery = parseQuery(tmpQuery);
 
             logger.debug("Update project. Query: {}, update: {}", finalQuery.toBsonDocument(), updates.toBsonDocument());
-            DataResult result = userCollection.update(clientSession, finalQuery, updates, null);
+            DataResult result = projectCollection.update(clientSession, finalQuery, updates, null);
 
             if (result.getNumMatches() == 0) {
                 throw new CatalogDBException("Project " + project.getId() + " not found");
@@ -499,7 +491,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         logger.debug("Delete project {}: Query: {}, update: {}", project.getId(), bsonQuery.toBsonDocument(),
                 updateDocument.toBsonDocument());
-        DataResult result = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+        DataResult result = projectCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
 
         if (result.getNumMatches() == 0) {
             throw new CatalogDBException("Project " + project.getId() + " not found");
@@ -797,7 +789,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument());
         }
 
-        return userCollection.iterator(clientSession, aggregates, qOptions);
+        return projectCollection.iterator(clientSession, aggregates, qOptions);
     }
 
     @Override

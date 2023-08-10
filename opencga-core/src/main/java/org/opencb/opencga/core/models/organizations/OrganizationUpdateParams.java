@@ -1,26 +1,18 @@
 package org.opencb.opencga.core.models.organizations;
 
-import org.opencb.commons.annotations.DataClass;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.PrivateFields;
-import org.opencb.opencga.core.models.project.Project;
 
 import java.util.List;
 import java.util.Map;
 
-@DataClass(id = "Organization", since = "3.0",
-        description = "Organization data model hosts information about the organization managing the data.")
-public class Organization extends PrivateFields {
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
-    private String uuid;
-
-    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.ORGANIZATION_ID_DESCRIPTION)
-    private String id;
+public class OrganizationUpdateParams {
 
     @DataField(id = "name", description = FieldConstants.ORGANIZATION_NAME_DESCRIPTION)
     private String name;
@@ -40,74 +32,53 @@ public class Organization extends PrivateFields {
     @DataField(id = "modificationDate", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-    @DataField(id = "projects", description = FieldConstants.ORGANIZATION_PROJECTS_DESCRIPTION)
-    private List<Project> projects;
-
     @DataField(id = "authenticationOrigins", description = FieldConstants.ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION)
     private List<AuthenticationOrigin> authenticationOrigins;
 
     @DataField(id = "attributes",  description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public Organization() {
+    public OrganizationUpdateParams() {
     }
 
-    public Organization(String id, String name, String domain, String owner, List<String> admins, String creationDate,
-                        String modificationDate, List<Project> projects, List<AuthenticationOrigin> authenticationOrigins,
-                        Map<String, Object> attributes) {
-        this.id = id;
+    public OrganizationUpdateParams(String name, String domain, String owner, List<String> admins, String creationDate,
+                                    String modificationDate, List<AuthenticationOrigin> authenticationOrigins,
+                                    Map<String, Object> attributes) {
         this.name = name;
         this.domain = domain;
         this.owner = owner;
         this.admins = admins;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
-        this.projects = projects;
         this.authenticationOrigins = authenticationOrigins;
         this.attributes = attributes;
     }
 
+    @JsonIgnore
+    public ObjectMap getUpdateMap() throws JsonProcessingException {
+        return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Organization{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
+        final StringBuilder sb = new StringBuilder("OrganizationUpdateParams{");
+        sb.append("name='").append(name).append('\'');
         sb.append(", domain='").append(domain).append('\'');
         sb.append(", owner='").append(owner).append('\'');
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", projects=").append(projects);
         sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public Organization setUuid(String uuid) {
-        this.uuid = uuid;
-        return this;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Organization setId(String id) {
-        this.id = id;
-        return this;
-    }
-
     public String getName() {
         return name;
     }
 
-    public Organization setName(String name) {
+    public OrganizationUpdateParams setName(String name) {
         this.name = name;
         return this;
     }
@@ -116,7 +87,7 @@ public class Organization extends PrivateFields {
         return domain;
     }
 
-    public Organization setDomain(String domain) {
+    public OrganizationUpdateParams setDomain(String domain) {
         this.domain = domain;
         return this;
     }
@@ -125,7 +96,7 @@ public class Organization extends PrivateFields {
         return owner;
     }
 
-    public Organization setOwner(String owner) {
+    public OrganizationUpdateParams setOwner(String owner) {
         this.owner = owner;
         return this;
     }
@@ -134,7 +105,7 @@ public class Organization extends PrivateFields {
         return admins;
     }
 
-    public Organization setAdmins(List<String> admins) {
+    public OrganizationUpdateParams setAdmins(List<String> admins) {
         this.admins = admins;
         return this;
     }
@@ -143,7 +114,7 @@ public class Organization extends PrivateFields {
         return creationDate;
     }
 
-    public Organization setCreationDate(String creationDate) {
+    public OrganizationUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -152,17 +123,8 @@ public class Organization extends PrivateFields {
         return modificationDate;
     }
 
-    public Organization setModificationDate(String modificationDate) {
+    public OrganizationUpdateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
-        return this;
-    }
-
-    public List<Project> getProjects() {
-        return projects;
-    }
-
-    public Organization setProjects(List<Project> projects) {
-        this.projects = projects;
         return this;
     }
 
@@ -170,7 +132,7 @@ public class Organization extends PrivateFields {
         return authenticationOrigins;
     }
 
-    public Organization setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
+    public OrganizationUpdateParams setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
         this.authenticationOrigins = authenticationOrigins;
         return this;
     }
@@ -179,7 +141,7 @@ public class Organization extends PrivateFields {
         return attributes;
     }
 
-    public Organization setAttributes(Map<String, Object> attributes) {
+    public OrganizationUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

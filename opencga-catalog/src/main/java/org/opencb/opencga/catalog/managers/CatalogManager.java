@@ -37,6 +37,9 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -49,8 +52,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
-import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
-import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 public class CatalogManager implements AutoCloseable {
 
@@ -61,6 +63,7 @@ public class CatalogManager implements AutoCloseable {
     private CatalogIOManager catalogIOManager;
 
     private AdminManager adminManager;
+    private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
     private StudyManager studyManager;
@@ -105,6 +108,8 @@ public class CatalogManager implements AutoCloseable {
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
+        organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
+                configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
@@ -171,12 +176,11 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force)
-            throws CatalogException {
-        installCatalogDB(secretKey, password, email, organization, force, false);
+    public void installCatalogDB(String secretKey, String password, String email, boolean force) throws CatalogException {
+        installCatalogDB(secretKey, password, email, force, false);
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean force, boolean test)
+    public void installCatalogDB(String secretKey, String password, String email, boolean force, boolean test)
             throws CatalogException {
         if (existsCatalogDB()) {
             if (force) {
@@ -198,7 +202,7 @@ public class CatalogManager implements AutoCloseable {
 
         try {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-            privateInstall(secretKey, password, email, organization, test);
+            privateInstall(secretKey, password, email, test);
             String token = userManager.loginAsAdmin(password).getToken();
             installIndexes(token);
         } catch (Exception e) {
@@ -211,8 +215,7 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
-    private void privateInstall(String secretKey, String password, String email, String organization, boolean test)
-            throws CatalogException {
+    private void privateInstall(String secretKey, String password, String email, boolean test) throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -230,13 +233,17 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.initialiseMetaCollection(configuration.getAdmin());
         catalogIOManager.createDefaultOpenCGAFolders();
 
+        organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null, null, null),
+                QueryOptions.empty(), null);
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
-                .setOrganization(organization);
+                .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(user, password, null);
-
         String token = userManager.login(OPENCGA, password).getToken();
-        projectManager.create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
+
+        // Add OPENCGA as owner of ADMIN_ORGANIZATION
+        organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
+        projectManager.create(new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null, token);
         studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
 
         // Skip old available migrations
@@ -312,6 +319,10 @@ public class CatalogManager implements AutoCloseable {
 
     public AdminManager getAdminManager() {
         return adminManager;
+    }
+
+    public OrganizationManager getOrganizationManager() {
+        return organizationManager;
     }
 
     public UserManager getUserManager() {

@@ -54,6 +54,7 @@ public abstract class AbstractManager {
     protected Configuration configuration;
 
     protected final DBAdaptorFactory catalogDBAdaptorFactory;
+    protected final OrganizationDBAdaptor organizationDBAdaptor;
     protected final UserDBAdaptor userDBAdaptor;
     protected final ProjectDBAdaptor projectDBAdaptor;
     protected final StudyDBAdaptor studyDBAdaptor;
@@ -81,6 +82,7 @@ public abstract class AbstractManager {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
+        this.organizationDBAdaptor = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor();
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();

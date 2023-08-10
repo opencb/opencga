@@ -136,7 +136,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(Project project, String userId, QueryOptions options)
+    OpenCGAResult<Project> insert(String organizationId, Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;

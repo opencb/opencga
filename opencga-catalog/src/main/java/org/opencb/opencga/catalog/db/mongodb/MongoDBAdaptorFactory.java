@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Admin;
@@ -271,7 +272,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return metaDBAdaptor;
     }
 
-    public OrganizationMongoDBAdaptor getOrganizationDBAdaptor() {
+    @Override
+    public OrganizationDBAdaptor getCatalogOrganizationDBAdaptor() {
         return organizationDBAdaptor;
     }
 

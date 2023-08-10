@@ -280,13 +280,11 @@ public class AdminWSServer extends OpenCGAWSServer {
             + "<il><b>secretKey</b>: Secret key needed to authenticate through OpenCGA (JWT)</il><br>"
             + "<il><b>password</b>: Password that will be set to perform future administrative operations over OpenCGA</il><br>"
             + "<il><b>email</b>: Administrator's email address.</il><br>"
-            + "<il><b>organization</b>: Administrator's organization.</il><br>"
             + "<ul>")
     public Response install(
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallationParams installParams) {
         try {
-            catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
-                    installParams.getOrganization(), false);
+            catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(), false);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);

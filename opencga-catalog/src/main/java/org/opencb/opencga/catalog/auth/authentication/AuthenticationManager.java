@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -79,6 +80,14 @@ public abstract class AuthenticationManager {
      */
     public abstract AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException;
 
+    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
+        if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
+            return new JwtPayload().setUserId(ParamConstants.ANONYMOUS_USER_ID);
+        }
+
+        return jwtManager.getPayload(token);
+    }
+
     /**
      * Obtains the userId corresponding to the token.
      *
@@ -133,6 +142,16 @@ public abstract class AuthenticationManager {
     /**
      * Create a token for the user with default expiration time.
      *
+     * @param user user.
+     * @return A token.
+     */
+    public String createToken(User user) {
+        return createToken(user, Collections.emptyMap(), expiration);
+    }
+
+    /**
+     * Create a token for the user with default expiration time.
+     *
      * @param userId user.
      * @return A token.
      */
@@ -171,6 +190,16 @@ public abstract class AuthenticationManager {
      * @return A token.
      */
     public abstract String createToken(String userId, Map<String, Object> claims, long expiration);
+
+    /**
+     * Create a token for the user.
+     *
+     * @param user user.
+     * @param claims claims.
+     * @param expiration Expiration time in seconds.
+     * @return A token.
+     */
+    public abstract String createToken(User user, Map<String, Object> claims, long expiration);
 
     /**
      * Create a token for the user with no expiration time.

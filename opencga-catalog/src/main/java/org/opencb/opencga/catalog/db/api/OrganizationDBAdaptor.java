@@ -1,10 +1,14 @@
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -85,12 +89,14 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
 //    OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 //
-//    OpenCGAResult insert(Project project, String userId, QueryOptions options)
-//            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 //
 //    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 //
-//    OpenCGAResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Organization> get(long organization, QueryOptions options) throws CatalogDBException;
+
+    OpenCGAResult<Organization> get(Query query, QueryOptions options) throws CatalogDBException;
 //
 //    OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;
 //
@@ -149,12 +155,12 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //        return queryResults;
 //    }
 //
-//    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions)
-//            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Organization> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 //
 //    OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 //
-//    OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Organization> delete(Organization organization) throws CatalogDBException;
 //
 //    OpenCGAResult delete(Query query) throws CatalogDBException;
 //

@@ -383,9 +383,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--email"}, description = "Administrator e-mail", arity = 1)
         public String email;
 
-        @Parameter(names = {"--organization"}, description = "Administrator organization", arity = 1)
-        public String organization;
-
         @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).")
         public String secretKey;
 

@@ -76,6 +76,8 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     MetaDBAdaptor getCatalogMetaDBAdaptor();
 
+    OrganizationDBAdaptor getCatalogOrganizationDBAdaptor();
+
     UserDBAdaptor getCatalogUserDBAdaptor();
 
     ProjectDBAdaptor getCatalogProjectDbAdaptor();

@@ -73,7 +73,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document organizationDocument = mongoCursor.next().get("organizations", Document.class);
+            Document organizationDocument = mongoCursor.next();
 
             organizationListBuffer.add(organizationDocument);
             counter++;

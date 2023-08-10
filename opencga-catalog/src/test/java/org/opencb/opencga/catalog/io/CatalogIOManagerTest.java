@@ -59,23 +59,25 @@ public class CatalogIOManagerTest {
 
     @Test
     public void testCreateAccount() throws Exception {
+        String organizationId = "opencb";
         String userId = "imedina";
-        URI userUri = ioManager.createUser(userId);
+        URI userUri = ioManager.createUser(organizationId, userId);
 
         Path userPath = Paths.get(userUri);
         assertTrue(Files.exists(userPath));
         assertEquals(tmpOutdir.resolve("users/" + userId).toAbsolutePath().toString(), userUri.getPath());
 
-        ioManager.deleteUser(userId);
+        ioManager.deleteUser(organizationId, userId);
         assertFalse(Files.exists(userPath));
     }
 
     @Test
     public void testCreateStudy() throws Exception {
+        String organizationId = "opencb";
         String userId = "imedina";
         String projectId = "1000g";
 
-        Path userPath = Paths.get(ioManager.createUser(userId));
+        Path userPath = Paths.get(ioManager.createUser(organizationId, userId));
 
         Path projectPath = Paths.get(ioManager.createProject(userId, projectId));
         assertTrue(Files.exists(projectPath));

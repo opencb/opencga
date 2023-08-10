@@ -1,19 +1,37 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.OrganizationConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.OrganizationCatalogMongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterMapParams;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
 
 public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements OrganizationDBAdaptor {
 
@@ -23,11 +41,227 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     public OrganizationMongoDBAdaptor(MongoDBCollection organizationCollection, MongoDBCollection deletedOrganizationCollection,
                                       Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(OrganizationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.organizationCollection = organizationCollection;
         this.deletedOrganizationCollection = deletedOrganizationCollection;
         this.organizationConverter = new OrganizationConverter();
+    }
+
+    @Override
+    public OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return runTransaction(clientSession -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Starting organization insert transaction for organization id '{}'", organization.getId());
+            insert(clientSession, organization);
+            return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+        }, e -> logger.error("Could not create sample {}: {}", organization.getId(), e.getMessage()));
+    }
+
+    Organization insert(ClientSession clientSession, Organization organization)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        if (StringUtils.isEmpty(organization.getId())) {
+            throw new CatalogDBException("Missing organization id");
+        }
+
+        // Check the organization does not exist
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.ID.key(), organization.getId()));
+
+        Bson bson = Filters.and(filterList);
+        DataResult<Long> count = organizationCollection.count(clientSession, bson);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogDBException("Organization { id: '" + organization.getId() + "'} already exists.");
+        }
+
+        long organizationUid = getNewUid();
+        organization.setUid(organizationUid);
+        if (StringUtils.isEmpty(organization.getUuid())) {
+            organization.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.ORGANIZATION));
+        }
+
+        Document organizationObject = organizationConverter.convertToStorageType(organization);
+
+        // Versioning private parameters
+        organizationObject.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(organization.getCreationDate())
+                ? TimeUtils.toDate(organization.getCreationDate()) : TimeUtils.getDate());
+        organizationObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(organization.getModificationDate())
+                ? TimeUtils.toDate(organization.getModificationDate()) : TimeUtils.getDate());
+
+        logger.debug("Inserting organization '{}' ({})...", organization.getId(), organization.getUid());
+        organizationCollection.insert(clientSession, organizationObject, null);
+        logger.debug("Organization '{}' successfully inserted", organization.getId());
+
+        return organization;
+    }
+
+    @Override
+    public OpenCGAResult<Organization> get(long organizationUid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), organizationUid);
+        return get(query, options);
+    }
+
+    @Override
+    public OpenCGAResult<Organization> get(Query query, QueryOptions options) throws CatalogDBException {
+        return get(null, query, options);
+    }
+
+    @Override
+    public OpenCGAResult<Organization> update(long organizationUid, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
+        OpenCGAResult<Organization> organizationResult = get(organizationUid, options);
+
+        if (organizationResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update organization. Organization uid '" + organizationUid + "' not found.");
+        }
+
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, organizationResult.first(), parameters, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update organization {}: {}", organizationResult.first().getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not update organization " + organizationResult.first().getId() + ": " + e.getMessage(),
+                    e.getCause());
+        }
+    }
+
+    private OpenCGAResult<Organization> privateUpdate(ClientSession clientSession, Organization organization, ObjectMap parameters,
+                                                      QueryOptions queryOptions) throws CatalogParameterException, CatalogDBException {
+        long tmpStartTime = startQuery();
+
+        UpdateDocument updateDocument = getValidatedUpdateParams(parameters, queryOptions);
+        Document organizationUpdate = updateDocument.toFinalUpdateDocument();
+
+        Query tmpQuery = new Query(QueryParams.UID.key(), organization.getUid());
+        Bson queryBson = parseQuery(tmpQuery);
+
+        if (organizationUpdate.isEmpty()) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+                throw new CatalogDBException("Update could not be performed. Some fields could not be processed.");
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
+        logger.debug("Update organization. Query: {}, Update: {}", queryBson.toBsonDocument(), organizationUpdate.toBsonDocument());
+
+        DataResult<?> updateResult = organizationCollection.update(clientSession, queryBson, organizationUpdate, null);
+
+        if (updateResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Organization not found");
+        }
+        if (updateResult.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, organization.getId(), "Organization was already updated"));
+        }
+        logger.debug("Organization {} successfully updated", organization.getId());
+
+
+        return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    private UpdateDocument getValidatedUpdateParams(ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException {
+        checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
+                QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
+                QueryParams.AUTHENTICATION_ORIGINS.key(), QueryParams.ATTRIBUTES.key()));
+
+        UpdateDocument document = new UpdateDocument();
+
+        String[] acceptedParams = {
+                QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
+        };
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        // Check admins exist.
+        if (parameters.containsKey(QueryParams.ADMINS.key())) {
+            List<String> adminList = parameters.getAsStringList(QueryParams.ADMINS.key());
+
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.ADMINS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            if (ParamUtils.BasicUpdateAction.SET.equals(operation) || !adminList.isEmpty()) {
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.ADMINS.key(), adminList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.ADMINS.key(), adminList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.ADMINS.key(), adminList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown operation " + operation);
+                }
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.AUTHENTICATION_ORIGINS.key())) {
+            List<AuthenticationOrigin> authenticationOrigins = parameters.getAsList(QueryParams.AUTHENTICATION_ORIGINS.key(),
+                    AuthenticationOrigin.class);
+            List<Document> authenticationOriginDocumentList = organizationConverter.convertAuthenticationOrigins(authenticationOrigins);
+
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.AUTHENTICATION_ORIGINS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    document.getSet().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
+                    break;
+                case REMOVE:
+                    document.getPullAll().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
+                    break;
+                case ADD:
+                    document.getAddToSet().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown operation " + operation);
+            }
+        }
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), };
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
+        }
+
+        return document;
+    }
+
+    OpenCGAResult<Organization> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        try (DBIterator<Organization> dbIterator = iterator(clientSession, query, options)) {
+            return endQuery(startTime, dbIterator);
+        }
+    }
+
+    @Override
+    public OpenCGAResult<Organization> delete(Organization organization) throws CatalogDBException {
+        return null;
     }
 
     @Override
@@ -37,10 +271,76 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     public DBIterator<Organization> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
     }
 
-    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) {
-        return null;
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
+            throws CatalogDBException {
+        Query finalQuery = new Query(query);
+
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = new QueryOptions(options);
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+
+        Bson bson = parseQuery(finalQuery);
+        MongoDBCollection collection = getQueryCollection(finalQuery, organizationCollection, null, deletedOrganizationCollection);
+        logger.debug("Organization query: {}", bson.toBsonDocument());
+        return collection.iterator(clientSession, bson, null, null, qOptions);
+    }
+
+    private Bson parseQuery(Query query) throws CatalogDBException {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        Query queryCopy = new Query(query);
+        queryCopy.remove(ParamConstants.DELETED_PARAM);
+
+        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+                    : QueryParams.getParam(key);
+            if (queryParam == null) {
+                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
+                        + "queried for.");
+            }
+            try {
+                switch (queryParam) {
+                    case UID:
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case ID:
+                    case UUID:
+                    case NAME:
+                    case DOMAIN:
+                    case OWNER:
+                    case ADMINS:
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    default:
+                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
+                }
+            } catch (Exception e) {
+                if (e instanceof CatalogDBException) {
+                    throw e;
+                } else {
+                    throw new CatalogDBException("Error parsing query : " + queryCopy.toJson(), e);
+                }
+            }
+        }
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
     }
 }

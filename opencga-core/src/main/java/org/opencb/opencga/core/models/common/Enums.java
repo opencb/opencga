@@ -60,6 +60,7 @@ public final class Enums {
 
     public enum Resource {
         AUDIT,
+        ORGANIZATION,
         USER,
         PROJECT,
         STUDY,

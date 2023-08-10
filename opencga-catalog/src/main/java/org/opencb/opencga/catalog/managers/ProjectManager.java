@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -36,14 +35,15 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -222,9 +222,9 @@ public class ProjectManager extends AbstractManager {
 
     public OpenCGAResult<Project> create(ProjectCreateParams projectCreateParams, QueryOptions options, String token)
             throws CatalogException {
-        //Only the user can create a project
-        String userId = this.catalogManager.getUserManager().getUserId(token);
-        if (userId.isEmpty()) {
+        // Only the organization owner or the administrators can create a project
+        JwtPayload payload = this.catalogManager.getUserManager().getTokenPayload(token);
+        if (payload.getUserId().isEmpty()) {
             throw new CatalogException("The token introduced does not correspond to any registered user.");
         }
 
@@ -236,54 +236,42 @@ public class ProjectManager extends AbstractManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Project> queryResult;
         Project project;
+        Organization organization;
+        try {
+            // To ensure only an organization admin can create the project, we add it to the query object
+            Query organizationQuery = new Query(OrganizationDBAdaptor.QueryParams.ADMINS.key(), payload.getUserId());
+            organization = catalogManager.getOrganizationManager().internalGet(Collections.singletonList(payload.getOrganization()),
+                    organizationQuery, OrganizationManager.INCLUDE_ORGANIZATION_IDS, payload.getUserId(), false).first();
+        } catch (CatalogException e) {
+            String message = "Only the organization owner or the administrators can create a project";
+            CatalogException e1 = new CatalogException(message, e);
+            auditManager.auditCreate(payload.getUserId(), Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e1.getError()));
+            throw e1;
+        }
+
         try {
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
-
-            // Check that the account type is not guest
-            OpenCGAResult<User> user = userDBAdaptor.get(userId, QueryOptions.empty());
-            if (user.getNumResults() == 0) {
-                throw new CatalogException("Internal error happened. Could not find user " + userId);
-            }
-
-            if (Account.AccountType.FULL != user.first().getAccount().getType()) {
-                if (user.first().getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
-                    // Check it is the first project
-                    if (user.first().getProjects() != null && !user.first().getProjects().isEmpty()) {
-                        String errorMsg = "Cannot create more projects for ADMINISTRATOR user '" + user.first().getId() + "'.";
-                        auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                        throw new CatalogException(errorMsg);
-                    }
-                } else {
-
-                    String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with "
-                            + Account.AccountType.FULL + " accounts are allowed to do so.";
-                    auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                    throw new CatalogException(errorMsg);
-                }
-            }
-
             project = projectCreateParams.toProject();
-            validateProjectForCreation(project, user.first());
+            validateProjectForCreation(project);
 
-            queryResult = projectDBAdaptor.insert(project, userId, options);
-            OpenCGAResult<Project> result = getProject(userId, project.getUuid(), options);
+            queryResult = projectDBAdaptor.insert(organization.getId(), project, options);
+            OpenCGAResult<Project> result = getProject(organization.getId(), project.getUuid(), options);
             project = result.first();
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created project
                 queryResult.setResults(result.getResults());
             }
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(payload.getUserId(), Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
         try {
-            catalogIOManager.createProject(userId, Long.toString(project.getUid()));
+            catalogIOManager.createProject(Long.toString(organization.getUid()), Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
-            auditManager.auditCreate(userId, Enums.Resource.PROJECT, project.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(payload.getUserId(), Enums.Resource.PROJECT, project.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
                 projectDBAdaptor.delete(project);
@@ -293,13 +281,13 @@ public class ProjectManager extends AbstractManager {
             }
             throw e;
         }
-        auditManager.auditCreate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
+        auditManager.auditCreate(payload.getUserId(), Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return queryResult;
     }
 
-    private void validateProjectForCreation(Project project, User user) throws CatalogParameterException {
+    private void validateProjectForCreation(Project project) throws CatalogParameterException {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
@@ -311,28 +299,21 @@ public class ProjectManager extends AbstractManager {
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
 
-        if (user.getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
-            // Do not validate organism nor CellBase for admin account
-        } else {
-            if (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
-                    || StringUtils.isEmpty(project.getOrganism().getScientificName())) {
-                throw new CatalogParameterException("Missing mandatory organism information");
-            }
-            try {
-                CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
-                        new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION));
-                cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
-                        project.getOrganism().getScientificName(),
-                        project.getOrganism().getAssembly(), true);
-                project.setCellbase(cellBaseConfiguration);
-            } catch (IOException e) {
-                throw new CatalogParameterException(e);
-            }
+        if (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
+                || StringUtils.isEmpty(project.getOrganism().getScientificName())) {
+            throw new CatalogParameterException("Missing mandatory organism information");
+        }
+        try {
+            CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
+                    new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION));
+            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration, project.getOrganism().getScientificName(),
+                    project.getOrganism().getAssembly(), true);
+            project.setCellbase(cellBaseConfiguration);
+        } catch (IOException e) {
+            throw new CatalogParameterException(e);
         }
 
-
         project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
-
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
