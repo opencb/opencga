@@ -90,7 +90,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      * @param dbAdaptorFactory Generic dbAdaptorFactory containing all the different collections.
      */
     public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory) {
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;

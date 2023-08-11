@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -132,7 +133,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
-            for (String collection : MongoDBAdaptorFactory.COLLECTIONS_LIST) {
+            for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
                 dbAdaptorFactory.getMongoDataStore().getCollection(collection).remove(new Document(), QueryOptions.empty());
             }
         }

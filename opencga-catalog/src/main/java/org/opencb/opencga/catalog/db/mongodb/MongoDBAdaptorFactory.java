@@ -17,28 +17,30 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
-import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -48,128 +50,16 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     public static final String ORGANIZATION_COLLECTION = "organization";
-    public static final String USER_COLLECTION = "user";
-    public static final String STUDY_COLLECTION = "study";
-    public static final String FILE_COLLECTION = "file";
-    public static final String JOB_COLLECTION = "job";
-    public static final String SAMPLE_COLLECTION = "sample";
-    public static final String INDIVIDUAL_COLLECTION = "individual";
-    public static final String COHORT_COLLECTION = "cohort";
-    public static final String FAMILY_COLLECTION = "family";
-    public static final String PANEL_COLLECTION = "panel";
-    public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
-    public static final String INTERPRETATION_COLLECTION = "interpretation";
 
-    public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
-    public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
-    public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
-    public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
-    public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
-
-    @Deprecated
-    public static final String OLD_DELETED_USER_COLLECTION = "deleted_user";
-    @Deprecated
-    public static final String OLD_DELETED_STUDY_COLLECTION = "deleted_study";
-    @Deprecated
-    public static final String OLD_DELETED_FILE_COLLECTION = "deleted_file";
-    @Deprecated
-    public static final String OLD_DELETED_JOB_COLLECTION = "deleted_job";
-    @Deprecated
-    public static final String OLD_DELETED_SAMPLE_COLLECTION = "deleted_sample";
-    @Deprecated
-    public static final String OLD_DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
-    @Deprecated
-    public static final String OLD_DELETED_COHORT_COLLECTION = "deleted_cohort";
-    @Deprecated
-    public static final String OLD_DELETED_FAMILY_COLLECTION = "deleted_family";
-    @Deprecated
-    public static final String OLD_DELETED_PANEL_COLLECTION = "deleted_panel";
-    @Deprecated
-    public static final String OLD_DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
-    @Deprecated
-    public static final String OLD_DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
-
-    public static final String DELETED_ORGANIZATION_COLLECTION = "organization_deleted";
-    public static final String DELETED_USER_COLLECTION = "user_deleted";
-    public static final String DELETED_STUDY_COLLECTION = "study_deleted";
-    public static final String DELETED_FILE_COLLECTION = "file_deleted";
-    public static final String DELETED_JOB_COLLECTION = "job_deleted";
-    public static final String DELETED_SAMPLE_COLLECTION = "sample_deleted";
-    public static final String DELETED_INDIVIDUAL_COLLECTION = "individual_deleted";
-    public static final String DELETED_COHORT_COLLECTION = "cohort_deleted";
-    public static final String DELETED_FAMILY_COLLECTION = "family_deleted";
-    public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
-    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
-    public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
-
-    public static final String METADATA_COLLECTION = "metadata";
-    public static final String MIGRATION_COLLECTION = "migration";
-    public static final String AUDIT_COLLECTION = "audit";
-
-    public static final List<String> COLLECTIONS_LIST = Arrays.asList(
-            ORGANIZATION_COLLECTION,
-            USER_COLLECTION,
-            STUDY_COLLECTION,
-            FILE_COLLECTION,
-            JOB_COLLECTION,
-            SAMPLE_COLLECTION,
-            INDIVIDUAL_COLLECTION,
-            COHORT_COLLECTION,
-            PANEL_COLLECTION,
-            FAMILY_COLLECTION,
-            CLINICAL_ANALYSIS_COLLECTION,
-            INTERPRETATION_COLLECTION,
-
-            SAMPLE_ARCHIVE_COLLECTION,
-            INDIVIDUAL_ARCHIVE_COLLECTION,
-            FAMILY_ARCHIVE_COLLECTION,
-            PANEL_ARCHIVE_COLLECTION,
-            INTERPRETATION_ARCHIVE_COLLECTION,
-
-            DELETED_ORGANIZATION_COLLECTION,
-            DELETED_USER_COLLECTION,
-            DELETED_STUDY_COLLECTION,
-            DELETED_FILE_COLLECTION,
-            DELETED_JOB_COLLECTION,
-            DELETED_SAMPLE_COLLECTION,
-            DELETED_INDIVIDUAL_COLLECTION,
-            DELETED_COHORT_COLLECTION,
-            DELETED_PANEL_COLLECTION,
-            DELETED_FAMILY_COLLECTION,
-            DELETED_CLINICAL_ANALYSIS_COLLECTION,
-            DELETED_INTERPRETATION_COLLECTION,
-
-            MIGRATION_COLLECTION,
-            METADATA_COLLECTION,
-            AUDIT_COLLECTION
-    );
-
-    static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
     private final String database;
     private MongoDataStore mongoDataStore;
 
-    private MongoDBCollection metaCollection;
-    private Map<String, MongoDBCollection> collections;
+    private Map<String, OrganizationMongoDBAdaptorFactory> organizationDBAdaptorMap;
     private OrganizationMongoDBAdaptor organizationDBAdaptor;
-    private UserMongoDBAdaptor userDBAdaptor;
-    private StudyMongoDBAdaptor studyDBAdaptor;
-    private IndividualMongoDBAdaptor individualDBAdaptor;
-    private SampleMongoDBAdaptor sampleDBAdaptor;
-    private FileMongoDBAdaptor fileDBAdaptor;
-    private JobMongoDBAdaptor jobDBAdaptor;
-    private ProjectMongoDBAdaptor projectDBAdaptor;
-    private CohortMongoDBAdaptor cohortDBAdaptor;
-    private FamilyMongoDBAdaptor familyDBAdaptor;
-    private PanelMongoDBAdaptor panelDBAdaptor;
-    private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
-    private InterpretationMongoDBAdaptor interpretationDBAdaptor;
-    private AuditMongoDBAdaptor auditDBAdaptor;
-    private MetaMongoDBAdaptor metaDBAdaptor;
-    private MigrationMongoDBAdaptor migrationDBAdaptor;
 
-    private Logger logger;
+    private final Logger logger;
 
     public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
@@ -210,19 +100,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             throw new CatalogException("Database " + database + " already exists with the following collections: "
                     + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }
-        COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
-    }
-
-    @Override
-    public void initialiseMetaCollection(Admin admin) throws CatalogException {
-        metaDBAdaptor.initializeMetaCollection(admin);
-    }
-
-    @Override
-    public void createIndexes() {
-        StopWatch stopWatch = StopWatch.createStarted();
-        metaDBAdaptor.createIndexes();
-        logger.info("Creating all indexes took {} milliseconds", stopWatch.getTime(TimeUnit.MILLISECONDS));
+        OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
     }
 
     @Override
@@ -238,118 +116,18 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public String getCatalogDatabase(String prefix) {
-        String database;
-        if (StringUtils.isNotEmpty(prefix)) {
-            if (!prefix.endsWith("_")) {
-                database = prefix + "_catalog";
-            } else {
-                database = prefix + "catalog";
-            }
-        } else {
-            database = "opencga_catalog";
-        }
-        return database;
-    }
-
-    @Override
     public void deleteCatalogDB() throws CatalogDBException {
         mongoManager.drop(database);
     }
 
     @Override
     public boolean isCatalogDBReady() {
-        return metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID)).getNumMatches() == 1;
+        return !mongoDataStore.getCollectionNames().isEmpty();
     }
 
     @Override
     public void close() {
         mongoManager.close(mongoDataStore.getDatabaseName());
-    }
-
-    @Override
-    public MetaMongoDBAdaptor getCatalogMetaDBAdaptor() {
-        return metaDBAdaptor;
-    }
-
-    @Override
-    public OrganizationDBAdaptor getCatalogOrganizationDBAdaptor() {
-        return organizationDBAdaptor;
-    }
-
-    @Override
-    public UserMongoDBAdaptor getCatalogUserDBAdaptor() {
-        return userDBAdaptor;
-    }
-
-    @Override
-    public ProjectMongoDBAdaptor getCatalogProjectDbAdaptor() {
-        return projectDBAdaptor;
-    }
-
-    @Override
-    public StudyMongoDBAdaptor getCatalogStudyDBAdaptor() {
-        return studyDBAdaptor;
-    }
-
-    @Override
-    public SampleMongoDBAdaptor getCatalogSampleDBAdaptor() {
-        return sampleDBAdaptor;
-    }
-
-    @Override
-    public IndividualMongoDBAdaptor getCatalogIndividualDBAdaptor() {
-        return individualDBAdaptor;
-    }
-
-    @Override
-    public FileMongoDBAdaptor getCatalogFileDBAdaptor() {
-        return fileDBAdaptor;
-    }
-
-    @Override
-    public JobMongoDBAdaptor getCatalogJobDBAdaptor() {
-        return jobDBAdaptor;
-    }
-
-    @Override
-    public CohortMongoDBAdaptor getCatalogCohortDBAdaptor() {
-        return cohortDBAdaptor;
-    }
-
-    @Override
-    public PanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
-        return panelDBAdaptor;
-    }
-
-    @Override
-    public FamilyMongoDBAdaptor getCatalogFamilyDBAdaptor() {
-        return familyDBAdaptor;
-    }
-
-    @Override
-    public ClinicalAnalysisMongoDBAdaptor getClinicalAnalysisDBAdaptor() {
-        return clinicalDBAdaptor;
-    }
-
-    @Override
-    public InterpretationMongoDBAdaptor getInterpretationDBAdaptor() {
-        return interpretationDBAdaptor;
-    }
-
-    @Override
-    public MigrationDBAdaptor getMigrationDBAdaptor() {
-        return migrationDBAdaptor;
-    }
-
-    @Override
-    public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
-        return collections;
-    }
-
-    @Override
-    public AuditMongoDBAdaptor getCatalogAuditDbAdaptor() {
-        return auditDBAdaptor;
     }
 
     public MongoDataStore getMongoDataStore() {
@@ -359,106 +137,114 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private void connect(Configuration catalogConfiguration) throws CatalogDBException {
         mongoDataStore = mongoManager.get(database, configuration);
         if (mongoDataStore == null) {
-            throw new CatalogDBException("Unable to connect to MongoDB");
+            throw new CatalogDBException("Unable to connect to MongoDB '" + database + "'");
         }
 
-        metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
-        MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
-
         MongoDBCollection organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
-        MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
-        MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
-        MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
-        MongoDBCollection sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
-        MongoDBCollection individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
-        MongoDBCollection jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
-        MongoDBCollection cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
-        MongoDBCollection panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
-        MongoDBCollection familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
-        MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
-        MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
-
-        MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
-        MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
-        MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
-        MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
-        MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
-
-        MongoDBCollection deletedOrganizationCollection = mongoDataStore.getCollection(DELETED_ORGANIZATION_COLLECTION);
-        MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
-        MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
-        MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
-        MongoDBCollection deletedSampleCollection = mongoDataStore.getCollection(DELETED_SAMPLE_COLLECTION);
-        MongoDBCollection deletedIndividualCollection = mongoDataStore.getCollection(DELETED_INDIVIDUAL_COLLECTION);
-        MongoDBCollection deletedJobCollection = mongoDataStore.getCollection(DELETED_JOB_COLLECTION);
-        MongoDBCollection deletedCohortCollection = mongoDataStore.getCollection(DELETED_COHORT_COLLECTION);
-        MongoDBCollection deletedPanelCollection = mongoDataStore.getCollection(DELETED_PANEL_COLLECTION);
-        MongoDBCollection deletedFamilyCollection = mongoDataStore.getCollection(DELETED_FAMILY_COLLECTION);
-        MongoDBCollection deletedClinicalCollection = mongoDataStore.getCollection(DELETED_CLINICAL_ANALYSIS_COLLECTION);
-        MongoDBCollection deletedInterpretationCollection = mongoDataStore.getCollection(DELETED_INTERPRETATION_COLLECTION);
-
-        MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
-
-        collections = new HashMap<>();
-        collections.put(METADATA_COLLECTION, metaCollection);
-        collections.put(MIGRATION_COLLECTION, migrationCollection);
-
-        collections.put(ORGANIZATION_COLLECTION, organizationCollection);
-        collections.put(USER_COLLECTION, userCollection);
-        collections.put(STUDY_COLLECTION, studyCollection);
-        collections.put(FILE_COLLECTION, fileCollection);
-        collections.put(SAMPLE_COLLECTION, sampleCollection);
-        collections.put(INDIVIDUAL_COLLECTION, individualCollection);
-        collections.put(JOB_COLLECTION, jobCollection);
-        collections.put(COHORT_COLLECTION, cohortCollection);
-        collections.put(PANEL_COLLECTION, panelCollection);
-        collections.put(FAMILY_COLLECTION, familyCollection);
-        collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
-        collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
-
-        collections.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
-        collections.put(INDIVIDUAL_ARCHIVE_COLLECTION, individualArchivedCollection);
-        collections.put(FAMILY_ARCHIVE_COLLECTION, familyArchivedCollection);
-        collections.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
-        collections.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
-
-        collections.put(DELETED_ORGANIZATION_COLLECTION, deletedOrganizationCollection);
-        collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
-        collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
-        collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
-        collections.put(DELETED_SAMPLE_COLLECTION, deletedSampleCollection);
-        collections.put(DELETED_INDIVIDUAL_COLLECTION, deletedIndividualCollection);
-        collections.put(DELETED_JOB_COLLECTION, deletedJobCollection);
-        collections.put(DELETED_COHORT_COLLECTION, deletedCohortCollection);
-        collections.put(DELETED_PANEL_COLLECTION, deletedPanelCollection);
-        collections.put(DELETED_FAMILY_COLLECTION, deletedFamilyCollection);
-        collections.put(DELETED_CLINICAL_ANALYSIS_COLLECTION, deletedClinicalCollection);
-        collections.put(DELETED_INTERPRETATION_COLLECTION, deletedInterpretationCollection);
-
-        collections.put(AUDIT_COLLECTION, auditCollection);
-
-        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
-                catalogConfiguration, this);
-        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
-                catalogConfiguration, this);
-        jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
-        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
+        MongoDBCollection deletedOrganizationCollection = mongoDataStore
+                .getCollection(OrganizationMongoDBAdaptorFactory.DELETED_ORGANIZATION_COLLECTION);
         organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, deletedOrganizationCollection, catalogConfiguration,
                 this);
-        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection,
-                catalogConfiguration, this);
-        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
-        userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
-        cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
-        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, catalogConfiguration,
-                this);
-        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
-        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
-                deletedInterpretationCollection, catalogConfiguration, this);
-        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
-        auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
-        migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);
+
+        // Fetch all organizations present in the database
+        OpenCGAResult<Organization> result = organizationDBAdaptor.get(new Query(), OrganizationManager.INCLUDE_ORGANIZATION_IDS);
+
+        // And create connections to them
+        organizationDBAdaptorMap = new HashMap<>();
+        for (Organization organization : result.getResults()) {
+            String organizationDB = getCatalogOrganizationDatabase(catalogConfiguration.getDatabasePrefix(), organization.getId());
+            OrganizationMongoDBAdaptorFactory orgFactory = new OrganizationMongoDBAdaptorFactory(mongoManager, configuration,
+                    organizationDB, catalogConfiguration);
+
+            organizationDBAdaptorMap.put(organization.getId(), orgFactory);
+        }
     }
 
+    @Override
+    public OrganizationDBAdaptor getCatalogOrganizationDBAdaptor() {
+        return organizationDBAdaptor;
+    }
+
+    private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
+        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organization);
+        if (orgFactory == null) {
+            throw new CatalogDBException("Could not find database for organization '" + organization + "'");
+        }
+        return orgFactory;
+    }
+
+    @Override
+    public MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getMigrationDBAdaptor();
+    }
+
+    @Override
+    public MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogMetaDBAdaptor();
+    }
+
+    @Override
+    public UserDBAdaptor getCatalogUserDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogUserDBAdaptor();
+    }
+
+    @Override
+    public ProjectDBAdaptor getCatalogProjectDbAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogProjectDbAdaptor();
+    }
+
+    @Override
+    public StudyDBAdaptor getCatalogStudyDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogStudyDBAdaptor();
+    }
+
+    @Override
+    public FileDBAdaptor getCatalogFileDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogFileDBAdaptor();
+    }
+
+    @Override
+    public SampleDBAdaptor getCatalogSampleDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogSampleDBAdaptor();
+    }
+
+    @Override
+    public IndividualDBAdaptor getCatalogIndividualDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogIndividualDBAdaptor();
+    }
+
+    @Override
+    public JobDBAdaptor getCatalogJobDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogJobDBAdaptor();
+    }
+
+    @Override
+    public AuditDBAdaptor getCatalogAuditDbAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogAuditDbAdaptor();
+    }
+
+    @Override
+    public CohortDBAdaptor getCatalogCohortDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogCohortDBAdaptor();
+    }
+
+    @Override
+    public PanelDBAdaptor getCatalogPanelDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogPanelDBAdaptor();
+    }
+
+    @Override
+    public FamilyDBAdaptor getCatalogFamilyDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogFamilyDBAdaptor();
+    }
+
+    @Override
+    public ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getClinicalAnalysisDBAdaptor();
+    }
+
+    @Override
+    public InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getInterpretationDBAdaptor();
+    }
 }

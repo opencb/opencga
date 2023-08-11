@@ -81,7 +81,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     // TEST PURPOSES ONLY
     public static final boolean MOCK_TRANSIENT_TRANSACTION_ERRORS = false;
 
-    protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected OrganizationMongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
     protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, PRIVATE_MONGO_ID);

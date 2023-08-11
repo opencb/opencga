@@ -33,7 +33,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.OrganizationDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -65,9 +65,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private static final String ANONYMOUS = "*";
     static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
-    public AuthorizationMongoDBAdaptor(DBAdaptorFactory dbFactory, Configuration configuration) {
+    public AuthorizationMongoDBAdaptor(OrganizationDBAdaptorFactory dbFactory, Configuration configuration) {
         super(configuration, LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
-        this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbFactory;
+        this.dbAdaptorFactory = (OrganizationMongoDBAdaptorFactory) dbFactory;
         initCollectionConnections();
     }
 

@@ -79,7 +79,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private VariableSetConverter variableSetConverter;
 
     public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection, Configuration configuration,
-                               MongoDBAdaptorFactory dbAdaptorFactory) {
+                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;

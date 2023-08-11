@@ -67,7 +67,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     private ProjectConverter projectConverter;
 
     public ProjectMongoDBAdaptor(MongoDBCollection projectCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
-                                 MongoDBAdaptorFactory dbAdaptorFactory) {
+                                 OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.projectCollection = projectCollection;

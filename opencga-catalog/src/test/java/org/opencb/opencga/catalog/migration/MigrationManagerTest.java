@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -133,7 +134,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         super.setUp();
         try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
             mongoDBAdaptorFactory.getMongoDataStore()
-                    .getCollection(MongoDBAdaptorFactory.MIGRATION_COLLECTION)
+                    .getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION)
                     .remove(new Document(), new QueryOptions(MongoDBCollection.MULTI, true));
         }
         Files.createDirectories(catalogManagerResource.getOpencgaHome().resolve("conf"));

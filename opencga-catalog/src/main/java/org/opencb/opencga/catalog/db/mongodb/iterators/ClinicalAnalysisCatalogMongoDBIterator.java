@@ -68,14 +68,15 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private static final String UID_VERSION_SEP = "___";
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                  QueryOptions options) {
+                                                  GenericDocumentComplexConverter<E> converter,
+                                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
     }
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                  long studyUid, String user, QueryOptions options) {
+                                                  GenericDocumentComplexConverter<E> converter,
+                                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
+                                                  QueryOptions options) {
         super(mongoCursor, clientSession, converter, null);
 
         this.user = user;

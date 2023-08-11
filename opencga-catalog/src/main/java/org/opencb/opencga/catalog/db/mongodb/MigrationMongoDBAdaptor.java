@@ -25,7 +25,7 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     private final MigrationConverter migrationConverter;
 
     public MigrationMongoDBAdaptor(MongoDBCollection migrationCollection, Configuration configuration,
-                                   MongoDBAdaptorFactory dbAdaptorFactory) {
+                                   OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(MigrationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.migrationCollection = migrationCollection;

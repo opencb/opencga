@@ -90,7 +90,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection archiveFamilyCollection,
                                 MongoDBCollection deletedFamilyCollection, Configuration configuration,
-                                MongoDBAdaptorFactory dbAdaptorFactory) {
+                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.familyCollection = familyCollection;

@@ -16,14 +16,11 @@
 
 package org.opencb.opencga.catalog.db;
 
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
-
-import java.util.Map;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -44,22 +41,20 @@ public interface DBAdaptorFactory extends AutoCloseable {
      */
     void createAllCollections(Configuration configuration) throws CatalogException;
 
-    /**
-     * Initialise meta collection.
-     *
-     * @param admin Admin information.
-     * @throws CatalogException if there is any problem with the installation.
-     */
-    void initialiseMetaCollection(Admin admin) throws CatalogException;
+    default String getCatalogDatabase(String prefix) {
+        String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
+        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
+        return dbPrefix + "catalog";
+    }
 
-    /**
-     * Creates the indexes needed to make queries faster.
-     *
-     * @throws CatalogDBException if there is any problem creating the indexes.
-     */
-    void createIndexes() throws CatalogDBException;
+    default String getCatalogOrganizationDatabase(String prefix, String organization) {
+        String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
+        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
 
-    String getCatalogDatabase(String prefix);
+        String dbOrganization = organization.endsWith("_") ? organization : organization + "_";
+
+        return dbPrefix + dbOrganization + "catalog";
+    }
 
     boolean getDatabaseStatus();
 
@@ -72,37 +67,35 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     void close();
 
-    MigrationDBAdaptor getMigrationDBAdaptor();
-
-    MetaDBAdaptor getCatalogMetaDBAdaptor();
-
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor();
 
-    UserDBAdaptor getCatalogUserDBAdaptor();
+    MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException;
 
-    ProjectDBAdaptor getCatalogProjectDbAdaptor();
+    MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
 
-    StudyDBAdaptor getCatalogStudyDBAdaptor();
+    UserDBAdaptor getCatalogUserDBAdaptor(String organization) throws CatalogDBException;
 
-    FileDBAdaptor getCatalogFileDBAdaptor();
+    ProjectDBAdaptor getCatalogProjectDbAdaptor(String organization) throws CatalogDBException;
 
-    SampleDBAdaptor getCatalogSampleDBAdaptor();
+    StudyDBAdaptor getCatalogStudyDBAdaptor(String organization) throws CatalogDBException;
 
-    IndividualDBAdaptor getCatalogIndividualDBAdaptor();
+    FileDBAdaptor getCatalogFileDBAdaptor(String organization) throws CatalogDBException;
 
-    JobDBAdaptor getCatalogJobDBAdaptor();
+    SampleDBAdaptor getCatalogSampleDBAdaptor(String organization) throws CatalogDBException;
 
-    AuditDBAdaptor getCatalogAuditDbAdaptor();
+    IndividualDBAdaptor getCatalogIndividualDBAdaptor(String organization) throws CatalogDBException;
 
-    CohortDBAdaptor getCatalogCohortDBAdaptor();
+    JobDBAdaptor getCatalogJobDBAdaptor(String organization) throws CatalogDBException;
 
-    PanelDBAdaptor getCatalogPanelDBAdaptor();
+    AuditDBAdaptor getCatalogAuditDbAdaptor(String organization) throws CatalogDBException;
 
-    FamilyDBAdaptor getCatalogFamilyDBAdaptor();
+    CohortDBAdaptor getCatalogCohortDBAdaptor(String organization) throws CatalogDBException;
 
-    ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor();
+    PanelDBAdaptor getCatalogPanelDBAdaptor(String organization) throws CatalogDBException;
 
-    InterpretationDBAdaptor getInterpretationDBAdaptor();
+    FamilyDBAdaptor getCatalogFamilyDBAdaptor(String organization) throws CatalogDBException;
 
-    Map<String, MongoDBCollection> getMongoDBCollectionMap();
+    ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException;
+
+    InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException;
 }

@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -3754,10 +3754,10 @@ public class FileManager extends AnnotationSetManager<File> {
         if (hooks != null && hooks.containsKey(fqn)) {
             Map<String, List<HookConfiguration>> entityHookMap = hooks.get(fqn);
             List<HookConfiguration> hookList = null;
-            if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION)) {
-                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION);
-            } else if (entityHookMap.containsKey(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase())) {
-                hookList = entityHookMap.get(MongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase());
+            if (entityHookMap.containsKey(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION)) {
+                hookList = entityHookMap.get(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION);
+            } else if (entityHookMap.containsKey(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase())) {
+                hookList = entityHookMap.get(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.toUpperCase());
             }
 
             // We check the hook list

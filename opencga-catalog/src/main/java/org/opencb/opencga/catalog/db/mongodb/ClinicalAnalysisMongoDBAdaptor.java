@@ -79,7 +79,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     private final ClinicalAnalysisConverter clinicalConverter;
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
-                                          Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+                                          Configuration configuration, OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ClinicalAnalysisMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalCollection = clinicalCollection;

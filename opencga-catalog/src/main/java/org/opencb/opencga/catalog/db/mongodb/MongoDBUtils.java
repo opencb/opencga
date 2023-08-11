@@ -85,7 +85,7 @@ public class MongoDBUtils {
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 
-        Bson query = Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);

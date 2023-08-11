@@ -54,19 +54,6 @@ public abstract class AbstractManager {
     protected Configuration configuration;
 
     protected final DBAdaptorFactory catalogDBAdaptorFactory;
-    protected final OrganizationDBAdaptor organizationDBAdaptor;
-    protected final UserDBAdaptor userDBAdaptor;
-    protected final ProjectDBAdaptor projectDBAdaptor;
-    protected final StudyDBAdaptor studyDBAdaptor;
-    protected final FileDBAdaptor fileDBAdaptor;
-    protected final IndividualDBAdaptor individualDBAdaptor;
-    protected final SampleDBAdaptor sampleDBAdaptor;
-    protected final CohortDBAdaptor cohortDBAdaptor;
-    protected final FamilyDBAdaptor familyDBAdaptor;
-    protected final JobDBAdaptor jobDBAdaptor;
-    protected final PanelDBAdaptor panelDBAdaptor;
-    protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
-    protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
     public static final String OPENCGA = ParamConstants.OPENCGA_USER_ID;
     public static final String ANONYMOUS = ParamConstants.ANONYMOUS_USER_ID;
@@ -82,24 +69,74 @@ public abstract class AbstractManager {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
-        this.organizationDBAdaptor = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor();
-        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
-        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
-        this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 
-        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
-
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    protected OrganizationDBAdaptor getOrganizationDBAdaptor() {
+        return catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor();
+    }
+
+    protected MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getMigrationDBAdaptor(organization);
+    }
+
+    protected MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organization);
+    }
+
+    protected UserDBAdaptor getUserDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organization);
+    }
+
+    protected ProjectDBAdaptor getProjectDbAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogProjectDbAdaptor(organization);
+    }
+
+    protected StudyDBAdaptor getStudyDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogStudyDBAdaptor(organization);
+    }
+
+    protected FileDBAdaptor getFileDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogFileDBAdaptor(organization);
+    }
+
+    protected SampleDBAdaptor getSampleDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogSampleDBAdaptor(organization);
+    }
+
+    protected IndividualDBAdaptor getIndividualDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor(organization);
+    }
+
+    protected JobDBAdaptor getJobDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organization);
+    }
+
+    protected AuditDBAdaptor getAuditDbAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(organization);
+    }
+
+    protected CohortDBAdaptor getCohortDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogCohortDBAdaptor(organization);
+    }
+
+    protected PanelDBAdaptor getPanelDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogPanelDBAdaptor(organization);
+    }
+
+    protected FamilyDBAdaptor getFamilyDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor(organization);
+    }
+
+    protected ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor(organization);
+    }
+
+    protected InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getInterpretationDBAdaptor(organization);
     }
 
     protected void fixQueryObject(Query query) {
@@ -295,16 +332,17 @@ public abstract class AbstractManager {
      * - '@{groupId}' referring to a {@link Group}.
      * - '{userId}' referring to a specific user.
      *
+     * @param organization organization
      * @param studyId studyId
      * @param members List of members
      * @throws CatalogDBException            CatalogDBException
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMembers(long studyId, List<String> members)
+    protected void checkMembers(String organization, long studyId, List<String> members)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         for (String member : members) {
-            checkMember(studyId, member);
+            checkMember(organization, studyId, member);
         }
     }
 
@@ -316,23 +354,24 @@ public abstract class AbstractManager {
      * - '@{groupId}' referring to a {@link Group}.
      * - '{userId}' referring to a specific user.
      *
+     * @param organization organization
      * @param studyId studyId
      * @param member  member
      * @throws CatalogDBException            CatalogDBException
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMember(long studyId, String member)
+    protected void checkMember(String organization, long studyId, String member)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
-            OpenCGAResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
+            OpenCGAResult<Group> queryResult = getStudyDBAdaptor(organization).getGroup(studyId, member, Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", member);
             }
         } else {
-            userDBAdaptor.checkId(member);
+            getUserDBAdaptor(organization).checkId(member);
         }
     }
 

@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -137,7 +138,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 result.put("installed", true);
 
                 MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
-                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(OrganizationMongoDBAdaptorFactory.METADATA_COLLECTION);
                 Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
 
                 result.put("creationDate", metaDocument.get("creationDate"));

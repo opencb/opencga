@@ -78,7 +78,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) {
+                                        OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
