@@ -1,23 +1,22 @@
-name: Manual build workflow
+name: To test cicd
 
 on:
   workflow_dispatch:
-    inputs:
-      storage_hadoop:
-        type: string
-        required: false
-        default: hdp3.1
 
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      storage_hadoop: ${{ inputs.storage_hadoop }}
+      maven_opts: -Dopencga.war.name=opencga
+      opencga_maven_opts: -P storage-hadoop,hdp3.1
       artifact_name: build-folder
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
-    with:
-      artifact_name: build-folder
+
+  deploy-emr-docker:
+    uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
+    needs: build
+    secrets: inherit
