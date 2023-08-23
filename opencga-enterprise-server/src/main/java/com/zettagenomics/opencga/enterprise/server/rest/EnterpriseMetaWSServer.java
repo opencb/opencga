@@ -102,11 +102,11 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         if (StringUtils.isNotEmpty(categoryStr)) {
             // Check if some categories have been selected
             for (String category : categoryStr.split(",")) {
-                classes.add(EnterpriseResourceConfig.enterpriseClasses.get(category));
+                classes.add(EnterpriseResourceConfig.enterpriseApiClasses.get(category));
             }
         } else {
             // Get API for all categories
-            classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseClasses.values());
+            classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseApiClasses.values());
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
