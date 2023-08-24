@@ -3,8 +3,14 @@ package com.zettagenomics.opencga.enterprise.server;
 import com.zettagenomics.opencga.enterprise.server.rest.CvaWSServer;
 import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
+import org.opencb.opencga.server.rest.*;
+import org.opencb.opencga.server.rest.admin.AdminWSServer;
+import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
+import org.opencb.opencga.server.rest.analysis.VariantWebService;
+import org.opencb.opencga.server.rest.fileupload.FileUploadServlet;
+import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.opencb.opencga.server.rest.utils.FileRangesWSServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,34 +23,50 @@ import java.util.Set;
 @ApplicationPath("resources")
 public class EnterpriseResourceConfig extends ResourceConfig {
 
-    private final static Logger logger;
-    public static final Map<String, Class<?>> enterpriseClasses;
+    private static final Logger logger;
+    public static final Map<String, Class<?>> enterpriseApiClasses;
+    private static final Set<Class<?>> auxiliarClasses;
 
     static {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
 
-        Set<String> excludedClasses = new HashSet<>();
-        excludedClasses.add("MetaWSServer");
+        enterpriseApiClasses = new LinkedHashMap<>(25);
+        enterpriseApiClasses.put("users", UserWSServer.class);
+        enterpriseApiClasses.put("projects", ProjectWSServer.class);
+        enterpriseApiClasses.put("studies", StudyWSServer.class);
+        enterpriseApiClasses.put("files", FileWSServer.class);
+        enterpriseApiClasses.put("jobs", JobWSServer.class);
+        enterpriseApiClasses.put("samples", SampleWSServer.class);
+        enterpriseApiClasses.put("individuals", IndividualWSServer.class);
+        enterpriseApiClasses.put("families", FamilyWSServer.class);
+        enterpriseApiClasses.put("cohorts", CohortWSServer.class);
+        enterpriseApiClasses.put("panels", PanelWSServer.class);
+        enterpriseApiClasses.put("alignment", AlignmentWebService.class);
+        enterpriseApiClasses.put("variant", VariantWebService.class);
+        enterpriseApiClasses.put("clinical", ClinicalWebService.class);
+        enterpriseApiClasses.put("variantOperation", VariantOperationWebService.class);
+        enterpriseApiClasses.put("meta", EnterpriseMetaWSServer.class);
+        enterpriseApiClasses.put("cva", CvaWSServer.class);
+        enterpriseApiClasses.put("admin", AdminWSServer.class);
 
-        Reflections reflections = new Reflections("org.opencb.opencga.server.rest", new SubTypesScanner(false));
-        Set<Class<?>> collect = new HashSet<>(reflections.getSubTypesOf(Object.class));
-        enterpriseClasses = new LinkedHashMap<>(collect.size());
-        for (Class<?> aClass : collect) {
-            if (excludedClasses.contains(aClass.getSimpleName())) {
-                logger.debug("Excluded class '{}'", aClass.getName());
-            } else {
-                enterpriseClasses.put(aClass.getSimpleName(), aClass);
-            }
-        }
+        // Utils, Filters and hidden API classes
+        auxiliarClasses = new HashSet<>(10);
+        auxiliarClasses.add(FileUploadServlet.class);
+        auxiliarClasses.add(FileRangesWSServer.class);
+        auxiliarClasses.add(TestWSServer.class);
 
-        enterpriseClasses.put("meta", EnterpriseMetaWSServer.class);
-        enterpriseClasses.put("cva", CvaWSServer.class);
+        auxiliarClasses.add(ParamExceptionMapper.class);
+        auxiliarClasses.add(OpenCgaApplicationEventListener.class);
     }
 
     public EnterpriseResourceConfig() {
-        for (Class<?> value : enterpriseClasses.values()) {
+        for (Class<?> value : enterpriseApiClasses.values()) {
+            logger.info("Loading '{}' API class", value.getName());
             register(value);
-            logger.debug("Registered class '{}'", value.getName());
+        }
+        for (Class<?> value : auxiliarClasses) {
+            logger.info("Loading '{}' auxiliar class", value.getName());
+            register(value);
         }
     }
 

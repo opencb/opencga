@@ -30,7 +30,7 @@ public class EnterpriseClientsGeneratorMain {
         Configurator.reconfigure();
 
         // Add classes to be generated
-        List<Class<?>> classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseClasses.values());
+        List<Class<?>> classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseApiClasses.values());
 
         try {
             // Create CommandLineConfiguration and ClientsGenerator
