@@ -42,8 +42,12 @@ public class CellBaseConfiguration {
     @DataField(id = "dataRelease", description = "CellBase data release version to be used. If empty, will use the active one")
     private String dataRelease;
 
-    @DataField(id = "token", description = "CellBase token to access to the licensed/restricted data sources such as COSMIC, HGMD,...")
+    @Deprecated
+    @DataField(id = "token", deprecated = true, description = "CellBase token to access to the licensed/restricted data sources such as COSMIC, HGMD,...")
     private String token;
+
+    @DataField(id = "apiKey", description = "API key to access to the licensed/restricted data sources (COSMIC, HGMD,...) and to manage quota.")
+    private String apiKey;
 
     public CellBaseConfiguration() {
         this(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION);
@@ -54,11 +58,12 @@ public class CellBaseConfiguration {
         this.version = version;
     }
 
-    public CellBaseConfiguration(String url, String version, String dataRelease, String token) {
+    public CellBaseConfiguration(String url, String version, String dataRelease, String apiKey) {
         this.url = url;
         this.version = version;
         this.dataRelease = dataRelease;
-        this.token = token;
+        this.token = apiKey;
+        this.apiKey = apiKey;
     }
 
     @Override
@@ -68,6 +73,7 @@ public class CellBaseConfiguration {
         sb.append(", version='").append(version).append('\'');
         sb.append(", dataRelease='").append(dataRelease).append('\'');
         sb.append(", token='").append(token).append('\'');
+        sb.append(", apiKey='").append(apiKey).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -99,12 +105,21 @@ public class CellBaseConfiguration {
         return this;
     }
 
-    public String getToken() {
-        return token;
+//    public String getToken() {
+//        return apiKey;
+//    }
+//
+//    public CellBaseConfiguration setToken(String token) {
+//        this.apiKey = token;
+//        return this;
+//    }
+
+    public String getApiKey() {
+        return apiKey;
     }
 
-    public CellBaseConfiguration setToken(String token) {
-        this.token = token;
+    public CellBaseConfiguration setApiKey(String apiKey) {
+        this.apiKey = apiKey;
         return this;
     }
 

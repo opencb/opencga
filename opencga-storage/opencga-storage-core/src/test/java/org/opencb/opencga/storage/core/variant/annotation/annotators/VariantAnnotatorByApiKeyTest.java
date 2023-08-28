@@ -21,7 +21,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE;
 
-public class VariantAnnotatorByTokenTest {
+public class VariantAnnotatorByApiKeyTest {
 
     private StorageConfiguration storageConfiguration;
 
@@ -36,7 +36,7 @@ public class VariantAnnotatorByTokenTest {
         storageConfiguration.getCellbase().setUrl(url);
         storageConfiguration.getCellbase().setDataRelease("1");
         storageConfiguration.getCellbase().setVersion("v5.3");
-        storageConfiguration.getCellbase().setToken(null);
+        storageConfiguration.getCellbase().setApiKey(null);
 
         CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
         try {
@@ -47,7 +47,7 @@ public class VariantAnnotatorByTokenTest {
     }
 
     @Test
-    public void testNoToken() throws Exception {
+    public void testNoApiKey() throws Exception {
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
@@ -61,11 +61,11 @@ public class VariantAnnotatorByTokenTest {
     }
 
     @Test
-    public void testCOSMICToken() throws Exception {
-        String cosmicToken = System.getenv("CELLBASE_COSMIC_TOKEN");
-        Assume.assumeTrue(StringUtils.isNotEmpty(cosmicToken));
+    public void testCOSMICApiKey() throws Exception {
+        String apiKey = System.getenv("CELLBASE_COSMIC_APIKEY");
+        Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
 
-        storageConfiguration.getCellbase().setToken(cosmicToken);
+        storageConfiguration.getCellbase().setApiKey(apiKey);
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
@@ -80,11 +80,11 @@ public class VariantAnnotatorByTokenTest {
     }
 
     @Test
-    public void testHGMDToken() throws Exception {
-        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
-        Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
+    public void testHGMDApiKey() throws Exception {
+        String apiKey = System.getenv("CELLBASE_HGMD_APIKEY");
+        Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
 
-        storageConfiguration.getCellbase().setToken(hgmdToken);
+        storageConfiguration.getCellbase().setApiKey(apiKey);
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
@@ -99,11 +99,11 @@ public class VariantAnnotatorByTokenTest {
     }
 
     @Test
-    public void testCOSMICandHGMDToken() throws Exception {
-        String token = System.getenv("CELLBASE_TOKEN");
-        Assume.assumeTrue(StringUtils.isNotEmpty(token));
+    public void testCOSMICandHGMDApiKey() throws Exception {
+        String apiKey = System.getenv("CELLBASE_COSMIC_HGMD_APIKEY");
+        Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
 
-        storageConfiguration.getCellbase().setToken(token);
+        storageConfiguration.getCellbase().setApiKey(apiKey);
 
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");

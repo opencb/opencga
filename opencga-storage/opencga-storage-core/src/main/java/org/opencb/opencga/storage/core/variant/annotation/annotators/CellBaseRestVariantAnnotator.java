@@ -113,8 +113,8 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                     + getDebugInfo("/meta/" + species + "/dataReleases") + ". ");
         }
         List<String> privateSources;
-        if (StringUtils.isNotEmpty(cellBaseUtils.getToken())) {
-            privateSources = new ArrayList<>(cellBaseUtils.getTokenSources().getSources().keySet());
+        if (StringUtils.isNotEmpty(cellBaseUtils.getApiKey())) {
+            privateSources = cellBaseUtils.getApiKeyDataSources();
         } else {
             privateSources = new ArrayList<>();
         }

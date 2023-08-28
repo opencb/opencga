@@ -2,12 +2,11 @@ package org.opencb.opencga.core.cellbase;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.api.key.ApiKeyManager;
 import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
-import org.opencb.cellbase.core.token.DataAccessTokenManager;
-import org.opencb.cellbase.core.token.DataAccessTokenSources;
 import org.opencb.opencga.core.common.VersionUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
@@ -69,13 +68,13 @@ public class CellBaseValidator {
         return cellBaseClient.getDataRelease();
     }
 
-    public String getToken() {
-        return cellBaseClient.getToken();
+    public String getApiKey() {
+        return cellBaseClient.getApiKey();
     }
 
-    public DataAccessTokenSources getTokenSources() {
-        DataAccessTokenManager tokenManager = new DataAccessTokenManager();
-        return tokenManager.decode(cellBaseClient.getToken());
+    public List<String> getApiKeyDataSources() {
+        ApiKeyManager apiKeyManager = new ApiKeyManager();
+        return new ArrayList<>(apiKeyManager.getValidSources(cellBaseClient.getApiKey()));
     }
 
     public String getURL() {
@@ -91,7 +90,7 @@ public class CellBaseValidator {
     }
 
     public CellBaseConfiguration getCellBaseConfiguration() {
-        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getToken());
+        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getApiKey());
     }
 
     public String getDefaultDataRelease() throws IOException {
@@ -281,7 +280,7 @@ public class CellBaseValidator {
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
                 + "dataRelease '" + getDataRelease() + "', "
-                + "token '" + getToken() + "'";
+                + "token '" + getApiKey() + "'";
 
     }
 }

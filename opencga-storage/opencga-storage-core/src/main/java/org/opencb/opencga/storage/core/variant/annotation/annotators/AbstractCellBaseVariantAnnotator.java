@@ -72,7 +72,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         assembly = projectMetadata.getAssembly();
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
         cellbaseDataRelease = storageConfiguration.getCellbase().getDataRelease();
-        cellbaseToken = storageConfiguration.getCellbase().getToken();
+        cellbaseToken = storageConfiguration.getCellbase().getApiKey();
 
         queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE.key()))) {

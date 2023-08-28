@@ -9,20 +9,15 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -139,7 +134,7 @@ public class VariantAnnotatorTest {
         assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
 
         // Using COSMIC token
-        storageConfiguration.getCellbase().setToken("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjQ2Nn0.ByfPJn8Lkh5Sow4suRZcOqVxvWZRmTBBNLDzHEIZQ5U");
+        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjQ2Nn0.ByfPJn8Lkh5Sow4suRZcOqVxvWZRmTBBNLDzHEIZQ5U");
         variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
         results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
         assertEquals(1, results.size());
@@ -148,7 +143,7 @@ public class VariantAnnotatorTest {
         assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
 
         // Using HGMD token
-        storageConfiguration.getCellbase().setToken("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2NzU4NzI1MDd9.f3JgVRt7_VrifNWTaRMW3aQfrKbtDbIxlzoenJRYJo0");
+        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2NzU4NzI1MDd9.f3JgVRt7_VrifNWTaRMW3aQfrKbtDbIxlzoenJRYJo0");
         variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
         results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
         assertEquals(1, results.size());
@@ -157,7 +152,7 @@ public class VariantAnnotatorTest {
         assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
 
         // Using COSMIC = HGMD token
-        storageConfiguration.getCellbase().setToken("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwNywiaGdtZCI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjUyN30.NCCFc4SAhjUsN5UU0wXGY6nCZx8jLglvaO1cNZYI0u4");
+        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwNywiaGdtZCI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjUyN30.NCCFc4SAhjUsN5UU0wXGY6nCZx8jLglvaO1cNZYI0u4");
         variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
         results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
         assertEquals(1, results.size());
