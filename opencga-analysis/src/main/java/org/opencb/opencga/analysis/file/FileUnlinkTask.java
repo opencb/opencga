@@ -90,7 +90,7 @@ public class FileUnlinkTask extends OpenCgaTool {
 
                 File catalogFile;
                 try {
-                    catalogFile = fileManager.get(studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                    catalogFile = fileManager.get(organizationId, studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
                     fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), true, token);
                 } catch (CatalogException e) {
                     logger.error("Error checking file '{}': {}", file, e.getMessage(), e);
@@ -121,7 +121,7 @@ public class FileUnlinkTask extends OpenCgaTool {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE)
                     .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
-            try (DBIterator<File> iterator = fileManager.iterator(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
+            try (DBIterator<File> iterator = fileManager.iterator(organizationId, studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     try {

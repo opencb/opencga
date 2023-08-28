@@ -71,7 +71,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
             OpenCGAResult<File> fileResult;
             if (files == null) {
                 // We need to associate all non-associated files
-                fileResult = catalogManager.getFileManager().search(study, fileQuery, options, token);
+                fileResult = catalogManager.getFileManager().search(organizationId, study, fileQuery, options, token);
                 if (fileResult.getNumResults() == 0) {
                     break;
                 }
@@ -80,7 +80,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 if (files.isEmpty()) {
                     break;
                 }
-                fileResult = catalogManager.getFileManager().get(study, files.remove(0), options, token);
+                fileResult = catalogManager.getFileManager().get(organizationId, study, files.remove(0), options, token);
             }
             if (numPendingFiles < 0) {
                 numPendingFiles = ((int) fileResult.getNumMatches());
@@ -103,7 +103,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 }
             }
             if (!virtualFiles.isEmpty()) {
-                fileResult = catalogManager.getFileManager().get(study, new ArrayList<>(virtualFiles), options, token);
+                fileResult = catalogManager.getFileManager().get(organizationId, study, new ArrayList<>(virtualFiles), options, token);
                 fileList.addAll(fileResult.getResults());
             }
 
@@ -126,7 +126,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                             if (!sampleExists(sampleId)) {
                                 try {
                                     // Sample still doesn't exist, so we create it
-                                    OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().create(study, new Sample().setId(sampleId),
+                                    OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().create(organizationId, study, new Sample().setId(sampleId),
                                             QueryOptions.empty(), token);
                                     if (sampleResult.getNumResults() != 1) {
                                         throw new CatalogException("Could not create sample '" + sampleId + "'");
@@ -218,7 +218,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
 
     private boolean sampleExists(String sampleId) throws CatalogException {
         Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(organizationId, study, sampleQuery,
                 SampleManager.INCLUDE_SAMPLE_IDS, token);
 
         return sampleResult.getNumResults() == 1;

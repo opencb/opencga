@@ -115,7 +115,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     public OpenCGAResult<Job> loadTsvAnnotations(String studyStr, String variableSetId, String path, TsvAnnotationParams tsvParams,
                                                  ObjectMap params, String toolId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         ParamUtils.checkObj(variableSetId, "VariableSetId");
         ParamUtils.checkObj(tsvParams, "AnnotationTsvParams");
@@ -144,7 +144,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), path);
 
-        OpenCGAResult<File> search = catalogManager.getFileManager().search(study.getFqn(), query, FileManager.INCLUDE_FILE_URI_PATH,
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(organizationId, study.getFqn(), query, FileManager.INCLUDE_FILE_URI_PATH,
                 token);
         if (search.getNumResults() == 0) {
             // File not found under the path. User must have provided a content so we can create the file.

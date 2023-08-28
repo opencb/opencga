@@ -57,7 +57,7 @@ public class VariantDeleteOperationManager extends OperationManager {
         List<String> fileNames = new ArrayList<>();
         if (inputFiles != null && !inputFiles.isEmpty()) {
             for (String fileStr : inputFiles) {
-                File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
+                File file = catalogManager.getFileManager().get(organizationId, study, fileStr, null, token).first();
                 String catalogIndexStatus = file.getInternal().getVariant().getIndex().getStatus().getId();
                 if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata

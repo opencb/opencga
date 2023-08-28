@@ -16,19 +16,12 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
-import org.opencb.opencga.analysis.family.PedigreeGraphAnalysis;
-import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -38,19 +31,12 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -88,7 +74,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, true, token);
+            DataResult<Family> familyQueryResult = familyManager.get(organizationId, studyStr, familyList, query, queryOptions, true, token);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -128,7 +114,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
+            return createOkResponse(familyManager.search(organizationId, studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -161,7 +147,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(familyManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(familyManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

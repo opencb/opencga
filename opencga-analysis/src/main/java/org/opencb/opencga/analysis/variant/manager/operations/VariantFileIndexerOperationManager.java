@@ -162,7 +162,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
         Project project = catalogManager
                 .getProjectManager()
-                .get(projectFqn,
+                .get(organizationId, projectFqn,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key(), CELLBASE.key())),
                         token).first();
         release = project.getCurrentRelease();
@@ -188,7 +188,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         List<File> inputFiles = new ArrayList<>();
         for (String file : files) {
-            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
+            File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 // If is a transformed file, get the related VCF file
@@ -203,7 +203,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS,
+                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(organizationId, studyFqn, query, FILE_GET_QUERY_OPTIONS,
                             token);
 //                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileDataResult.getResults());
@@ -328,7 +328,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (fullSynchronize) {
                     synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
                 } else {
-                    List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
+                    List<File> inputFiles = catalogManager.getFileManager().search(organizationId, studyFqn,
                             new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
                             new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
                     synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token);
@@ -371,7 +371,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         for (File indexedFile : filesToIndex) {
             // Fetch from catalog. {@link #copyResult} may modify the content
-            indexedFile = catalogManager.getFileManager().get(study, indexedFile.getId(), null, sessionId).first();
+            indexedFile = catalogManager.getFileManager().get(organizationId, study, indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StoragePipelineResult storagePipelineResult = map.get(indexedFile.getName());
 
@@ -470,7 +470,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             if (indexStatusId.equals(VariantIndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                 DataResult<Cohort> queryResult = catalogManager.getCohortManager()
-                        .search(study, query, new QueryOptions(), sessionId);
+                        .search(organizationId, study, query, new QueryOptions(), sessionId);
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
@@ -519,13 +519,13 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private Cohort createDefaultCohortIfNeeded(String studyFqn, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort cohort = catalogManager.getCohortManager().search(studyFqn, query, null, sessionId).first();
+        Cohort cohort = catalogManager.getCohortManager().search(organizationId, studyFqn, query, null, sessionId).first();
         if (cohort == null) {
             try {
                 return createDefaultCohort(studyFqn, sessionId);
             } catch (CatalogDBException e) {
                 if (e.getMessage().contains("already exists")) {
-                    cohort = catalogManager.getCohortManager().search(studyFqn, query, null, sessionId).first();
+                    cohort = catalogManager.getCohortManager().search(organizationId, studyFqn, query, null, sessionId).first();
                     if (cohort == null) {
                         throw e;
                     } else {
@@ -558,7 +558,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private String updateDefaultCohortStatus(String study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort defaultCohort = catalogManager.getCohortManager().search(study, query, new QueryOptions(), sessionId).first();
+        Cohort defaultCohort = catalogManager.getCohortManager().search(organizationId, study, query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getInternal().getStatus().getId();
 
         catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
@@ -717,7 +717,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         if (!transformedToOrigFileIdsMap.isEmpty()) {
             Query query = new Query(ID.key(), new ArrayList<>(transformedToOrigFileIdsMap.keySet()));
             Set<String> foundTransformedFiles = new HashSet<>();
-            catalogManager.getFileManager().iterator(studyFQN, query, new QueryOptions(QueryOptions.INCLUDE,
+            catalogManager.getFileManager().iterator(organizationId, studyFQN, query, new QueryOptions(QueryOptions.INCLUDE,
                             Arrays.asList(ID.key(), UID.key(), FileDBAdaptor.QueryParams.URI.key())), sessionId)
                     .forEachRemaining(transformed -> {
                         foundTransformedFiles.add(transformed.getId());
@@ -755,7 +755,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             if (FileRelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
-                vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
+                vcfId = catalogManager.getFileManager().search(organizationId, study, new Query(UID.key(), fileUid),
                         new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 break;
             }
@@ -764,7 +764,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
             throw new CatalogException("Internal error. No vcf file could be found for file " + file.getPath());
         }
-        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(organizationId, study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (vcfDataResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
             throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
@@ -776,7 +776,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private File getTransformedFromOriginal(String sessionId, File file)
             throws CatalogException {
         String transformedFileId = getTransformedFileIdFromOriginal(file);
-        DataResult<File> queryResult = catalogManager.getFileManager().get(studyFqn, transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> queryResult = catalogManager.getFileManager().get(organizationId, studyFqn, transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (queryResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No transformed file could be found under ");
             throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFileId);

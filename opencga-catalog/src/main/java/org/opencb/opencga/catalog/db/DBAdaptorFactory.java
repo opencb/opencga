@@ -22,6 +22,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 
+import java.util.List;
+
 /**
  * Created by hpccoll1 on 19/06/15.
  */
@@ -66,6 +68,10 @@ public interface DBAdaptorFactory extends AutoCloseable {
     void deleteCatalogDB() throws CatalogDBException;
 
     void close();
+
+    void createIndexes(String organization) throws CatalogDBException;
+
+    List<String> getOrganizationIds();
 
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor();
 

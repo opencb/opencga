@@ -61,7 +61,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
             throw new ToolException("Missing study");
         }
         try {
-            catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            catalogManager.getStudyManager().get(organizationId, studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -74,7 +74,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         // Get clinical analysis to ckeck proband sample ID, family ID
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
-            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
+            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
         } catch (CatalogException e) {
             throw new ToolException(e);

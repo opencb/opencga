@@ -101,7 +101,7 @@ public class IndividualQcUtils {
         }
 
         try {
-            OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, familyId, QueryOptions.empty(), token);
+            OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(organizationId, study, familyId, QueryOptions.empty(), token);
 
             // Check family result
             if (familyResult.getResults().size() == 0) {
@@ -118,7 +118,7 @@ public class IndividualQcUtils {
             Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples.id");
 
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(study, query, queryOptions, token);
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(organizationId, study, query, queryOptions, token);
             for (Individual individual : individualResult.getResults()) {
                 sampleSet.addAll(individual.getSamples().stream().map(s -> s.getId()).collect(Collectors.toList()));
             }
@@ -132,7 +132,7 @@ public class IndividualQcUtils {
     public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+        projectQueryResult = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();
@@ -147,7 +147,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().get(organizationId, studyId, familyId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -162,7 +162,7 @@ public class IndividualQcUtils {
         query.put("members", individualId);
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().search(studyId, query, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -184,7 +184,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Individual> individualResult;
         try {
-            individualResult = catalogManager.getIndividualManager().get(studyId, individualId, QueryOptions.empty(),
+            individualResult = catalogManager.getIndividualManager().get(organizationId, studyId, individualId, QueryOptions.empty(),
                     token);
         } catch (CatalogException e) {
             throw new ToolException(e);
@@ -204,7 +204,7 @@ public class IndividualQcUtils {
         query.put("samples", sampleId);
         OpenCGAResult<Individual> individualResult;
         try {
-            individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(), token);
+            individualResult = catalogManager.getIndividualManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -224,7 +224,7 @@ public class IndividualQcUtils {
         query.put("individualId", individualId);
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -246,7 +246,7 @@ public class IndividualQcUtils {
         query.put("individualId", individualId);
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -274,7 +274,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().get(organizationId, studyId, sampleId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -296,7 +296,7 @@ public class IndividualQcUtils {
 
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().get(organizationId, studyId, familyId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

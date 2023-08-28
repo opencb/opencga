@@ -31,7 +31,7 @@ public class SampleTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public int count(Query query) throws CatalogException {
-        return catalogManager.getSampleManager().count(study, query, token).getNumResults();
+        return catalogManager.getSampleManager().count(organizationId, study, query, token).getNumResults();
     }
 
     @Override

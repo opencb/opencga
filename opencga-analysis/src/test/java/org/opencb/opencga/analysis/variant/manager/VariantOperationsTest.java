@@ -272,7 +272,7 @@ public class VariantOperationsTest {
             if (i % 2 == 0) {
                 sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
             }
-            catalogManager.getSampleManager().create(STUDY, sample, null, token);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, null, token);
         }
 
     }
@@ -281,20 +281,20 @@ public class VariantOperationsTest {
     public void testVariantSecondaryAnnotationIndex() throws Exception {
 
         for (String sample : samples) {
-            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
+            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
             assertEquals(IndexStatus.NONE, index.getStatus().getId());
         }
-        assertEquals(IndexStatus.NONE, catalogManager.getFileManager().get(STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+        assertEquals(IndexStatus.NONE, catalogManager.getFileManager().get(organizationId, STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir()), "annotation_index", token);
 
         for (String sample : samples) {
-            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
+            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
             assertEquals(IndexStatus.READY, index.getStatus().getId());
         }
-        assertEquals(IndexStatus.READY, catalogManager.getFileManager().get(STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+        assertEquals(IndexStatus.READY, catalogManager.getFileManager().get(organizationId, STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
     }
 
@@ -305,7 +305,7 @@ public class VariantOperationsTest {
                 is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
         ));
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
             assertEquals(sample, IndexStatus.NONE, sampleIndex.getFamilyStatus().getId());
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
@@ -319,7 +319,7 @@ public class VariantOperationsTest {
                 Paths.get(opencga.createTmpOutdir()), "index", token);
 
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
@@ -337,7 +337,7 @@ public class VariantOperationsTest {
                 Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token)
                     .first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
@@ -352,7 +352,7 @@ public class VariantOperationsTest {
 
         // Everything should look the same, but with newer version
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
@@ -366,7 +366,7 @@ public class VariantOperationsTest {
             toolRunner.execute(job, Paths.get(opencga.createTmpOutdir()), token);
         }
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(organizationId, STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
@@ -386,10 +386,10 @@ public class VariantOperationsTest {
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
-        samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(2, 4), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
+        List<Sample> samples = catalogManager.getSampleManager().get(organizationId, STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
+        catalogManager.getCohortManager().create(organizationId, STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
+        samples = catalogManager.getSampleManager().get(organizationId, STUDY, file.getSampleIds().subList(2, 4), QueryOptions.empty(), token).getResults();
+        catalogManager.getCohortManager().create(organizationId, STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
 
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")

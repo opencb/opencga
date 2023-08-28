@@ -129,7 +129,7 @@ public class CatalogFileUtilsTest {
         assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getId());
 
         /** Check MISSING file still missing **/
-        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, userSessionId).first();
+        file = catalogManager.getFileManager().get(organizationId, studyFqn, file.getPath(), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getId(),

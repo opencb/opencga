@@ -174,7 +174,7 @@ public class FileWSServerTest {
 
     @Test
     public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getFileManager().search(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.TYPE
+        File file = OpenCGAWSServer.catalogManager.getFileManager().search(organizationId, String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.TYPE
                 .key(), "FILE"), new QueryOptions(), sessionId).first();
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");

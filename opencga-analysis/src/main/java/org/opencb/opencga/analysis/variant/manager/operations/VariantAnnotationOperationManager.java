@@ -110,7 +110,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
                 } else {
                     throw new CatalogException("Unable to locate file '" + loadFileStr + "'. More than one study found: " + studies);
                 }
-                File loadFile = catalogManager.getFileManager().get(studyStr, loadFileStr, null, token).first();
+                File loadFile = catalogManager.getFileManager().get(organizationId, studyStr, loadFileStr, null, token).first();
                 if (loadFile == null) {
                     throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                 }
@@ -123,7 +123,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
     }
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
-        Project project = catalogManager.getProjectManager().get(projectStr, QueryOptions.empty(), token).first();
+        Project project = catalogManager.getProjectManager().get(organizationId, projectStr, QueryOptions.empty(), token).first();
         ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
         CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease,

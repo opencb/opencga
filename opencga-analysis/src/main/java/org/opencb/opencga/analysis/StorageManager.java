@@ -100,13 +100,13 @@ public abstract class StorageManager {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().get(studyIdStr, QueryOptions.empty(), sessionId).first();
+        Study study = catalogManager.getStudyManager().get(organizationId, studyIdStr, QueryOptions.empty(), sessionId).first();
 
         List<File> files;
         if (fileIdStrs.isEmpty()) {
             files = Collections.emptyList();
         } else {
-            DataResult<File> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
+            DataResult<File> queryResult = catalogManager.getFileManager().get(organizationId, studyIdStr, fileIdStrs, null, sessionId);
             files = queryResult.getResults();
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
@@ -130,12 +130,12 @@ public abstract class StorageManager {
 
         studyInfo.setStudy(study);
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
-        Project project = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
+        Project project = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
                 new QueryOptions(), sessionId).first();
         studyInfo.setProjectUid(project.getUid());
         studyInfo.setProjectId(project.getId());
         studyInfo.setOrganism(project.getOrganism());
-        String user = catalogManager.getProjectManager().getOwner(project.getUid());
+        String user = catalogManager.getProjectManager().getOwner(organizationId, project.getUid());
         studyInfo.setUserId(user);
 
         Map<File.Bioformat, DataStore> dataStores = new HashMap<>();

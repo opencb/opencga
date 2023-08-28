@@ -91,13 +91,13 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         SampleIndexConfiguration conf = getRandomConf();
         OpenCGAResult<Job> result = variantManager.configureSampleIndex(studyId, conf, true, sessionId);
         assertEquals(0, result.getResults().size());
-        SampleIndexConfiguration actual = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        SampleIndexConfiguration actual = catalogManager.getStudyManager().get(organizationId, studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
         assertEquals(conf, actual);
 
         conf = getRandomConf();
         result = variantManager.configureSampleIndex(studyId, conf, false, sessionId);
         assertEquals(1, result.getResults().size());
-        actual = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        actual = catalogManager.getStudyManager().get(organizationId, studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
         assertEquals(conf, actual);
     }
 

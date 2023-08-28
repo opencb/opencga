@@ -59,7 +59,7 @@ public class JulieTool extends OpenCgaTool {
                 String study = value.substring(0, idx);
                 String cohort = value.substring(idx + 1);
                 String studyFqn = getCatalogManager().getStudyManager()
-                        .get(study, new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), getToken())
+                        .get(organizationId, study, new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), getToken())
                         .first()
                         .getFqn();
                 cohorts.computeIfAbsent(studyFqn, key -> new LinkedList<>()).add(cohort);
@@ -67,7 +67,7 @@ public class JulieTool extends OpenCgaTool {
             for (Map.Entry<String, List<String>> entry : cohorts.entrySet()) {
                 String study = entry.getKey();
                 List<Cohort> cohorts = getCatalogManager().getCohortManager()
-                        .get(study, entry.getValue(), new QueryOptions(QueryOptions.INCLUDE, "id"), getToken()).getResults();
+                        .get(organizationId, study, entry.getValue(), new QueryOptions(QueryOptions.INCLUDE, "id"), getToken()).getResults();
                 if (cohorts.size() != entry.getValue().size()) {
                     // This should not happen. The previous command should throw exception if some cohort is missing
                     throw new IllegalArgumentException("Missing cohorts from study " + study);

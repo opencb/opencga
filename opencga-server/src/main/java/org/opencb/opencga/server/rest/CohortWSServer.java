@@ -140,7 +140,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
 
             List<String> cohortList = getIdList(cohortsStr);
-            DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted), queryOptions, true, token);
+            DataResult<Cohort> cohortQueryResult = cohortManager.get(organizationId, studyStr, cohortList, new Query("deleted", deleted), queryOptions, true, token);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -179,7 +179,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_RELEASE_PARAM) String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, token));
+            return createOkResponse(catalogManager.getCohortManager().search(organizationId, studyStr, query, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -209,7 +209,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(cohortManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(cohortManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -352,7 +352,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of cohort ids") @PathParam("cohorts") String cohorts) {
         try {
             List<String> cohortIds = getIdList(cohorts);
-            return createOkResponse(cohortManager.delete(studyStr, cohortIds, queryOptions, token));
+            return createOkResponse(cohortManager.delete(organizationId, studyStr, cohortIds, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

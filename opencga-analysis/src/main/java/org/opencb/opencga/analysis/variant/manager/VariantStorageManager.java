@@ -348,13 +348,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String cohort1Id;
             String cohort2Id;
 
-            Cohort cohort1Obj = catalogManager.getCohortManager().get(study, cohort1, new QueryOptions(), token).first();
+            Cohort cohort1Obj = catalogManager.getCohortManager().get(organizationId, study, cohort1, new QueryOptions(), token).first();
             List<String> cohort1Samples = cohort1Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
             engine.getMetadataManager().registerCohort(studyFqn, cohort1Obj.getId(), cohort1Samples);
             cohort1Id = cohort1Obj.getId();
 
             if (StringUtils.isNotEmpty(cohort2)) {
-                Cohort cohort2Obj = catalogManager.getCohortManager().get(study, cohort2, new QueryOptions(), token).first();
+                Cohort cohort2Obj = catalogManager.getCohortManager().get(organizationId, study, cohort2, new QueryOptions(), token).first();
                 List<String> cohort2Samples = cohort2Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
                 engine.getMetadataManager().registerCohort(studyFqn, cohort2Obj.getId(), cohort2Samples);
                 cohort2Id = cohort2Obj.getId();
@@ -413,14 +413,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
-                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), new QueryOptions(), token);
+                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(organizationId, study, new Query(), new QueryOptions(), token);
                 while (iterator.hasNext()) {
                     Family family = iterator.next();
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, true, token));
                 }
             } else {
                 for (String familyId : familiesStr) {
-                    Family family = catalogManager.getFamilyManager().get(study, familyId, null, token).first();
+                    Family family = catalogManager.getFamilyManager().get(organizationId, study, familyId, null, token).first();
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
@@ -484,7 +484,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             dataStore.getOptions().putAll(params);
             catalogManager.getProjectManager()
-                    .setDatastoreVariant(projectStr, dataStore, token);
+                    .setDatastoreVariant(organizationId, projectStr, dataStore, token);
             return dataStore.getOptions();
         });
     }
@@ -492,7 +492,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, params, token, engine -> {
             Study study = catalogManager.getStudyManager()
-                    .get(studyStr,
+                    .get(organizationId, studyStr,
                             new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
                             token)
                     .first();
@@ -507,7 +507,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             options.putAll(params);
             catalogManager.getStudyManager()
-                    .setVariantEngineConfigurationOptions(studyStr, options, token);
+                    .setVariantEngineConfigurationOptions(organizationId, studyStr, options, token);
 //            String studyFqn = getStudyFqn(studyStr, token);
 //            engine.getConfigurationManager().configureStudy(studyFqn, params);
             return options;
@@ -535,7 +535,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
-                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
+                    .setVariantEngineConfigurationSampleIndex(organizationId, studyStr, sampleIndexConfiguration, token);
             if (skipRebuild) {
                 return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
             } else {
@@ -605,7 +605,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setCellbaseConfiguration(project, validatedCellbaseConfiguration, false, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(organizationId, project, validatedCellbaseConfiguration, false, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
@@ -832,7 +832,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
                             String userId = catalogManager.getUserManager().getUserId(token);
                             List<String> validSamples = catalogManager.getSampleManager()
-                                    .search(study,
+                                    .search(organizationId, study,
                                             new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
                                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
@@ -962,7 +962,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws StorageEngineException, CatalogException {
 //        String projectFqn = catalogManager.getStudyManager().getProjectFqn(getStudyFqn(study, token));
         Study study = catalogManager.getStudyManager()
-                .get(studyStr, new QueryOptions(INCLUDE, Arrays.asList(
+                .get(organizationId, studyStr, new QueryOptions(INCLUDE, Arrays.asList(
                         StudyDBAdaptor.QueryParams.FQN.key(),
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token)
                 .first();
@@ -1014,7 +1014,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
+                .get(organizationId, project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
                 .first().getCellbase();
         if (cellbase != null) {
             if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
@@ -1061,7 +1061,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public Set<String> getIndexedSamples(String study, String token) throws CatalogException {
         OpenCGAResult<Cohort> cohortResult = catalogManager
                 .getCohortManager()
-                .search(study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
+                .search(organizationId, study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                         new QueryOptions(INCLUDE, Arrays.asList(
                                 CohortDBAdaptor.QueryParams.ID.key(),
                                 CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
@@ -1108,7 +1108,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String studySqn = getStudyFqn(study, token);
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             List<File> filesFromCatalog = catalogManager.getFileManager()
-                    .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
+                    .get(organizationId, studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
             return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, token);
         });
     }
@@ -1374,7 +1374,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 //                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
 //                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
                     long numMatches = catalogManager.getSampleManager()
-                            .count(studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue())
+                            .count(organizationId, studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue())
                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token)
                             .getNumMatches();
                     if (numMatches != entry.getValue().size()) {
@@ -1411,7 +1411,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 for (String study : includeStudies) {
                     study = getStudyFqn(study, token);
                     DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(
-                            study,
+                            organizationId, study,
                             new Query()
                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                             new QueryOptions()
@@ -1466,7 +1466,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
-        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
+        long studyUid = catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
@@ -1490,7 +1490,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
         // Check VIEW_VARIANTS on any sample
         long count = catalogManager.getSampleManager()
-                .count(study, new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
+                .count(organizationId, study, new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
         if (count != 0) {
             return;
         }
@@ -1608,7 +1608,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
+        return catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
     private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {
@@ -1617,7 +1617,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
         if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
-            List<Project> projects = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults();
+            List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults();
             if (projects.size() == 1) {
                 projectStr = projects.get(0).getFqn();
             } else {
@@ -1628,7 +1628,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
-                    .get(studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
+                    .get(organizationId, studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)
@@ -1657,7 +1657,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String token)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyStr, new QueryOptions(), token).first();
+        Study study = catalogManager.getStudyManager().get(organizationId, studyStr, new QueryOptions(), token).first();
         return getDataStore(catalogManager, study, bioformat, token);
     }
 
@@ -1673,7 +1673,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         DataStore dataStore = null;
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key()));
-        Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
+        Project project = catalogManager.getProjectManager().get(organizationId, projectStr, queryOptions, token).first();
         if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
             dataStore = project.getInternal().getDatastores().getDataStore(bioformat);
         }
@@ -1696,7 +1696,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException {
         DataStore dataStore;
         //Must use the UserByStudyId instead of the file owner.
-        String userId = catalogManager.getProjectManager().getOwner(project.getUid());
+        String userId = catalogManager.getProjectManager().getOwner(organizationId, project.getUid());
         // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
         userId = userId.replace('.', '_');
 

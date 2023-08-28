@@ -58,7 +58,7 @@ public class CohortIndexTask extends OpenCgaTool {
                         StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
                         StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, options, token);
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query, options, token);
         if (studyDataResult.getNumResults() == 0) {
             throw new CatalogException("Could not index catalog into solr. No studies found");
         }
@@ -90,7 +90,7 @@ public class CohortIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getCohortManager().iterator(study.getFqn(), query,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getCohortManager().iterator(organizationId, study.getFqn(), query,
                 cohortQueryOptions, token), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
     }
 }

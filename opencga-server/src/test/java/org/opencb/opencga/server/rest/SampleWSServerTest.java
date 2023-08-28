@@ -24,8 +24,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -68,12 +66,12 @@ public class SampleWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true),
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, studyId, new Individual().setId("in1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true),
                 sessionId).first().getUid();
-        s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
-        s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s2"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
-        s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s3"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
-        s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s4"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
+        s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("s1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
+        s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("s2"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
+        s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("s3"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
+        s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("s4"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getUid();
     }
 
     @After

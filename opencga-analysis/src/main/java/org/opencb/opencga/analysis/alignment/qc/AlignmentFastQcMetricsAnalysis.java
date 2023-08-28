@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
@@ -29,8 +28,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentFastQcMetricsParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -70,7 +67,7 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
 
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), analysisParams.getFile());
         query.put(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(getStudy(), query, QueryOptions.empty(), token);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(organizationId, getStudy(), query, QueryOptions.empty(), token);
         if (fileResult.getNumResults() != 1) {
             throw new ToolException("File " + analysisParams.getFile() + " must be a BAM file in study " + getStudy());
         }

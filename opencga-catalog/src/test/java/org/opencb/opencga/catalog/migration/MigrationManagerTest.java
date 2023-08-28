@@ -121,7 +121,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {
-            String fqn = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).first().getFqn();
+            String fqn = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
             getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
@@ -248,7 +248,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         assertEquals(j, migrationRun.getJobs().get(0));
 
         // Update job with ERROR. Migration gets updated to ERROR.
-        Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        Job job = catalogManager.getJobManager().get(organizationId, j.getStudyId(), j.getId(), new QueryOptions(), token).first();
         Enums.ExecutionStatus status = new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Failed");
         catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
@@ -265,7 +265,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getJobs().get(0);
-        job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        job = catalogManager.getJobManager().get(organizationId, j.getStudyId(), j.getId(), new QueryOptions(), token).first();
         status = new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Done");
         catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);

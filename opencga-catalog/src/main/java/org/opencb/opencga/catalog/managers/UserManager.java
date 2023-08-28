@@ -346,7 +346,7 @@ public class UserManager extends AbstractManager {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
-        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
+        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(organizationId, study, null, token);
 
         boolean foundAny = false;
         for (Group group : allGroups.getResults()) {
@@ -365,7 +365,7 @@ public class UserManager extends AbstractManager {
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
                     logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
+                    catalogManager.getStudyManager().updateGroup(organizationId, study, group.getId(), ParamUtils.BasicUpdateAction.SET,
                             new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
@@ -394,7 +394,7 @@ public class UserManager extends AbstractManager {
                     logger.info("Associating members to the internal OpenCGA group");
                     updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
                 }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET, updateParams, token);
+                catalogManager.getStudyManager().updateGroup(organizationId, study, group.getId(), ParamUtils.BasicUpdateAction.SET, updateParams, token);
             }
         }
         if (!foundAny) {
@@ -458,7 +458,7 @@ public class UserManager extends AbstractManager {
 
             if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
                 // Check if the group already exists
-                OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(organizationId, study, internalGroup, token);
                 if (groupResult.getNumResults() == 1) {
                     logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
                     throw new CatalogException("Cannot synchronise with group " + internalGroup
@@ -474,7 +474,7 @@ public class UserManager extends AbstractManager {
                     }
                     Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
                             .setSyncedFrom(groupSync);
-                    catalogManager.getStudyManager().createGroup(study, group, token);
+                    catalogManager.getStudyManager().createGroup(organizationId, study, group, token);
                     logger.info("Group '{}' created and synchronised with external group", internalGroup);
                     auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, group.getId(),
                             "", study, "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -551,10 +551,10 @@ public class UserManager extends AbstractManager {
             if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
                 // Check if the group already exists
                 try {
-                    OpenCGAResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                    OpenCGAResult<Group> group = catalogManager.getStudyManager().getGroup(organizationId, study, internalGroup, token);
                     if (group.getNumResults() == 1) {
                         // We will add those users to the existing group
-                        catalogManager.getStudyManager().updateGroup(study, internalGroup, ParamUtils.BasicUpdateAction.ADD,
+                        catalogManager.getStudyManager().updateGroup(organizationId, study, internalGroup, ParamUtils.BasicUpdateAction.ADD,
                                 new GroupUpdateParams(idList), token);
                         return;
                     }
@@ -566,7 +566,7 @@ public class UserManager extends AbstractManager {
                 try {
                     logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
                     Group group = new Group(internalGroup, idList);
-                    catalogManager.getStudyManager().createGroup(study, group, token);
+                    catalogManager.getStudyManager().createGroup(organizationId, study, group, token);
                 } catch (CatalogException e) {
                     logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
                 }

@@ -162,7 +162,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
                     List<Panel> panels = getCatalogManager()
                             .getPanelManager()
-                            .get(getStudy(), analysisParams.getPanel(), new QueryOptions(), getToken())
+                            .get(organizationId, getStudy(), analysisParams.getPanel(), new QueryOptions(), getToken())
                             .getResults();
                     for (Panel panel : panels) {
                         for (DiseasePanel.GenePanel gene : panel.getGenes()) {
@@ -198,7 +198,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         step("list-families", () -> {
             Query familyQuery = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), analysisParams.getSample());
             for (Family family : getCatalogManager().getFamilyManager()
-                    .search(getStudy(), familyQuery, new QueryOptions(), getToken()).getResults()) {
+                    .search(organizationId, getStudy(), familyQuery, new QueryOptions(), getToken()).getResults()) {
                 if (family == null || StringUtils.isEmpty(family.getId())) {
                     continue;
                 }
@@ -270,7 +270,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     samples++;
                     Individual individual = catalogManager
                             .getIndividualManager()
-                            .search(getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
+                            .search(organizationId, getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                             IndividualDBAdaptor.QueryParams.ID.key(),
                                             IndividualDBAdaptor.QueryParams.SEX_ID.key(),
@@ -299,7 +299,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                             parentsIndividuals.add(knockoutByIndividual.getMotherId());
                         }
                         if (!parentsIndividuals.isEmpty()) {
-                            for (Individual parent : catalogManager.getIndividualManager().get(study, parentsIndividuals,
+                            for (Individual parent : catalogManager.getIndividualManager().get(organizationId, study, parentsIndividuals,
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
                                             IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".id")), token).getResults()) {
                                 if (parent.getSamples() != null && !parent.getSamples().isEmpty()) {
@@ -358,7 +358,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                                 if (individualId == null) {
                                     Individual individualObj = catalogManager
                                             .getIndividualManager()
-                                            .search(getStudy(),
+                                            .search(organizationId, getStudy(),
                                                     new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSampleId()),
                                                     new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
                                                     getToken())

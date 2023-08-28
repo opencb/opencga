@@ -37,10 +37,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -128,6 +125,17 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public void close() {
         mongoManager.close(mongoDataStore.getDatabaseName());
+    }
+
+    @Override
+    public void createIndexes(String organization) throws CatalogDBException {
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization);
+        orgFactory.createIndexes();
+    }
+
+    @Override
+    public List<String> getOrganizationIds() {
+        return new ArrayList<>(organizationDBAdaptorMap.keySet());
     }
 
     public MongoDataStore getMongoDataStore() {

@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
@@ -241,7 +240,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         Query query = new Query("id", jobId);
         OpenCGAResult<Job> result = null;
         try {
-            result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
+            result = catalogManager.getJobManager().search(organizationId, study, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             new ToolException("Error waiting for job '" + jobId + "': " + e.getMessage());
         }
@@ -254,7 +253,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             // Sleep for 1 minute
             try {
                 Thread.sleep(60000);
-                result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
+                result = catalogManager.getJobManager().search(organizationId, study, query, QueryOptions.empty(), token);
                 job = result.first();
             } catch (CatalogException | InterruptedException e) {
                 new ToolException("Error waiting for job '" + jobId + "': " + e.getMessage());
@@ -269,7 +268,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         Job job = null;
         try {
             Query query = new Query("id", jobId);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().search(organizationId, study, query, QueryOptions.empty(), token);
             job = result.first();
         } catch (CatalogException e) {
             new ToolException("Error getting job '" + jobId + "' from catalog: " + e.getMessage());

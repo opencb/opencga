@@ -88,7 +88,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
         if (toolParams.isIndex()) {
             String userId = getCatalogManager().getUserManager().getUserId(getToken());
-            Study study = getCatalogManager().getStudyManager().get(this.study, new QueryOptions(), getToken()).first();
+            Study study = getCatalogManager().getStudyManager().get(organizationId, this.study, new QueryOptions(), getToken()).first();
             boolean isOwner = study.getFqn().startsWith(userId + "@");
             if (!isOwner) {
                 Group admins = study.getGroups().stream()
@@ -109,7 +109,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 forAllSamples = true;
                 allSamples.addAll(indexedSamples);
             } else {
-                catalogManager.getSampleManager().get(study, toolParams.getSample(), new QueryOptions(), token)
+                catalogManager.getSampleManager().get(organizationId, study, toolParams.getSample(), new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -118,7 +118,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
         if (CollectionUtils.isNotEmpty(toolParams.getIndividual())) {
             Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), toolParams.getIndividual());
-            catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
+            catalogManager.getSampleManager().search(organizationId, study, query, new QueryOptions(), token)
                     .getResults()
                     .stream()
                     .map(Sample::getId)
@@ -142,7 +142,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
         if (toolParams.isIndex()) {
             if (!toolParams.isIndexOverwrite()) {
-                List<String> alreadyIndexedSamples = getCatalogManager().getSampleManager().search(study,
+                List<String> alreadyIndexedSamples = getCatalogManager().getSampleManager().search(organizationId, study,
                         new Query(SampleDBAdaptor.QueryParams.ID.key(), allSamples)
                                 .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, toolParams.getIndexId())
                                 .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, ">=0"),
@@ -277,7 +277,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             SampleVariantStats sampleVariantStats = it.next();
                             SampleQualityControl qualityControl = getCatalogManager()
                                     .getSampleManager()
-                                    .get(getStudy(), sampleVariantStats.getId(),
+                                    .get(organizationId, getStudy(), sampleVariantStats.getId(),
                                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTROL.key()), getToken())
                                     .first()
                                     .getQualityControl();

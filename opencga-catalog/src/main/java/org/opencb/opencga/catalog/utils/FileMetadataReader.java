@@ -88,7 +88,7 @@ public class FileMetadataReader {
                     // Check and create missing samples
                     List<String> missingSamples = new LinkedList<>(updateParams.getSampleIds());
                     catalogManager.getSampleManager()
-                            .iterator(studyId,
+                            .iterator(organizationId, studyId,
                                     new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSampleIds()),
                                     new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
                             .forEachRemaining(sample -> {
@@ -96,7 +96,7 @@ public class FileMetadataReader {
                             });
                     if (!missingSamples.isEmpty()) {
                         for (String missingSample : missingSamples) {
-                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
+                            catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId(missingSample), new QueryOptions(), token);
                         }
                     }
                 }
@@ -130,7 +130,7 @@ public class FileMetadataReader {
                                     Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                                             ParamUtils.BasicUpdateAction.SET.toString())), token);
                 }
-                return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
+                return catalogManager.getFileManager().get(organizationId, studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Unexpected error converting FileUpdateParams object: " + e.getMessage(), e);

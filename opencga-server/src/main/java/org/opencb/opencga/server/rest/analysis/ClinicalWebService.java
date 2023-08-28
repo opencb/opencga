@@ -129,7 +129,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response clinicalConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Configuration params to update") ClinicalAnalysisStudyConfiguration params) {
-        return run(() -> clinicalManager.configureStudy(study, params, token));
+        return run(() -> clinicalManager.configureStudy(organizationId, study, params, token));
     }
 
     @POST
@@ -150,7 +150,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
             ClinicalAnalysisCreateParams params) {
         try {
-            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
+            return createOkResponse(clinicalManager.create(organizationId, studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -185,7 +185,7 @@ public class ClinicalWebService extends AnalysisWebService {
             ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
+            return createOkResponse(clinicalManager.update(organizationId, studyStr, query, params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -235,7 +235,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
+            return createOkResponse(clinicalManager.update(organizationId, studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -249,7 +249,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Force deletion if the ClinicalAnalysis contains interpretations or is locked", defaultValue = "false") @QueryParam(Constants.FORCE) boolean force,
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(ParamConstants.CLINICAL_ANALYSES_PARAM) String clinicalAnalyses) {
         try {
-            return createOkResponse(clinicalManager.delete(studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));
+            return createOkResponse(clinicalManager.delete(organizationId, studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -274,7 +274,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("clinicalAnalysis");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, true, token);
+            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(organizationId, studyStr, analysisList, queryOptions, true, token);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -320,7 +320,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
+            DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(organizationId, studyStr, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -362,7 +362,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(clinicalManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(clinicalManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -381,7 +381,7 @@ public class ClinicalWebService extends AnalysisWebService {
                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(clinicalAnalysis);
-            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(clinicalManager.getAcls(organizationId, studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -400,7 +400,7 @@ public class ClinicalWebService extends AnalysisWebService {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
+            return createOkResponse(clinicalManager.updateAcl(organizationId, studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -609,7 +609,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("interpretations");
 
             List<String> interpretationList = getIdList(interpretations);
-            DataResult<Interpretation> interpretationOpenCGAResult = catalogInterpretationManager.get(studyStr, interpretationList, query, queryOptions, true, token);
+            DataResult<Interpretation> interpretationOpenCGAResult = catalogInterpretationManager.get(organizationId, studyStr, interpretationList, query, queryOptions, true, token);
             return createOkResponse(interpretationOpenCGAResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -650,7 +650,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM, clinicalAnalyst);
             query.remove("analyst");
             query.remove("methods");
-            return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.search(organizationId, studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -688,7 +688,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("methods");
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
 
-            return createOkResponse(catalogInterpretationManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(catalogInterpretationManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

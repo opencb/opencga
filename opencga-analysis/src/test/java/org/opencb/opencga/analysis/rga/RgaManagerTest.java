@@ -196,7 +196,7 @@ public class RgaManagerTest {
             if (i % 2 == 0) {
                 sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
             }
-            catalogManager.getSampleManager().create(STUDY, sample, null, ownerToken);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, null, ownerToken);
         }
 
         catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());

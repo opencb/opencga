@@ -31,7 +31,7 @@ public class FamilyTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public int count(Query query) throws CatalogException {
-        return catalogManager.getFamilyManager().count(study, query, token).getNumResults();
+        return catalogManager.getFamilyManager().count(organizationId, study, query, token).getNumResults();
     }
 
     @Override

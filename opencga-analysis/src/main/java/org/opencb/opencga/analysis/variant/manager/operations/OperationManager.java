@@ -73,7 +73,7 @@ public abstract class OperationManager {
     }
 
     protected final String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
+        return catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
     public static boolean isVcfFormat(File file) {
@@ -106,7 +106,7 @@ public abstract class OperationManager {
     }
 
     protected Path getFileSystemPath(String studyFqn, String fileId, String token) throws CatalogException {
-        File file = catalogManager.getFileManager().get(studyFqn, fileId,
+        File file = catalogManager.getFileManager().get(organizationId, studyFqn, fileId,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key()), token).first();
         return Paths.get(file.getUri()).toAbsolutePath();
     }

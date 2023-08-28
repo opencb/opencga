@@ -204,7 +204,7 @@ public class GwasAnalysis extends OpenCgaTool {
         }
 
         try {
-            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
+            study = catalogManager.getStudyManager().get(organizationId, study, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -363,7 +363,7 @@ public class GwasAnalysis extends OpenCgaTool {
 
                 samples = new ArrayList<>();
                 catalogManager.getSampleManager()
-                        .iterator(study, query, options, token)
+                        .iterator(organizationId, study, query, options, token)
                         .forEachRemaining(sample -> {
                             Phenotype.Status status = null;
                             for (Phenotype p : sample.getPhenotypes()) {
@@ -377,7 +377,7 @@ public class GwasAnalysis extends OpenCgaTool {
                         });
             } else if (validCohort) {
                 samples = catalogManager.getCohortManager()
-                        .get(study, cohort, new QueryOptions(), token)
+                        .get(organizationId, study, cohort, new QueryOptions(), token)
                         .first()
                         .getSamples()
                         .stream()
@@ -385,7 +385,7 @@ public class GwasAnalysis extends OpenCgaTool {
                         .collect(Collectors.toList());
             } else {
                 samples = catalogManager.getSampleManager()
-                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), token)
+                        .search(organizationId, study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)

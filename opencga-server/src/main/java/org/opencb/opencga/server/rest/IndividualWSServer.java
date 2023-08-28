@@ -100,7 +100,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            DataResult<Individual> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions, true, token);
+            DataResult<Individual> individualQueryResult = individualManager.get(organizationId, studyStr, individualList, query, queryOptions, true, token);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -174,7 +174,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INDIVIDUAL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SNAPSHOT_PARAM) int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(individualManager.search(studyStr, query, queryOptions, token));
+            return createOkResponse(individualManager.search(organizationId, studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -215,7 +215,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(individualManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(individualManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

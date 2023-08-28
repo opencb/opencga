@@ -129,19 +129,19 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 .append(QueryOptions.LIMIT, 0)
                 .append(QueryOptions.COUNT, true);
 
-        DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> allSamples = catalogManager.getSampleManager().search(organizationId, studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumMatches());
 
         query = new Query(Constants.ANNOTATION, variableSetId + ":sex=2;" + variableSetId + ":Population=ITU");
-        DataResult<Sample> femaleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> femaleIta = catalogManager.getSampleManager().search(organizationId, studyId, query, options, sessionId);
         Assert.assertNotEquals(0, femaleIta.getNumMatches());
 
         query = new Query(Constants.ANNOTATION, variableSetId + ":sex=1;" + variableSetId + ":Population=ITU");
-        DataResult<Sample> maleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> maleIta = catalogManager.getSampleManager().search(organizationId, studyId, query, options, sessionId);
         Assert.assertNotEquals(0, maleIta.getNumMatches());
 
         query = new Query(Constants.ANNOTATION, variableSetId + ":Population=ITU");
-        DataResult<Sample> ita = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> ita = catalogManager.getSampleManager().search(organizationId, studyId, query, options, sessionId);
         Assert.assertNotEquals(0, ita.getNumMatches());
 
         Assert.assertEquals("Fail sample query", ita.getNumMatches(), maleIta.getNumMatches() + femaleIta.getNumMatches());

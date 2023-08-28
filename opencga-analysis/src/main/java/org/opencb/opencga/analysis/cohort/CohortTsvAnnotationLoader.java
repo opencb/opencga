@@ -31,7 +31,7 @@ public class CohortTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public int count(Query query) throws CatalogException {
-        return catalogManager.getCohortManager().count(study, query, token).getNumResults();
+        return catalogManager.getCohortManager().count(organizationId, study, query, token).getNumResults();
     }
 
     @Override

@@ -67,7 +67,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
         try {
-            OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().create(organizationId, studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -124,7 +124,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             List<String> idList = getIdList(jobIds);
-            return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
+            return createOkResponse(catalogManager.getJobManager().get(organizationId, studyStr, idList, new Query("deleted", deleted), queryOptions,
                     true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -202,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(catalogManager.getJobManager().search(studyStr, query, queryOptions, token));
+            return createOkResponse(catalogManager.getJobManager().search(organizationId, studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -236,7 +236,7 @@ public class JobWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(jobManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(jobManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

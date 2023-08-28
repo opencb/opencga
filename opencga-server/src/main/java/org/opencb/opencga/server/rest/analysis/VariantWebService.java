@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
@@ -750,7 +749,7 @@ public class VariantWebService extends AnalysisWebService {
             ParamUtils.checkParameter(cohort, "cohort");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
             OpenCGAResult<Cohort> result = catalogManager.getCohortManager()
-                    .get(studyStr, getIdList(cohort), new QueryOptions(), token);
+                    .get(organizationId, studyStr, getIdList(cohort), new QueryOptions(), token);
 
             List<VariantSetStats> stats = new ArrayList<>(result.getNumResults());
             for (Cohort c : result.getResults()) {
@@ -1156,14 +1155,14 @@ public class VariantWebService extends AnalysisWebService {
                 OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
 
                 Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
-                fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+                fileResult = catalogManager.getFileManager().search(organizationId, study, query, QueryOptions.empty(), token);
                 Job deeptoolsJob = null;
                 if (fileResult.getNumResults() == 0) {
                     // Coverage file does not exit, a job must be submitted to create the .bw file
                     // but first, check if .bai (bam index file) exist
 
                     query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
-                    fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+                    fileResult = catalogManager.getFileManager().search(organizationId, study, query, QueryOptions.empty(), token);
 
                     Job samtoolsJob = null;
                     if (fileResult.getNumResults() == 0) {

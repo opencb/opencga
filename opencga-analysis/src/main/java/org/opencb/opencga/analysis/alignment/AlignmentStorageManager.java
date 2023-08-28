@@ -221,7 +221,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
-                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
+                organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.ORGANISM.key(),
                         ProjectDBAdaptor.QueryParams.CELLBASE.key())), token);
         if (projectQueryResult.getNumResults() != 1) {
@@ -439,7 +439,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
-                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+                organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                         ProjectDBAdaptor.QueryParams.ORGANISM.key(),
                         ProjectDBAdaptor.QueryParams.CELLBASE.key())), token);
@@ -537,7 +537,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     private File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr, QueryOptions.empty(), sessionId);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(organizationId, studyIdStr, fileIdStr, QueryOptions.empty(), sessionId);
         if (fileResult.getNumResults() == 0) {
             throw new CatalogException("File " + fileIdStr + " not found");
         }
@@ -583,7 +583,7 @@ public class AlignmentStorageManager extends StorageManager {
     private Path getWorkspace(long studyId, String sessionId) throws CatalogException, IOException {
         // Obtain the study uri
         QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-        OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), studyOptions, sessionId);
+        OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(organizationId, String.valueOf((Long) studyId), studyOptions, sessionId);
         if (studyResult .getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");

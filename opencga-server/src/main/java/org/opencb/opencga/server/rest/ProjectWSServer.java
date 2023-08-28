@@ -67,7 +67,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().create(project, queryOptions, token);
+            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().create(organizationId, project, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -89,7 +89,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
         try {
             List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, true, token));
+            return createOkResponse(catalogManager.getProjectManager().get(organizationId, idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -126,7 +126,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
             }
 
-            DataResult<Project> queryResult = catalogManager.getProjectManager().search(query, queryOptions, token);
+            DataResult<Project> queryResult = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -158,7 +158,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             List<String> idList = getIdList(projects);
             Map<String, Object> result = new HashMap<>();
             for (String project : idList) {
-                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
+                result.put(project, catalogManager.getProjectManager().facet(organizationId, project, fileFields, sampleFields, individualFields,
                         cohortFields, familyFields, jobFields, defaultStats, token));
             }
             return createOkResponse(result);
@@ -174,7 +174,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String projectStr) {
         try {
             ParamUtils.checkIsSingleID(projectStr);
-            return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, token));
+            return createOkResponse(catalogManager.getProjectManager().incrementRelease(organizationId, projectStr, token));
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);
@@ -195,7 +195,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response getAllStudies(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String project) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().search(project, new Query(), queryOptions, token));
+            return createOkResponse(catalogManager.getStudyManager().search(organizationId, project, new Query(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -234,7 +234,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 params.remove("organism");
             }
 
-            DataResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, token);
+            DataResult result = catalogManager.getProjectManager().update(organizationId, projectStr, params, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

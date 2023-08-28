@@ -243,8 +243,8 @@ public class CatalogManager implements AutoCloseable {
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
-        projectManager.create(new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null, token);
-        studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
+        projectManager.create(organizationId, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null, token);
+        studyManager.create(organizationId, ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
 
         // Skip old available migrations
         migrationManager.skipPendingMigrations(token);
@@ -254,7 +254,10 @@ public class CatalogManager implements AutoCloseable {
         if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
-        catalogDBAdaptorFactory.createIndexes();
+
+        for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
+            catalogDBAdaptorFactory.createIndexes(organizationId);
+        }
     }
 
     public void deleteCatalogDB(String password) throws CatalogException {

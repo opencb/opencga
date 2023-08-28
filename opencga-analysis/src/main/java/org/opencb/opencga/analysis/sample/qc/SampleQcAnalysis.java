@@ -18,19 +18,11 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.picard.HsMetrics;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.clinical.qc.*;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentHsMetricsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
@@ -40,12 +32,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
-import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
@@ -63,7 +51,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.*;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
@@ -93,7 +80,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Check permissions
         try {
-            long studyUid = catalogManager.getStudyManager().get(getStudy(), QueryOptions.empty(), token).first().getUid();
+            long studyUid = catalogManager.getStudyManager().get(organizationId, getStudy(), QueryOptions.empty(), token).first().getUid();
             String userId = catalogManager.getUserManager().getUserId(token);
             catalogManager.getAuthorizationManager().checkStudyPermission(studyUid, userId, WRITE_SAMPLES);
         } catch (CatalogException e) {

@@ -364,7 +364,7 @@ public class MigrationManager {
         boolean anyError = false;
         for (JobReferenceParam jobR : migrationRun.getJobs()) {
             Job job = catalogManager.getJobManager()
-                    .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
+                    .get(organizationId, jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
             String jobStatus = job.getInternal().getStatus().getId();
             if (jobStatus.equals(Enums.ExecutionStatus.ERROR)
                     || jobStatus.equals(Enums.ExecutionStatus.ABORTED)) {
@@ -711,7 +711,7 @@ public class MigrationManager {
                                 .setEvents(migrationRun.getEvents()));
                         break;
                 }
-                catalogManager.getJobManager().create(adminStudy, job, new QueryOptions(), token);
+                catalogManager.getJobManager().create(organizationId, adminStudy, job, new QueryOptions(), token);
             } catch (CatalogException e) {
                 exceptionToThrow = new MigrationException("Could not register migration in OpenCGA", e);
             }

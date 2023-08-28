@@ -85,7 +85,7 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
 
         List<String> sampleIds = new ArrayList<>();
         try {
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(getStudyId(), query, queryOptions,
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(organizationId, getStudyId(), query, queryOptions,
                     getToken());
             for (Individual individual : individualResult.getResults()) {
                 if (CollectionUtils.isNotEmpty(individual.getSamples())) {

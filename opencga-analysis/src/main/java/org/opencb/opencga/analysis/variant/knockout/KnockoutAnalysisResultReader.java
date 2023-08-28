@@ -45,7 +45,7 @@ public class KnockoutAnalysisResultReader {
                                                                String fileName, Class<T> c)
             throws IOException, CatalogException {
         StopWatch started = StopWatch.createStarted();
-        Job job = catalogManager.getJobManager().get(study, jobId, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+        Job job = catalogManager.getJobManager().get(organizationId, study, jobId, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 JobDBAdaptor.QueryParams.ID.key(),
                 JobDBAdaptor.QueryParams.UUID.key(),
                 JobDBAdaptor.QueryParams.OUTPUT.key(),

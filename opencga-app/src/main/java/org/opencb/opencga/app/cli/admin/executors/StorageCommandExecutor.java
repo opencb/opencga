@@ -142,7 +142,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 variantStorageProjects = new HashSet<>(getVariantStorageProjects(catalogManager, variantStorageManager));
             }
 
-            for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
+            for (Project project : catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults()) {
                 if (projects != null && !projects.contains(project.getFqn())) {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
@@ -198,7 +198,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 }
                 logger.info("New DBName: " + newDataStore.getDbName());
 
-                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), defaultDataStore, token);
+                catalogManager.getProjectManager().setDatastoreVariant(organizationId, project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(organizationId, project.getUuid(), defaultDataStore, token);
             }
         }
     }
@@ -225,7 +225,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      */
     protected final List<String> getVariantStorageStudies(CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
-        for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE,
+        for (Study study : catalogManager.getStudyManager().search(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList("fqn")), token).getResults()) {
             if (variantStorageManager.exists(study.getFqn(), token)) {
                 studies.add(study.getFqn());

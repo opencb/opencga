@@ -56,7 +56,7 @@ public class FileRangesWSServer extends OpenCGAWSServer {
                               @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
 
         try {
-            DataResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, token);
+            DataResult<File> queryResult = catalogManager.getFileManager().get(organizationId, studyStr, fileIdStr, this.queryOptions, token);
             File file = queryResult.getResults().get(0);
 
             List<String> rangeList = headers.getRequestHeader("range");

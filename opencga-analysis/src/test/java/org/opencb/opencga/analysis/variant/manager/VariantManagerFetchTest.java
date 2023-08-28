@@ -103,7 +103,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
         Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn));
 
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
+        catalogManager.getSampleManager().create(organizationId, studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
         queryOptions = new QueryOptions();
         query = new Query().append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
@@ -140,9 +140,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousOnlyAggregated() throws Exception {
         // Only Aggregated studies
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD,
                 sessionId);
 
@@ -156,9 +156,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousViewSampleVariants() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD, sessionId);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600"), "*",
@@ -205,7 +205,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousViewSampleVariantsWithoutAggregatedVariantsFail1() throws Exception {
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
@@ -225,7 +225,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousViewSampleVariantsWithoutAggregatedVariantsFail2() throws Exception {
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
@@ -245,7 +245,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousViewSampleVariantsStudyLevel() throws Exception {
         // All samples
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
                         // VIEW_SAMPLE_VARIANTS without VIEW_SAMPLES should be enough
                         .setPermissions(StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS.name()),
@@ -270,7 +270,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousInMembersWithoutPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         // Missing VIEW_AGGREGATED_VARIANTS
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
@@ -281,9 +281,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousOneStudyPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
                         .setPermissions(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name()),
                 ADD, sessionId);
@@ -307,9 +307,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousOneStudyPermissionsIncludeBoth() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
                         .setPermissions(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name()),
                 ADD, sessionId);
@@ -331,9 +331,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousTwoStudiesPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
                         .setPermissions(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name()),
                 ADD, sessionId);
@@ -342,9 +342,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         indexFile(file, new QueryOptions(), outputId2);
 
 
-        catalogManager.getStudyManager().updateGroup(studyId2, "@members", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(organizationId, studyId2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
-        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyId2), "*",
+        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyId2), "*",
                 new StudyAclParams()
                         .setPermissions(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name()),
                 ADD, sessionId);

@@ -173,7 +173,7 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             out.println("## Number of variants=" + variants.size());
             out.println("#SAMPLE\tINDIVIDUAL\tPHENOTYPES");
             for (String sampleId : samples) {
-                Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId, null, token).first();
+                Sample sample = catalogManager.getSampleManager().get(organizationId, studyFqn, sampleId, null, token).first();
                 out.println(sampleId + "\t"
                         + sample.getIndividualId() + "\t"
                         + sample.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.joining(",")));

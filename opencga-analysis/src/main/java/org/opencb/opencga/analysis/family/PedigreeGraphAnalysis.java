@@ -53,8 +53,8 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check family
-        study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
-        OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, pedigreeParams.getFamilyId(),
+        study = catalogManager.getStudyManager().get(organizationId, study, QueryOptions.empty(), token).first().getFqn();
+        OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(organizationId, study, pedigreeParams.getFamilyId(),
                 QueryOptions.empty(), token);
         if (familyResult.getNumResults() != 1) {
             throw new ToolException("Unable to compute the pedigree graph imae. Family '" + pedigreeParams.getFamilyId() +  "' not found");

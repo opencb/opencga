@@ -94,7 +94,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    InternalGetDataResult<Cohort> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+    InternalGetDataResult<Cohort> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                               String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing cohort entries.");
@@ -154,7 +154,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -186,7 +186,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         throw new CatalogParameterException("Found samples with missing id and uuid.");
                     }
                 }
-                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
+                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(organizationId, study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
                 cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getName(), cohortParams.getType(),
                         cohortParams.getCreationDate(), cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0,
@@ -224,7 +224,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             + "variable");
                 }
                 for (String value : variable.getAllowedValues()) {
-                    OpenCGAResult<Sample> sampleResults = catalogManager.getSampleManager().search(study.getFqn(),
+                    OpenCGAResult<Sample> sampleResults = catalogManager.getSampleManager().search(organizationId, study.getFqn(),
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
@@ -287,7 +287,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<Cohort> generate(String studyStr, Query sampleQuery, Cohort cohort, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
         ObjectMap auditParams = new ObjectMap()
@@ -321,11 +321,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult<Cohort> create(String studyStr, Cohort cohort, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Cohort> create(String organizationId, String studyStr, Cohort cohort, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
         ObjectMap auditParams = new ObjectMap()
@@ -336,7 +336,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         try {
             if (CollectionUtils.isNotEmpty(cohort.getSamples())) {
                 // Look for the samples
-                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(organizationId, study.getUid(),
                         cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), SampleManager.INCLUDE_SAMPLE_IDS,
                         userId, false);
                 cohort.setSamples(sampleResult.getResults());
@@ -418,8 +418,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
      */
     public OpenCGAResult<Sample> getSamples(String studyStr, String cohortStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        OpenCGAResult<Cohort> cohortDataResult = internalGet(study.getUid(), cohortStr,
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
+        OpenCGAResult<Cohort> cohortDataResult = internalGet(organizationId, study.getUid(), cohortStr,
                 new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()), userId);
 
         if (cohortDataResult == null || cohortDataResult.getNumResults() == 0) {
@@ -434,12 +434,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public DBIterator<Cohort> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Cohort> iterator(String organizationId, String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId);
 
         // Fix query if it contains any annotation
         Query finalQuery = new Query(query);
@@ -452,12 +452,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult<Cohort> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Cohort> search(String organizationId, String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = studyManager.resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
@@ -486,11 +486,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String organizationId, String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
@@ -525,7 +525,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
             // First look for the sample ids.
-            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(),
+            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(organizationId, study.getUid(),
                             query.getAsStringList(ParamConstants.COHORT_SAMPLES_PARAM), SampleManager.INCLUDE_SAMPLE_IDS, userId, true)
                     .getResults();
             if (CollectionUtils.isNotEmpty(sampleList)) {
@@ -541,11 +541,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult<Cohort> count(String studyId, Query query, String token) throws CatalogException {
+    public OpenCGAResult<Cohort> count(String organizationId, String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = studyManager.resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
@@ -573,7 +573,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> cohortIds, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult delete(String organizationId, String studyStr, List<String> cohortIds, QueryOptions options, String token) throws CatalogException {
         return delete(studyStr, cohortIds, options, false, token);
     }
 
@@ -584,7 +584,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -613,7 +613,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             String cohortId = id;
             String cohortUuid = "";
             try {
-                OpenCGAResult<Cohort> internalResult = internalGet(study.getUid(), id, INCLUDE_COHORT_IDS, userId);
+                OpenCGAResult<Cohort> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_COHORT_IDS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Cohort '" + id + "' not found");
                 }
@@ -648,7 +648,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult delete(String organizationId, String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         return delete(studyStr, query, options, false, token);
     }
 
@@ -658,7 +658,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         OpenCGAResult result = OpenCGAResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -787,7 +787,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<Cohort> update(String studyStr, String cohortId, CohortUpdateParams updateParams, boolean allowModifyCohortAll,
                                         QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -810,7 +810,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String cohortUuid = "";
 
         try {
-            OpenCGAResult<Cohort> internalResult = internalGet(study.getUid(), cohortId, INCLUDE_COHORT_STATUS, userId);
+            OpenCGAResult<Cohort> internalResult = internalGet(organizationId, study.getUid(), cohortId, INCLUDE_COHORT_STATUS, userId);
             if (internalResult.getNumResults() == 0) {
                 throw new CatalogException("Cohort '" + cohortId + "' not found");
             }
@@ -862,7 +862,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                         boolean allowModifyCohortAll, boolean ignoreException, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -889,7 +889,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             String cohortUuid = "";
 
             try {
-                OpenCGAResult<Cohort> internalResult = internalGet(study.getUid(), id, INCLUDE_COHORT_STATUS, userId);
+                OpenCGAResult<Cohort> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_COHORT_STATUS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Cohort '" + id + "' not found");
                 }
@@ -941,7 +941,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1079,7 +1079,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     }
                 }
 
-                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(organizationId, study.getUid(),
                         new ArrayList<>(sampleIds), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
                 if (sampleResult.getNumResults() != sampleIds.size()) {
@@ -1103,14 +1103,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public OpenCGAResult groupBy(String organizationId, @Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
 
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
@@ -1126,7 +1126,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public void setStatus(String studyStr, String cohortId, String status, String message, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(organizationId, studyStr, userId);
 
         CohortStatus cohortStatus = new CohortStatus(status, message);
         ObjectMap auditParams = new ObjectMap()
@@ -1136,7 +1136,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("token", token);
         Cohort cohort;
         try {
-            cohort = internalGet(study.getUid(), cohortId, INCLUDE_COHORT_IDS, userId).first();
+            cohort = internalGet(organizationId, study.getUid(), cohortId, INCLUDE_COHORT_IDS, userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.COHORT, cohortId, "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1165,13 +1165,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public OpenCGAResult rank(String organizationId, String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.VIEW_COHORTS);
 
         // Fix query if it contains any annotation
@@ -1198,7 +1198,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, List<String> members,
                                                                   boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, user);
+        Study study = studyManager.resolveId(organizationId, studyId, user);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
@@ -1212,7 +1212,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         try {
             auditManager.initAuditBatch(operationId);
-            InternalGetDataResult<Cohort> queryResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, ignoreException);
+            InternalGetDataResult<Cohort> queryResult = internalGet(organizationId, study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -1278,7 +1278,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                                                     ParamUtils.AclAction action, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
+        Study study = studyManager.resolveId(organizationId, studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -1306,7 +1306,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 checkPermissions(permissions, CohortPermissions::valueOf);
             }
 
-            List<Cohort> cohortList = internalGet(study.getUid(), cohortStrList, INCLUDE_COHORT_IDS, userId, false).getResults();
+            List<Cohort> cohortList = internalGet(organizationId, study.getUid(), cohortStrList, INCLUDE_COHORT_IDS, userId, false).getResults();
 
             authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
 
@@ -1376,7 +1376,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String userId = userManager.getUserId(token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
 
         ObjectMap auditParams = new ObjectMap()

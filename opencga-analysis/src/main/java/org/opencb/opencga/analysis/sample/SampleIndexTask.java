@@ -58,7 +58,7 @@ public class SampleIndexTask extends OpenCgaTool {
                         StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
                         StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, options, token);
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query, options, token);
         if (studyDataResult.getNumResults() == 0) {
             throw new CatalogException("Could not index catalog into solr. No studies found");
         }
@@ -93,7 +93,7 @@ public class SampleIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getSampleManager().iterator(study.getFqn(), query, sampleQueryOptions,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getSampleManager().iterator(organizationId, study.getFqn(), query, sampleQueryOptions,
                 token), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
     }
 }

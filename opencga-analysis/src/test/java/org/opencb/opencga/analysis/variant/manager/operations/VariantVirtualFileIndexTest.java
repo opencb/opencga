@@ -82,11 +82,11 @@ public class VariantVirtualFileIndexTest extends AbstractVariantOperationManager
                         .setLoadSplitData("REGION")
                 , new ObjectMap(ParamConstants.STUDY_PARAM, studyId), Paths.get(opencga.createTmpOutdir()), null, sessionId);
 
-        File file = catalogManager.getFileManager().get(studyId, "chr20.variant-test-file.vcf.gz", null, sessionId).first();
+        File file = catalogManager.getFileManager().get(organizationId, studyId, "chr20.variant-test-file.vcf.gz", null, sessionId).first();
         assertTrue(FileUtils.isPartial(file));
         assertEquals("READY", file.getInternal().getVariant().getIndex().getStatus().getId());
 
-        file = catalogManager.getFileManager().get(studyId, "variant-test-file.vcf", null, sessionId).first();
+        file = catalogManager.getFileManager().get(organizationId, studyId, "variant-test-file.vcf", null, sessionId).first();
         assertFalse(FileUtils.isPartial(file));
         assertEquals(File.Type.VIRTUAL, file.getType());
         assertEquals("READY", file.getInternal().getVariant().getIndex().getStatus().getId());

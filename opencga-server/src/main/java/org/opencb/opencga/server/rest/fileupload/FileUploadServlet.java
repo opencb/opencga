@@ -84,7 +84,7 @@ public class FileUploadServlet extends HttpServlet {
             String path = request.getHeader("relativeFilePath");
             logger.info("Trying to update file for study " + studyId);
             CatalogManager catalogManager = new CatalogManager(OpenCGAWSServer.getConfiguration());
-            catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token);
+            catalogManager.getStudyManager().get(organizationId, studyId, QueryOptions.empty(), token);
 
             // Temporal folder
             Path temp = Files.createTempDirectory("temp");

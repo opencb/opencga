@@ -44,9 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -191,7 +189,7 @@ public class ClinicalInterpretationAnalysisTest {
                 options, clinicalTest.token);
 
         OpenCGAResult<org.opencb.opencga.core.models.clinical.Interpretation> interpretationResult = clinicalTest.catalogManager
-                .getInterpretationManager().get(study, interpretationId, QueryOptions.empty(), clinicalTest.token);
+                .getInterpretationManager().get(organizationId, study, interpretationId, QueryOptions.empty(), clinicalTest.token);
         org.opencb.opencga.core.models.clinical.Interpretation interpretation = interpretationResult.first();
 //        assertEquals(1, interpretation.getPrimaryFindings().size());
 
@@ -229,7 +227,7 @@ public class ClinicalInterpretationAnalysisTest {
     }
 
     private void deleteSecondaryInterpretations(String caId) throws CatalogException {
-        ClinicalAnalysis ca = opencga.getCatalogManager().getClinicalAnalysisManager().get(clinicalTest.studyFqn,
+        ClinicalAnalysis ca = opencga.getCatalogManager().getClinicalAnalysisManager().get(organizationId, clinicalTest.studyFqn,
                 caId,QueryOptions.empty(), clinicalTest.token).first();
 
         List<String> interpretationIds = ca.getSecondaryInterpretations().stream().map(i -> i.getId()).collect(Collectors.toList());

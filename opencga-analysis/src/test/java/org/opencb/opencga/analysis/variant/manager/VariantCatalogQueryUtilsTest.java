@@ -126,13 +126,13 @@ public class VariantCatalogQueryUtilsTest {
 
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
         Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+        individuals.add(catalog.getIndividualManager().create(organizationId, "s1", new Individual("individual1", "individual1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                 Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+        individuals.add(catalog.getIndividualManager().create(organizationId, "s1", new Individual("individual2", "individual2", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                 Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+        individuals.add(catalog.getIndividualManager().create(organizationId, "s1", new Individual("individual3", "individual3", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                 Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+        individuals.add(catalog.getIndividualManager().create(organizationId, "s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                 Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         catalog.getFamilyManager().create(
                 "s1",
@@ -143,18 +143,18 @@ public class VariantCatalogQueryUtilsTest {
 
         createSample("sample1", "individual1");
         createSample("sample2", "individual2");
-        catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create(organizationId, "s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().incrementRelease("p1", sessionId);
+        catalog.getProjectManager().incrementRelease(organizationId, "p1", sessionId);
         file3 = createFile("data/file3.vcf");
         file4 = createFile("data/file4.vcf");
         file5 = createFile("data/file5.vcf", false);
         createSample("sample3", "individual3");
         createSample("sample4", "individual4");
-        catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
-        catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
+        catalog.getCohortManager().create(organizationId, "s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create(organizationId, "s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
 
-        catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
+        catalog.getCohortManager().create(organizationId, "s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
@@ -181,7 +181,7 @@ public class VariantCatalogQueryUtilsTest {
                                 .setName("ADSL")
                 ));
 
-        catalog.getPanelManager().create("s1", myPanel, null, sessionId);
+        catalog.getPanelManager().create(organizationId, "s1", myPanel, null, sessionId);
 
         queryUtils = new VariantCatalogQueryUtils(catalog);
 
@@ -213,13 +213,13 @@ public class VariantCatalogQueryUtilsTest {
                                         "X:1-1000", null))))
                 ))
         ;
-        catalog.getPanelManager().create("s1", myPanelWithRegions, null, sessionId);
+        catalog.getPanelManager().create(organizationId, "s1", myPanelWithRegions, null, sessionId);
 
 
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
-        samples.add(catalog.getSampleManager().create("s1", new Sample().setId(name).setIndividualId(individualName), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
+        samples.add(catalog.getSampleManager().create(organizationId, "s1", new Sample().setId(name).setIndividualId(individualName), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
     }
 
     public static File createFile(String path) throws CatalogException {
@@ -236,7 +236,7 @@ public class VariantCatalogQueryUtilsTest {
                         .setBioformat(File.Bioformat.VARIANT),
                 true, sessionId).first();
         if (indexed) {
-            int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
+            int release = catalog.getProjectManager().get(organizationId, "p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);
@@ -780,7 +780,7 @@ public class VariantCatalogQueryUtilsTest {
                                 new DiseasePanel.Coordinate(assembly, singlePositionRegion, null))))
                 ))
         ;
-        catalog.getPanelManager().create("s1", myPanelWithSinglePositionRegion, null, sessionId);
+        catalog.getPanelManager().create(organizationId, "s1", myPanelWithSinglePositionRegion, null, sessionId);
 
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithSinglePositionRegion.getId())
                 .append(GENE.key(), "BRCA2")
@@ -802,7 +802,7 @@ public class VariantCatalogQueryUtilsTest {
         String geneName = "TSC2";
         Panel myPanelWithXrefGenes = new Panel("myPanelWithXrefGenes", "myPanelWithXrefGenes", 1)
                 .setGenes(Arrays.asList(new GenePanel().setName(geneXref)));
-        catalog.getPanelManager().create("s1", myPanelWithXrefGenes, null, sessionId);
+        catalog.getPanelManager().create(organizationId, "s1", myPanelWithXrefGenes, null, sessionId);
 
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), myPanelWithXrefGenes.getId()), null, cellBaseUtils, sessionId);
         assertEquals(set(geneName), set(query, GENE));
@@ -853,7 +853,7 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void getTriosFromFamily() throws Exception {
 
-        Family f1 = catalog.getFamilyManager().get("s1", "f1", null, sessionId).first();
+        Family f1 = catalog.getFamilyManager().get(organizationId, "s1", "f1", null, sessionId).first();
         VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         StudyMetadata s1 = metadataManager.createStudy("s1");
         List<Integer> sampleIds = metadataManager.registerSamples(s1.getId(), Arrays.asList(

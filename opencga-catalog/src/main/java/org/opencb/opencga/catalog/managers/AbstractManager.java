@@ -91,7 +91,7 @@ public abstract class AbstractManager {
         return catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organization);
     }
 
-    protected ProjectDBAdaptor getProjectDbAdaptor(String organization) throws CatalogDBException {
+    protected ProjectDBAdaptor getProjectDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getCatalogProjectDbAdaptor(organization);
     }
 

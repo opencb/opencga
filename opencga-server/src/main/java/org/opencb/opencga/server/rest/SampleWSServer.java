@@ -82,7 +82,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, true, token);
+            DataResult<Sample> sampleQueryResult = sampleManager.get(organizationId, studyStr, sampleList, query, queryOptions, true, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -107,7 +107,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Sample sample = params.toSample();
 
-            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, token));
+            return createOkResponse(sampleManager.create(organizationId, studyStr, sample, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -121,7 +121,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
             @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
-            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileStr, null, token).first();
+            File pedigreeFile = catalogManager.getFileManager().get(organizationId, studyStr, fileStr, null, token).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, token);
             return createOkResponse(sampleQueryResult);
@@ -192,7 +192,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM) String consequenceTypeCount) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
+            return createOkResponse(sampleManager.search(organizationId, studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -247,7 +247,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(sampleManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(sampleManager.distinct(organizationId, studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

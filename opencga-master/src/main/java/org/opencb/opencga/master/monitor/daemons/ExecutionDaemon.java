@@ -500,7 +500,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
             try {
-                List<String> studyFqnSet = catalogManager.getStudyManager().search(projectFqn, new Query(),
+                List<String> studyFqnSet = catalogManager.getStudyManager().search(organizationId, projectFqn, new Query(),
                                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                         StudyDBAdaptor.QueryParams.FQN.key())), token)
                         .getResults()
@@ -629,11 +629,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (tool.scope() == Tool.Scope.PROJECT) {
                 String projectFqn = job.getStudy().getId()
                         .substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
-                studiesToValidate = catalogManager.getStudyManager().search(projectFqn, new Query(),
+                studiesToValidate = catalogManager.getStudyManager().search(organizationId, projectFqn, new Query(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                 StudyDBAdaptor.QueryParams.FQN.key())), token).getResults();
             } else {
-                studiesToValidate = catalogManager.getStudyManager().get(job.getStudy().getId(),
+                studiesToValidate = catalogManager.getStudyManager().get(organizationId, job.getStudy().getId(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                 StudyDBAdaptor.QueryParams.FQN.key())), token).getResults();
             }
@@ -687,7 +687,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
         File outDir;
         try {
-            outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+            outDir = fileManager.get(organizationId, study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         } catch (CatalogException e) {
             // Directory not found. Will try to create using user's token
             boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
@@ -1012,7 +1012,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             for (URI externalFile : execution.getExternalFiles()) {
                 Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
                 try {
-                    OpenCGAResult<File> search = fileManager.search(job.getStudy().getId(), query, FileManager.INCLUDE_FILE_URI_PATH,
+                    OpenCGAResult<File> search = fileManager.search(organizationId, job.getStudy().getId(), query, FileManager.INCLUDE_FILE_URI_PATH,
                             token);
                     if (search.getNumResults() == 0) {
                         throw new CatalogException("File not found");
@@ -1079,7 +1079,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String templateId = String.valueOf(job.getParams().get("id"));
 
             // We obtain the basic studyPath where we will upload the file temporarily
-            Study study = catalogManager.getStudyManager().get(job.getStudy().getId(),
+            Study study = catalogManager.getStudyManager().get(organizationId, job.getStudy().getId(),
                     new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), token).first();
 
             java.nio.file.Path studyPath = Paths.get(study.getUri());

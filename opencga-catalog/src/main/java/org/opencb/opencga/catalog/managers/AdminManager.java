@@ -106,7 +106,7 @@ public class AdminManager extends AbstractManager {
             }
 
             // Check studyIds exist
-            List<Study> studies = catalogManager.getStudyManager().resolveIds(studyIds, authenticatedUser);
+            List<Study> studies = catalogManager.getStudyManager().resolveIds(organizationId, studyIds, authenticatedUser);
             List<Long> studyUids = new ArrayList<>(studies.size());
             for (Study study : studies) {
                 if (ParamConstants.ADMIN_STUDY_FQN.equals(study.getFqn())) {

@@ -215,27 +215,27 @@ public class FamilyAnalysisTest extends GenericTest {
         int numMembers = sampleNames.size();
         if (numMembers > 0) {
             Sample sample = new Sample().setId(sampleNames.get(0));
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 1) {
             Sample sample = new Sample().setId(sampleNames.get(1));
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 2) {
             Sample sample = new Sample().setId(sampleNames.get(2));
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 3) {
             Sample sample = new Sample().setId(sampleNames.get(3));
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 4) {
             Sample sample = new Sample().setId(sampleNames.get(4));
-            catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
         }
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
@@ -365,7 +365,7 @@ public class FamilyAnalysisTest extends GenericTest {
         List<String> sampleNames = Arrays.asList("granma-" + familyName, "pa-" + familyName, "ma-" + familyName, "child-" + familyName);
         int numMembers = sampleNames.size();
         for (String sampleName : sampleNames) {
-            catalogManager.getSampleManager().create(STUDY, new Sample().setId(sampleName), QueryOptions.empty(), sessionIdUser);
+            catalogManager.getSampleManager().create(organizationId, STUDY, new Sample().setId(sampleName), QueryOptions.empty(), sessionIdUser);
         }
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
@@ -418,10 +418,10 @@ public class FamilyAnalysisTest extends GenericTest {
             throws CatalogException {
         int numMembers = 2;
         Sample sample = new Sample().setId(fatherSample);
-        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
 
         sample = new Sample().setId(childSample);
-        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getSampleManager().create(organizationId, STUDY, sample, QueryOptions.empty(), sessionIdUser);
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");

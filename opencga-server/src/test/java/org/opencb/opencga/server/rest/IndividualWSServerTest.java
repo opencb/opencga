@@ -94,13 +94,13 @@ public class IndividualWSServerTest {
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true),
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, studyId, new Individual().setId("in1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true),
                 sessionId).first().getId();
-        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in2"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
+        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, studyId, new Individual().setId("in2"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
                 .getId();
-        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in3"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
+        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, studyId, new Individual().setId("in3"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
                 .getId();
-        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in4"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
+        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, studyId, new Individual().setId("in4"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
                 .getId();
     }
 
@@ -222,10 +222,10 @@ public class IndividualWSServerTest {
                         new Sample().setId("sample1"),
                         new Sample().setId("sample2")
                 ));
-        OpenCGAWSServer.catalogManager.getIndividualManager().create(String.valueOf(studyId), individual, null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().create(organizationId, String.valueOf(studyId), individual, null, sessionId);
 
         Sample sample = new Sample().setId("sample3");
-        OpenCGAWSServer.catalogManager.getSampleManager().create(String.valueOf(studyId), sample, null, sessionId);
+        OpenCGAWSServer.catalogManager.getSampleManager().create(organizationId, String.valueOf(studyId), sample, null, sessionId);
 
         // Update the individual information to contain a third sample as well
         ObjectMap params = new ObjectMap()
@@ -258,7 +258,7 @@ public class IndividualWSServerTest {
 
         // FIXME: This will have to return an exception once we improve the delete behaviour
 //        thrown.expect(CatalogException.class);
-        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getUid()), null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().get(organizationId, null, String.valueOf((Long) individual.getUid()), null, sessionId);
 
     }
 

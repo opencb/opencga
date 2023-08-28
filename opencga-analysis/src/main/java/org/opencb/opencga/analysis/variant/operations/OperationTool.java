@@ -68,7 +68,7 @@ public abstract class OperationTool extends OpenCgaTool {
 
     protected final String getProjectFqn() throws CatalogException {
         try {
-            return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
+            return catalogManager.getProjectManager().get(organizationId, params.getString(ParamConstants.PROJECT_PARAM),
                     new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
         } catch (CatalogException e) {
             try {
@@ -102,7 +102,7 @@ public abstract class OperationTool extends OpenCgaTool {
     }
 
     protected String getStudyFqn(String study) throws CatalogException {
-        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, getToken()).first().getFqn();
+        return getCatalogManager().getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, getToken()).first().getFqn();
     }
 
     private static boolean isVcfFormat(File.Format format) {

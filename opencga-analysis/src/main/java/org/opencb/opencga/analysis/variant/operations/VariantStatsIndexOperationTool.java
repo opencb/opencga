@@ -26,7 +26,6 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -99,7 +98,7 @@ public class VariantStatsIndexOperationTool extends OperationTool {
 
     private Path getFilePath(String aggregationMapFile) throws CatalogException {
         return Paths.get(getCatalogManager().getFileManager()
-                .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
+                .get(organizationId, studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
     }
 
 }

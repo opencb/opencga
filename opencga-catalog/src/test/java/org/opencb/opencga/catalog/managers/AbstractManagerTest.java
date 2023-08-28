@@ -144,7 +144,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest1k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("name", "fileTest1k");
@@ -162,7 +162,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest05k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "valuable");
         attributes.put("name", "fileTest05k");
@@ -179,7 +179,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
+        File test01k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "other");
         attributes.put("name", "test01k");
@@ -203,52 +203,52 @@ public class AbstractManagerTest extends GenericTest {
                 new Variable("EXTRA", "", "", Variable.VariableType.STRING, "", false, false, Collections.emptyList(), null, 5, "", "", null,
                         Collections.<String, Object>emptyMap())
         ));
-        VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
+        VariableSet vs = catalogManager.getStudyManager().createVariableSet(organizationId, studyFqn, "vs", "vs", true, false, "", null, variables,
                 null, token).first();
 
         Sample sample = new Sample().setId("s_1");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_1 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_1 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_2");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_2 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_2 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_3");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_3 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_3 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_4");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false).append("PHEN", "CONTROL"))));
-        s_4 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_4 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_5");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"))));
-        s_5 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_5 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_6");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_6 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_6 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_7");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_7 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_7 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_8");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_8 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_8 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_9");
         sample.setAnnotationSets(Collections.emptyList());
-        s_9 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_9 = catalogManager.getSampleManager().create(organizationId, studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
                 .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), INCLUDE_RESULT, token);

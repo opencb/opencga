@@ -76,7 +76,7 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), variableSetId, null, sessionId).first();
+            variableSet = catalogManager.getStudyManager().getVariableSet(organizationId, study.getFqn(), variableSetId, null, sessionId).first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             AnnotationUtils.checkVariableSet(variableSet);
@@ -105,7 +105,7 @@ public class CatalogSampleAnnotationsLoader {
             List<Variable> variableList = new ArrayList<>();
             variableList.addAll(variableSet.getVariables());
             String name = pedFile.getName();
-            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), name, name, true, false, "Auto-generated  "
+            variableSet = catalogManager.getStudyManager().createVariableSet(organizationId, study.getFqn(), name, name, true, false, "Auto-generated  "
                             + "VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
                     variableList, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId).getResults().get(0);
             variableSetId = variableSet.getId();
@@ -115,7 +115,7 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().search(study.getFqn(), samplesQuery, null, sessionId).getResults()) {
+        for (Sample sample : catalogManager.getSampleManager().search(organizationId, study.getFqn(), samplesQuery, null, sessionId).getResults()) {
             loadedSamples.put(sample.getId(), sample);
         }
 
@@ -133,7 +133,7 @@ public class CatalogSampleAnnotationsLoader {
                 catalogManager.getSampleManager().update(study.getFqn(), individual.getId(), new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(annotationSet)), options, sessionId);
             } else {
-                DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),
+                DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(organizationId, study.getFqn(),
                         new Sample()
                                 .setId(individual.getId())
                                 .setFileIds(Collections.singletonList(pedFile.getPath()))
@@ -163,7 +163,7 @@ public class CatalogSampleAnnotationsLoader {
 
         //TODO: Create Cohort
 
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(study.getFqn(),
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(organizationId, study.getFqn(),
                 new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), null, sessionId);
         return new DataResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(),
                 sampleMap.size(), sampleDataResult.getResults(), sampleMap.size());

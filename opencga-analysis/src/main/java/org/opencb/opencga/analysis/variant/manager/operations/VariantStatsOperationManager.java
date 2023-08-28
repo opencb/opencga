@@ -179,7 +179,7 @@ public class VariantStatsOperationManager extends OperationManager {
         } else {
             cohortIds = new ArrayList<>(cohorts.size());
             for (String cohort : cohorts) {
-                String cohortId = catalogManager.getCohortManager().get(studyId, cohort,
+                String cohortId = catalogManager.getCohortManager().get(organizationId, studyId, cohort,
                         new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 cohortIds.add(cohortId);
             }
@@ -209,7 +209,7 @@ public class VariantStatsOperationManager extends OperationManager {
         Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
         for (String cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohortManager()
-                    .get(studyFqn, cohortId, CatalogStorageMetadataSynchronizer.COHORT_QUERY_OPTIONS, sessionId).first();
+                    .get(organizationId, studyFqn, cohortId, CatalogStorageMetadataSynchronizer.COHORT_QUERY_OPTIONS, sessionId).first();
             switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
@@ -256,7 +256,7 @@ public class VariantStatsOperationManager extends OperationManager {
     private List<String> createCohortsIfNeeded(String studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
         List<String> cohorts = new ArrayList<>();
         // Silent query, so it does not fail for missing cohorts
-        Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
+        Set<String> catalogCohorts = catalogManager.getCohortManager().get(organizationId, studyId, new ArrayList<>(cohortNames),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                         CohortDBAdaptor.QueryParams.ID.key(),
                         CohortDBAdaptor.QueryParams.UID.key(),

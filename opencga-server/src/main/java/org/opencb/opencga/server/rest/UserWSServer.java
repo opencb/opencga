@@ -204,7 +204,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ParamUtils.checkIsSingleID(userId);
             query.remove("user");
             query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            return createOkResponse(catalogManager.getProjectManager().search(query, queryOptions, token));
+            return createOkResponse(catalogManager.getProjectManager().search(organizationId, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

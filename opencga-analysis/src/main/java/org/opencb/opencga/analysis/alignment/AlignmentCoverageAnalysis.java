@@ -65,7 +65,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         OpenCGAResult<File> fileResult;
         try {
             logger.info("{}: checking file {}", ID, coverageParams.getFile());
-            fileResult = catalogManager.getFileManager().get(getStudy(), coverageParams.getFile(), QueryOptions.empty(), getToken());
+            fileResult = catalogManager.getFileManager().get(organizationId, getStudy(), coverageParams.getFile(), QueryOptions.empty(), getToken());
         } catch (CatalogException e) {
             throw new ToolException("Error accessing file '" + coverageParams.getFile() + "' of the study " + getStudy() + "'", e);
         }
@@ -143,7 +143,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             Path outputCatalogPath = Paths.get(bamCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
             OpenCGAResult<File> fileResult;
             try {
-                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(),
+                fileResult = catalogManager.getFileManager().get(organizationId, getStudy(), outputCatalogPath.toString(), QueryOptions.empty(),
                         getToken());
                 if (fileResult.getNumResults() <= 0) {
                     isLinked = false;

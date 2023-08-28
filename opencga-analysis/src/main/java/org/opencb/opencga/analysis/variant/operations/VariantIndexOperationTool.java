@@ -162,7 +162,7 @@ public class VariantIndexOperationTool extends OperationTool {
                     return;
                 }
                 OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getCatalogManager().getFileManager()
-                        .search(study,
+                        .search(organizationId, study,
                                 new Query(FileDBAdaptor.QueryParams.URI.key(), inputFiles),
                                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), getToken());
 

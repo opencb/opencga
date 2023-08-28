@@ -42,7 +42,7 @@ public abstract class AbstractStorageMigrator {
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
-        List<Project> projects = catalogManager.getProjectManager().search(new Query(), new QueryOptions(
+        List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(
                 QueryOptions.INCLUDE, Arrays.asList(
                 ProjectDBAdaptor.QueryParams.NAME.key(),
                 ProjectDBAdaptor.QueryParams.ID.key(),

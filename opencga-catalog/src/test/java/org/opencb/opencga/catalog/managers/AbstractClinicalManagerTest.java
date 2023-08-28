@@ -92,7 +92,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 null, null, null, token).first();
         studyFqn = study.getFqn();
 
-        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, getFamily(), QueryOptions.empty(), token).first();
 //
         // Clinical analysis
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -102,7 +102,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setProband(getChild())
                 .setFamily(getFamily());
 //
-        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis,
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, auxClinicalAnalysis,
                         new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 //
@@ -112,7 +112,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         // Clinical analysis for exomiser test (SINGLE, manuel)
         //---------------------------------------------------------------------
 
-        catalogManager.getIndividualManager().create(studyFqn, getMamuel(), QueryOptions.empty(), token).first();
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, getMamuel(), QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
                 .setId(CA_ID2).setDescription("My description - exomiser").setType(ClinicalAnalysis.Type.SINGLE)
@@ -121,7 +121,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setProband(getMamuel());
 
         clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager()
-                .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
+                .create(organizationId, studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 
         catalogUploadFile("/biofiles/exomiser.vcf.gz");
@@ -157,7 +157,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
                 Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
                 Collections.emptyMap());
-        catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
+        catalogManager.getFamilyManager().create(organizationId, studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
                 .setId(CA_ID3)
@@ -168,7 +168,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setProband(hg005Individual)
                 .setFamily(chineseFamily);
 
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
 
         catalogUploadFile("/biofiles/HG004.1k.vcf.gz");
