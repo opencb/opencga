@@ -7,7 +7,7 @@ import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

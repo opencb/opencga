@@ -34,21 +34,18 @@ public class VariantAnnotatorByApiKeyTest {
         storageConfiguration = StorageConfiguration.load(StorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml"), "yml");
         String url = "https://uk.ws.zettagenomics.com/cellbase/";
         storageConfiguration.getCellbase().setUrl(url);
-        storageConfiguration.getCellbase().setDataRelease("1");
-        storageConfiguration.getCellbase().setVersion("v5.3");
+        storageConfiguration.getCellbase().setDataRelease("3");
+        storageConfiguration.getCellbase().setVersion("v5.4");
         storageConfiguration.getCellbase().setApiKey(null);
 
         CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
-        try {
-            Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
-        } catch (RuntimeException e) {
-            Assume.assumeNoException("Cellbase '" + url + "' not available", e);
-        }
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.4"));
+
+        projectMetadata = new ProjectMetadata("hsapiens", "grch38", "3", 1, null, null, null);
     }
 
     @Test
     public void testNoApiKey() throws Exception {
-        projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
 
@@ -66,7 +63,7 @@ public class VariantAnnotatorByApiKeyTest {
         Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
 
         storageConfiguration.getCellbase().setApiKey(apiKey);
-        projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
+
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
         assertEquals(Collections.singletonList("cosmic"), annotator.getVariantAnnotationMetadata().getPrivateSources());
@@ -85,7 +82,7 @@ public class VariantAnnotatorByApiKeyTest {
         Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
 
         storageConfiguration.getCellbase().setApiKey(apiKey);
-        projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
+
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);
         assertEquals(Collections.singletonList("hgmd"), annotator.getVariantAnnotationMetadata().getPrivateSources());
@@ -105,7 +102,6 @@ public class VariantAnnotatorByApiKeyTest {
 
         storageConfiguration.getCellbase().setApiKey(apiKey);
 
-        projectMetadata = new ProjectMetadata("hsapiens", "grch37", "1", 1, null, null, null);
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
         options.put(ANNOTATOR_CELLBASE_INCLUDE.key(), "clinical");
         CellBaseRestVariantAnnotator annotator = new CellBaseRestVariantAnnotator(storageConfiguration, projectMetadata, options);

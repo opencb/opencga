@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -111,9 +112,9 @@ public class VariantAnnotatorTest {
     }
 
     @Test
-    public void useCellBaseTokens() throws VariantAnnotatorException {
+    public void useCellBaseApiKeys() throws VariantAnnotatorException {
         storageConfiguration.getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
-        storageConfiguration.getCellbase().setVersion("task-3808");
+        storageConfiguration.getCellbase().setVersion("v5.4");
         storageConfiguration.getCellbase().setDataRelease("3");
 
         VariantAnnotator variantAnnotator = null;
@@ -126,6 +127,8 @@ public class VariantAnnotatorTest {
         }
         assumeTrue(variantAnnotator != null);
 
+        String apiKey;
+
         // No token
         List<VariantAnnotation> results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
         assertEquals(1, results.size());
@@ -134,41 +137,40 @@ public class VariantAnnotatorTest {
         assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
 
         // Using COSMIC token
-        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjQ2Nn0.ByfPJn8Lkh5Sow4suRZcOqVxvWZRmTBBNLDzHEIZQ5U");
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
-        results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
-        assertEquals(1, results.size());
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
-        assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
+        apiKey = System.getenv("CELLBASE_COSMIC_APIKEY");
+        if (StringUtils.isNotEmpty(apiKey)) {
+            storageConfiguration.getCellbase().setApiKey(apiKey);
+            variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
+            results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
+            assertEquals(1, results.size());
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
+            assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
+        }
 
         // Using HGMD token
-        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2NzU4NzI1MDd9.f3JgVRt7_VrifNWTaRMW3aQfrKbtDbIxlzoenJRYJo0");
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
-        results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
-        assertEquals(1, results.size());
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
-        assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
-
-        // Using COSMIC = HGMD token
-        storageConfiguration.getCellbase().setApiKey("eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImNvc21pYyI6OTIyMzM3MjAzNjg1NDc3NTgwNywiaGdtZCI6OTIyMzM3MjAzNjg1NDc3NTgwN30sInZlcnNpb24iOiIxLjAiLCJzdWIiOiJaRVRUQSIsImlhdCI6MTY3NTg3MjUyN30.NCCFc4SAhjUsN5UU0wXGY6nCZx8jLglvaO1cNZYI0u4");
-        variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
-        results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
-        assertEquals(1, results.size());
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
-        assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
-    }
-
-    private Set<String> getSources(VariantAnnotation variantAnnotation) {
-        Set<String> sources = new HashSet<>();
-        if (variantAnnotation != null && CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
-            for (EvidenceEntry entry : variantAnnotation.getTraitAssociation()) {
-                sources.add(entry.getSource().getName());
-            }
+        apiKey = System.getenv("CELLBASE_HGMD_APIKEY");
+        if (StringUtils.isNotEmpty(apiKey)) {
+            storageConfiguration.getCellbase().setApiKey(apiKey);
+            variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
+            results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
+            assertEquals(1, results.size());
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
+            assertFalse(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
         }
-        return sources;
+
+        // Using COSMIC + HGMD token
+        apiKey = System.getenv("CELLBASE_COSMIC_HGMD_APIKEY");
+        if (StringUtils.isNotEmpty(apiKey)) {
+            storageConfiguration.getCellbase().setApiKey(apiKey);
+            variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
+            results = variantAnnotator.annotate(Collections.singletonList(new Variant("10:113588287:G:A")));
+            assertEquals(1, results.size());
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("cosmic")));
+            assertTrue(results.get(0).getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
+        }
     }
 
     public static class TestCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {
