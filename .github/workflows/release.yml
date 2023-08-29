@@ -42,3 +42,4 @@ jobs:
       file: |
         opencga-client-${{ needs.build.outputs.version }}.tar.gz
         clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
+
