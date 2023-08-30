@@ -1,6 +1,8 @@
 package org.opencb.opencga.core.cellbase;
 
+import io.jsonwebtoken.JwtException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
@@ -8,6 +10,7 @@ import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.token.DataAccessTokenManager;
 import org.opencb.cellbase.core.token.DataAccessTokenSources;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.VersionUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,6 +50,7 @@ public class CellBaseValidator {
                 toCellBaseSpeciesName(species),
                 assembly,
                 cellBaseConfiguration.getDataRelease(),
+                cellBaseConfiguration.getToken(),
                 cellBaseConfiguration.toClientConfiguration());
     }
 
@@ -136,7 +141,7 @@ public class CellBaseValidator {
         validate(false);
     }
 
-    public CellBaseConfiguration validate(boolean autoComplete) throws IOException {
+    private CellBaseConfiguration validate(boolean autoComplete) throws IOException {
         CellBaseConfiguration cellBaseConfiguration = getCellBaseConfiguration();
         String inputVersion = getVersion();
         CellBaseDataResponse<SpeciesProperties> species;
@@ -189,6 +194,38 @@ public class CellBaseValidator {
                 }
             }
         }
+        if (getToken() != null) {
+            // Check it's supported
+            if (!supportsToken(serverVersion)) {
+                throw new IllegalArgumentException("Token not supported for cellbase "
+                        + "url: '" + getURL() + "'"
+                        + ", version: '" + inputVersion + "'");
+            }
+
+            // Check it's an actual token
+            DataAccessTokenManager tokenManager = new DataAccessTokenManager();
+            try {
+                tokenManager.decode(getToken());
+            } catch (JwtException e) {
+                throw new IllegalArgumentException("Malformed token for cellbase "
+                        + "url: '" + getURL() + "'"
+                        + ", version: '" + inputVersion
+                        + "', species: '" + getSpecies()
+                        + "', assembly: '" + getAssembly() + "'");
+            }
+
+            // Check it's a valid token
+            CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
+                    .getAnnotationByVariantIds(Collections.singletonList("1:1:N:C"), new QueryOptions(), true);
+            if (response.firstResult() == null) {
+                throw new IllegalArgumentException("Invalid token for cellbase "
+                        + "url: '" + getURL() + "'"
+                        + ", version: '" + inputVersion
+                        + "', species: '" + getSpecies()
+                        + "', assembly: '" + getAssembly() + "'");
+            }
+        }
+
         return cellBaseConfiguration;
     }
 
@@ -229,6 +266,11 @@ public class CellBaseValidator {
     public static boolean supportsDataReleaseActiveByDefaultIn(String serverVersion) {
         // Data Release Default Active In Version support starts at version 5.5.0 , TASK-4157
         return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
+    }
+
+    public static boolean supportsToken(String serverVersion) {
+        // Tokens support starts at version 5.4.0
+        return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
     public String getVersionFromServerMajor() throws IOException {
