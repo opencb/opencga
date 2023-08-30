@@ -1783,17 +1783,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 INCLUDE_RESULT, token).first().getId();
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId1, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), token);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId2, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId2, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true)))),
                 QueryOptions.empty(), token);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId3, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId3, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), token);

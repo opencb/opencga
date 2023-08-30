@@ -76,7 +76,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             String samples,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
-        return run(() -> individualManager.create(studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
+        return run(() -> individualManager.create(organizationId, studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
     }
 
     @GET
@@ -124,7 +124,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Pedigree degree", defaultValue = "2") @QueryParam("degree") Integer degree) {
         try {
             int degreeCopy = degree != null ? degree : 2;
-            return createOkResponse(individualManager.relatives(studyStr, individualStr, degreeCopy, queryOptions, token));
+            return createOkResponse(individualManager.relatives(organizationId, studyStr, individualStr, degreeCopy, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -324,7 +324,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             List<String> individualIds = getIdList(individualStr);
 
-            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualIds, updateParams, true,
+            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(organizationId, studyStr, individualIds, updateParams, true,
                     queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -373,7 +373,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
 
-            return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(studyStr, individualStr, annotationSetId,
+            return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(organizationId, studyStr, individualStr, annotationSetId,
                     updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -392,7 +392,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of individual ids") @PathParam("individuals") String individuals) {
         try {
-            return createOkResponse(individualManager.delete(studyStr, getIdList(individuals), queryOptions, true, token));
+            return createOkResponse(individualManager.delete(organizationId, studyStr, getIdList(individuals), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -410,7 +410,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(individualIdsStr);
-            return createOkResponse(individualManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(individualManager.getAcls(organizationId, studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -433,7 +433,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             IndividualAclParams aclParams = new IndividualAclParams(params.getSample(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getIndividual()) ? Collections.emptyList() : getIdList(params.getIndividual(), false);
-            return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, action, propagate, token));
+            return createOkResponse(individualManager.updateAcl(organizationId, studyStr, idList, memberId, aclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -473,7 +473,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
+            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(organizationId, studyStr, query, queryOptions, defaultStats,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

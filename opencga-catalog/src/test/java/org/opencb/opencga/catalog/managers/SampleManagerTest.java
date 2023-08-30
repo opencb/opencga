@@ -829,11 +829,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         Individual individual = new Individual()
                 .setId("proband")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
-        catalogManager.getIndividualManager().create(studyFqn, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(),
                 token);
 
         individual = new Individual().setId("father");
-        catalogManager.getIndividualManager().create(studyFqn, individual, Arrays.asList("sample3", "sample4"), QueryOptions.empty(),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, Arrays.asList("sample3", "sample4"), QueryOptions.empty(),
                 token);
 
         Family family = new Family().setId("family");
@@ -1498,7 +1498,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "Luke");
-        catalogManager.getIndividualManager().update(studyFqn, individualId, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
         DataResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(organizationId, studyFqn, individualId,
@@ -1508,7 +1508,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         annotations.put("NAME", "Lucas");
         thrown.expect(CatalogException.class);
         thrown.expectMessage("unique");
-        catalogManager.getIndividualManager().update(studyFqn, individualId, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
     }
@@ -1878,7 +1878,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         annotationSet.getAnnotations().remove("HEIGHT");
 
         // Update annotation set
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
         catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
@@ -1899,7 +1899,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         check.accept(ind.getAnnotationSets().get(0));
 
         // Call again to the update to check that nothing changed
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
         check.accept(ind.getAnnotationSets().get(0));
@@ -1908,7 +1908,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         annotationSet.getAnnotations().put("NAME", "SAMPLE 1");
         annotationSet.getAnnotations().remove("EXTRA");
 
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
         catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
@@ -1929,7 +1929,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         // Update non-mandatory annotation
         annotationSet.getAnnotations().put("EXTRA", "extra");
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(),
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
         catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
@@ -1951,7 +1951,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         // Update non-mandatory annotation
         Map<String, Object> annotationUpdate = new ObjectMap("EXTRA", "extraa");
         // Action now is ADD, we only want to change that annotation
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), annotationSet.getId(), annotationUpdate,
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(), annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(), token);
         catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(), token);
@@ -1971,7 +1971,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), "blabla", annotationUpdate,
+        catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), "blabla", annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(), token);
     }
 
@@ -2193,7 +2193,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("OPENCGA_INDIVIDUAL"));
 
-        catalogManager.getIndividualManager().updateAcl(studyFqn, Collections.emptyList(), "user2",
+        catalogManager.getIndividualManager().updateAcl(organizationId, studyFqn, Collections.emptyList(), "user2",
                 new IndividualAclParams(sampleId1, IndividualPermissions.VIEW.name()), SET, false, token);
         sample = catalogManager.getSampleManager().get(organizationId, studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true),
                 sessionIdUser2).first();
@@ -2526,11 +2526,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(organizationId, studyFqn, sample2, QueryOptions.empty(), token);
 
         Individual individual = new Individual().setId("individual");
-        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.singletonList(sample.getId()),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, Collections.singletonList(sample.getId()),
                 QueryOptions.empty(), token);
 
         Individual individual2 = new Individual().setId("individual2");
-        catalogManager.getIndividualManager().create(studyFqn, individual2, Collections.singletonList(sample2.getId()),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual2, Collections.singletonList(sample2.getId()),
                 QueryOptions.empty(), token);
 
         Family family = new Family().setId("family1");

@@ -1412,7 +1412,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             // Validate the individuals can be created and are valid
             for (Individual individual : family.getMembers()) {
-                catalogManager.getIndividualManager().validateNewIndividual(study, individual, null, userId, false);
+                catalogManager.getIndividualManager().validateNewIndividual(organizationId, study, individual, null, userId, false);
                 memberList.add(individual);
             }
 

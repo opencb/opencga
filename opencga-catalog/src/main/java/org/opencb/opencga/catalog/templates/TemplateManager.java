@@ -302,7 +302,7 @@ public class TemplateManager {
                     individual.setId(null);
 
                     logger.info("Update individual '{}'", individual.getId());
-                    catalogManager.getIndividualManager().update(studyFqn, individualId, individual, QueryOptions.empty(), token);
+                    catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, individual, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -329,7 +329,7 @@ public class TemplateManager {
                                 .setMother(individual.getMother());
                         logger.info("Updating individual '{}' parents", individual.getId());
 
-                        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, QueryOptions.empty(),
+                        catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, QueryOptions.empty(),
                                 token);
 
                         count++;

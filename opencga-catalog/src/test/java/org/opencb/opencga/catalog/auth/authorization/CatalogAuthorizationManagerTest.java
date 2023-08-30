@@ -202,9 +202,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("all").setSamples(Arrays.asList(smp1, smp2, smp3)),
                 QueryOptions.empty(), ownerSessionId);
 
-        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId(ind1), Collections.singletonList(smp1.getId()),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId(ind1), Collections.singletonList(smp1.getId()),
                 QueryOptions.empty(), ownerSessionId);
-        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId(ind2), Collections.singletonList(smp2.getId()),
+        catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId(ind2), Collections.singletonList(smp2.getId()),
                 QueryOptions.empty(), ownerSessionId);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp1.getId()), externalUser, allSamplePermissions,

@@ -330,30 +330,30 @@ public class FamilyAnalysisTest extends GenericTest {
 
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
-        catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
+        catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
                 QueryOptions.empty(), sessionIdUser);
 
         if (numMembers > 1) {
-            catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
+            catalogManager.getIndividualManager().update(organizationId, STUDY, relMother.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(1)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 2) {
-            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(2)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 3) {
-            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(3)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 4) {
-            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(4)))), QueryOptions.empty(), sessionIdUser);
         }
@@ -460,12 +460,12 @@ public class FamilyAnalysisTest extends GenericTest {
 
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
-        catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
+        catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(fatherSample))),
                 QueryOptions.empty(), sessionIdUser);
 
 
-        catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
+        catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(childSample))),
                 QueryOptions.empty(), sessionIdUser);
 

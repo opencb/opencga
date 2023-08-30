@@ -177,7 +177,7 @@ public class IndividualWSServerTest {
 
         // We update to make the individual in1 be the child of in2
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather(new IndividualReferenceParam("in2", ""));
-        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1",
+        OpenCGAWSServer.catalogManager.getIndividualManager().update(organizationId, String.valueOf(studyId), "in1",
                 individualUpdateParams, QueryOptions.empty(), sessionId);
         // and query again. We look for an individual with father "in2"
         json = webTarget.path("individuals").path("search")

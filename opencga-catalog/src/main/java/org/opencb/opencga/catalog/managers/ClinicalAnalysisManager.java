@@ -557,7 +557,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             if (clinicalAnalysis.getInterpretation() != null) {
-                catalogManager.getInterpretationManager().validateNewInterpretation(study, clinicalAnalysis.getInterpretation(),
+                catalogManager.getInterpretationManager().validateNewInterpretation(organizationId, study, clinicalAnalysis.getInterpretation(),
                         clinicalAnalysis, userId);
                 clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
                         "Create interpretation '" + clinicalAnalysis.getInterpretation().getId() + "'", TimeUtils.getTime()));

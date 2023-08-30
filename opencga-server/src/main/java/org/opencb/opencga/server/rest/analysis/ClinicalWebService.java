@@ -448,7 +448,7 @@ public class ClinicalWebService extends AnalysisWebService {
             if (setAs == null) {
                 setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
             }
-            return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalId, params.toClinicalInterpretation(), setAs,
+            return createOkResponse(catalogInterpretationManager.create(organizationId, studyStr, clinicalId, params.toClinicalInterpretation(), setAs,
                     queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -511,7 +511,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, setAs, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(organizationId, studyStr, clinicalId, interpretationId, params, setAs, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -527,7 +527,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = "Version to revert to", required = true) @QueryParam("version") int version) {
         try {
-            return createOkResponse(catalogInterpretationManager.revert(studyStr, clinicalId, interpretationId, version, token));
+            return createOkResponse(catalogInterpretationManager.revert(organizationId, studyStr, clinicalId, interpretationId, version, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -544,7 +544,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one")
             @QueryParam("setAsPrimary") String newPrimaryInterpretation) {
         try {
-            return createOkResponse(catalogInterpretationManager.delete(studyStr, clinicalId, getIdList(interpretations), true, token));
+            return createOkResponse(catalogInterpretationManager.delete(organizationId, studyStr, clinicalId, getIdList(interpretations), true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -559,7 +559,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId) {
         try {
-            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, getIdList(interpretations), token));
+            return createOkResponse(catalogInterpretationManager.clear(organizationId, studyStr, clinicalId, getIdList(interpretations), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

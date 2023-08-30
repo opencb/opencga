@@ -1705,7 +1705,7 @@ public class StudyManager extends AbstractManager {
                 sessionId));
         result.put("file", catalogManager.getFileManager().facet(organizationId, studyStr, new Query(), setFacetFields(fileFields), defaultStats,
                 sessionId));
-        result.put("individual", catalogManager.getIndividualManager().facet(studyStr, new Query(), setFacetFields(individualFields),
+        result.put("individual", catalogManager.getIndividualManager().facet(organizationId, studyStr, new Query(), setFacetFields(individualFields),
                 defaultStats, sessionId));
         result.put("family", catalogManager.getFamilyManager().facet(organizationId, studyStr, new Query(), setFacetFields(familyFields), defaultStats,
                 sessionId));

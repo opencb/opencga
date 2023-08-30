@@ -120,7 +120,7 @@ public class InterpretationManagerTest extends GenericTest {
     @Test
     public void deleteLockedInterpretationTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
-        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), new Interpretation().setLocked(true),
+        catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(), new Interpretation().setLocked(true),
                 ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(organizationId, STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
 
@@ -130,7 +130,7 @@ public class InterpretationManagerTest extends GenericTest {
 
         // Try to delete interpretation
         try {
-            catalogManager.getInterpretationManager().delete(STUDY, ca.getId(), Collections.singletonList(ca.getInterpretation().getId()),
+            catalogManager.getInterpretationManager().delete(organizationId, STUDY, ca.getId(), Collections.singletonList(ca.getInterpretation().getId()),
                     sessionIdUser);
             fail("Interpretation is locked so it should not allow this");
         } catch (CatalogException e) {
@@ -138,14 +138,14 @@ public class InterpretationManagerTest extends GenericTest {
         }
 
         // Unlock interpretation
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getInterpretation().getId(),
+        catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getInterpretation().getId(),
                 new InterpretationUpdateParams().setLocked(false), null, QueryOptions.empty(), sessionIdUser);
         interpretation = catalogManager.getInterpretationManager().get(organizationId, STUDY, ca.getInterpretation().getId(),
                 QueryOptions.empty(), sessionIdUser).first();
         assertFalse(interpretation.isLocked());
 
         // Delete interpretation
-        catalogManager.getInterpretationManager().delete(STUDY, ca.getId(), Collections.singletonList(ca.getInterpretation().getId()),
+        catalogManager.getInterpretationManager().delete(organizationId, STUDY, ca.getId(), Collections.singletonList(ca.getInterpretation().getId()),
                 sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(organizationId, STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNull(ca.getInterpretation());
@@ -154,17 +154,17 @@ public class InterpretationManagerTest extends GenericTest {
     @Test
     public void automaticallyLockInterpretationTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
-        Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(),
                 new Interpretation(),  ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         assertTrue(StringUtils.isEmpty(interpretation.getStatus().getId()));
         assertFalse(interpretation.isLocked());
 
-        interpretation = catalogManager.getInterpretationManager().update(STUDY, ca.getId(), interpretation.getId(),
+        interpretation = catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), interpretation.getId(),
                 new InterpretationUpdateParams().setStatus(new StatusParam("READY")), null, INCLUDE_RESULT, sessionIdUser).first();
         assertEquals("READY", interpretation.getStatus().getId());
         assertTrue(interpretation.isLocked());
 
-        interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+        interpretation = catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(),
                 new Interpretation()
                         .setStatus(new Status("REJECTED", "", "", "")),
                 ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
@@ -176,11 +176,11 @@ public class InterpretationManagerTest extends GenericTest {
     public void interpretationLockedTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
-        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), new Interpretation().setLocked(true),
+        catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(), new Interpretation().setLocked(true),
                 ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.SECONDARY,
+        catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.SECONDARY,
                 QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.SECONDARY,
+        catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.SECONDARY,
                 QueryOptions.empty(), sessionIdUser);
 
         ca = catalogManager.getClinicalAnalysisManager().get(organizationId, STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -191,7 +191,7 @@ public class InterpretationManagerTest extends GenericTest {
 
         // Try to update interpretation 1
         try {
-            catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getInterpretation().getId(),
+            catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getInterpretation().getId(),
                     new InterpretationUpdateParams().setDescription("blabla"), null, QueryOptions.empty(), sessionIdUser);
             fail("Interpretation is locked so it should not allow this");
         } catch (CatalogException e) {
@@ -199,14 +199,14 @@ public class InterpretationManagerTest extends GenericTest {
         }
 
         // Update interpretation 2
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
+        catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
                 new InterpretationUpdateParams().setDescription("blabla"), null, QueryOptions.empty(), sessionIdUser);
         Interpretation interpretation2 = catalogManager.getInterpretationManager().get(organizationId, STUDY,
                 ca.getSecondaryInterpretations().get(0).getId(), QueryOptions.empty(), sessionIdUser).first();
         assertEquals("blabla", interpretation2.getDescription());
         assertFalse(interpretation2.isLocked());
 
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
+        catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
                 new InterpretationUpdateParams().setDescription("bloblo").setLocked(true), null, QueryOptions.empty(), sessionIdUser);
         interpretation2 = catalogManager.getInterpretationManager().get(organizationId, STUDY,
                 ca.getSecondaryInterpretations().get(0).getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -215,7 +215,7 @@ public class InterpretationManagerTest extends GenericTest {
 
         // Try to lock again and update interpretation 2
         try {
-            catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
+            catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
                     new InterpretationUpdateParams().setDescription("blabla").setLocked(true), null, QueryOptions.empty(), sessionIdUser);
             fail("Interpretation was already locked so it should not allow this");
         } catch (CatalogException e) {
@@ -223,7 +223,7 @@ public class InterpretationManagerTest extends GenericTest {
         }
 
         // Unlock and update interpretation 2
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
+        catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
                 new InterpretationUpdateParams().setDescription("blabla").setLocked(false), null, QueryOptions.empty(), sessionIdUser);
         interpretation2 = catalogManager.getInterpretationManager().get(organizationId, STUDY,
                 ca.getSecondaryInterpretations().get(0).getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -231,7 +231,7 @@ public class InterpretationManagerTest extends GenericTest {
         assertFalse(interpretation2.isLocked());
 
         // Lock and update interpretation 2
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
+        catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getSecondaryInterpretations().get(0).getId(),
                 new InterpretationUpdateParams().setDescription("bloblo").setLocked(true), null, QueryOptions.empty(), sessionIdUser);
         interpretation2 = catalogManager.getInterpretationManager().get(organizationId, STUDY,
                 ca.getSecondaryInterpretations().get(0).getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -250,7 +250,7 @@ public class InterpretationManagerTest extends GenericTest {
 
         // Try to unlock interpretation 1
         try {
-            catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getInterpretation().getId(),
+            catalogManager.getInterpretationManager().update(organizationId, STUDY, ca.getId(), ca.getInterpretation().getId(),
                     new InterpretationUpdateParams().setLocked(false), null, QueryOptions.empty(), sessionIdUser);
             fail("Case is locked so it should not allow this");
         } catch (CatalogException e) {
@@ -291,7 +291,7 @@ public class InterpretationManagerTest extends GenericTest {
         // Create interpretation with just panel1
         InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams()
                 .setPanels(panelReferenceParamList.subList(0, 1));
-        Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(),
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(organizationId, STUDY, ca.getId(),
                 interpretationCreateParams.toClinicalInterpretation(), ParamUtils.SaveInterpretationAs.PRIMARY,
                 new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionIdUser).first();
         assertEquals(1, interpretation.getPanels().size());

@@ -183,7 +183,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             qualityControl = executor.getQualityControl();
             if (qualityControl != null) {
                 IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setQualityControl(qualityControl);
-                catalogManager.getIndividualManager().update(getStudyId(), individualId, individualUpdateParams, QueryOptions.empty(),
+                catalogManager.getIndividualManager().update(organizationId, getStudyId(), individualId, individualUpdateParams, QueryOptions.empty(),
                         token);
             }
         } catch (CatalogException e) {
