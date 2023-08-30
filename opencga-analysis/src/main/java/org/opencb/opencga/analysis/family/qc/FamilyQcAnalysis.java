@@ -128,7 +128,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         try {
             qualityControl = executor.getQualityControl();
             if (qualityControl != null) {
-                catalogManager.getFamilyManager().update(getStudyId(), familyId, new FamilyUpdateParams().setQualityControl(qualityControl),
+                catalogManager.getFamilyManager().update(organizationId, getStudyId(), familyId, new FamilyUpdateParams().setQualityControl(qualityControl),
                         QueryOptions.empty(), token);
             }
         } catch (CatalogException e) {

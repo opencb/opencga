@@ -355,7 +355,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
     protected void updateCohorts(String studyId, Collection<String> cohortIds, String sessionId, String status, String message)
             throws CatalogException {
         for (String cohortId : cohortIds) {
-            catalogManager.getCohortManager().setStatus(studyId, cohortId, status, message, sessionId);
+            catalogManager.getCohortManager().setStatus(organizationId, studyId, cohortId, status, message, sessionId);
         }
     }
 

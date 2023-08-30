@@ -183,11 +183,11 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, inputFile, sessionId);
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("The status is READY");
-        catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
+        catalogManager.getFileManager().unlink(organizationId, study.getFqn(), inputFile.getId(), sessionId);
     }
 
     @Test
@@ -320,7 +320,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantFileIndexerOperationManager.SKIP_INDEXED_FILES, true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileInternalVariantIndex(getFile(1),
+        catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, getFile(1),
                 FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMING)), sessionId);
 
         // Expect both files to be loaded
@@ -334,7 +334,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantStorageOptions.RESUME.key(), true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileInternalVariantIndex(getFile(1), new FileInternalVariantIndex(new VariantIndexStatus(VariantIndexStatus.TRANSFORMING), 0, null), sessionId);
+        catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, getFile(1), new FileInternalVariantIndex(new VariantIndexStatus(VariantIndexStatus.TRANSFORMING), 0, null), sessionId);
 
         // Expect only the first file to be loaded
         indexFiles(files, files, queryOptions, outputId);
@@ -416,7 +416,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 outdir, queryOptions, sessionId);
 
         File transformFile = null;
-        create(studyId2, catalogManager.getFileManager().getUri(getFile(0)));
+        create(studyId2, catalogManager.getFileManager().getUri(organizationId, getFile(0)));
         for (java.io.File file : Paths.get(UriUtils.createUri(outdir)).toFile().listFiles()) {
             File f = create(studyId2, file.toURI());
             if (VariantReaderUtils.isTransformedVariants(file.toString())) {
@@ -425,7 +425,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
             }
         }
         assertNotNull(transformFile);
-        catalogManager.getFileManager().matchUpVariantFiles(studyId2, singletonList(transformFile), sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(organizationId, studyId2, singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true);

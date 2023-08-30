@@ -152,7 +152,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 throw new CatalogParameterException("Missing content of the TSV file");
             }
 
-            OpenCGAResult<File> result = catalogManager.getFileManager().create(studyStr,
+            OpenCGAResult<File> result = catalogManager.getFileManager().create(organizationId, studyStr,
                     new FileCreateParams()
                             .setContent(tsvParams.getContent())
                             .setPath(path)

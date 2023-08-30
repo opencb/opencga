@@ -82,7 +82,7 @@ public class FileScannerTest {
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
+        folder = catalogManager.getFileManager().createFolder(organizationId, study.getId(), Paths.get("data/test/folder/").toString(),
                 true, null, QueryOptions.empty(), sessionIdUser).first();
 
         directory = catalogManagerExternalResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();
@@ -119,7 +119,7 @@ public class FileScannerTest {
     public void testDeleteExisting() throws IOException, CatalogException {
         DataResult<File> queryResult;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            queryResult = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
         }
         File file = queryResult.first();
@@ -144,11 +144,11 @@ public class FileScannerTest {
         // Create and register file1.txt and s/file2.txt
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "file1.txt"), false, true, true, sessionIdUser).first();
         }
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, sessionIdUser).first();
         }
 

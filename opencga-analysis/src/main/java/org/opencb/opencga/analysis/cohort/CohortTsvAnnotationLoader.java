@@ -36,6 +36,6 @@ public class CohortTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public void addAnnotationSet(String entryId, AnnotationSet annotationSet, QueryOptions options) throws CatalogException {
-        catalogManager.getCohortManager().addAnnotationSet(study, entryId, annotationSet, options, token);
+        catalogManager.getCohortManager().addAnnotationSet(organizationId, study, entryId, annotationSet, options, token);
     }
 }

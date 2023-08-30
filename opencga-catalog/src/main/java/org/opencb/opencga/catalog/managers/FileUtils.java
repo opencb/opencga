@@ -83,7 +83,7 @@ public class FileUtils {
         switch (file.getInternal().getStatus().getId()) {
             case FileStatus.READY:
             case FileStatus.MISSING: {
-                URI fileUri = catalogManager.getFileManager().getUri(file);
+                URI fileUri = catalogManager.getFileManager().getUri(organizationId, file);
                 IOManager ioManager;
                 try {
                     ioManager = catalogManager.getIoManagerFactory().get(fileUri);
@@ -97,7 +97,7 @@ public class FileUtils {
                         logger.info("Set status to " + FileStatus.MISSING);
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                                 new FileStatus(FileStatus.MISSING));
-                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
+                        catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
                     }
                 } else if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
@@ -106,7 +106,7 @@ public class FileUtils {
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
                     params.put(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                             new FileStatus(FileStatus.READY));
-                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
+                    catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
                     modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
@@ -144,7 +144,7 @@ public class FileUtils {
      */
     public ObjectMap getModifiedFileAttributes(File file, URI fileUri, boolean calculateChecksum) throws CatalogException {
         if (fileUri == null) {
-            fileUri = catalogManager.getFileManager().getUri(file);
+            fileUri = catalogManager.getFileManager().getUri(organizationId, file);
         }
         String checksum = null;
         if (calculateChecksum) {
@@ -168,7 +168,7 @@ public class FileUtils {
     private ObjectMap getModifiedFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters) throws CatalogException {
         parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
         if (fileUri == null) {
-            fileUri = catalogManager.getFileManager().getUri(file);
+            fileUri = catalogManager.getFileManager().getUri(organizationId, file);
         }
         IOManager ioManager;
         try {

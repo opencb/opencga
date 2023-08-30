@@ -82,7 +82,7 @@ public class FileMetadataReaderTest {
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
+        folder = catalogManager.getFileManager().createFolder(organizationId, study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
         Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
@@ -97,7 +97,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(study.getFqn(),
+        File file = catalogManager.getFileManager().create(organizationId, study.getFqn(),
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setType(File.Type.FILE)
@@ -106,7 +106,7 @@ public class FileMetadataReaderTest {
 
         assertEquals(1000, file.getSize());
 
-        URI fileUri = catalogManager.getFileManager().getUri(file);
+        URI fileUri = catalogManager.getFileManager().getUri(organizationId, file);
 
         try {
             Thread.sleep(1000); //Sleep 1 second to see changes on the "modificationDate"
@@ -128,7 +128,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcf() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
 
@@ -184,7 +184,7 @@ public class FileMetadataReaderTest {
     public void testDoNotOverwriteSampleIds() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
@@ -196,7 +196,7 @@ public class FileMetadataReaderTest {
         //Add a sampleId
         String sampleId = catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
                 .first().getId();
-        catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
+        catalogManager.getFileManager().update(organizationId, study.getFqn(), file.getPath(),
                 new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFileManager().get(organizationId, study.getFqn(), file.getPath(), null, sessionIdUser).first();
@@ -208,7 +208,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromBam() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(bamFileUri)))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, sessionIdUser).first();
         }
 

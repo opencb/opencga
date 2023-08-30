@@ -182,7 +182,7 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
 
         QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
-        file = OpenCGAWSServer.catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
+        file = OpenCGAWSServer.catalogManager.getFileManager().get(organizationId, file.getUid(), null, sessionId).first();
         assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 

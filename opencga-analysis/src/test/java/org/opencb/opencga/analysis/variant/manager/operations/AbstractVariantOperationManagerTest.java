@@ -152,12 +152,12 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
-        outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), true, null,
+        outputId = catalogManager.getFileManager().createFolder(organizationId, studyFqn, Paths.get("data", "index").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
                 null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
-        outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
+        outputId2 = catalogManager.getFileManager().createFolder(organizationId, studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
@@ -200,7 +200,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         FileLinkParams params = new FileLinkParams()
                 .setUri(uri.toString())
                 .setPath(path);
-        return catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
+        return catalogManager.getFileManager().link(organizationId, studyId, params, true, sessionId).first();
     }
 
     protected Cohort getDefaultCohort(String studyId) throws CatalogException {
@@ -216,7 +216,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, StorageEngineException {
 
         try {
-            catalogManager.getFileManager().createFolder(studyFqn, outputId, true, null, null, sessionId);
+            catalogManager.getFileManager().createFolder(organizationId, studyFqn, outputId, true, null, null, sessionId);
         } catch (CatalogException ignore) {
         }
 
@@ -225,7 +225,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         queryOptions.append(OperationTool.KEEP_INTERMEDIATE_FILES, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
 
-        Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, inputFile, sessionId);
         String studyId = study.getId();
 
         //Default cohort should not be modified
@@ -277,7 +277,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         queryOptions.append(OperationTool.KEEP_INTERMEDIATE_FILES, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
 
-        String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
+        String studyId = catalogManager.getFileManager().getStudy(organizationId, files.get(0), sessionId).getId();
 
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
@@ -311,7 +311,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         queryOptions.append(VariantFileIndexerOperationManager.LOAD, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
 
-        String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
+        String studyId = catalogManager.getFileManager().getStudy(organizationId, files.get(0), sessionId).getId();
 //        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
         queryOptions.append(OperationTool.KEEP_INTERMEDIATE_FILES, true);
 
@@ -400,7 +400,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
         }
-        catalogManager.getFileManager().matchUpVariantFiles(study, files, sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(organizationId, study, files, sessionId);
 
         return files;
     }

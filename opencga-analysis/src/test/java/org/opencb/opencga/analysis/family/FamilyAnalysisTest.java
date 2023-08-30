@@ -118,7 +118,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family2.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family2.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -132,7 +132,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family3.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family3.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -172,7 +172,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -328,7 +328,7 @@ public class FamilyAnalysisTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(),
                 Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
@@ -409,7 +409,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
         List<Individual> members = Arrays.asList(granma, father, mother, child);
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         return familyOpenCGAResult;
     }
@@ -458,7 +458,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(fatherSample))),

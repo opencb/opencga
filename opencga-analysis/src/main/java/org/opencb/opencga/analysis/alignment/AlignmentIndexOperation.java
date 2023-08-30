@@ -104,7 +104,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 isLinked = false;
             }
             if (!isLinked) {
-                catalogManager.getFileManager().link(getStudy(), indexPath.toUri(), outputCatalogPath.getParent().toString(),
+                catalogManager.getFileManager().link(organizationId, getStudy(), indexPath.toUri(), outputCatalogPath.getParent().toString(),
                         new ObjectMap("parents", true), token);
             }
         });

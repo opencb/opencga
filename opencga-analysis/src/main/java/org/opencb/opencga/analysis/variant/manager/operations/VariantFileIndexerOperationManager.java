@@ -277,7 +277,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 FileInternalVariantIndex index = file.getInternal().getVariant().getIndex();
                 index.setRelease(release);
                 index.setStatus(new VariantIndexStatus(fileStatus, fileStatusMessage));
-                catalogManager.getFileManager().updateFileInternalVariantIndex(file, index, token);
+                catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, file, index, token);
             }
         }
         return fileUris;
@@ -459,12 +459,12 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storagePipelineResult", storagePipelineResult);
             FileUpdateParams updateParams = new FileUpdateParams().setAttributes(attributes);
-            catalogManager.getFileManager().update(study, indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
+            catalogManager.getFileManager().update(organizationId, study, indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
 
             // Update index status
             index.setRelease(release);
             index.setStatus(new VariantIndexStatus(indexStatusId, indexStatusMessage));
-            catalogManager.getFileManager().updateFileInternalVariantIndex(indexedFile, index, sessionId);
+            catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, indexedFile, index, sessionId);
 
             boolean calculateStats = options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
             if (indexStatusId.equals(VariantIndexStatus.READY) && calculateStats) {
@@ -474,7 +474,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), CohortStatus.READY, null,
+                    catalogManager.getCohortManager().setStatus(organizationId, study, defaultCohort.getId(), CohortStatus.READY, null,
                             sessionId);
 //                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
 //                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
@@ -509,7 +509,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         }
 
         catalogManager.getFileManager()
-                .update(studyFqn, inputFile.getPath(),
+                .update(organizationId, studyFqn, inputFile.getPath(),
                         new FileUpdateParams().setQualityControl(
                                 new FileQualityControl().setVariant(
                                         new VariantFileQualityControl(stats, null))),
@@ -542,7 +542,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
+        return catalogManager.getCohortManager().create(organizationId, studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
                         "", Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
                 null, null,
                 QueryOptions.empty(), sessionId).first();
@@ -561,7 +561,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         Cohort defaultCohort = catalogManager.getCohortManager().search(organizationId, study, query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getInternal().getStatus().getId();
 
-        catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
+        catalogManager.getCohortManager().setStatus(organizationId, study, defaultCohort.getId(), status, null,
                 sessionId);
 
         return prevStatus;
@@ -749,7 +749,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String vcfId = null;
         // Matchup variant files, if missing
         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-            catalogManager.getFileManager().matchUpVariantFiles(study, Collections.singletonList(file), sessionId);
+            catalogManager.getFileManager().matchUpVariantFiles(organizationId, study, Collections.singletonList(file), sessionId);
         }
         for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
             if (FileRelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {

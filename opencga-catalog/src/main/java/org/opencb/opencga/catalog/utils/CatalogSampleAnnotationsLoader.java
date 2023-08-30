@@ -64,8 +64,8 @@ public class CatalogSampleAnnotationsLoader {
             throw new CatalogException(pedFile.getUid() + " is not a pedigree file");
         }
 
-        URI fileUri = catalogManager.getFileManager().getUri(pedFile);
-        Study study = catalogManager.getFileManager().getStudy(pedFile, sessionId);
+        URI fileUri = catalogManager.getFileManager().getUri(organizationId, pedFile);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, pedFile, sessionId);
         long auxTime;
         long startTime = System.currentTimeMillis();
 

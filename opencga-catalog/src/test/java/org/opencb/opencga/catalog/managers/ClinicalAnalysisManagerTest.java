@@ -212,16 +212,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         List<File> files = new LinkedList<>();
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
+        files.add(catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         vcfFile = getClass().getResource("/biofiles/family.vcf").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
+        files.add(catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         String bamFile = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
+        files.add(catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
         bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
+        files.add(catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first());
 
         return files;
@@ -1165,7 +1165,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("external", aclResult.first().getAcl().get(0).getMember());
         assertNull(aclResult.first().getAcl().get(0).getPermissions());
 
-        OpenCGAResult<AclEntryList<FamilyPermissions>> fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<FamilyPermissions>> fAclResult = catalogManager.getFamilyManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
         assertEquals(1, fAclResult.getNumResults());
         assertEquals(1, fAclResult.first().getAcl().size());
@@ -1195,7 +1195,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, aclResult.getNumResults());
         assertEquals(3, aclResult.first().getAcl().get(0).getPermissions().size());
 
-        fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        fAclResult = catalogManager.getFamilyManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
         assertEquals(1, fAclResult.getNumResults());
         assertEquals(1, fAclResult.first().getAcl().size());
@@ -1226,7 +1226,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, aclResult.getNumResults());
         assertEquals(3, aclResult.first().getAcl().get(0).getPermissions().size());
 
-        fAclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+        fAclResult = catalogManager.getFamilyManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
         assertEquals(1, fAclResult.getNumResults());
         assertEquals(2, fAclResult.first().getAcl().get(0).getPermissions().size());
@@ -2646,7 +2646,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinicalAnalysis.setFamily(dummyFamily.first());
         catalogManager.getClinicalAnalysisManager().create(organizationId, STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getFamilyManager().update(STUDY, dummyFamily.first().getId(), new FamilyUpdateParams()
+        catalogManager.getFamilyManager().update(organizationId, STUDY, dummyFamily.first().getId(), new FamilyUpdateParams()
                 .setId("familyId"), QueryOptions.empty(), sessionIdUser);
 
         QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;
@@ -3390,7 +3390,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Register and associate files to sample "sample"
         List<File> files = registerDummyFiles();
         for (File file : files) {
-            catalogManager.getFileManager().update(STUDY, file.getPath(),
+            catalogManager.getFileManager().update(organizationId, STUDY, file.getPath(),
                     new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
         }
 
@@ -3418,7 +3418,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Register and associate files to sample "sample"
         List<File> files = registerDummyFiles();
         for (File file : files) {
-            catalogManager.getFileManager().update(STUDY, file.getPath(),
+            catalogManager.getFileManager().update(organizationId, STUDY, file.getPath(),
                     new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
         }
         List<FileReferenceParam> fileRefs = files.stream().map(f -> new FileReferenceParam(f.getPath())).collect(Collectors.toList());

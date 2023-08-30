@@ -837,7 +837,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token);
 
         Family family = new Family().setId("family");
-        catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList("proband", "father"), QueryOptions.empty(), token);
+        catalogManager.getFamilyManager().create(organizationId, studyFqn, family, Arrays.asList("proband", "father"), QueryOptions.empty(), token);
 
         family.setMembers(Arrays.asList(
                 new Individual().setId("proband").setSamples(Collections.singletonList(new Sample().setId("sample2"))),
@@ -2534,11 +2534,11 @@ public class SampleManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), token);
 
         Family family = new Family().setId("family1");
-        catalogManager.getFamilyManager().create(studyFqn, family, Collections.singletonList(individual.getId()), QueryOptions.empty(),
+        catalogManager.getFamilyManager().create(organizationId, studyFqn, family, Collections.singletonList(individual.getId()), QueryOptions.empty(),
                 token);
 
         Family family2 = new Family().setId("family2");
-        catalogManager.getFamilyManager().create(studyFqn, family2, Collections.singletonList(individual2.getId()), QueryOptions.empty(),
+        catalogManager.getFamilyManager().create(organizationId, studyFqn, family2, Collections.singletonList(individual2.getId()), QueryOptions.empty(),
                 token);
 
         OpenCGAResult<AclEntryList<SamplePermissions>> permissions = catalogManager.getSampleManager().getAcls(studyFqn,
@@ -2635,7 +2635,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
         assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
 
-        family = catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()),
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()),
                 options, token).first();
         assertEquals(2, family.getMembers().size());
         assertEquals(1, family.getVersion());
@@ -2681,7 +2681,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
         family.setMembers(null);
-        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, members, options, token).first();
 
         // Unlocked cases
         ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
@@ -2755,7 +2755,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
         family.setMembers(null);
-        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, members, options, token).first();
 
         // Unlocked cases
         ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);

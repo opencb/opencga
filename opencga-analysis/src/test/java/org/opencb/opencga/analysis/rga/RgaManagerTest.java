@@ -104,10 +104,10 @@ public class RgaManagerTest {
                 }
             }
 
-            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
+            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c1")
                             .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, ownerToken);
-            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
+            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c2")
                             .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, ownerToken);
 
@@ -133,7 +133,7 @@ public class RgaManagerTest {
                     .create(STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(DAUGHTER), includeResult, ownerToken).first());
             catalogManager.getFamilyManager().create(
-                    STUDY,
+                    organizationId, STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
                     individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(), ownerToken);
 
@@ -167,7 +167,7 @@ public class RgaManagerTest {
 
             toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, ownerToken);
 
-            File file = catalogManager.getFileManager().link(STUDY,
+            File file = catalogManager.getFileManager().link(organizationId, STUDY,
                     new FileLinkParams()
                             .setUri(outDir.resolve("knockout.individuals.json.gz").toUri().toString())
                             .setPath("."),

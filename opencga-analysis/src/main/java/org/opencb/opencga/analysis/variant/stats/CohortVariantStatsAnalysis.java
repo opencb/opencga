@@ -236,11 +236,11 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             .first();
                     if (cohort.getAnnotationSets().stream().anyMatch(a -> a.getId().equals(VARIABLE_SET_ID))) {
                         catalogManager.getCohortManager()
-                                .removeAnnotationSet(study, toolParams.getCohort(), VARIABLE_SET_ID, new QueryOptions(), token);
+                                .removeAnnotationSet(organizationId, study, toolParams.getCohort(), VARIABLE_SET_ID, new QueryOptions(), token);
                     }
                     AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
                     catalogManager.getCohortManager()
-                            .addAnnotationSet(study, toolParams.getCohort(), annotationSet, new QueryOptions(), token);
+                            .addAnnotationSet(organizationId, study, toolParams.getCohort(), annotationSet, new QueryOptions(), token);
                 } catch (IOException | CatalogException e) {
                     throw new ToolException(e);
                 }

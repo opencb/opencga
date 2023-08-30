@@ -115,7 +115,7 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
             assertThat(e.getCause(), hasMessage(containsString("Error loading file")));
         }
 
-        String outputId2 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index2").toString(), true, null,
+        String outputId2 = catalogManager.getFileManager().createFolder(organizationId, studyFqn, Paths.get("data", "index2").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
 
         indexFile(inputFile2, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false), outputId2);

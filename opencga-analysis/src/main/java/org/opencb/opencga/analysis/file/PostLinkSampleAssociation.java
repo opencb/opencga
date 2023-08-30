@@ -195,7 +195,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
 
                         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                        OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(),
+                        OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(organizationId, study, file.getUuid(),
                                 fileUpdateParams, queryOptions, token);
                         if (fileUpdateResult.getNumUpdated() != 1) {
                             throw new CatalogException("Could not update sample list of file '" + file.getPath() + "'.");
@@ -206,7 +206,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                     FileUpdateParams fileUpdateParams = new FileUpdateParams()
                             .setInternal(new SmallFileInternal(new FileStatus(FileStatus.READY), MissingSamples.initialize()));
 
-                    OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(), fileUpdateParams,
+                    OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(organizationId, study, file.getUuid(), fileUpdateParams,
                             QueryOptions.empty(), token);
                     if (fileUpdateResult.getNumUpdated() != 1) {
                         throw new CatalogException("Could not update internal status of file '" + file.getPath() + "'.");

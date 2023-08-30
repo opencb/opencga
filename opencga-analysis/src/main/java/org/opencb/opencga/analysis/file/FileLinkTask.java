@@ -40,7 +40,7 @@ public class FileLinkTask extends OpenCgaToolScopeStudy {
                     .setVirtualFileName(toolParams.getVirtualFileName());
             logger.info("Linking file " + uri);
             OpenCGAResult<File> result
-                    = catalogManager.getFileManager().link(getStudy(), linkParams, toolParams.isParents(), getToken());
+                    = catalogManager.getFileManager().link(organizationId, getStudy(), linkParams, toolParams.isParents(), getToken());
             if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
                 logger.info("File already linked - SKIP");
             } else {

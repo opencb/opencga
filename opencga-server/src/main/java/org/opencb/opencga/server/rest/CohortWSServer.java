@@ -78,7 +78,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
-            return createOkResponse(cohortManager.create(studyStr, params, variableSet, variableName, queryOptions, token));
+            return createOkResponse(cohortManager.create(organizationId, studyStr, params, variableSet, variableName, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -114,7 +114,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing cohort information", required = true) CohortGenerateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(cohortManager.generate(studyStr, query, params.toCohort(), queryOptions, token));
+            return createOkResponse(cohortManager.generate(organizationId, studyStr, query, params.toCohort(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -291,7 +291,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             List<String> cohortIds = getIdList(cohorts);
 
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortIds, params, queryOptions, token));
+            return createOkResponse(catalogManager.getCohortManager().update(organizationId, studyStr, cohortIds, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -337,7 +337,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (action == null) {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
-            return createOkResponse(catalogManager.getCohortManager().updateAnnotations(studyStr, cohortStr, annotationSetId,
+            return createOkResponse(catalogManager.getCohortManager().updateAnnotations(organizationId, studyStr, cohortStr, annotationSetId,
                     updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -370,7 +370,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(cohortIdsStr);
-            return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(cohortManager.getAcls(organizationId, studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -388,7 +388,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(params, new CohortAclUpdateParams());
             AclParams aclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getCohort(), false);
-            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, action, token));
+            return createOkResponse(cohortManager.updateAcl(organizationId, studyStr, idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -418,7 +418,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats,
+            DataResult<FacetField> queryResult = catalogManager.getCohortManager().facet(organizationId, studyStr, query, queryOptions, defaultStats,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

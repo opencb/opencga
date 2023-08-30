@@ -135,7 +135,7 @@ public class VariantCatalogQueryUtilsTest {
         individuals.add(catalog.getIndividualManager().create(organizationId, "s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                 Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first());
         catalog.getFamilyManager().create(
-                "s1",
+                organizationId, "s1",
                 new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
                 individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                 sessionId);
@@ -227,7 +227,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static File createFile(String path, boolean indexed) throws CatalogException {
-        File file = catalog.getFileManager().create("s1",
+        File file = catalog.getFileManager().create(organizationId, "s1",
                 new FileCreateParams()
                         .setPath(path)
                         .setType(File.Type.FILE)
@@ -237,7 +237,7 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get(organizationId, "p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
+            catalog.getFileManager().updateFileInternalVariantIndex(organizationId, file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);
         }

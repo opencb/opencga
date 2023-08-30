@@ -132,8 +132,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    InternalGetDataResult<Family> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                              String user, boolean ignoreException) throws CatalogException {
+    InternalGetDataResult<Family> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query, 
+                                              QueryOptions options, String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing family entries.");
         }
@@ -155,7 +155,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+        OpenCGAResult<Family> familyDataResult = getFamilyDBAdaptor(organizationId).get(studyUid, queryCopy, queryOptions, user);
 
         Function<Family, String> familyStringFunction = Family::getId;
         if (idQueryParam.equals(FamilyDBAdaptor.QueryParams.UUID)) {
@@ -166,7 +166,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             return keepOriginalOrder(uniqueList, familyStringFunction, familyDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
-        OpenCGAResult<Family> resultsNoCheck = familyDBAdaptor.get(queryCopy, queryOptions);
+        OpenCGAResult<Family> resultsNoCheck = getFamilyDBAdaptor(organizationId).get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == familyDataResult.getNumResults()) {
             throw CatalogException.notFound("families",
@@ -193,16 +193,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return idQueryParam;
     }
 
-    private OpenCGAResult<Family> getFamily(long studyUid, String familyUuid, QueryOptions options) throws CatalogException {
+    private OpenCGAResult<Family> getFamily(String organizationId, long studyUid, String familyUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FamilyDBAdaptor.QueryParams.UUID.key(), familyUuid);
-        return familyDBAdaptor.get(query, options);
+        return getFamilyDBAdaptor(organizationId).get(query, options);
     }
 
     @Override
     public DBIterator<Family> iterator(String organizationId, String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        ParamUtils.checkObj(token, "sessionId");
+        ParamUtils.checkObj(token, "token");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -210,27 +210,28 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(study, finalQuery, token);
+        fixQueryObject(organizationId, study, finalQuery, token);
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
         AnnotationUtils.fixQueryOptionAnnotation(options);
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return familyDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
+        return getFamilyDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
     public OpenCGAResult<Family> create(String organizationId, String studyStr, Family family, QueryOptions options, String token) throws CatalogException {
-        return create(studyStr, family, null, options, token);
+        return create(organizationId, studyStr, family, null, options, token);
     }
 
-    public OpenCGAResult<Family> create(String studyStr, Family family, List<String> members, QueryOptions options, String token)
+    public OpenCGAResult<Family> create(String organizationId, String studyStr, Family family, List<String> members, QueryOptions options, String token)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("family", family)
                 .append("members", members)
@@ -262,13 +263,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId());
-            if (familyDBAdaptor.count(query).getNumMatches() > 0) {
+            if (getFamilyDBAdaptor(organizationId).count(query).getNumMatches() > 0) {
                 throw new CatalogException("Family '" + family.getId() + "' already exists.");
             }
 
             validateNewAnnotationSets(study.getVariableSets(), family.getAnnotationSets());
 
-            List<Individual> existingMembers = autoCompleteFamilyMembers(study, family, members, userId);
+            List<Individual> existingMembers = autoCompleteFamilyMembers(organizationId, study, family, members, userId);
             validateFamily(family, existingMembers);
             validatePhenotypes(family, existingMembers);
             validateDisorders(family, existingMembers);
@@ -276,11 +277,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
-            OpenCGAResult<Family> insert = familyDBAdaptor.insert(study.getUid(), family, existingMembers, study.getVariableSets(),
+            OpenCGAResult<Family> insert = getFamilyDBAdaptor(organizationId).insert(study.getUid(), family, existingMembers, study.getVariableSets(),
                     options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated family
-                OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+                OpenCGAResult<Family> queryResult = getFamily(organizationId, study.getUid(), family.getUuid(), options);
                 insert.setResults(queryResult.getResults());
             }
 
@@ -305,12 +306,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
                 .append("token", token);
         try {
-            fixQueryObject(study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, token);
 
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
@@ -318,7 +320,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Family> queryResult = familyDBAdaptor.get(study.getUid(), finalQuery, options, userId);
+            OpenCGAResult<Family> queryResult = getFamilyDBAdaptor(organizationId).get(study.getUid(), finalQuery, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -340,17 +342,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fields", fields)
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            fixQueryObject(study, query, userId);
+            fixQueryObject(organizationId, study, query, userId);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = familyDBAdaptor.distinct(study.getUid(), fields, query, userId);
+            OpenCGAResult<?> result = getFamilyDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -363,7 +366,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
+    private void fixQueryObject(String organizationId, Study study, Query query, String token) throws CatalogException {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.FAMILY_INTERNAL_STATUS_PARAM, FamilyDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
         changeQueryId(query, ParamConstants.FAMILY_STATUS_PARAM, FamilyDBAdaptor.QueryParams.STATUS_ID.key());
@@ -376,7 +379,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // We change the MEMBERS parameters for MEMBER_UID which is what the DBAdaptor understands
         if (query.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
-            String userId = userManager.getUserId(sessionId);
+            String userId = userManager.getUserId(token);
 
             List<Individual> memberList = catalogManager.getIndividualManager().internalGet(organizationId, study.getUid(),
                     query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
@@ -400,7 +403,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                 query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
-                        .search(organizationId, study.getFqn(), newQuery, options, sessionId);
+                        .search(organizationId, study.getFqn(), newQuery, options, token);
 
                 if (individualResult.getNumResults() == 0) {
                     // Add -1 to query so no results are obtained
@@ -425,16 +428,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", query)
                 .append("token", token);
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
-            fixQueryObject(study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, token);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId);
+            OpenCGAResult<Long> queryResultAux = getFamilyDBAdaptor(organizationId).count(finalQuery, userId);
 
             auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -450,10 +454,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     @Override
     public OpenCGAResult delete(String organizationId, String studyStr, List<String> familyIds, QueryOptions options, String token) throws CatalogException {
-        return delete(studyStr, familyIds, options, false, token);
+        return delete(organizationId, studyStr, familyIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> familyIds, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String organizationId, String studyStr, List<String> familyIds, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -462,6 +466,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("familyIds", familyIds)
                 .append("params", params)
@@ -501,10 +506,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 }
 
                 // Check family can be deleted
-                checkCanBeDeleted(study, family);
+                checkCanBeDeleted(organizationId, study, family);
 
                 // Delete the family
-                result.append(familyDBAdaptor.delete(family));
+                result.append(getFamilyDBAdaptor(organizationId).delete(family));
 
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -523,11 +528,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return endResult(result, ignoreException);
     }
 
-    private void checkCanBeDeleted(Study study, Family family) throws CatalogException {
+    private void checkCanBeDeleted(String organizationId, Study study, Family family) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid());
-        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+        OpenCGAResult<ClinicalAnalysis> result = getClinicalAnalysisDBAdaptor(organizationId).get(query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
         if (result.getNumResults() > 0) {
             String clinicalIds = result.getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.joining(", "));
             throw new CatalogException("Family {" + family.getId() + "} in use in Clinical Analyses: {" + clinicalIds + "}");
@@ -536,10 +541,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     @Override
     public OpenCGAResult delete(String organizationId, String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        return delete(studyStr, query, options, false, token);
+        return delete(organizationId, studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String organizationId, String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
@@ -551,6 +556,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
@@ -565,10 +571,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
-            fixQueryObject(study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, token);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
+            iterator = getFamilyDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
@@ -591,7 +597,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
 
                 // Delete the family
-                result.append(familyDBAdaptor.delete(family));
+                result.append(getFamilyDBAdaptor(organizationId).delete(family));
 
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -631,7 +637,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = studyManager.resolveId(organizationId, studyStr, userId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(study, finalQuery, sessionId);
+        fixQueryObject(organizationId, study, finalQuery, sessionId);
 
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
@@ -640,56 +646,56 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Add study id to the query
         finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = getFamilyDBAdaptor(organizationId).groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
-    public OpenCGAResult<Family> updateAnnotationSet(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
-                                                     ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Family> updateAnnotationSet(String organizationId, String studyStr, String familyStr, 
+                                                     List<AnnotationSet> annotationSetList, ParamUtils.BasicUpdateAction action,
+                                                     QueryOptions options, String token) throws CatalogException {
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, familyStr, updateParams, options, token);
+        return update(organizationId, studyStr, familyStr, updateParams, options, token);
     }
 
-    public OpenCGAResult<Family> addAnnotationSet(String studyStr, String familyStr, AnnotationSet annotationSet, QueryOptions options,
-                                                  String token) throws CatalogException {
-        return addAnnotationSets(studyStr, familyStr, Collections.singletonList(annotationSet), options, token);
+    public OpenCGAResult<Family> addAnnotationSet(String organizationId, String studyStr, String familyStr, AnnotationSet annotationSet,
+                                                  QueryOptions options, String token) throws CatalogException {
+        return addAnnotationSets(organizationId, studyStr, familyStr, Collections.singletonList(annotationSet), options, token);
     }
 
-    public OpenCGAResult<Family> addAnnotationSets(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
+    public OpenCGAResult<Family> addAnnotationSets(String organizationId, String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
+        return updateAnnotationSet(organizationId, studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
-    public OpenCGAResult<Family> setAnnotationSet(String studyStr, String familyStr, AnnotationSet annotationSet, QueryOptions options,
-                                                  String token) throws CatalogException {
-        return setAnnotationSets(studyStr, familyStr, Collections.singletonList(annotationSet), options, token);
+    public OpenCGAResult<Family> setAnnotationSet(String organizationId, String studyStr, String familyStr, AnnotationSet annotationSet, 
+                                                  QueryOptions options, String token) throws CatalogException {
+        return setAnnotationSets(organizationId, studyStr, familyStr, Collections.singletonList(annotationSet), options, token);
     }
 
-    public OpenCGAResult<Family> setAnnotationSets(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
+    public OpenCGAResult<Family> setAnnotationSets(String organizationId, String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
+        return updateAnnotationSet(organizationId, studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
-    public OpenCGAResult<Family> removeAnnotationSet(String studyStr, String familyStr, String annotationSetId, QueryOptions options,
-                                                     String token) throws CatalogException {
-        return removeAnnotationSets(studyStr, familyStr, Collections.singletonList(annotationSetId), options, token);
+    public OpenCGAResult<Family> removeAnnotationSet(String organizationId, String studyStr, String familyStr, String annotationSetId,
+                                                     QueryOptions options, String token) throws CatalogException {
+        return removeAnnotationSets(organizationId, studyStr, familyStr, Collections.singletonList(annotationSetId), options, token);
     }
 
-    public OpenCGAResult<Family> removeAnnotationSets(String studyStr, String familyStr, List<String> annotationSetIdList,
+    public OpenCGAResult<Family> removeAnnotationSets(String organizationId, String studyStr, String familyStr, List<String> annotationSetIdList,
                                                       QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(organizationId, studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
     }
 
-    public OpenCGAResult<Family> updateAnnotations(String studyStr, String familyStr, String annotationSetId,
+    public OpenCGAResult<Family> updateAnnotations(String organizationId, String studyStr, String familyStr, String annotationSetId,
                                                    Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
                                                    QueryOptions options, String token) throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
@@ -700,27 +706,27 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, familyStr, updateParams, options, token);
+        return update(organizationId, studyStr, familyStr, updateParams, options, token);
     }
 
-    public OpenCGAResult<Family> removeAnnotations(String studyStr, String familyStr, String annotationSetId,
+    public OpenCGAResult<Family> removeAnnotations(String organizationId, String studyStr, String familyStr, String annotationSetId,
                                                    List<String> annotations, QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(studyStr, familyStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
+        return updateAnnotations(organizationId, studyStr, familyStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
-    public OpenCGAResult<Family> resetAnnotations(String studyStr, String familyStr, String annotationSetId, List<String> annotations,
-                                                  QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(studyStr, familyStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
+    public OpenCGAResult<Family> resetAnnotations(String organizationId, String studyStr, String familyStr, String annotationSetId,
+                                                  List<String> annotations, QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(organizationId, studyStr, familyStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    public OpenCGAResult<Family> update(String studyStr, Query query, FamilyUpdateParams updateParams, QueryOptions options,
+    public OpenCGAResult<Family> update(String organizationId, String studyStr, Query query, FamilyUpdateParams updateParams, QueryOptions options,
                                         String token) throws CatalogException {
-        return update(studyStr, query, updateParams, false, options, token);
+        return update(organizationId, studyStr, query, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Family> update(String studyStr, Query query, FamilyUpdateParams updateParams, boolean ignoreException,
+    public OpenCGAResult<Family> update(String organizationId, String studyStr, Query query, FamilyUpdateParams updateParams, boolean ignoreException,
                                         QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
@@ -735,6 +741,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateMap)
@@ -746,14 +753,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         DBIterator<Family> iterator;
         try {
-            fixQueryObject(study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, token);
 
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
+            iterator = getFamilyDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -765,7 +772,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         while (iterator.hasNext()) {
             Family family = iterator.next();
             try {
-                OpenCGAResult<Family> queryResult = update(study, family, updateParams, options, userId);
+                OpenCGAResult<Family> queryResult = update(organizationId, study, family, updateParams, options, userId);
                 result.append(queryResult);
 
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
@@ -785,7 +792,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<Family> update(String studyStr, String familyId, FamilyUpdateParams updateParams, QueryOptions options,
+    public OpenCGAResult<Family> update(String organizationId, String studyStr, String familyId, FamilyUpdateParams updateParams, QueryOptions options,
                                         String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
@@ -800,6 +807,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("familyId", familyId)
                 .append("updateParams", updateMap)
@@ -820,7 +828,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyId = family.getId();
             familyUuid = family.getUuid();
 
-            OpenCGAResult<Family> updateResult = update(study, family, updateParams, options, userId);
+            OpenCGAResult<Family> updateResult = update(organizationId, study, family, updateParams, options, userId);
             result.append(updateResult);
 
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
@@ -842,22 +850,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     /**
      * Update families from catalog.
      *
-     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param familyIds    List of family ids. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param options      QueryOptions object.
-     * @param token        Session id of the user logged in.
+     * @param organizationId Organization id.
+     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param familyIds      List of family ids. Could be either the id or uuid.
+     * @param updateParams   Data model filled only with the parameters to be updated.
+     * @param options        QueryOptions object.
+     * @param token          Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<Family> update(String studyStr, List<String> familyIds, FamilyUpdateParams updateParams, QueryOptions options,
-                                        String token) throws CatalogException {
-        return update(studyStr, familyIds, updateParams, false, options, token);
+    public OpenCGAResult<Family> update(String organizationId, String studyStr, List<String> familyIds, FamilyUpdateParams updateParams,
+                                        QueryOptions options, String token) throws CatalogException {
+        return update(organizationId, studyStr, familyIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Family> update(String studyStr, List<String> familyIds, FamilyUpdateParams updateParams, boolean ignoreException,
-                                        QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Family> update(String organizationId, String studyStr, List<String> familyIds, FamilyUpdateParams updateParams, 
+                                        boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -871,6 +880,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("familyIds", familyIds)
                 .append("updateParams", updateMap)
@@ -895,7 +905,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyId = family.getId();
                 familyUuid = family.getUuid();
 
-                OpenCGAResult<Family> updateResult = update(study, family, updateParams, options, userId);
+                OpenCGAResult<Family> updateResult = update(organizationId, study, family, updateParams, options, userId);
                 result.append(updateResult);
 
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
@@ -915,8 +925,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return endResult(result, ignoreException);
     }
 
-    private OpenCGAResult<Family> update(Study study, Family family, FamilyUpdateParams updateParams, QueryOptions options, String userId)
-            throws CatalogException {
+    private OpenCGAResult<Family> update(String organizationId, Study study, Family family, FamilyUpdateParams updateParams, 
+                                         QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap parameters = new ObjectMap();
@@ -985,7 +995,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         throw new CatalogException("Found members without any id.");
                     }
                 }
-                List<Individual> updatedMembers = autoCompleteFamilyMembers(study, tmpFamily, memberIds, userId);
+                List<Individual> updatedMembers = autoCompleteFamilyMembers(organizationId, study, tmpFamily, memberIds, userId);
                 tmpFamily.setMembers(updatedMembers);
             } else {
                 // We use the list of members from the stored family
@@ -1017,21 +1027,21 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        checkUpdateAnnotations(study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor,
+        checkUpdateAnnotations(study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY, getFamilyDBAdaptor(organizationId),
                 userId);
 
-        OpenCGAResult<Family> update = familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Family> update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(), options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated family
-            OpenCGAResult<Family> result = familyDBAdaptor.get(study.getUid(),
+            OpenCGAResult<Family> result = getFamilyDBAdaptor(organizationId).get(study.getUid(),
                     new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()), options, userId);
             update.setResults(result.getResults());
         }
         return update;
     }
 
-    public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
-                                                              ClinicalProperty.ModeOfInheritance moi, String disorderId,
+    public Map<String, List<String>> calculateFamilyGenotypes(String organizationId, String studyStr, String clinicalAnalysisId, 
+                                                              String familyId, ClinicalProperty.ModeOfInheritance moi, String disorderId,
                                                               Penetrance penetrance, String token) throws CatalogException {
         Pedigree pedigree;
         Disorder disorder = null;
@@ -1094,19 +1104,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, String member,
-                                                                  boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyId, familyList, StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
+    public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String organizationId, String studyId, List<String> familyList, 
+                                                                  String member, boolean ignoreException, String token) 
+            throws CatalogException {
+        return getAcls(organizationId, studyId, familyList,
+                StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
                 ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String studyId, List<String> familyList, List<String> members,
-                                                                  boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FamilyPermissions>> getAcls(String organizationId, String studyId, List<String> familyList, 
+                                                                  List<String> members, boolean ignoreException, String token) 
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyId, user);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("familyList", familyList)
                 .append("members", members)
@@ -1179,12 +1193,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAcls;
     }
 
-    public OpenCGAResult<AclEntryList<FamilyPermissions>> updateAcl(String studyId, FamilyAclParams aclParams, String memberList,
-                                                                    ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FamilyPermissions>> updateAcl(String organizationId, String studyId, FamilyAclParams aclParams,
+                                                                    String memberList, ParamUtils.AclAction action, String token) 
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(organizationId, studyId, user);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("aclParams", aclParams)
                 .append("memberList", memberList)
@@ -1247,7 +1263,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 members = Collections.emptyList();
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-            checkMembers(study.getUid(), members);
+            checkMembers(organizationId, study.getUid(), members);
 
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
             List<Long> familyUids = familyList.stream().map(Family::getUid).collect(Collectors.toList());
@@ -1333,8 +1349,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
-            throws CatalogException {
+    public DataResult<FacetField> facet(String organizationId, String studyId, Query query, QueryOptions options, boolean defaultStats,
+                                        String token) throws CatalogException {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -1344,6 +1360,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
@@ -1378,14 +1395,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * It also makes sure the members provided inside the family object are valid and can be successfully created.
      * Returns the list of already existing members that will be associated to the family.
      *
-     * @param study   study.
-     * @param family  family object.
-     * @param members Already existing members.
-     * @param userId  user id.
+     * @param organizationId Organization id.
+     * @param study          study.
+     * @param family         family object.
+     * @param members        Already existing members.
+     * @param userId         user id.
      * @return list of already existing members that will be associated to the family.
      * @throws CatalogException if there is any kind of error.
      */
-    private List<Individual> autoCompleteFamilyMembers(Study study, Family family, List<String> members, String userId)
+    private List<Individual> autoCompleteFamilyMembers(String organizationId, Study study, Family family, List<String> members, String userId)
             throws CatalogException {
         if (family.getMembers() != null && !family.getMembers().isEmpty()) {
             List<Individual> memberList = new ArrayList<>();

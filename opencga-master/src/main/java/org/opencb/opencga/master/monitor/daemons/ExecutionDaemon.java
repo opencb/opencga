@@ -692,7 +692,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             // Directory not found. Will try to create using user's token
             boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
             try {
-                outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
+                outDir = fileManager.createFolder(organizationId, study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
                         userToken).first();
                 IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
                 ioManager.createDirectory(outDir.getUri(), true);
@@ -719,7 +719,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
+        File folder = fileManager.createFolder(organizationId, job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
                 + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
@@ -736,7 +736,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Check if the user already has permissions set in his folder
-        OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
+        OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(organizationId, job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
         if (result.getNumResults() == 0 || result.first().getAcl().isEmpty()
                 || CollectionUtils.isEmpty(result.first().getAcl().get(0).getPermissions())) {
@@ -745,10 +745,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .stream()
                     .map(FilePermissions::toString)
                     .collect(Collectors.joining(","));
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+            fileManager.updateAcl(organizationId, job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(null, allFilePermissions), SET, token);
             // Remove permissions to the @members group
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+            fileManager.updateAcl(organizationId, job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
                     StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
         }
 
@@ -983,7 +983,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Predicate<URI> uriPredicate = uri -> !ExecutionResultManager.isExecutionResultFile(uri.getPath())
                     && !ExecutionResultManager.isExecutionResultSwapFile(uri.getPath())
                     && !uri.getPath().contains("/scratch_");
-            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
+            registeredFiles = fileManager.syncUntrackedFiles(organizationId, job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
                     token).getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);

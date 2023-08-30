@@ -1365,7 +1365,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("MyCohort2")
                 .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
 
-        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+        catalogManager.getCohortManager().update(organizationId, studyFqn, "MyCohort1",
                 new CohortUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleId3.getId()))),
                 QueryOptions.empty(), token);
 
@@ -1416,7 +1416,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("MyCohort2")
                 .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
 
-        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+        catalogManager.getCohortManager().update(organizationId, studyFqn, "MyCohort1",
                 new CohortUpdateParams().setSamples(Arrays.asList(new SampleReferenceParam().setId(sampleId3.getId()))),
                 QueryOptions.empty(), token);
 
@@ -1424,7 +1424,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(Constants.ACTIONS, actionMap);
-        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+        catalogManager.getCohortManager().update(organizationId, studyFqn, "MyCohort1",
                 new CohortUpdateParams().setSamples(Arrays.asList(new SampleReferenceParam().setId(sampleId1.getId()))),
                 queryOptions, token);
 
@@ -1476,7 +1476,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(Constants.ACTIONS, actionMap);
-        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+        catalogManager.getCohortManager().update(organizationId, studyFqn, "MyCohort1",
                 new CohortUpdateParams().setSamples(Arrays.asList(
                         new SampleReferenceParam().setId(sampleId2.getId()),
                         new SampleReferenceParam().setId(sampleId3.getId()))),
@@ -1638,7 +1638,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.SET.name()));
 
-        DataResult<Cohort> result = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
+        DataResult<Cohort> result = catalogManager.getCohortManager().update(organizationId, studyFqn, myCohort.getId(),
                 new CohortUpdateParams()
                         .setId("myModifiedCohort")
                         .setSamples(Arrays.asList(
@@ -1666,7 +1666,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.SET.name()));
-        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+        result = catalogManager.getCohortManager().update(organizationId, studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Collections.emptyList()),
                 options, token);
@@ -1678,7 +1678,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.ADD.name()));
-        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+        result = catalogManager.getCohortManager().update(organizationId, studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Arrays.asList(
                                 new SampleReferenceParam().setId(sampleId1.getId()),
@@ -1693,7 +1693,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.REMOVE.name()));
-        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+        result = catalogManager.getCohortManager().update(organizationId, studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Arrays.asList(
                                 new SampleReferenceParam().setId(sampleId3.getId()),
@@ -1752,14 +1752,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Cohort myCohort = catalogManager.getCohortManager().create(organizationId, studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), INCLUDE_RESULT, token).first();
 
-        DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", token);
+        DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort", token);
         assertEquals(3, myCohort1.getNumResults());
 
         thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,AnotherCohort", token);
+        catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort,AnotherCohort", token);
 
         thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", token);
+        catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort,MyCohort", token);
     }
 
     @Test
@@ -1857,11 +1857,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token);
 
         Query query = new Query();
-        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, token).first();
+        Cohort myCohort = catalogManager.getCohortManager().generate(organizationId, studyId, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, token).first();
         assertEquals(12, myCohort.getSamples().size());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
-        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort()
+        myCohort = catalogManager.getCohortManager().generate(organizationId, studyId, query, new Cohort()
                 .setId("MyCohort2")
                 .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, token).first();
         assertEquals(3, myCohort.getSamples().size());

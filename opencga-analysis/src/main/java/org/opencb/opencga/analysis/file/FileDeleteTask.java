@@ -102,7 +102,7 @@ public class FileDeleteTask extends OpenCgaTool {
                 File catalogFile;
                 try {
                     catalogFile = fileManager.get(organizationId, studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                    fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), false, token);
+                    fileManager.checkCanDeleteFile(organizationId, studyFqn, catalogFile.getUuid(), false, token);
                 } catch (CatalogException e) {
                     logger.error("Error checking file '{}': {}", file, e.getMessage(), e);
                     addError(e);
@@ -112,13 +112,13 @@ public class FileDeleteTask extends OpenCgaTool {
                 try {
                     // Update file status to PENDING_DELETE and add tags mark
                     if (catalogFile.getType() == File.Type.FILE) {
-                        fileManager.update(studyFqn, file, updateParams, options, token);
+                        fileManager.update(organizationId, studyFqn, file, updateParams, options, token);
                     } else {
                         // We mark for deletion all the
                         Query query = new Query()
                                 .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogFile.getPath() + "*");
-                        fileManager.update(studyFqn, query, updateParams, options, token);
+                        fileManager.update(organizationId, studyFqn, query, updateParams, options, token);
                     }
                 } catch (Exception e) {
                     logger.error("Error updating status of file '{}' to PENDING_DELETE: {}", file, e.getMessage(), e);
@@ -236,7 +236,7 @@ public class FileDeleteTask extends OpenCgaTool {
 
     private void restore(Query query, FileUpdateParams updateParams, QueryOptions options) {
         try {
-            catalogManager.getFileManager().update(studyFqn, query, updateParams, options, token);
+            catalogManager.getFileManager().update(organizationId, studyFqn, query, updateParams, options, token);
         } catch (CatalogException e) {
             addCriticalError(e);
         }

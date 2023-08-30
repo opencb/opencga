@@ -80,7 +80,7 @@ public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
             for (Family family: familiesToUpdate) {
                 try {
                     logger.info("Updating pedigree graph for family '{}'", family.getId());
-                    catalogManager.getFamilyManager().update(study, family.getId(), null,
+                    catalogManager.getFamilyManager().update(organizationId, study, family.getId(), null,
                             new QueryOptions(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, true), token);
                     String msg = "Updated pedigree graph for family '" + family.getId() + "'";
                     logger.info(msg);

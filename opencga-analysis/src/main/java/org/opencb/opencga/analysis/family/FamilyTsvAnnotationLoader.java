@@ -36,6 +36,6 @@ public class FamilyTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public void addAnnotationSet(String entryId, AnnotationSet annotationSet, QueryOptions options) throws CatalogException {
-        catalogManager.getFamilyManager().addAnnotationSet(study, entryId, annotationSet, options, token);
+        catalogManager.getFamilyManager().addAnnotationSet(organizationId, study, entryId, annotationSet, options, token);
     }
 }

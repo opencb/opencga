@@ -409,7 +409,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                         .setFather(new Individual().setId("father"))
                         .setMother(new Individual().setId("mother")),
                 null, QueryOptions.empty(), token);
-        Family family = catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family"),
+        Family family = catalogManager.getFamilyManager().create(organizationId, studyFqn, new Family().setId("family"),
                 Arrays.asList("child", "mother", "father"), INCLUDE_RESULT, token).first();
 
         assertNotNull(family.getRoles());
@@ -462,7 +462,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().create(studyFqn, individual, Arrays.asList("sample4"), QueryOptions.empty(), token);
 
         Family family = new Family().setId("family");
-        catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList("proband", "father", "brother"), QueryOptions.empty(),
+        catalogManager.getFamilyManager().create(organizationId, studyFqn, family, Arrays.asList("proband", "father", "brother"), QueryOptions.empty(),
                 token);
 
         family.setMembers(Arrays.asList(
@@ -778,9 +778,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder3")));
 
         FamilyManager familyManager = catalogManager.getFamilyManager();
-        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Collections.singletonList(father)),
+        familyManager.create(organizationId, studyFqn, new Family().setId("family1").setMembers(Collections.singletonList(father)),
                 Collections.singletonList(child.getId()), QueryOptions.empty(), token);
-        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Collections.singletonList(mother)),
+        familyManager.create(organizationId, studyFqn, new Family().setId("family2").setMembers(Collections.singletonList(mother)),
                 Arrays.asList(father.getId(), child.getId()), QueryOptions.empty(), token);
 
         try {
@@ -964,7 +964,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
         assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
 
-        family = catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()),
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()),
                 options, token).first();
         assertEquals(2, family.getMembers().size());
         assertEquals(1, family.getVersion());
@@ -1030,7 +1030,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
         family.setMembers(null);
-        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, members, options, token).first();
 
         // Unlocked cases
         ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
@@ -1092,7 +1092,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
         family.setMembers(null);
-        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+        family = catalogManager.getFamilyManager().create(organizationId, studyFqn, family, members, options, token).first();
 
         // Unlocked cases
         ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);

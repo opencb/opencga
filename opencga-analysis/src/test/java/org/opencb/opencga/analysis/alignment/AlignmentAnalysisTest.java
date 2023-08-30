@@ -264,7 +264,7 @@ public class AlignmentAnalysisTest {
         String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
         String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+        File bamFile = catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
          assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
 
@@ -275,7 +275,7 @@ public class AlignmentAnalysisTest {
 
         toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
 
-        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+        bamFile = catalogManager.getFileManager().link(organizationId, STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());

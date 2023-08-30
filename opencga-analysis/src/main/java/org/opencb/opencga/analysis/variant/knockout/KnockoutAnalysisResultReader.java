@@ -78,7 +78,7 @@ public class KnockoutAnalysisResultReader {
             skip = 0;
         }
         ObjectReader reader = JacksonUtils.getDefaultObjectMapper().reader().forType(c);
-        try (InputStream is = catalogManager.getFileManager().download(study, fileId, token);
+        try (InputStream is = catalogManager.getFileManager().download(organizationId, study, fileId, token);
              MappingIterator<T> iterator = reader.readValues(is)) {
             Iterator<T> filtered = Iterators.filter(iterator, filter::test);
             int numMatches = Iterators.advance(filtered, skip);

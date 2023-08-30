@@ -566,7 +566,7 @@ public class AlignmentStorageManager extends StorageManager {
     private Path getFilePath(long fileId, String sessionId) throws CatalogException, IOException {
         QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key()));
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(fileId, fileOptions, sessionId);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(organizationId, fileId, fileOptions, sessionId);
 
         if (fileResult.getNumResults() != 1) {
             logger.error("Critical error: File {} not found in catalog.", fileId);

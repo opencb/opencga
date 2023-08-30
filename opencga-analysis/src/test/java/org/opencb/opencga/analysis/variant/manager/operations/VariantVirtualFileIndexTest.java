@@ -55,15 +55,15 @@ public class VariantVirtualFileIndexTest extends AbstractVariantOperationManager
     public void testIndexVirtual() throws Exception {
         String path = "data/vcfs/";
         String virtualFile = "variant-test-file.vcf";
-        catalogManager.getFileManager().link(studyId, new FileLinkParams()
+        catalogManager.getFileManager().link(organizationId, studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz").toString())
                 .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();
-        catalogManager.getFileManager().link(studyId, new FileLinkParams()
+        catalogManager.getFileManager().link(organizationId, studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz").toString())
                 .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();
-        catalogManager.getFileManager().link(studyId, new FileLinkParams()
+        catalogManager.getFileManager().link(organizationId, studyId, new FileLinkParams()
                 .setUri(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz").toString())
                 .setVirtualFileName(virtualFile)
                 .setPath(path), true, sessionId).first();

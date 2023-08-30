@@ -115,7 +115,7 @@ public class FileScanner {
         List<File> scan = new LinkedList<>();
         while (iterator.hasNext()) {
             File folder = iterator.next();
-            scan.addAll(scan(folder, catalogManager.getFileManager().getUri(folder), FileScannerPolicy.REPLACE, calculateChecksum,
+            scan.addAll(scan(folder, catalogManager.getFileManager().getUri(organizationId, folder), FileScannerPolicy.REPLACE, calculateChecksum,
                     false, sessionId));
         }
 
@@ -217,7 +217,7 @@ public class FileScanner {
             filter = uri -> true;
         }
         if (directoryToScan == null) {
-            directoryToScan = catalogManager.getFileManager().getUri(directory);
+            directoryToScan = catalogManager.getFileManager().getUri(organizationId, directory);
         }
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
@@ -225,7 +225,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Provided folder " + directory.getPath() + " is actually a file.");
         }
-        Study study = catalogManager.getFileManager().getStudy(directory, sessionId);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, directory, sessionId);
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         IOManager ioManager = catalogManager.getIoManagerFactory().get(directoryToScan);
@@ -263,7 +263,7 @@ public class FileScanner {
                                 // Set the status of the file to PENDING DELETE
                                 FileUpdateParams updateParams = new FileUpdateParams()
                                         .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
-                                catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(),
+                                catalogManager.getFileManager().update(organizationId, study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(),
                                         sessionId);
 
                                 // Delete completely the file/folder !
@@ -287,13 +287,13 @@ public class FileScanner {
                     if (file == null) {
                         long start, end;
                         if (uri.getPath().endsWith("/")) {
-                            file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), true,
+                            file = catalogManager.getFileManager().createFolder(organizationId, study.getFqn(), Paths.get(filePath).toString(), true,
                                     null, QueryOptions.empty(), sessionId).first();
                         } else {
                             start = System.currentTimeMillis();
 
                             InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
-                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, new File().setPath(filePath),
+                            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream, new File().setPath(filePath),
                                     overwrite, true, calculateChecksum, sessionId).first();
                             if (deleteSource) {
                                 ioManager.deleteFile(uri);
@@ -317,7 +317,7 @@ public class FileScanner {
                             long start = System.currentTimeMillis();
 
                             InputStream inputStream = new FileInputStream(new java.io.File(uri));
-                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite, true,
+                            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream, file, overwrite, true,
                                     calculateChecksum, sessionId).first();
 
                             long end = System.currentTimeMillis();

@@ -82,7 +82,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_PARENTS_DESCRIPTION) @QueryParam(ParamConstants.FILE_PARENTS_PARAM) boolean parents,
             @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
         try {
-            DataResult<File> file = fileManager.create(studyStr, params, parents, token);
+            DataResult<File> file = fileManager.create(organizationId, studyStr, params, parents, token);
             return createOkResponse(file);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -137,7 +137,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_ID_DESCRIPTION) @PathParam(value = "file") String fileStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
-            OpenCGAResult<FileContent> fileQueryResult = fileManager.image(studyStr, fileStr, token);
+            OpenCGAResult<FileContent> fileQueryResult = fileManager.image(organizationId, studyStr, fileStr, token);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -207,7 +207,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setPath(relativeFilePath + fileName)
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
-            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,
+            return createOkResponse(fileManager.upload(organizationId, studyStr, fileInputStream, file, false, parents, true,
                     expectedChecksum, expectedSize, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -225,7 +225,7 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, token);
+            DataInputStream stream = catalogManager.getFileManager().download(organizationId, studyStr, fileIdStr, -1, -1, token);
             return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -245,7 +245,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 lines = 20;
             }
             ParamUtils.checkIsSingleID(fileIdStr);
-            return createOkResponse(catalogManager.getFileManager().head(studyStr, fileIdStr, offset, lines, token));
+            return createOkResponse(catalogManager.getFileManager().head(organizationId, studyStr, fileIdStr, offset, lines, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -263,7 +263,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 lines = 20;
             }
             ParamUtils.checkIsSingleID(fileIdStr);
-            return createOkResponse(catalogManager.getFileManager().tail(studyStr, fileIdStr, lines, token));
+            return createOkResponse(catalogManager.getFileManager().tail(organizationId, studyStr, fileIdStr, lines, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -282,7 +282,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     "maxCount") int maxCount) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            return createOkResponse(catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, ignoreCase, maxCount, token));
+            return createOkResponse(catalogManager.getFileManager().grep(organizationId, studyStr, fileIdStr, pattern, ignoreCase, maxCount, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -400,7 +400,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             ParamUtils.checkIsSingleID(folder);
-            DataResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, token);
+            DataResult<File> result = catalogManager.getFileManager().getFilesFromFolder(organizationId, studyStr, folder, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -430,7 +430,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ParamUtils.checkIsSingleID(folderId);
             query.remove("maxDepth");
 
-            DataResult result = fileManager.getTree(studyStr, folderId.replace(":", "/"), maxDepth, queryOptions, token);
+            DataResult result = fileManager.getTree(organizationId, studyStr, folderId.replace(":", "/"), maxDepth, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -568,7 +568,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<String> fileIds = getIdList(fileIdStr);
 
-            DataResult<File> queryResult = fileManager.update(studyStr, fileIds, updateParams, true, queryOptions, token);
+            DataResult<File> queryResult = fileManager.update(organizationId, studyStr, fileIds, updateParams, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -622,7 +622,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
 
-            return createOkResponse(catalogManager.getFileManager().updateAnnotations(studyStr, fileStr, annotationSetId,
+            return createOkResponse(catalogManager.getFileManager().updateAnnotations(organizationId, studyStr, fileStr, annotationSetId,
                     updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -673,7 +673,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkParams params) {
         try {
-            return createOkResponse(catalogManager.getFileManager().link(studyStr, params, parents, token));
+            return createOkResponse(catalogManager.getFileManager().link(organizationId, studyStr, params, parents, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -860,7 +860,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     files = Collections.singletonList(file);
                 }
             } else {
-                List<File> result = catalogManager.getFileManager().getFilesFromFolder(fileIdStr, studyStr, null, token).getResults();
+                List<File> result = catalogManager.getFileManager().getFilesFromFolder(organizationId, studyStr, fileIdStr, null, token).getResults();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
                     File file1 = fileMetadataReader.updateMetadataInformation(studyStr, f, token);
@@ -947,7 +947,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(fileIdStr);
-            return createOkResponse(fileManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(fileManager.getAcls(organizationId, studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -967,7 +967,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileAclParams aclParams = new FileAclParams(
                     params.getSample(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getFile()) ? Collections.emptyList() : getIdList(params.getFile(), false);
-            return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, action, token));
+            return createOkResponse(fileManager.updateAcl(organizationId, studyStr, idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1028,7 +1028,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
+            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(organizationId, studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

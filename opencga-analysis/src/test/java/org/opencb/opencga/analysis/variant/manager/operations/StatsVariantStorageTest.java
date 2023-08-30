@@ -95,7 +95,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                     .stream()
                     .map(s -> new SampleReferenceParam().setId(s))
                     .collect(Collectors.toList());
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
+            Cohort cohort = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("coh" + i,
                     "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first();
             coh[i] = cohort.getId();
         }
@@ -263,7 +263,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         cohorts.put("coh0", catalogManager.getCohortManager().get(organizationId, studyId, coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.getCohortManager().update(studyId, coh[0],
+        catalogManager.getCohortManager().update(organizationId, studyId, coh[0],
                 new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().get(organizationId, studyId, coh[0], null, sessionId).first().getInternal().getStatus().getId());
 
@@ -271,7 +271,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 .map(s -> new SampleReferenceParam().setId(s.getId()))
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
-        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
+        catalogManager.getCohortManager().update(organizationId, studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
                 new QueryOptions(Constants.ACTIONS, Collections.singletonMap(SAMPLES.key(), ParamUtils.BasicUpdateAction.SET)), sessionId);
         assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().get(organizationId, studyId, coh[0], null, sessionId).first().getInternal().getStatus().getId());
 
@@ -313,7 +313,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         calculateStats(coh[0]);
 
-        catalogManager.getCohortManager().setStatus(studyId, coh[1], CohortStatus.CALCULATING, "", sessionId);
+        catalogManager.getCohortManager().setStatus(organizationId, studyId, coh[1], CohortStatus.CALCULATING, "", sessionId);
         Cohort coh1 = catalogManager.getCohortManager().get(organizationId, studyId, coh[1], null, sessionId).first();
         Exception expected = VariantStatsOperationManager.unableToCalculateCohortCalculating(coh1);
         try {
@@ -465,7 +465,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
     private File linkFile(String fileName) throws IOException, CatalogException {
         URI uri = getResourceUri(fileName);
         return catalogManager.getFileManager()
-                .link(studyFqn, new FileLinkParams().setUri(uri.toString()), false, sessionId).first();
+                .link(organizationId, studyFqn, new FileLinkParams().setUri(uri.toString()), false, sessionId).first();
     }
 
 

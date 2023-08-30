@@ -217,10 +217,10 @@ public class VariantOperationsTest {
             }
         }
 
-        catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
+        catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c1")
                         .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                 null, null, null, token);
-        catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
+        catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c2")
                         .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                 null, null, null, token);
 
@@ -245,7 +245,7 @@ public class VariantOperationsTest {
                 .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                         Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
         catalogManager.getFamilyManager().create(
-                STUDY,
+                organizationId, STUDY,
                 new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
                 individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                 token);

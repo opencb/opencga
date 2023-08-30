@@ -666,9 +666,9 @@ public class MigrationManager {
                 String adminStudy = "opencga@admin:admin";
                 migrationDBAdaptor.upsert(migrationRun);
                 OpenCGAResult<File> outdir = catalogManager.getFileManager()
-                        .createFolder(adminStudy, path, true, "Migration job " + migrationRun.getId(), null, QueryOptions.empty(), token);
+                        .createFolder(organizationId, adminStudy, path, true, "Migration job " + migrationRun.getId(), null, QueryOptions.empty(), token);
                 OpenCGAResult<File> stderr = catalogManager.getFileManager()
-                        .link(adminStudy, new FileLinkParams()
+                        .link(organizationId, adminStudy, new FileLinkParams()
                                         .setPath(Paths.get(path, logFile).toString())
                                         .setUri(Paths.get(catalogManager.getConfiguration().getJobDir(), path, logFile).toUri().toString()),
                                 false, token);
