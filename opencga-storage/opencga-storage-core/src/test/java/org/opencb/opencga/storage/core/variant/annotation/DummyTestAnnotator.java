@@ -59,7 +59,7 @@ public class DummyTestAnnotator extends VariantAnnotator {
     public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
         return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
                 new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null),
-                Collections.singletonList(new ObjectMap("data", "genes")), null);
+                Collections.singletonList(new ObjectMap("data", "genes")), null,null);
     }
 
 }

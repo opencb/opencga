@@ -15,13 +15,16 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
-    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2'))" && \
+    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
-    ## signature.tools.lib installation
+    ## signature.tools.lib installation \
     R -e 'install.packages(c("devtools", "getopt"), repos="https://www.stats.bris.ac.uk/R/")' && \
-    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-#    git checkout tags/v2.3.0 && \
-    git checkout d3d73db497b5b83abc55d6cd55840c34ed542628 && \
+    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
+
+WORKDIR /opt/opencga/signature.tools.lib
+
+RUN git fetch origin --tags && \
+    git checkout tags/v2.4.1 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
