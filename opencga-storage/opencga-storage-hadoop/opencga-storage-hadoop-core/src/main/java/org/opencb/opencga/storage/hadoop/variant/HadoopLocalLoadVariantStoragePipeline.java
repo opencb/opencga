@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConverterTask;
@@ -83,6 +84,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     private int taskId;
     private HashSet<String> loadedGenotypes;
     private int sampleIndexVersion;
+    private int largestVariantLength;
 
     public HadoopLocalLoadVariantStoragePipeline(StorageConfiguration configuration,
                                                  VariantHadoopDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider,
@@ -266,6 +268,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
         List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader = newSampleIndexDBLoader(sampleIds);
+        GetLargestVariantTask largestVariantTask = new GetLargestVariantTask();
 
 //        ((TaskMetadata<VcfSlice, VcfSlice>) t -> t)
 //                .then(archiveWriter)
@@ -294,6 +297,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 }
 
                 List<Variant> variants = converter.convert(slice);
+                largestVariantTask.apply(variants);
                 variants = VariantHadoopDBWriter.filterVariantsNotFromThisSlice(slice.getPosition(), variants);
                 variantsWriter.write(variants);
                 if (sampleIndexDBLoader != null) {
@@ -327,6 +331,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
+            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
     }
 
@@ -354,6 +359,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
         int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
         VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
+        GetLargestVariantTask largestVariantTask = new GetLargestVariantTask();
         AbstractDuplicatedVariantsResolver resolver = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
                 .getResolver(UriUtils.fileName(input), outdir);
         VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
@@ -374,7 +380,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER.key());
         // TODO: Move "SampleIndexDBLoader" to Write step so we can increase the number of threads
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
-                null, archiveFields, nonRefFilter);
+                null, archiveFields, nonRefFilter, largestVariantTask);
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, Object> ptr =
                 new ParallelTaskRunner<>(sliceReader, task, null, config);
@@ -389,6 +395,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
+            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
     }
 
@@ -397,7 +404,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         int studyId = helper.getStudyId();
         int fileId = Integer.parseInt(helper.getFileMetadata().getId());
-
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
 
         // Reader
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
@@ -406,12 +413,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .getResolver(UriUtils.fileName(input), outdir);
         VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
                 .getTask(resolver);
-        DataReader<Variant> reader = variantReader.then(dedupTask);
+        GetLargestVariantTask largestVariantTask = new GetLargestVariantTask();
+        DataReader<Variant> reader = variantReader.then(dedupTask).then(largestVariantTask);
 
         // Variants Writer
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         // Sample Index Writer
-        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader = newSampleIndexDBLoader(sampleIds);
 
         Task<Variant, Variant> progressLoggerTask = progressLogger
@@ -436,6 +443,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
+            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
     }
 
@@ -490,6 +498,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 }
             }
         }
+        getLoadStats().put("largestVariantLength", largestVariantLength);
+        logger.info("Largest variant found in VCF had a length of : {}", largestVariantLength);
         logger.info("============================================================");
     }
 
@@ -503,16 +513,50 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         metadataManager.setStatus(getStudyId(), taskId, Status.READY);
 
         boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
-        if (loadSampleIndex) {
-            for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
-                // Worth to check first to avoid too many updates in scenarios like 1000G
-                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
-                if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY) {
-                    metadataManager.updateSampleMetadata(getStudyId(), sampleId,
-                            s -> s.setSampleIndexStatus(Status.READY, sampleIndexVersion));
+        for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
+            // Worth to check first to avoid too many updates in scenarios like 1000G
+            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
+            boolean updateSampleIndexStatus = loadSampleIndex && sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY;
+            int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
+            boolean alreadyLoadedFiles = false;
+            if (sampleMetadata.getFiles().size() > 1) {
+                int loadedFiles = 0;
+                for (Integer fileId : sampleMetadata.getFiles()) {
+                    if (metadataManager.isFileIndexed(getStudyId(), fileId)) {
+                        loadedFiles++;
+                    }
                 }
+                if (loadedFiles > 1) {
+                    alreadyLoadedFiles = true;
+                }
+                metadataManager.getFileIdsFromSampleId(1, 1, true);
+            }
+            boolean updateLargestVariantLength;
+            if (alreadyLoadedFiles) {
+                if (actualLargestVariantLength > 0) {
+                    // Already loaded files, with a valid value. Update if needed.
+                    updateLargestVariantLength = largestVariantLength > actualLargestVariantLength;
+                } else {
+                    // Already loaded files without a valid value. Do not set a value, as it might be smaller than previous files.
+                    updateLargestVariantLength = false;
+                }
+            } else {
+                // First file loaded. Update value
+                updateLargestVariantLength = true;
+            }
+
+            if (updateSampleIndexStatus || updateLargestVariantLength) {
+                metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
+                    if (updateSampleIndexStatus) {
+                        s.setSampleIndexStatus(Status.READY, sampleIndexVersion);
+                    }
+                    if (updateLargestVariantLength) {
+                        s.getAttributes().put(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);
+                    }
+                });
             }
         }
+
         boolean loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue();
         if (loadArchive) {
             metadataManager.updateFileMetadata(getStudyId(), getFileId(), fileMetadata -> {
@@ -578,18 +622,20 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         private final VariantHBaseArchiveDataWriter archiveWriter;
         private final VariantHadoopDBWriter hadoopDBWriter;
         private final SampleIndexDBLoader sampleIndexDBLoader;
+        private final Task<Variant, Variant> otherTask;
 
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
-                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger) {
-            this(archiveWriter, hadoopDBWriter, sampleIndexDBLoader, progressLogger, null, null);
-        }
-
-        GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
-                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields, String nonRefFilter) {
+                            SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields, String nonRefFilter,
+                            Task<Variant, Variant> otherTask) {
             this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields, nonRefFilter);
             this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;
+            if (otherTask == null) {
+                this.otherTask = t -> t;
+            } else {
+                this.otherTask = otherTask;
+            }
         }
 
         @Override
@@ -606,10 +652,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             }
 
             converterTask.pre();
+            otherTask.pre();
         }
 
         @Override
-        public List<Object> apply(List<ImmutablePair<Long, List<Variant>>> batch) {
+        public List<Object> apply(List<ImmutablePair<Long, List<Variant>>> batch) throws Exception {
             for (ImmutablePair<Long, List<Variant>> pair : batch) {
                 List<Variant> variants = VariantHadoopDBWriter.filterVariantsNotFromThisSlice(pair.getKey(), pair.getValue());
                 hadoopDBWriter.write(variants);
@@ -617,6 +664,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 if (sampleIndexDBLoader != null) {
                     sampleIndexDBLoader.write(variants);
                 }
+                otherTask.apply(variants);
             }
 
             List<VcfSlice> slices = converterTask.apply(batch);
@@ -639,7 +687,36 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             }
 
             converterTask.post();
+            otherTask.post();
         }
     }
 
+    private static class GetLargestVariantTask implements Task<Variant, Variant> {
+
+        private final AtomicInteger maxLength = new AtomicInteger();
+
+        @Override
+        public List<Variant> apply(List<Variant> variants) {
+            int localMax = maxLength.get();
+            boolean newValue = false;
+            for (Variant variant : variants) {
+                if (variant.getLengthReference() > localMax) {
+                    localMax = variant.getLengthReference();
+                    newValue = true;
+                }
+            }
+            if (newValue) {
+                updateMaxLength(localMax);
+            }
+            return variants;
+        }
+
+        private void updateMaxLength(int local) {
+            maxLength.updateAndGet(v -> Math.max(v, local));
+        }
+
+        public int getMaxLength() {
+            return maxLength.get();
+        }
+    }
 }

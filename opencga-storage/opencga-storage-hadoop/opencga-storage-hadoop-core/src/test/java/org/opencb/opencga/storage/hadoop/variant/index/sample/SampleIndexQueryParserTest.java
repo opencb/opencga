@@ -1851,7 +1851,7 @@ public class SampleIndexQueryParserTest {
                 new Region("6", 33_200_000, 34_800_000),
                 new Region("8", 144_671_680, 144_690_000),
                 new Region("6", 31_200_000, 31_800_000),
-                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList());
+                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList(), 0);
         assertEquals(Arrays.asList(
                 new LocusQuery(new Region("6", 31_000_000, 35_000_000), Arrays.asList(new Region("6", 31_200_000, 31_800_000),new Region("6", 33_200_000, 34_800_000)), Collections.emptyList()),
 //                new LocusQuery(new Region("6", 31_000_000, 32_000_000), Collections.singletonList(new Region("6", 31_200_000, 31_800_000)), Collections.emptyList()),
@@ -1866,7 +1866,7 @@ public class SampleIndexQueryParserTest {
                 new Region("6", 31_200_000, 33_800_000),
                 new Region("8", 144_671_680, 144_690_000),
                 new Region("8", 144_700_000, 144_995_738),
-                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList());
+                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList(), 0);
         assertEquals(Arrays.asList(
                 new LocusQuery(new Region("6", 31_000_000, 35_000_000), Collections.singletonList(new Region("6", 31_200_000, 34_800_000)), Collections.emptyList()),
                 new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
@@ -1885,7 +1885,7 @@ public class SampleIndexQueryParserTest {
                         new Variant("6:35001000:A:T"),
                         new Variant("7:35001000:A:T"),
                         new Variant("7:35002000:A:T")
-                ));
+                ), 0);
         assertEquals(Arrays.asList(
                 new LocusQuery(new Region("6", 31_000_000, 36_000_000),
                         Collections.singletonList(new Region("6", 31_200_000, 34_800_000)), Arrays.asList(new Variant("6:35001000:A:T"))),
@@ -1894,6 +1894,39 @@ public class SampleIndexQueryParserTest {
                 new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
                         new Region("8", 144_700_000, 144_995_738),
                         new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())
+        ), queries);
+
+        queries = buildLocusQueries(
+                Arrays.asList(
+                        new Region("6", 31_200_000, 31_800_000),
+                        new Region("6", 41_200_000, 43_800_000),
+                        new Region("6", 35_200_000, 36_800_000),
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)),
+                Arrays.asList(
+                        new Variant("6:35001000:A:T"),
+                        new Variant("7:35001000:A:T"),
+                        new Variant("7:35002000:A:T")
+                ), 2000000);
+        assertEquals(Arrays.asList(
+                new LocusQuery(new Region("6", 29_000_000, 44_000_000),
+                        Arrays.asList(
+                                new Region("6", 31_200_000, 31_800_000),
+                                new Region("6", 35_200_000, 36_800_000),
+                                new Region("6", 41_200_000, 43_800_000)),
+                        Arrays.asList(
+                                new Variant("6:35001000:A:T"))),
+                new LocusQuery(new Region("7", 35_000_000, 36_000_000),
+                        Collections.emptyList(),
+                        Arrays.asList(
+                                new Variant("7:35001000:A:T"),
+                                new Variant("7:35002000:A:T"))),
+                new LocusQuery(new Region("8", 142_000_000, 147_000_000),
+                        Arrays.asList(
+                                new Region("8", 144_671_680, 144_690_000),
+                                new Region("8", 144_700_000, 144_995_738),
+                                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())
         ), queries);
     }
 }

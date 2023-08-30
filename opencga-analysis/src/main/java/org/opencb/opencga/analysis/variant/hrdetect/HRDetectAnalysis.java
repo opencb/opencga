@@ -59,7 +59,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "hr-detect";
     public static final String DESCRIPTION = "Run HRDetect analysis for a given somatic sample.";
 
-    public final static String HRDETECT_SCORES_FILENAME_DEFAULT = "data_matrix.tsv";
+    public final static String HRDETECT_SCORES_FILENAME_DEFAULT = "hrdetect_output.tsv";
 
     @ToolParams
     private HRDetectAnalysisParams hrdetectParams = new HRDetectAnalysisParams();

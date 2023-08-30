@@ -15,7 +15,7 @@ jobs:
 
   test:
     uses: ./.github/workflows/test-analysis.yml
-    needs: deploy-docker-ext-tools
+    needs: build
     with:
       test_profile: runShortTests,runMediumTests
     secrets: inherit
