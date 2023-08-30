@@ -174,7 +174,9 @@ public class CellBaseValidator {
                 }
             }
         }
-        if (getToken() != null) {
+        if (StringUtils.isEmpty(getToken())) {
+            cellBaseConfiguration.setToken(null);
+        } else {
             // Check it's supported
             if (!supportsToken(serverVersion)) {
                 throw new IllegalArgumentException("Token not supported for cellbase "
