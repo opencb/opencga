@@ -1225,7 +1225,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throw e;
         } catch (Exception e) {
             exception = e;
-            throw new StorageEngineException("Error executing operation " + toolId, e);
+            throw new StorageEngineException("Error executing operation '" + toolId + "' : " + e.getMessage(), e);
         } finally {
             if (result instanceof DataResult) {
                 auditAttributes.append("dbTime", ((DataResult) result).getTime());
