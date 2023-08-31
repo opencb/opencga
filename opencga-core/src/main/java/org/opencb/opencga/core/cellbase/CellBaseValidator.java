@@ -194,7 +194,8 @@ public class CellBaseValidator {
                 }
             }
         }
-        if (StringUtils.isEmpty(getToken())) {
+        String token = getToken();
+        if (StringUtils.isEmpty(token)) {
             cellBaseConfiguration.setToken(null);
         } else {
             // Check it's supported
@@ -207,7 +208,7 @@ public class CellBaseValidator {
             // Check it's an actual token
             DataAccessTokenManager tokenManager = new DataAccessTokenManager();
             try {
-                tokenManager.decode(getToken());
+                tokenManager.decode(token);
             } catch (JwtException e) {
                 throw new IllegalArgumentException("Malformed token for cellbase "
                         + "url: '" + getURL() + "'"

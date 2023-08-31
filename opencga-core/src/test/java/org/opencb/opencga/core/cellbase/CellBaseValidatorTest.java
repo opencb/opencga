@@ -85,8 +85,16 @@ public class CellBaseValidatorTest {
     public void testTokenNotSupported() throws IOException {
         String token = System.getenv("CELLBASE_HGMD_TOKEN");
         Assume.assumeTrue(StringUtils.isNotEmpty(token));
+        thrown.expectMessage("Token not supported");
         CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
         Assert.assertNotNull(validated.getToken());
+    }
+
+    @Test
+    public void testTokenEmpty() throws IOException {
+        String token = "";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
+        Assert.assertNull(validated.getToken());
     }
 
     @Test
