@@ -68,9 +68,9 @@ public class ParamConstants {
     public static final String DISTINCT_FIELD_PARAM = "field";
     public static final String DISTINCT_FIELD_DESCRIPTION = "Comma separated list of fields for which to obtain the distinct values";
     public static final String PHENOTYPES_PARAM = "phenotypes";
-    public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
+    public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names" + REGEX_SUPPORT;
     public static final String DISORDERS_PARAM = "disorders";
-    public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
+    public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names" + REGEX_SUPPORT;
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
 
@@ -320,8 +320,8 @@ public class ParamConstants {
     public static final String INDIVIDUAL_SEX_DESCRIPTION = "Individual sex";
     public static final String INDIVIDUAL_ETHNICITY_DESCRIPTION = "Individual ethnicity" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION = "Individual date of birth";
-    public static final String INDIVIDUAL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION + REGEX_SUPPORT;
-    public static final String INDIVIDUAL_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION + REGEX_SUPPORT;
+    public static final String INDIVIDUAL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
+    public static final String INDIVIDUAL_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION;
     public static final String INDIVIDUAL_POPULATION_NAME_DESCRIPTION = "Population name" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION = "Subpopulation name" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION = "Individual karyotypic sex";
@@ -360,8 +360,8 @@ public class ParamConstants {
     public static final String FAMILY_MEMBERS_DESCRIPTION = "Comma separated list of family members";
     public static final String FAMILY_SAMPLES_DESCRIPTION = "Comma separated list of member's samples";
     public static final String FAMILY_EXPECTED_SIZE_DESCRIPTION = "Expected size of the family (number of members)";
-    public static final String FAMILY_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION + REGEX_SUPPORT;
-    public static final String FAMILY_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION + REGEX_SUPPORT;
+    public static final String FAMILY_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION;
+    public static final String FAMILY_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
     public static final String FAMILY_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String FAMILY_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
     public static final String FAMILY_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
@@ -1480,7 +1480,7 @@ public class ParamConstants {
     public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
-    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100;
+    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String SAMPLES_UUID_DESCRIPTION = "Comma separated list sample UUIDs" + UP_TO_100;
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual IDs, names or UUIDs" + UP_TO_100;
     public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100 + REGEX_SUPPORT;
