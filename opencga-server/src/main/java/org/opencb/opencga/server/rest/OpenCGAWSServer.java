@@ -912,7 +912,7 @@ public class OpenCGAWSServer {
             jobDependsOn = Collections.emptyList();
         }
         return catalogManager.getJobManager()
-                .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
+                .submit(organizationId, study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
     }
 
     public Response createPendingResponse() {

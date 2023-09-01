@@ -1711,7 +1711,7 @@ public class StudyManager extends AbstractManager {
                 sessionId));
         result.put("cohort", catalogManager.getCohortManager().facet(organizationId, studyStr, new Query(), setFacetFields(cohortFields), defaultStats,
                 sessionId));
-        result.put("job", catalogManager.getJobManager().facet(studyStr, new Query(), setFacetFields(jobFields), defaultStats,
+        result.put("job", catalogManager.getJobManager().facet(organizationId, studyStr, new Query(), setFacetFields(jobFields), defaultStats,
                 sessionId));
 
         return result;

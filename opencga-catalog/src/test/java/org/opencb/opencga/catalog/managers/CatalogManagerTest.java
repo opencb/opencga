@@ -877,8 +877,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().search(organizationId, query, null, token).first().getId();
 
-        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
-        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
+        catalogManager.getJobManager().submit(organizationId, studyId, "command-subcommand", null, Collections.emptyMap(), token);
+        catalogManager.getJobManager().submit(organizationId, studyId, "command-subcommand2", null, Collections.emptyMap(), token);
 
         catalogManager.getJobManager().create(organizationId, studyId,
                 new Job().setId("job1").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))),
@@ -923,41 +923,41 @@ public class CatalogManagerTest extends AbstractManagerTest {
 //                .put("jobs.reuse.tools", "command-subcommand");
 //        String toolId = "command-subcommand";
         String toolId = "variant-index";
-        String job1 = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key", 1).append("key2", 2), token).first().getId();
+        String job1 = catalogManager.getJobManager().submit(organizationId, study1, toolId, null, new ObjectMap("key", 1).append("key2", 2), token).first().getId();
 
         // Same params, different order, empty jobId
-        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
+        OpenCGAResult<Job> result = catalogManager.getJobManager().submit(organizationId, study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
                 "", "", Collections.emptyList(), Collections.emptyList(), token);
         assertEquals(job1, result.first().getId());
         assertEquals(1, result.getEvents().size());
         assertEquals("reuse", result.getEvents().get(0).getId());
 
         // Same params, different values
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
+        result = catalogManager.getJobManager().submit(organizationId, study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), token);
         assertNotEquals(job1, result.first().getId());
 
         // Same params, but with jobId
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
+        result = catalogManager.getJobManager().submit(organizationId, study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
                 Collections.emptyList(), Collections.emptyList(), token);
         assertNotEquals(job1, result.first().getId());
         assertEquals("MyJobId", result.first().getId());
 
         // Same params, but with dependencies
-        result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
+        result = catalogManager.getJobManager().submit(organizationId, study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
                 Collections.singletonList(job1), Collections.emptyList(), token);
         assertNotEquals(job1, result.first().getId());
     }
 
     @Test
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
-        Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token).first();
-        Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        Job first = catalogManager.getJobManager().submit(organizationId, studyFqn, "command-subcommand", null, Collections.emptyMap(), token).first();
+        Job second = catalogManager.getJobManager().submit(organizationId, studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getUuid()), null, token).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        catalogManager.getJobManager().submit(organizationId, studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getId()), null, token);
     }
 
@@ -998,12 +998,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 default:
                     throw new IllegalArgumentException();
             }
-            catalogManager.getJobManager().update(studyId, id, new ObjectMap("internal",
+            catalogManager.getJobManager().update(organizationId, studyId, id, new ObjectMap("internal",
                     new JobInternal(new Enums.ExecutionStatus(status))), new QueryOptions(), token);
         }
 
         int limit = 20;
-        DataResult<JobTop> top = catalogManager.getJobManager().top(new Query(), limit, token);
+        DataResult<JobTop> top = catalogManager.getJobManager().top(organizationId, new Query(), limit, token);
 
         assertEquals(1, top.getNumMatches());
         assertEquals(limit, top.first().getJobs().size());
@@ -1013,7 +1013,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobOwner() throws CatalogException {
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 token);
 
         assertEquals(1, job.getNumResults());
@@ -1022,12 +1022,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobWithDependencies() throws CatalogException {
-        Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file1"), token).first();
-        Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), token).first();
+        Job job1 = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file1"), token).first();
+        Job job2 = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), token).first();
 
-        Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
+        Job job3 = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
                 Arrays.asList(job1.getId(), job2.getId()), null, token).first();
-        Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
+        Job job4 = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
                 Arrays.asList(job1.getUuid(), job2.getUuid()), null, token).first();
 
         assertEquals(2, job3.getDependsOn().size());
@@ -1045,7 +1045,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
 
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 token);
 
         assertEquals(1, job.getNumResults());
@@ -1063,7 +1063,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", ""), ParamUtils.AclAction.SET, token);
 
         try {
-            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
+            catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
             fail("Submission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
@@ -1085,7 +1085,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
@@ -1097,7 +1097,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
@@ -1109,14 +1109,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void visitJob() throws CatalogException {
-        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
+        Job job = catalogManager.getJobManager().submit(organizationId, studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
                 .first();
 
         Query query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
         assertEquals(1, catalogManager.getJobManager().count(organizationId, studyFqn, query, token).getNumMatches());
 
         // Now we visit the job
-        catalogManager.getJobManager().visit(studyFqn, job.getId(), token);
+        catalogManager.getJobManager().visit(organizationId, studyFqn, job.getId(), token);
         assertEquals(0, catalogManager.getJobManager().count(organizationId, studyFqn, query, token).getNumMatches());
 
         query.put(JobDBAdaptor.QueryParams.VISITED.key(), true);
@@ -1124,7 +1124,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Now we update setting job to visited false again
         JobUpdateParams updateParams = new JobUpdateParams().setVisited(false);
-        catalogManager.getJobManager().update(studyFqn, job.getId(), updateParams, QueryOptions.empty(), token);
+        catalogManager.getJobManager().update(organizationId, studyFqn, job.getId(), updateParams, QueryOptions.empty(), token);
         assertEquals(0, catalogManager.getJobManager().count(organizationId, studyFqn, query, token).getNumMatches());
 
         query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);

@@ -542,7 +542,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // If changes, launch sample-index-run
                 ToolParams params =
                         new VariantSecondarySampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, VariantSecondarySampleIndexOperationTool.ID, null,
+                return catalogManager.getJobManager().submit(organizationId, studyFqn, VariantSecondarySampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });
@@ -586,7 +586,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
                     VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
                     OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
-                            .submitProject(project, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(organizationId, project, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Save variant annotation before changing cellbase configuration", null, null, token);
                     result.getResults().add(saveResult.first());
                     if (saveResult.getEvents() != null) {
@@ -597,7 +597,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (annotate) {
                     VariantAnnotationIndexParams params = new VariantAnnotationIndexParams().setOverwriteAnnotations(true);
                     OpenCGAResult<Job> annotResult = catalogManager.getJobManager()
-                            .submitProject(project, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(organizationId, project, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Forced re-annotation after changing cellbase configuration", jobDependsOn, null, token);
                     result.getResults().add(annotResult.first());
                     if (annotResult.getEvents() != null) {
