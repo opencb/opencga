@@ -120,8 +120,8 @@ public class InternalStatus extends Status {
         super.name = statusName;
         super.description = description;
         super.date = TimeUtils.getTime();
-        this.version = GitRepositoryState.get().getBuildVersion();
-        this.commit = GitRepositoryState.get().getCommitId();
+        this.version = GitRepositoryState.getInstance().getBuildVersion();
+        this.commit = GitRepositoryState.getInstance().getCommitId();
     }
 
     @Override

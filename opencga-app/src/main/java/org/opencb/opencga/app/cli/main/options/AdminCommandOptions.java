@@ -41,6 +41,7 @@ public class AdminCommandOptions {
         public ImportUsersCommandOptions importUsersCommandOptions;
         public SearchUsersCommandOptions searchUsersCommandOptions;
         public SyncUsersCommandOptions syncUsersCommandOptions;
+        public UsersUpdateGroupsCommandOptions usersUpdateGroupsCommandOptions;
 
 
     public AdminCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -55,6 +56,7 @@ public class AdminCommandOptions {
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
         this.searchUsersCommandOptions = new SearchUsersCommandOptions();
         this.syncUsersCommandOptions = new SyncUsersCommandOptions();
+        this.usersUpdateGroupsCommandOptions = new UsersUpdateGroupsCommandOptions();
     
     }
     
@@ -275,6 +277,32 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
         public boolean force = false;
+    
+    }
+
+    @Parameters(commandNames = {"update-groups-users"}, commandDescription ="Add or remove users from existing groups")
+    public class UsersUpdateGroupsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
+        public String user; 
+    
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE user to/from groups", required = false, arity = 1)
+        public String action = "ADD"; 
+    
+        @Parameter(names = {"--study-ids"}, description = "The body web service studyIds parameter", required = false, arity = 1)
+        public String studyIds;
+    
+        @Parameter(names = {"--group-ids"}, description = "The body web service groupIds parameter", required = false, arity = 1)
+        public String groupIds;
     
     }
 

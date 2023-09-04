@@ -31,7 +31,7 @@ public class Metadata {
 
 
     public Metadata() {
-        this(GitRepositoryState.get().getBuildVersion(), TimeUtils.getTime());
+        this(GitRepositoryState.getInstance().getBuildVersion(), TimeUtils.getTime());
     }
 
     public Metadata(String version, String creationDate) {
