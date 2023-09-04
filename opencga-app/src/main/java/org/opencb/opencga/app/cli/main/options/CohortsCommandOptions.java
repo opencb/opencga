@@ -242,10 +242,10 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
@@ -334,7 +334,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
         public String status; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names", required = false, arity = 1)
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
@@ -411,10 +411,10 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
