@@ -1,22 +1,22 @@
-name: Push to develop or release branch
+name: To test cicd
 
 on:
-  push:
-    branches:
-      - develop
-      - release-*
   workflow_dispatch:
 
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      storage_hadoop: hdp3.1
+      maven_opts: -Dopencga.war.name=opencga
+      opencga_maven_opts: -P storage-hadoop,hdp3.1
       artifact_name: build-folder
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs: build
     secrets: inherit
-    with:
-      artifact_name: build-folder
+
+  deploy-emr-docker:
+    uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
+    needs: build
+    secrets: inherit
