@@ -196,6 +196,10 @@ public class SampleIndexVariantBiConverter {
         return new MendelianErrorSampleIndexEntryIterator(sampleIndexEntry, schema);
     }
 
+    public SampleIndexSchema getSchema() {
+        return schema;
+    }
+
     private abstract static class SampleIndexGtEntryIterator implements SampleIndexEntryIterator {
         protected SampleIndexEntry.SampleIndexGtEntry gtEntry;
         private final SampleIndexSchema schema;

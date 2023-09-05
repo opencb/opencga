@@ -435,6 +435,8 @@ public class VariantQueryUtilsTest extends GenericTest {
         checkIsVariantId("1:1000:A:T");
         checkIsVariantId("1:1000-2000:A:T");
         checkIsVariantId("1:1000-2000:A:<DUP:TANDEM>");
+        checkIsVariantId("HLA-DRB1*04:03:01:3349:GAGACAGAG:-", true);
+        checkIsVariantId("HLA-DRB1*04:03:01:3349:GAGACAGAG:-:2", false);
         checkIsVariantId("11:14525312:-:]11:14521700].");
         checkIsVariantId("4:100:C:[15:300[A");
         checkIsVariantId("4:100:C:]15:300]A");
@@ -442,8 +444,6 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     public void checkIsVariantId(String v) {
-
-        boolean actual = VariantQueryUtils.isVariantId(v);
         boolean expected;
         try {
             new Variant(v);
@@ -451,6 +451,11 @@ public class VariantQueryUtilsTest extends GenericTest {
         } catch (Exception e) {
             expected = false;
         }
+        checkIsVariantId(v, expected);
+    }
+
+    public void checkIsVariantId(String v, boolean expected) {
+        boolean actual = VariantQueryUtils.isVariantId(v);
         assertEquals(v, expected, actual);
     }
 

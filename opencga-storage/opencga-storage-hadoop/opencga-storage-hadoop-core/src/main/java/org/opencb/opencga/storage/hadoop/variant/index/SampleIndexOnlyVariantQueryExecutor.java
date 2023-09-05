@@ -16,7 +16,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -31,10 +33,12 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
@@ -61,7 +66,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final VariantQueryParser variantQueryParser;
     private final VariantQueryProjectionParser variantQueryProjectionParser;
-    private Logger logger = LoggerFactory.getLogger(SampleIndexOnlyVariantQueryExecutor.class);
+    private static Logger logger = LoggerFactory.getLogger(SampleIndexOnlyVariantQueryExecutor.class);
 
     private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
             .namingPattern("sample-index-async-count-%s")
@@ -171,8 +176,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e).setQuery(inputQuery);
             }
-            SampleVariantIndexEntryToVariantConverter converter =
-                    new SampleVariantIndexEntryToVariantConverter(parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
+            boolean includeAll = inputQuery.getBoolean("includeAllFromSampleIndex", false);
+            SampleVariantIndexEntryToVariantConverter converter = new SampleVariantIndexEntryToVariantConverter(
+                    parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager(), includeAll);
             variantIterator = VariantDBIterator.wrapper(Iterators.transform(rawIterator, converter::convert));
             AddMissingDataTask task = new AddMissingDataTask(
                     parsedQuery, sampleIndexQuery, dbAdaptor.getMetadataManager());
@@ -286,7 +292,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         enum FamilyRole {
             MOTHER,
             FATHER,
-            SAMPLE
+            SAMPLE;
         }
 
         private final boolean includeStudy;
@@ -296,9 +302,18 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         private String motherName;
         private String fatherName;
         private LinkedHashMap<String, Integer> samplesPosition;
+        private List<String> sampleFiles;
+        private IndexField<String> filterField;
+        private IndexField<String> qualField;
+        private final SampleIndexSchema schema;
+        private final boolean includeAll;
+
 
         SampleVariantIndexEntryToVariantConverter(ParsedVariantQuery parseQuery, SampleIndexQuery sampleIndexQuery,
-                                                  VariantStorageMetadataManager metadataManager) {
+                                                  VariantStorageMetadataManager metadataManager, boolean includeAll) {
+            schema = sampleIndexQuery.getSchema();
+            this.includeAll = includeAll;
+
             VariantQueryProjection projection = parseQuery.getProjection();
             includeStudy = !projection.getStudyIds().isEmpty();
             if (includeStudy) {
@@ -348,6 +363,31 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     this.fatherName = null;
                 }
 
+                if (includeAll) {
+                    if (sampleMetadata == null) {
+                        sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                    }
+                    if (sampleMetadata.isMultiFileSample()) {
+                        List<Integer> sampleFileIds = sampleMetadata.getFiles();
+                        sampleFiles = new ArrayList<>(sampleFileIds.size());
+                        for (Integer fileId : sampleFileIds) {
+                            sampleFiles.add(metadataManager.getFileName(studyId, fileId));
+                        }
+                    } else {
+                        List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
+                        if (fileIds.isEmpty()) {
+                            logger.warn("Sample without indexed files!");
+                            sampleFiles = Collections.singletonList("sample_without_indexed_files.vcf");
+                        } else {
+                            String fileName = metadataManager.getFileName(studyId, fileIds.get(0));
+                            sampleFiles = Collections.singletonList(fileName);
+                        }
+                    }
+                    filterField = schema.getFileIndex()
+                            .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
+                    qualField = schema.getFileIndex()
+                            .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+                }
             }
         }
 
@@ -360,22 +400,47 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 studyEntry.setStudyId(studyName);
                 studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
                 studyEntry.setSamples(new ArrayList<>(familyRoleOrder.size()));
+                SampleEntry sampleEntry = null;
                 for (FamilyRole role : familyRoleOrder) {
                     switch (role) {
                         case MOTHER:
                             studyEntry.getSamples().add(new SampleEntry(motherName, null,
-                                    Collections.singletonList(GenotypeCodec.decodeMother(entry.getParentsCode()))));
+                                    Arrays.asList(GenotypeCodec.decodeMother(entry.getParentsCode()))));
                             break;
                         case FATHER:
                             studyEntry.getSamples().add(new SampleEntry(fatherName, null,
-                                    Collections.singletonList(GenotypeCodec.decodeFather(entry.getParentsCode()))));
+                                    Arrays.asList(GenotypeCodec.decodeFather(entry.getParentsCode()))));
                             break;
                         case SAMPLE:
-                            studyEntry.getSamples().add(new SampleEntry(sampleName, null,
-                                    Collections.singletonList(entry.getGenotype())));
+                            sampleEntry = new SampleEntry(sampleName, null,
+                                    Arrays.asList(entry.getGenotype()));
+                            studyEntry.getSamples().add(sampleEntry);
                             break;
                         default:
                             throw new IllegalStateException("Unexpected value: " + role);
+                    }
+                }
+                if (includeAll) {
+                    HashMap<String, String> fileAttributes = new HashMap<>();
+                    for (BitBuffer fileIndexBitBuffer : entry.getFilesIndex()) {
+                        String filter = filterField.readAndDecode(fileIndexBitBuffer);
+                        if (filter == null) {
+                            filter = "NA";
+                        }
+                        fileAttributes.put(StudyEntry.FILTER, filter);
+                        String qual = qualField.readAndDecode(fileIndexBitBuffer);
+                        if (qual == null) {
+                            qual = "NA";
+                        }
+                        fileAttributes.put(StudyEntry.QUAL, qual);
+
+                        Integer idx = schema.getFileIndex().getFilePositionIndex().readAndDecode(fileIndexBitBuffer);
+                        String fileName = sampleFiles.get(idx);
+                        studyEntry.setFiles(new ArrayList<>());
+                        studyEntry.getFiles().add(new FileEntry(fileName, null, fileAttributes));
+                        if (sampleEntry != null) {
+                            sampleEntry.setFileIndex(0);
+                        }
                     }
                 }
                 studyEntry.setSortedSamplesPosition(samplesPosition);
@@ -388,9 +453,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
     private class AddMissingDataTask implements Task<Variant, Variant> {
         private final ParsedVariantQuery parsedQuery;
         private final String studyName;
-        private final List<String> samples;
-        private final List<String> files;
-        private final List<String> allFiles;
+        private final String sampleName;
+        private final List<String> filesFromSample;
+        private final List<String> includeSamples;
+        private final List<String> allFiles; // from all includedSamples
+        private final int gtIdx;
 
         AddMissingDataTask(ParsedVariantQuery parsedQuery, SampleIndexQuery sampleIndexQuery,
                            VariantStorageMetadataManager metadataManager) {
@@ -406,9 +473,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 throw new IllegalStateException("Unexpected number of samples. Expected one, found "
                         + sampleIndexQuery.getSamplesMap().keySet());
             }
-            samples = new ArrayList<>(projectionStudy.getSamples().size());
+            includeSamples = new ArrayList<>(projectionStudy.getSamples().size());
             for (Integer sample : projectionStudy.getSamples()) {
-                samples.add(metadataManager.getSampleName(studyId, sample));
+                includeSamples.add(metadataManager.getSampleName(studyId, sample));
             }
             Set<Integer> allFileIds = metadataManager.getFileIdsFromSampleIds(studyId, projectionStudy.getSamples(), true);
             allFiles = new ArrayList<>(allFileIds.size());
@@ -416,13 +483,15 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 allFiles.add(metadataManager.getFileName(studyId, fileId));
             }
 
-            String sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
+            sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
             Integer sampleId = metadataManager.getSampleId(studyId, sampleName);
             List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId, true);
-            files = new ArrayList<>(fileIds.size());
+            filesFromSample = new ArrayList<>(fileIds.size());
             for (Integer fileId : fileIds) {
-                files.add(metadataManager.getFileName(studyId, fileId));
+                filesFromSample.add(metadataManager.getFileName(studyId, fileId));
             }
+            List<String> includeSampleData = VariantQueryUtils.getIncludeSampleData(parsedQuery.getInputQuery());
+            gtIdx = includeSampleData.indexOf("GT");
         }
 
         @Override
@@ -468,7 +537,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     // Should end in few seconds
                     future.get(90, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    throw new VariantQueryException("Error fetching original call for INDELs");
+                    throw new VariantQueryException("Error fetching extra data", e);
                 }
             }
             logger.info("Fetch {} partial variants in {} in {} threads",
@@ -478,6 +547,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             return variants;
         }
 
+        /**
+         * Fetch the Secondary alternates, sample GTs and original call of these variants.
+         * @param toReadFull variants to complete
+         */
         private void addSecondaryAlternates(List<Variant> toReadFull) {
 //            StopWatch stopWatch = StopWatch.createStarted();
             Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(parsedQuery.getInputOptions()));
@@ -491,27 +564,38 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             options.put(VariantHadoopDBAdaptor.QUIET, true);
             options.put(VariantHadoopDBAdaptor.NATIVE, true);
 
-            Map<String, Variant> fullVariants = dbAdaptor.get(new VariantQuery()
+            Map<String, Variant> variantsExtra = dbAdaptor.get(new VariantQuery()
                                     .id(toReadFull)
                                     .study(studyName)
-                                    .includeSample(samples)
-                                    .includeSampleData(VariantQueryUtils.getIncludeSampleData(parsedQuery.getInputQuery()))
+                                    .includeSample(includeSamples)
+                                    .includeSampleData("GT") // read only GT
                                     .includeFile(allFiles),
                             options)
                     .getResults().stream().collect(Collectors.toMap(Variant::toString, v -> v));
 
             for (Variant variant : toReadFull) {
-                Variant fullVariant = fullVariants.get(variant.toString());
-                if (fullVariant == null) {
+                Variant variantExtra = variantsExtra.get(variant.toString());
+                if (variantExtra == null) {
                     // TODO: Should we fail here?
 //                    throw new VariantQueryException("Variant " + variant + " not found!");
                     logger.warn("Variant " + variant + " not found!");
                     continue;
                 }
-                StudyEntry fullStudy = fullVariant.getStudies().get(0);
-                fullStudy.getFiles().forEach(f -> f.setData(Collections.emptyMap()));
-                fullStudy.setStats(Collections.emptyList());
-                variant.setStudies(Collections.singletonList(fullStudy));
+                StudyEntry studyExtra = variantExtra.getStudies().get(0);
+                StudyEntry study = variant.getStudies().get(0);
+
+                study.setSecondaryAlternates(studyExtra.getSecondaryAlternates());
+
+                mergeFileEntries(study, studyExtra.getFiles(), (fe, newFe) -> {
+                    fe.setCall(newFe.getCall());
+                });
+                // merge sampleEntries
+                for (int i = 0; i < includeSamples.size(); i++) {
+                    SampleEntry sample = study.getSample(i);
+                    SampleEntry sampleExtra = studyExtra.getSample(i);
+
+                    sample.getData().set(gtIdx, sampleExtra.getData().get(0));
+                }
             }
 //            logger.info(" # Fetch {} SEC_ALTS in {}", toReadFull.size(), TimeUtils.durationToString(stopWatch));
         }
@@ -522,7 +606,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             for (Variant variant : dbAdaptor.iterable(
                     new Query()
                             .append(VariantQueryParam.ID.key(), variants)
-                            .append(VariantQueryParam.INCLUDE_FILE.key(), files)
+                            .append(VariantQueryParam.INCLUDE_FILE.key(), filesFromSample)
                             .append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE)
                             .append(VariantQueryParam.INCLUDE_STUDY.key(), study),
                     new QueryOptions()
@@ -544,12 +628,33 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                     logger.warn("Variant " + variant + " not found!");
                     continue;
                 }
-                variant.getStudies().get(0).setFiles(fileEntries);
+                StudyEntry studyEntry = variant.getStudies().get(0);
+                mergeFileEntries(studyEntry, fileEntries, (fe, newFe) -> {
+                    fe.setCall(newFe.getCall());
+                });
             }
 //            logger.info(" # Fetch {} INDEL original call in {}", filesMap.size(), TimeUtils.durationToString(stopWatch));
         }
 
-
+        private void mergeFileEntries(StudyEntry studyEntry, List<FileEntry> newFileEntries,
+                                      BiConsumer<FileEntry, FileEntry> merge) {
+            if (studyEntry.getFiles() == null) {
+                studyEntry.setFiles(new ArrayList<>(newFileEntries.size()));
+            }
+            for (FileEntry newFileEntry : newFileEntries) {
+                FileEntry fileEntry = studyEntry.getFile(newFileEntry.getFileId());
+                if (fileEntry == null) {
+                    fileEntry = new FileEntry(newFileEntry.getFileId(), null, new HashMap<>());
+                    studyEntry.getFiles().add(fileEntry);
+                    if (filesFromSample.contains(fileEntry.getFileId())) {
+                        SampleEntry sampleEntry = studyEntry.getSample(sampleName);
+                        if (sampleEntry.getFileIndex() == null) {
+                            sampleEntry.setFileIndex(studyEntry.getFiles().size() - 1);
+                        }
+                    }
+                }
+                merge.accept(fileEntry, newFileEntry);
+            }
+        }
     }
-
 }
