@@ -146,8 +146,8 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
             return true;
         } else if (options.containsKey(QueryOptions.INCLUDE)) {
             List<String> list = options.getAsStringList(QueryOptions.INCLUDE);
-            for (String exclude : list) {
-                if (exclude.equals("studies") || exclude.equals("projects.studies")) {
+            for (String include : list) {
+                if (include.startsWith("studies") || include.startsWith("projects.studies")) {
                     return true;
                 }
             }
