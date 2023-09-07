@@ -67,7 +67,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                 VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue());
 
         clientConfiguration.getRest().setTimeout(timeoutMillis);
-        cellBaseClient = new CellBaseClient(species, assembly, cellbaseDataRelease, cellbaseToken, clientConfiguration);
+        cellBaseClient = new CellBaseClient(species, assembly, cellbaseDataRelease, cellbaseApiKey, clientConfiguration);
         cellBaseUtils = new CellBaseUtils(cellBaseClient);
         logger.info("Annotating with Cellbase REST. {}", cellBaseUtils);
 

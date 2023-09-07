@@ -198,7 +198,7 @@ public class CellBaseValidator {
             cellBaseConfiguration.setApiKey(null);
         } else {
             // Check it's supported
-            if (!supportsToken(serverVersion)) {
+            if (!supportsApiKey(serverVersion)) {
                 throw new IllegalArgumentException("API key not supported for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion + "'");
@@ -270,8 +270,8 @@ public class CellBaseValidator {
         return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
     }
 
-    public static boolean supportsToken(String serverVersion) {
-        // Tokens support starts at version 5.4.0
+    public static boolean supportsApiKey(String serverVersion) {
+        // API keys support starts at version 5.4.0
         return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
@@ -325,7 +325,7 @@ public class CellBaseValidator {
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
                 + "dataRelease '" + getDataRelease() + "', "
-                + "token '" + getApiKey() + "'";
+                + "apiKey '" + getApiKey() + "'";
 
     }
 }
