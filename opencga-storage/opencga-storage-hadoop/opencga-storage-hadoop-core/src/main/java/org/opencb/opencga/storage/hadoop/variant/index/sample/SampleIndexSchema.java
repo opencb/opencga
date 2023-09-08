@@ -118,6 +118,8 @@ public final class SampleIndexSchema {
     static final String ANNOTATION_CLINICAL_PREFIX = META_PREFIX + "CL_";
     static final byte[] ANNOTATION_CLINICAL_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CLINICAL_PREFIX);
 
+    public static final String LARGEST_VARIANT_LENGTH = "largestVariantLength";
+
     private final int version;
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
@@ -196,12 +198,32 @@ public final class SampleIndexSchema {
         return fileIndex;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SampleIndexSchema{");
+        sb.append("version=").append(version);
+        sb.append(", configuration=").append(configuration);
+        sb.append(", fileIndex=").append(fileIndex);
+        sb.append(", popFreqIndex=").append(popFreqIndex);
+        sb.append(", ctIndex=").append(ctIndex);
+        sb.append(", biotypeIndex=").append(biotypeIndex);
+        sb.append(", transcriptFlagIndexSchema=").append(transcriptFlagIndexSchema);
+        sb.append(", ctBtTfIndex=").append(ctBtTfIndex);
+        sb.append(", clinicalIndexSchema=").append(clinicalIndexSchema);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public static int getChunkStart(Integer start) {
         return (start / BATCH_SIZE) * BATCH_SIZE;
     }
 
-    public static Region getChunkRegion(Region region) {
-        return getChunkRegion(region.getChromosome(), region.getStart(), region.getEnd());
+    public static int getChunkStartNext(Integer start) {
+        return getChunkStart(start + SampleIndexSchema.BATCH_SIZE);
+    }
+
+    public static Region getChunkRegion(Region region, int extendedFilteringRegion) {
+        return getChunkRegion(region.getChromosome(), Math.max(0, region.getStart() - extendedFilteringRegion), region.getEnd());
     }
 
     public static Region getChunkRegion(Variant variant) {
@@ -209,11 +231,11 @@ public final class SampleIndexSchema {
         return getChunkRegion(variant.getChromosome(), variant.getStart(), variant.getStart());
     }
 
-    public static Region getChunkRegion(String chromosome, int start, int end) {
+    private static Region getChunkRegion(String chromosome, int start, int end) {
         return new Region(chromosome, SampleIndexSchema.getChunkStart(start),
                 end == Integer.MAX_VALUE
                         ? Integer.MAX_VALUE
-                        : SampleIndexSchema.getChunkStart(end + SampleIndexSchema.BATCH_SIZE));
+                        : SampleIndexSchema.getChunkStartNext(end));
     }
 
     public static int getExpectedSize(String chromosome) {

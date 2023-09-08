@@ -14,21 +14,21 @@ jobs:
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: test
+    needs: build
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
     secrets: inherit
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
+    needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit
 
   deploy-python:
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
-    needs: test
+    needs: build
     with:
       cli: ./clients/python/python-build.sh push
       artifact: build-folder
@@ -42,3 +42,4 @@ jobs:
       file: |
         opencga-client-${{ needs.build.outputs.version }}.tar.gz
         clients/R/opencgaR_${{ needs.build.outputs.version }}.tar.gz
+

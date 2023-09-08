@@ -7,7 +7,6 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
@@ -21,12 +20,9 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +32,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -130,10 +125,11 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         VariantQuery query = new VariantQuery()
                 .study(studyId)
-                .sample(sampleId + ":0/1,1/1")
+                .sample(sampleId)
                 .includeSample(samples)
                 .includeSampleData("GT")
-                .unknownGenotype("./.");
+                .unknownGenotype("./.")
+                .append("includeAllFromSampleIndex", true);
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
 

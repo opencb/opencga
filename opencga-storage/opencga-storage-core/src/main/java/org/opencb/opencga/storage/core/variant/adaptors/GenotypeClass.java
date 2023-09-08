@@ -212,6 +212,25 @@ public enum GenotypeClass implements Predicate<String> {
     }),
 
     /**
+     * Genotypes containing any secondary alternate.
+     * <p>
+     * 1/2, 2/3, ./2, 0/2, ...
+     */
+    SEC(str -> {
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
+        for (int allele : gt.getAllelesIdx()) {
+            if (allele > 1) {
+                return true;
+            }
+        }
+        return false;
+    }),
+
+    /**
      * Genotypes containing reference and secondary alternates only.
      * <p>
      * 0/2, 2/3, ./2, 2/2, ...
@@ -232,6 +251,7 @@ public enum GenotypeClass implements Predicate<String> {
         }
         return hasSecondaryAlternate;
     }),
+
 
     /**
      * Contains the main alternate.

@@ -123,7 +123,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "cellbase.url",commandOptions.cellbaseUrl, true);
             putNestedIfNotEmpty(beanParams, "cellbase.version",commandOptions.cellbaseVersion, true);
             putNestedIfNotEmpty(beanParams, "cellbase.dataRelease",commandOptions.cellbaseDataRelease, true);
-            putNestedIfNotEmpty(beanParams, "cellbase.token",commandOptions.cellbaseToken, true);
+            putNestedIfNotEmpty(beanParams, "cellbase.apiKey",commandOptions.cellbaseApiKey, true);
             putNestedIfNotNull(beanParams, "attributes",commandOptions.attributes, true);
 
             projectCreateParams = JacksonUtils.getDefaultObjectMapper().copy()

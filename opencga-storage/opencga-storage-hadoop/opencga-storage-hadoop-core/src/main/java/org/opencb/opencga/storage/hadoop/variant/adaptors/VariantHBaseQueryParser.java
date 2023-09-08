@@ -225,7 +225,8 @@ public class VariantHBaseQueryParser {
         }
 
         List<Scan> scans;
-        if ((regions.isEmpty() || regions.size() == 1) && variants.isEmpty() && idIntersect.isEmpty()) {
+        int numLocusFilters = regions.size() + variants.size() + idIntersect.size();
+        if (numLocusFilters <= 1) {
             scans = Collections.singletonList(parseQuery(selectElements, query, options));
         } else {
             scans = new ArrayList<>(regions.size() + variants.size() + idIntersect.size());
@@ -236,7 +237,7 @@ public class VariantHBaseQueryParser {
             subQuery.remove(ID.key());
             subQuery.remove(ID_INTERSECT.key());
 
-            subQuery.put(REGION.key(), "MULTI_REGION");
+            subQuery.put(REGION.key(), "MULTI_REGION (#" + numLocusFilters + ")");
             Scan templateScan = parseQuery(selectElements, subQuery, options);
 
             for (Region region : regions) {
@@ -254,7 +255,7 @@ public class VariantHBaseQueryParser {
                 subQuery.put(ID.key(), variant);
                 try {
                     Scan scan = new Scan(templateScan);
-                    scan.setSmall(true);
+                    scan.setOneRowLimit();
                     addVariantIdFilter(scan, variant);
                     scans.add(scan);
                 } catch (IOException e) {
@@ -301,6 +302,17 @@ public class VariantHBaseQueryParser {
             Variant variant = VariantQueryUtils.toVariant(ids.get(0));
             addVariantIdFilter(scan, variant);
             regionOrVariant = variant;
+            scan.setOneRowLimit();
+        }
+        if (isValidParam(query, ID_INTERSECT)) {
+            List<String> ids = query.getAsStringList(ID_INTERSECT.key());
+            if (ids.size() != 1) {
+                throw VariantQueryException.malformedParam(ID_INTERSECT, ids.toString(), "Unsupported multiple variant ids filter");
+            }
+            Variant variant = VariantQueryUtils.toVariant(ids.get(0));
+            addVariantIdFilter(scan, variant);
+            regionOrVariant = variant;
+            scan.setOneRowLimit();
         }
 
 //        if (isValidParam(query, ID)) {
@@ -587,21 +599,26 @@ public class VariantHBaseQueryParser {
         }
         scan.setReversed(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING).equals(QueryOptions.DESCENDING));
 
-        logger.info("----------------------------");
-        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
-        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
-        if (regionOrVariant != null) {
-            logger.info("\tRegion = " + regionOrVariant);
+        if (!options.getBoolean(VariantHadoopDBAdaptor.QUIET)) {
+            logger.info("----------------------------");
+            String startRow = Bytes.toStringBinary(scan.getStartRow());
+            if (!startRow.startsWith("MULTI_REGION")) {
+                logger.info("StartRow = " + startRow);
+                logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
+            }
+            if (regionOrVariant != null) {
+                logger.info("\tRegion = " + regionOrVariant);
+            }
+            logger.info("columns (" + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet()).size() + ") = "
+                    + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
+                    .stream().map(Bytes::toString).collect(Collectors.joining(",")));
+            logger.info("MaxResultSize = " + scan.getMaxResultSize());
+            logger.info("Filters = " + scan.getFilter());
+            if (!scan.getTimeRange().isAllTime()) {
+                logger.info("TimeRange = " + scan.getTimeRange());
+            }
+            logger.info("Batch = " + scan.getBatch());
         }
-        logger.info("columns (" + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet()).size() + ") = "
-                + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
-                .stream().map(Bytes::toString).collect(Collectors.joining(",")));
-        logger.info("MaxResultSize = " + scan.getMaxResultSize());
-        logger.info("Filters = " + scan.getFilter());
-        if (!scan.getTimeRange().isAllTime()) {
-            logger.info("TimeRange = " + scan.getTimeRange());
-        }
-        logger.info("Batch = " + scan.getBatch());
         return scan;
     }
 

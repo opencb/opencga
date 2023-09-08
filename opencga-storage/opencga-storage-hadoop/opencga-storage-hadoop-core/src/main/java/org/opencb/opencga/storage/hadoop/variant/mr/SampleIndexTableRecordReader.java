@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -27,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName;
 
@@ -222,7 +222,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         if (regions.isEmpty()) {
             iterator = VariantDBIterator.emptyIterator();
         } else {
-            Collection<LocusQuery> locusQueries = regions.stream().map(LocusQuery::buildLocusQuery).collect(Collectors.toList());
+            Collection<LocusQuery> locusQueries = SampleIndexQueryParser
+                    .buildLocusQueries(regions, Collections.emptyList(), sampleIndexQuery.getExtendedFilteringRegion());
             SampleIndexQuery query = new SampleIndexQuery(locusQueries, sampleIndexQuery);
             iterator = sampleIndexDBAdaptor.iterator(query);
         }
