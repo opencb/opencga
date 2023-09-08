@@ -4,14 +4,13 @@ import io.jsonwebtoken.JwtException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.api.key.ApiKeyManager;
 import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
-import org.opencb.cellbase.core.token.DataAccessTokenManager;
-import org.opencb.cellbase.core.token.DataAccessTokenSources;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ public class CellBaseValidator {
                 toCellBaseSpeciesName(species),
                 assembly,
                 cellBaseConfiguration.getDataRelease(),
-                cellBaseConfiguration.getToken(),
+                cellBaseConfiguration.getApiKey(),
                 cellBaseConfiguration.toClientConfiguration());
     }
 
@@ -74,13 +73,13 @@ public class CellBaseValidator {
         return cellBaseClient.getDataRelease();
     }
 
-    public String getToken() {
-        return cellBaseClient.getToken();
+    public String getApiKey() {
+        return cellBaseClient.getApiKey();
     }
 
-    public DataAccessTokenSources getTokenSources() {
-        DataAccessTokenManager tokenManager = new DataAccessTokenManager();
-        return tokenManager.decode(cellBaseClient.getToken());
+    public List<String> getApiKeyDataSources() {
+        ApiKeyManager apiKeyManager = new ApiKeyManager();
+        return new ArrayList<>(apiKeyManager.getValidSources(cellBaseClient.getApiKey()));
     }
 
     public String getURL() {
@@ -96,7 +95,7 @@ public class CellBaseValidator {
     }
 
     public CellBaseConfiguration getCellBaseConfiguration() {
-        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getToken());
+        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getApiKey());
     }
 
     public String getDefaultDataRelease() throws IOException {
@@ -194,34 +193,34 @@ public class CellBaseValidator {
                 }
             }
         }
-        String token = getToken();
-        if (StringUtils.isEmpty(token)) {
-            cellBaseConfiguration.setToken(null);
+        String apiKey = getApiKey();
+        if (StringUtils.isEmpty(apiKey)) {
+            cellBaseConfiguration.setApiKey(null);
         } else {
             // Check it's supported
-            if (!supportsToken(serverVersion)) {
-                throw new IllegalArgumentException("Token not supported for cellbase "
+            if (!supportsApiKey(serverVersion)) {
+                throw new IllegalArgumentException("API key not supported for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion + "'");
             }
 
-            // Check it's an actual token
-            DataAccessTokenManager tokenManager = new DataAccessTokenManager();
+            // Check it's an actual API key
+            ApiKeyManager apiKeyManager = new ApiKeyManager();
             try {
-                tokenManager.decode(token);
+                apiKeyManager.decode(apiKey);
             } catch (JwtException e) {
-                throw new IllegalArgumentException("Malformed token for cellbase "
+                throw new IllegalArgumentException("Malformed API key for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion
                         + "', species: '" + getSpecies()
                         + "', assembly: '" + getAssembly() + "'");
             }
 
-            // Check it's a valid token
+            // Check it's a valid API key
             CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
                     .getAnnotationByVariantIds(Collections.singletonList("1:1:N:C"), new QueryOptions(), true);
             if (response.firstResult() == null) {
-                throw new IllegalArgumentException("Invalid token for cellbase "
+                throw new IllegalArgumentException("Invalid API key for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion
                         + "', species: '" + getSpecies()
@@ -271,8 +270,8 @@ public class CellBaseValidator {
         return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
     }
 
-    public static boolean supportsToken(String serverVersion) {
-        // Tokens support starts at version 5.4.0
+    public static boolean supportsApiKey(String serverVersion) {
+        // API keys support starts at version 5.4.0
         return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
@@ -326,7 +325,7 @@ public class CellBaseValidator {
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
                 + "dataRelease '" + getDataRelease() + "', "
-                + "token '" + getToken() + "'";
+                + "apiKey '" + getApiKey() + "'";
 
     }
 }
