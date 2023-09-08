@@ -21,4 +21,12 @@ public abstract class SingleFieldIndexSchema<T> extends FixedSizeIndexSchema {
 //        return getField().read(read(buffer, i));
         return buffer.getIntPartial(i * getBitsLength(), getBitsLength());
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SingleFieldIndexSchema{");
+        sb.append("field=").append(field);
+        sb.append('}');
+        return sb.toString();
+    }
 }

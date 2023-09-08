@@ -610,7 +610,9 @@ public class ProjectManager extends AbstractManager {
             int currentRelease = project.getCurrentRelease();
 
             // Check current release has been used at least in one study or file or cohort or individual...
-            List<Study> allStudiesInProject = project.getStudies();
+            QueryOptions studyOptions = keepFieldInQueryOptions(StudyManager.INCLUDE_STUDY_IDS, StudyDBAdaptor.QueryParams.RELEASE.key());
+            OpenCGAResult<Study> studyResult = studyDBAdaptor.getAllStudiesInProject(projectUid, studyOptions);
+            List<Study> allStudiesInProject = studyResult.getResults();
             if (allStudiesInProject.isEmpty()) {
                 throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
             }

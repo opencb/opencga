@@ -198,6 +198,22 @@ public final class SampleIndexSchema {
         return fileIndex;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SampleIndexSchema{");
+        sb.append("version=").append(version);
+        sb.append(", configuration=").append(configuration);
+        sb.append(", fileIndex=").append(fileIndex);
+        sb.append(", popFreqIndex=").append(popFreqIndex);
+        sb.append(", ctIndex=").append(ctIndex);
+        sb.append(", biotypeIndex=").append(biotypeIndex);
+        sb.append(", transcriptFlagIndexSchema=").append(transcriptFlagIndexSchema);
+        sb.append(", ctBtTfIndex=").append(ctBtTfIndex);
+        sb.append(", clinicalIndexSchema=").append(clinicalIndexSchema);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public static int getChunkStart(Integer start) {
         return (start / BATCH_SIZE) * BATCH_SIZE;
     }
