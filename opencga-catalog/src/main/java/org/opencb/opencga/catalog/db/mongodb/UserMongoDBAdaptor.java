@@ -406,7 +406,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Map<String, Study> studyMap = new HashMap<>();
         Map<String, String> studyProjectMap = new HashMap<>();
         Map<String, List<String>> userStudyMap = new HashMap<>();
-        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(new Query(), options);
+        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(new Query(), options);
         for (Project project : result.getResults()) {
             projectMap.put(project.getFqn(), project);
             if (project.getStudies() != null) {
@@ -480,7 +480,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                 for (Document project : projects) {
                     Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.get(ProjectDBAdaptor
                             .QueryParams.UID.key()));
-                    OpenCGAResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
+                    OpenCGAResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDBAdaptor().nativeGet(query1, options);
                     projectsTmp.add(queryResult1.first());
                 }
                 user.remove("projects");
@@ -586,7 +586,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
             // Delete the active projects (if any)
             query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), id);
-            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogProjectDBAdaptor().delete(query, queryOptions);
         }
 
         // Change the status of the user to deleted
@@ -603,7 +603,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         checkId(userId);
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.READY);
-        Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).getNumMatches();
+        Long count = dbAdaptorFactory.getCatalogProjectDBAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
         }

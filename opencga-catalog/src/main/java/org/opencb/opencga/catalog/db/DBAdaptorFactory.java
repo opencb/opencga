@@ -20,6 +20,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 
 import java.util.List;
@@ -42,6 +44,18 @@ public interface DBAdaptorFactory extends AutoCloseable {
      * @throws CatalogException if there is any problem with the installation.
      */
     void createAllCollections(Configuration configuration) throws CatalogException;
+
+    /**
+     * Initialise meta collection.
+     *
+     * @param admin Admin information.
+     * @throws CatalogException if there is any problem with the installation.
+     */
+    void initialiseMetaCollection(Admin admin) throws CatalogException;
+
+    default String getAdminCatalogDatabase(String prefix) {
+        return getCatalogOrganizationDatabase(prefix, ParamConstants.ADMIN_ORGANIZATION);
+    }
 
     default String getCatalogDatabase(String prefix) {
         String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
@@ -73,11 +87,11 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     List<String> getOrganizationIds();
 
-    OrganizationDBAdaptor getCatalogOrganizationDBAdaptor();
-
     MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException;
 
     MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
+
+    OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException;
 
     UserDBAdaptor getCatalogUserDBAdaptor(String organization) throws CatalogDBException;
 

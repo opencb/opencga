@@ -217,7 +217,7 @@ public class AuditManager {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -261,7 +261,7 @@ public class AuditManager {
     }
 
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         if (authorizationManager.isInstallationAdministrator(userId)) {
             return auditDBAdaptor.groupBy(query, fields, options);
         }

@@ -320,7 +320,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public OpenCGAResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        dbAdaptorFactory.getCatalogProjectDbAdaptor().checkId(projectId);
+        dbAdaptorFactory.getCatalogProjectDBAdaptor().checkId(projectId);
         Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
         return endQuery(startTime, get(query, options));
     }
@@ -375,7 +375,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
         options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        OpenCGAResult<Project> projectResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(clientSession, query, options);
+        OpenCGAResult<Project> projectResult = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(clientSession, query, options);
         if (projectResult.getNumResults() == 0) {
             throw new CatalogDBException("Project id '" + projectId + "' from user '" + userId + "' not found.");
         }
@@ -1336,7 +1336,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
         OpenCGAResult<Study> result = OpenCGAResult.empty();
 
-        OpenCGAResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(userId, new QueryOptions());
+        OpenCGAResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(userId, new QueryOptions());
         if (allProjects.getNumResults() == 0) {
             return result;
         }

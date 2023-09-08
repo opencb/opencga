@@ -112,7 +112,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         indexFile(file, new QueryOptions(), outputId);
         assertEquals(new HashSet<>(file.getSampleIds()), variantManager.getIndexedSamples(studyId, sessionId));
 
-        Study studyNew = catalogManager.getStudyManager().create(projectId, "sNew", "sNew", "sNew",
+        Study studyNew = catalogManager.getStudyManager().create(organizationId, projectId, "sNew", "sNew", "sNew",
                 "Study New", null, null, null, null, null, sessionId)
                 .first();
         assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyNew.getId(), sessionId));

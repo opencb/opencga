@@ -92,7 +92,7 @@ public class ProjectManager extends AbstractManager {
     /**
      * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
      *
-     * @param organizationId
+     * @param organizationId Organization id.
      * @param projectStr     string that can contain the full qualified name (owner@projectId) or just the projectId.
      * @param userId         user asking for the project information.
      * @return a OpenCGAResult containing the project.
@@ -197,16 +197,17 @@ public class ProjectManager extends AbstractManager {
     /**
      * Obtain the list of projects and studies that are shared with the user.
      *
-     * @param organizationId
+     * @param organizationId Organization id.
      * @param userId         user whose projects and studies are being shared with.
      * @param queryOptions   QueryOptions object.
      * @param sessionId      Session id which should correspond to userId.
      * @return A OpenCGAResult object containing the list of projects and studies that are shared with the user.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Project> getSharedProjects(String organizationId, String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        OpenCGAResult<Project> result = search(organizationId, new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions,
-                sessionId);
+    public OpenCGAResult<Project> getSharedProjects(String organizationId, String userId, QueryOptions queryOptions, String sessionId)
+            throws CatalogException {
+        OpenCGAResult<Project> result = search(organizationId, new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId),
+                queryOptions, sessionId);
         for (Event event : result.getEvents()) {
             if (event.getType() == Event.Type.ERROR) {
                 throw new CatalogAuthorizationException(event.getMessage());
@@ -216,8 +217,9 @@ public class ProjectManager extends AbstractManager {
     }
 
     @Deprecated
-    public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
-                                         String assembly, QueryOptions options, String sessionId) throws CatalogException {
+    public OpenCGAResult<Project> create(String organizationId, String id, String name, String description, String scientificName,
+                                         String commonName, String assembly, QueryOptions options, String sessionId)
+            throws CatalogException {
         ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
                 new ProjectOrganism(scientificName, commonName, assembly), null, null);
         return create(organizationId, projectCreateParams, options, sessionId);
@@ -334,7 +336,7 @@ public class ProjectManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public OpenCGAResult<Project> get(String organizationId, String projectId, QueryOptions options, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -354,14 +356,14 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Project> get(String organizationId, List<String> projectList, QueryOptions options, boolean ignoreException, String sessionId)
-            throws CatalogException {
+    public OpenCGAResult<Project> get(String organizationId, List<String> projectList, QueryOptions options, boolean ignoreException,
+                                      String token) throws CatalogException {
         OpenCGAResult<Project> result = OpenCGAResult.empty();
 
         for (int i = 0; i < projectList.size(); i++) {
             String project = projectList.get(i);
             try {
-                OpenCGAResult<Project> projectResult = get(organizationId, project, options, sessionId);
+                OpenCGAResult<Project> projectResult = get(organizationId, project, options, token);
                 result.append(projectResult);
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, projectList.get(i), e.getMessage());
@@ -391,7 +393,7 @@ public class ProjectManager extends AbstractManager {
     public OpenCGAResult<Project> search(String organizationId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         query = new Query(query);
 
         ObjectMap auditParams = new ObjectMap()
@@ -425,7 +427,7 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param organizationId
+     * @param organizationId Organization id.
      * @param projectId      Project id or alias.
      * @param parameters     Parameters to change.
      * @param options        options
@@ -452,7 +454,7 @@ public class ProjectManager extends AbstractManager {
      */
     private OpenCGAResult<Project> update(String organizationId, String projectId, ObjectMap parameters, QueryOptions options,
                                           boolean allowProtectedUpdates, String token) throws CatalogException {
-        String userId = this.catalogManager.getUserManager().getUserId(token);
+        String userId = this.catalogManager.getUserManager().getUserId(organizationId, token);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -536,8 +538,8 @@ public class ProjectManager extends AbstractManager {
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated project
-                OpenCGAResult<Project> result = getProjectDBAdaptor(organizationId).get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options,
-                        userId);
+                OpenCGAResult<Project> result = getProjectDBAdaptor(organizationId)
+                        .get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options, userId);
                 update.setResults(result.getResults());
             }
 
@@ -573,23 +575,24 @@ public class ProjectManager extends AbstractManager {
     public Map<String, Object> facet(String organizationId, String projectStr, String fileFields, String sampleFields,
                                      String individualFields, String cohortFields, String familyFields, String jobFields,
                                      boolean defaultStats, String token) throws CatalogException, IOException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Project project = resolveId(organizationId, projectStr, userId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), token);
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query,
+                new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), token);
 
         Map<String, Object> result = new HashMap<>();
         for (Study study : studyDataResult.getResults()) {
-            result.put(study.getId(), catalogManager.getStudyManager().facet(organizationId, study.getFqn(), fileFields, sampleFields, individualFields,
-                    cohortFields, familyFields, jobFields, defaultStats, token));
+            result.put(study.getId(), catalogManager.getStudyManager().facet(organizationId, study.getFqn(), fileFields, sampleFields,
+                    individualFields, cohortFields, familyFields, jobFields, defaultStats, token));
         }
 
         return result;
     }
 
     public OpenCGAResult<Integer> incrementRelease(String organizationId, String projectStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
 
         try {
             Project project = resolveId(organizationId, projectStr, userId);
@@ -640,7 +643,7 @@ public class ProjectManager extends AbstractManager {
 
     public void importReleases(String organizationId, String owner, String inputDirStr, String sessionId)
             throws CatalogException, IOException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
         if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
@@ -757,7 +760,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportByFileNames(String organizationId, String studyStr, File outputDir, File filePath, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
@@ -787,7 +790,7 @@ public class ProjectManager extends AbstractManager {
 
         String owner = studyDataResult.first().getFqn().split("@")[0];
 
-        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(owner, Collections.emptyMap(), token);
+        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, owner, Collections.emptyMap(), token);
 
         try (BufferedReader buf = new BufferedReader(new FileReader(filePath))) {
 
@@ -942,7 +945,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportReleases(String organizationId, String projectStr, int release, String outputDirStr, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
@@ -1084,7 +1087,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(token, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getUserId(token);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(organizationId, token);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);
@@ -1110,7 +1113,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(token, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getUserId(token);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(organizationId, token);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);
@@ -1135,7 +1138,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(token, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getUserId(token);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(organizationId, token);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);

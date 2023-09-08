@@ -820,8 +820,8 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public ClinicalAnalyst getAnalyst(String token) throws ToolException {
         try {
-            String userId = catalogManager.getUserManager().getUserId(token);
-            OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+            OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
             User user = userQueryResult.first();
             return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", "");
@@ -877,7 +877,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Get userId from token and Study numeric IDs from the query
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         List<String> studyIds = getStudyIds(userId, query);
 
         // If one specific clinical analysis, sample or individual is provided we expect a single valid study as well

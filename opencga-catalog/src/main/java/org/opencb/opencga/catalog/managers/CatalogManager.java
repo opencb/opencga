@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -35,7 +34,6 @@ import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -99,10 +97,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
-//        catalogClient = new CatalogDBClient(this);
-        //TODO: Check if catalog is empty
-        //TODO: Setup catalog if it's empty.
-        this.initializeAdmin(configuration);
+        initializeAdmin(configuration);
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
@@ -128,31 +123,32 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
-        if (configuration.getAdmin() == null) {
-            configuration.setAdmin(new Admin());
-        }
-
-        String secretKey = ParamUtils.defaultString(configuration.getAdmin().getSecretKey(),
-                PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
-        String algorithm = ParamUtils.defaultString(configuration.getAdmin().getAlgorithm(), "HS256");
-        if (existsCatalogDB()) {
-            secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
-            algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
-        }
-        configuration.getAdmin().setAlgorithm(algorithm);
-        configuration.getAdmin().setSecretKey(secretKey);
+        // TODO: Each organization will have different configurations
+//        if (configuration.getAdmin() == null) {
+//            configuration.setAdmin(new Admin());
+//        }
+//
+//        String secretKey = ParamUtils.defaultString(configuration.getAdmin().getSecretKey(),
+//                PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
+//        String algorithm = ParamUtils.defaultString(configuration.getAdmin().getAlgorithm(), "HS256");
+//        if (existsCatalogDB()) {
+//            secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
+//            algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
+//        }
+//        configuration.getAdmin().setAlgorithm(algorithm);
+//        configuration.getAdmin().setSecretKey(secretKey);
     }
 
-    public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {
-        if (!OPENCGA.equals(userManager.getUserId(token))) {
+    public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
+        if (!OPENCGA.equals(userManager.getUserId(organizationId, token))) {
             throw new CatalogException("Operation only allowed for the OpenCGA admin");
         }
 
-        if (params == null || params.size() == 0) {
+        if (params == null || params.isEmpty()) {
             return;
         }
 
-        catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateJWTParameters(params);
+        catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organizationId).updateJWTParameters(params);
     }
 
     public boolean getDatabaseStatus() {
@@ -191,7 +187,7 @@ public class CatalogManager implements AutoCloseable {
                 // Check admin password ...
                 try {
                     userManager.loginAsAdmin(password);
-                    logger.warn("A database called " + getCatalogDatabase() + " already exists");
+                    logger.warn("A database called {} already exists", getCatalogDatabase());
                     return;
                 } catch (CatalogException e) {
                     throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
@@ -204,7 +200,7 @@ public class CatalogManager implements AutoCloseable {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
             privateInstall(secretKey, password, email, test);
             String token = userManager.loginAsAdmin(password).getToken();
-            installIndexes(token);
+            installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
             try {
                 clearCatalog();
@@ -238,26 +234,26 @@ public class CatalogManager implements AutoCloseable {
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
-        userManager.create(user, password, null);
-        String token = userManager.login(OPENCGA, password).getToken();
+        userManager.create(ADMIN_ORGANIZATION, user, password, null);
+        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).getToken();
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
-        projectManager.create(organizationId, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null, token);
-        studyManager.create(organizationId, ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
+        projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null,
+                token);
+        studyManager.create(ADMIN_ORGANIZATION, ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
+                QueryOptions.empty(), token);
 
         // Skip old available migrations
-        migrationManager.skipPendingMigrations(token);
+        migrationManager.skipPendingMigrations(ADMIN_ORGANIZATION, token);
     }
 
-    public void installIndexes(String token) throws CatalogException {
-        if (!OPENCGA.equals(userManager.getUserId(token))) {
+    public void installIndexes(String organizationId, String token) throws CatalogException {
+        if (!OPENCGA.equals(userManager.getUserId(organizationId, token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
 
-        for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
-            catalogDBAdaptorFactory.createIndexes(organizationId);
-        }
+        catalogDBAdaptorFactory.createIndexes(organizationId);
     }
 
     public void deleteCatalogDB(String password) throws CatalogException {
@@ -265,7 +261,8 @@ public class CatalogManager implements AutoCloseable {
             userManager.loginAsAdmin(password);
         } catch (CatalogException e) {
             // Validate that the admin user exists.
-            OpenCGAResult<User> result = catalogDBAdaptorFactory.getCatalogUserDBAdaptor().get(OPENCGA, QueryOptions.empty());
+            OpenCGAResult<User> result = catalogDBAdaptorFactory.getCatalogUserDBAdaptor(ADMIN_ORGANIZATION)
+                    .get(OPENCGA, QueryOptions.empty());
             if (result.getNumResults() == 1) {
                 // Admin user exists so we have to fail. Password must be incorrect.
                 throw e;

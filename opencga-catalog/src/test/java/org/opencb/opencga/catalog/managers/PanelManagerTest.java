@@ -80,12 +80,12 @@ public class PanelManagerTest extends GenericTest {
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @Test
@@ -100,10 +100,10 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void importFromSource() throws CatalogException {
-        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
         assertEquals(1, cancer.getNumInserted());
 
-        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
+        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(organizationId, studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
         assertEquals(2, panelApp.getNumInserted());
     }
 
@@ -111,19 +111,19 @@ public class PanelManagerTest extends GenericTest {
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
-        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", sessionIdUser);
+        panelManager.importFromSource(organizationId, studyFqn, "gene-census", "ZSR222", sessionIdUser);
     }
 
     @Test
     public void importFromInvalidSource() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown source");
-        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, sessionIdUser);
+        panelManager.importFromSource(organizationId, studyFqn, "gene-census-wrong", null, sessionIdUser);
     }
 
     @Test
     public void updateTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
@@ -146,7 +146,7 @@ public class PanelManagerTest extends GenericTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(organizationId, studyFqn, "gene-census", updateParams, null, sessionIdUser);
         assertEquals(1, updateResult.getNumUpdated());
 
         Panel updatedPanel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
@@ -174,7 +174,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -192,14 +192,14 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelWithVersionsTest() throws CatalogException {
-        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
         PanelUpdateParams updateParams = new PanelUpdateParams()
                 .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
                 .setDisorders(Collections.singletonList(new OntologyTerm().setId("ontologyTerm")));
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(organizationId, studyFqn, "gene-census", updateParams, null, sessionIdUser);
         assertEquals(1, updateResult.getNumUpdated());
 
         OpenCGAResult<?> result = panelManager.delete(organizationId, studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
@@ -294,7 +294,7 @@ public class PanelManagerTest extends GenericTest {
                 QueryOptions.empty(), sessionIdUser);
 
         // Update panel1 ...
-        panelManager.update(studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), sessionIdUser);
+        panelManager.update(organizationId, studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), sessionIdUser);
         OpenCGAResult<Panel> resultPanel = panelManager.get(organizationId, studyFqn, panel1.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, resultPanel.first().getVersion());
         assertEquals("name", resultPanel.first().getName());

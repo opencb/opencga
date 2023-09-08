@@ -83,7 +83,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_ACCOUNT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.USER_ACCOUNT_TYPE) String account,
             @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
         try {
-            return createOkResponse(catalogManager.getAdminManager().userSearch(query, queryOptions, token));
+            return createOkResponse(catalogManager.getAdminManager().userSearch(organizationId, query, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -105,7 +105,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
-                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, user.getType(), token);
+                    .create(organizationId, user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, user.getType(), token);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -135,14 +135,14 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             if (remoteParams.getResourceType() == USER || remoteParams.getResourceType() == APPLICATION) {
-                catalogManager.getUserManager().importRemoteEntities(remoteParams.getAuthenticationOriginId(), remoteParams.getId(),
+                catalogManager.getUserManager().importRemoteEntities(organizationId, remoteParams.getAuthenticationOriginId(), remoteParams.getId(),
                         remoteParams.getResourceType() == APPLICATION, remoteParams.getStudyGroup(), remoteParams.getStudy(), token);
             } else if (remoteParams.getResourceType() == GROUP) {
                 if (remoteParams.getId().size() > 1) {
                     throw new CatalogException("More than one group found in 'id'. Only one group is accepted at a time");
                 }
 
-                catalogManager.getUserManager().importRemoteGroupOfUsers(remoteParams.getAuthenticationOriginId(), remoteParams.getId().get(0),
+                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, remoteParams.getAuthenticationOriginId(), remoteParams.getId().get(0),
                         remoteParams.getStudyGroup(), remoteParams.getStudy(), false, token);
             } else {
                 throw new CatalogException("Unknown resourceType '" + remoteParams.getResourceType() + "'");
@@ -164,7 +164,7 @@ public class AdminWSServer extends OpenCGAWSServer {
                     defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) UserUpdateGroup updateParams) {
         try {
-            return createOkResponse(catalogManager.getAdminManager().updateGroups(user, updateParams.getStudyIds(), updateParams.getGroupIds(), action, token));
+            return createOkResponse(catalogManager.getAdminManager().updateGroups(organizationId, user, updateParams.getStudyIds(), updateParams.getGroupIds(), action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -191,9 +191,9 @@ public class AdminWSServer extends OpenCGAWSServer {
         try {
             // TODO: These two methods should return an OpenCGAResult containing at least the number of changes
             if (syncParams.isSyncAll()) {
-                catalogManager.getUserManager().syncAllUsersOfExternalGroup(syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(organizationId, syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
             } else {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
+                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
                         syncParams.getTo(), syncParams.getStudy(), true, token);
             }
             return createOkResponse(OpenCGAResult.empty(Group.class));
@@ -345,7 +345,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.getSecretKey());
         try {
-            catalogManager.updateJWTParameters(params, token);
+            catalogManager.updateJWTParameters(organizationId, params, token);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -358,8 +358,8 @@ public class AdminWSServer extends OpenCGAWSServer {
     public Response token(@ApiParam(value = "Token parameters", required = true) TokenParams jwtParams) {
         try {
             String newToken = jwtParams.getExpiration() != null
-                    ? catalogManager.getUserManager().getToken(jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
-                    : catalogManager.getUserManager().getNonExpiringToken(jwtParams.getUserId(), jwtParams.getAttributes(), token);
+                    ? catalogManager.getUserManager().getToken(organizationId, jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
+                    : catalogManager.getUserManager().getNonExpiringToken(organizationId, jwtParams.getUserId(), jwtParams.getAttributes(), token);
             AuthenticationResponse authResponse = new AuthenticationResponse(newToken);
             OpenCGAResult<AuthenticationResponse> opencgaResponse = new OpenCGAResult<>(0, Collections.emptyList(), 1,
                     Collections.singletonList(authResponse), 1);

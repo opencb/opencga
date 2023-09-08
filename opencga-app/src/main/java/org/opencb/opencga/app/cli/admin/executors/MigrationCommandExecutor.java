@@ -65,8 +65,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
-            catalogManager.getMigrationManager().updateMigrationRuns(token);
-            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary();
+            catalogManager.getMigrationManager().updateMigrationRuns(organizationId, token);
+            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary(organizationId);
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationSummary));
         }
 
@@ -80,7 +80,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
             List<Pair<Migration, MigrationRun>> rows = catalogManager.getMigrationManager()
-                    .getMigrationRuns(options.version, options.domain, options.status, token);
+                    .getMigrationRuns(organizationId, options.version, options.domain, options.status, token);
 
             if (options.commonOptions.commonOptions.outputFormat.toLowerCase().contains("json")) {
                 for (Pair<Migration, MigrationRun> pair : rows) {
@@ -139,7 +139,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String version = parseVersion(options.version);
 
             MigrationManager migrationManager = catalogManager.getMigrationManager();
-            migrationManager.runMigration(version, options.domain, options.language, options.offline, appHome, token);
+            migrationManager.runMigration(organizationId, version, options.domain, options.language, options.offline, appHome, token);
         }
     }
 
@@ -150,7 +150,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            catalogManager.getMigrationManager().runManualMigration(parseVersion(options.version), options.id, Paths.get(appHome),
+            catalogManager.getMigrationManager().runManualMigration(organizationId, parseVersion(options.version), options.id, Paths.get(appHome),
                     options.force, options.offline, new ObjectMap(options.commonOptions.commonOptions.params), token);
         }
     }

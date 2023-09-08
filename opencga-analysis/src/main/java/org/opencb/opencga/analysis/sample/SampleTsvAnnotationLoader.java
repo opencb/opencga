@@ -36,6 +36,6 @@ public class SampleTsvAnnotationLoader extends TsvAnnotationLoader {
 
     @Override
     public void addAnnotationSet(String entryId, AnnotationSet annotationSet, QueryOptions options) throws CatalogException {
-        catalogManager.getSampleManager().addAnnotationSet(study, entryId, annotationSet, options, token);
+        catalogManager.getSampleManager().addAnnotationSet(organizationId, study, entryId, annotationSet, options, token);
     }
 }

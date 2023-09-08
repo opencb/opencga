@@ -75,13 +75,13 @@ public abstract class StorageManager {
 
 
     public void clearCache(String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
 
     }
 
 
     public void clearCache(String studyId, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
 
     }
 
@@ -99,7 +99,7 @@ public abstract class StorageManager {
             throws CatalogException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
         Study study = catalogManager.getStudyManager().get(organizationId, studyIdStr, QueryOptions.empty(), sessionId).first();
 
         List<File> files;

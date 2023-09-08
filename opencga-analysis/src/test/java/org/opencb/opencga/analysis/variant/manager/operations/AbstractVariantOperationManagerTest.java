@@ -142,12 +142,12 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        Policies policies = new Policies();
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
+        User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
         sessionId = catalogManager.getUserManager().login(userId, "userACME1.").getToken();
         projectId = "p1";
-        catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
+        catalogManager.getProjectManager().create(organizationId, projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
-        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
+        Study study = catalogManager.getStudyManager().create(organizationId, projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
         studyId = study.getId();
@@ -155,7 +155,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         outputId = catalogManager.getFileManager().createFolder(organizationId, studyFqn, Paths.get("data", "index").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
-        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
+        studyId2 = catalogManager.getStudyManager().create(organizationId, projectId, "s2", "s2", "s2", "Study " + "2", null, null,
                 null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(organizationId, studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
@@ -382,14 +382,14 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                     && !ExecutionResultManager.isExecutionResultFile(uri.getPath())
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
-            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,
+            files = fileScanner.scan(organizationId, outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,
                     sessionId);
             System.out.println("files = " + files);
 
             // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
             // Do not execute checksum for log files! They may not be closed yet
             fileStatusFilter = uri -> uri.getPath().endsWith(OUT_LOG_EXTENSION) || uri.getPath().endsWith(ERR_LOG_EXTENSION);
-            files.addAll(fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, false,
+            files.addAll(fileScanner.scan(organizationId, outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, false,
                     fileStatusFilter, sessionId));
             System.out.println("files2 = " + files);
 

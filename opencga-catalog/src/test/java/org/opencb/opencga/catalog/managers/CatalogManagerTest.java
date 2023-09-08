@@ -68,20 +68,20 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void createStudyFailMoreThanOneProject() throws CatalogException {
         catalogManager.getProjectManager().incrementRelease(organizationId, project1, token);
-        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "Homo sapiens",
+        catalogManager.getProjectManager().create(organizationId, "1000G2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), token);
 
         // Create a new study without providing the project. It should raise an error because the user owns more than one project
         thrown.expect(CatalogException.class);
         thrown.expectMessage("More than one project found");
-        catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", "Done", null,
+        catalogManager.getStudyManager().create(organizationId, null, "phasexx", null, "Phase 1", "Done", null,
                 null, null, null, null, token);
     }
 
     @Test
     public void testAdminUserExists() throws Exception {
         String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-        assertEquals("opencga", catalogManager.getUserManager().getUserId(token));
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(organizationId, token));
     }
 
     @Test
@@ -91,29 +91,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
         claims.put("a", "hola");
         claims.put("ab", "byw");
         // Create a token valid for 1 second
-        String expiringToken = catalogManager.getUserManager().getToken("opencga", claims, 1L, token);
-        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+        String expiringToken = catalogManager.getUserManager().getToken(organizationId, "opencga", claims, 1L, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(organizationId, expiringToken));
         
-        String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("opencga", claims, token);
-        assertEquals("opencga", catalogManager.getUserManager().getUserId(nonExpiringToken));
+        String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, "opencga", claims, token);
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(organizationId, nonExpiringToken));
 
         Thread.sleep(1000);
         thrown.expect(CatalogAuthenticationException.class);
         thrown.expectMessage("expired");
-        assertEquals("opencga", catalogManager.getUserManager().getUserId(expiringToken));
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(organizationId, expiringToken));
     }
     @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
     }
 
     @Test
     public void testCreateAnonymousUser() throws Exception {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
-        catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, opencgaToken);
     }
 
@@ -121,7 +121,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateRegisteredUser() throws Exception {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
-        catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, opencgaToken);
     }
 
@@ -136,14 +136,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetUserInfo() throws CatalogException {
-        DataResult<User> user = catalogManager.getUserManager().get("user", new QueryOptions(), token);
+        DataResult<User> user = catalogManager.getUserManager().get(organizationId, "user", new QueryOptions(), token);
         System.out.println("user = " + user);
-        OpenCGAResult<User> result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, "user2", new QueryOptions(), token);
         assertEquals(Event.Type.ERROR, result.getEvents().get(0).getType());
 
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user2")), token);
-        result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        result = catalogManager.getUserManager().get(organizationId, "user2", new QueryOptions(), token);
         assertTrue(result.getEvents().isEmpty());
         assertTrue(StringUtils.isNotEmpty(result.first().getEmail()));
     }
@@ -152,7 +152,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUserInfoProjections() throws CatalogException {
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS_ID.key());
-        DataResult<User> user = catalogManager.getUserManager().get("user", options, token);
+        DataResult<User> user = catalogManager.getUserManager().get(organizationId, "user", options, token);
         assertNotNull(user.first().getProjects());
         assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getId()));
         assertTrue(StringUtils.isEmpty(user.first().getProjects().get(0).getName()));
@@ -161,7 +161,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.FQN.key());
-        user = catalogManager.getUserManager().get("user", options, token);
+        user = catalogManager.getUserManager().get(organizationId, "user", options, token);
         assertNotNull(user.first().getProjects());
         assertEquals(2, user.first().getProjects().get(0).getStudies().size());
         assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getStudies().get(0).getFqn()));
@@ -170,7 +170,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.FQN.key());
-        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, sessionIdUser2);
         assertEquals(0, user.first().getSharedProjects().size());
 
         // Grant permissions to user2 to access study of user1
@@ -180,7 +180,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.FQN.key());
-        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, sessionIdUser2);
         assertEquals(1, user.first().getSharedProjects().size());
         assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
         assertNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
@@ -188,7 +188,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.ID.key());
-        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, sessionIdUser2);
         assertEquals(1, user.first().getSharedProjects().size());
         assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
         assertNotNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
@@ -209,11 +209,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         Thread.sleep(10);
 
-        catalogManager.getUserManager().update("user", params, null, token);
-        catalogManager.getUserManager().update("user", new ObjectMap("email", newEmail), null, token);
-        catalogManager.getUserManager().changePassword("user", TestParamConstants.PASSWORD, newPassword);
+        catalogManager.getUserManager().update(organizationId, "user", params, null, token);
+        catalogManager.getUserManager().update(organizationId, "user", new ObjectMap("email", newEmail), null, token);
+        catalogManager.getUserManager().changePassword(organizationId, "user", TestParamConstants.PASSWORD, newPassword);
 
-        List<User> userList = catalogManager.getUserManager().get("user", new QueryOptions(QueryOptions
+        List<User> userList = catalogManager.getUserManager().get(organizationId, "user", new QueryOptions(QueryOptions
                 .INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key(),
                 UserDBAdaptor.QueryParams.ATTRIBUTES.key())), token).getResults();
         User userPost = userList.get(0);
@@ -226,20 +226,20 @@ public class CatalogManagerTest extends AbstractManagerTest {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
-        catalogManager.getUserManager().changePassword("user", newPassword, TestParamConstants.PASSWORD);
+        catalogManager.getUserManager().changePassword(organizationId, "user", newPassword, TestParamConstants.PASSWORD);
         catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD);
 
         try {
             params = new ObjectMap();
             params.put("password", "1234321");
-            catalogManager.getUserManager().update("user", params, null, token);
+            catalogManager.getUserManager().update(organizationId, "user", params, null, token);
             fail("Expected exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
 
         try {
-            catalogManager.getUserManager().update("user", params, null, sessionIdUser2);
+            catalogManager.getUserManager().update(organizationId, "user", params, null, sessionIdUser2);
             fail("Expected exception");
         } catch (CatalogException e) {
             System.out.println(e);
@@ -251,25 +251,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Map<String, Object> map = new HashMap<>();
         map.put("key1", "value1");
         map.put("key2", "value2");
-        catalogManager.getUserManager().setConfig("user", "a", map, token);
+        catalogManager.getUserManager().setConfig(organizationId, "user", "a", map, token);
 
-        Map<String, Object> config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        Map<String, Object> config = (Map<String, Object>) catalogManager.getUserManager().getConfig(organizationId, "user", "a", token).first();
         assertEquals(2, config.size());
         assertEquals("value1", config.get("key1"));
         assertEquals("value2", config.get("key2"));
 
         map = new HashMap<>();
         map.put("key2", "value3");
-        catalogManager.getUserManager().setConfig("user", "a", map, token);
-        config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        catalogManager.getUserManager().setConfig(organizationId, "user", "a", map, token);
+        config = (Map<String, Object>) catalogManager.getUserManager().getConfig(organizationId, "user", "a", token).first();
         assertEquals(1, config.size());
         assertEquals("value3", config.get("key2"));
 
-        catalogManager.getUserManager().deleteConfig("user", "a", token);
+        catalogManager.getUserManager().deleteConfig(organizationId, "user", "a", token);
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getUserManager().getConfig("user", "a", token);
+        catalogManager.getUserManager().getConfig(organizationId, "user", "a", token);
     }
 
     private String getAdminToken() throws CatalogException, IOException {
@@ -307,7 +307,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void importLdapUsers() throws CatalogException, NamingException, IOException {
         // Action only for admins
-        catalogManager.getUserManager().importRemoteEntities("ldap", Arrays.asList("pfurio", "imedina"), false, null, null,
+        catalogManager.getUserManager().importRemoteEntities(organizationId, "ldap", Arrays.asList("pfurio", "imedina"), false, null, null,
                 getAdminToken());
         // TODO: Validate the users have been imported
     }
@@ -338,13 +338,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Action only for admins
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", studyFqn, true, token);
+        catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", "bio", "bio", studyFqn, true, token);
         DataResult<Group> bio = catalogManager.getStudyManager().getGroup(organizationId, studyFqn, "bio", this.token);
 
         assertEquals(1, bio.getNumResults());
         assertEquals(0, bio.first().getUserIds().size());
 
-        catalogManager.getUserManager().syncAllUsersOfExternalGroup(studyFqn, "ldap", token);
+        catalogManager.getUserManager().syncAllUsersOfExternalGroup(organizationId, studyFqn, "ldap", token);
         bio = catalogManager.getStudyManager().getGroup(organizationId, studyFqn, "bio", this.token);
 
         assertEquals(1, bio.getNumResults());
@@ -358,7 +358,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String remoteGroup = "bio";
         String internalGroup = "test";
         String study = "user@1000G:phase1";
-        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
+        catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", remoteGroup, internalGroup, study, true, getAdminToken());
 
         DataResult<Group> test = catalogManager.getStudyManager().getGroup(organizationId, "user@1000G:phase1", "test", token);
         assertEquals(1, test.getNumResults());
@@ -377,12 +377,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
         internalGroup = "test2";
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
+        catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, "ldap", remoteGroup, internalGroup, study, true, getAdminToken());
     }
 
     @Test
     public void createEmptyGroup() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().createGroup(organizationId, "user@1000G:phase1", "group_cancer_some_thing_else", null, token);
         catalogManager.getStudyManager().updateGroup(organizationId, "user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), token);
@@ -390,7 +390,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
 
         catalogManager.getStudyManager().createGroup(organizationId, "user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
@@ -434,19 +434,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String projectAlias = "projectAlias_ASDFASDF";
 
-        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens", null, "GRCh38", new
+        catalogManager.getProjectManager().create(organizationId, projectAlias, "Project", "", "Homo sapiens", null, "GRCh38", new
                 QueryOptions(), token);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens",
+        catalogManager.getProjectManager().create(organizationId, projectAlias, "Project", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), token);
     }
 
     @Test
     public void testModifyProject() throws CatalogException {
         String newProjectName = "ProjectName " + RandomStringUtils.randomAlphanumeric(10);
-        String projectId = catalogManager.getUserManager().get("user", new QueryOptions(), token).first().getProjects().get(0)
+        String projectId = catalogManager.getUserManager().get(organizationId, "user", new QueryOptions(), token).first().getProjects().get(0)
                 .getId();
 
         ObjectMap options = new ObjectMap();
@@ -542,11 +542,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 , null, token).first();
         assertEquals("20150101120000", study_1.getCreationDate());
 
-        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(organizationId, projectId, "study_2", null, "study_2", "description", null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(organizationId, projectId, "study_3", null, "study_3", "description", null, null, null, null, null, token);
 
-        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null,
+        String study_4 = catalogManager.getStudyManager().create(organizationId, projectId, "study_4", null, "study_4", "description", null, null, null,
                 null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().search(organizationId, new Query(StudyDBAdaptor.QueryParams
@@ -577,9 +577,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
-        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, sessionIdUser2);
+        catalogManager.getStudyManager().create(organizationId, project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, sessionIdUser2);
 
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         List<Long> uids = catalogManager.getStudyManager().resolveIds(organizationId, Arrays.asList("*"), userId)
                 .stream()
                 .map(Study::getUid)
@@ -650,7 +650,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", "d", null,
+        DataResult<Study> study = catalogManager.getStudyManager().create(organizationId, String.valueOf(project2), "phase3", null, "Phase 3", "d", null,
                 null, null, null, null, sessionIdUser2);
         try {
             studyManager.resolveIds(organizationId, Collections.emptyList(), "*");
@@ -677,7 +677,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null,
+        DataResult<Study> study = catalogManager.getStudyManager().create(organizationId, project2, "phase3", null, "Phase 3", "d", null, null, null,
                 null, null, sessionIdUser2);
         catalogManager.getStudyManager().updateGroup(organizationId, "phase3", "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
@@ -755,7 +755,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        DataResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(organizationId, studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
@@ -812,7 +812,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 SamplePermissions.VIEW.name() + "," + SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        OpenCGAResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(organizationId, studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
@@ -828,7 +828,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,
                 new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
 
-        String userId1 = catalogManager.getUserManager().getUserId(token);
+        String userId1 = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study3 = catalogManager.getStudyManager().resolveId(organizationId, studyFqn, userId1);
 
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> studyAcl = catalogManager.getAuthorizationManager()
@@ -837,7 +837,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, studyAcl.first().getAcl().size());
         assertEquals("user2", studyAcl.first().getAcl().get(0).getMember());
         assertNull(studyAcl.first().getAcl().get(0).getPermissions());
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study1 = catalogManager.getStudyManager().resolveId(organizationId, studyFqn, userId);
         studyAcl = catalogManager.getAuthorizationManager().getStudyAcl(userId, study1.getUid(), "user3");
         assertEquals(1, studyAcl.getNumResults());
@@ -909,9 +909,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
 
 
-        String project1 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project1", "", "", "Homo sapiens",
+        String project1 = catalogManager.getProjectManager().create(organizationId, "testCreateJobAndReuse_project1", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, token).first().getId();
-        String project2 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project2", "", "", "Homo sapiens",
+        String project2 = catalogManager.getProjectManager().create(organizationId, "testCreateJobAndReuse_project2", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, token).first().getId();
 
         String study1 = catalogManager.getStudyManager().create(organizationId, project1, new Study()
@@ -1275,7 +1275,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");
-        catalogManager.getSampleManager().update(studyFqn, sampleId1, new SampleUpdateParams()
+        catalogManager.getSampleManager().update(organizationId, studyFqn, sampleId1, new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotationId", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
 

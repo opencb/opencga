@@ -39,7 +39,7 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
     protected void check() throws Exception {
         super.check();
 
-        String userId = getCatalogManager().getUserManager().getUserId(getToken());
+        String userId = getCatalogManager().getUserManager().getUserId(organizationId, getToken());
         if (!userId.equals(ParamConstants.OPENCGA_USER_ID)) {
             throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
         }

@@ -152,7 +152,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(organizationId, studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("analyst", TestParamConstants.PASSWORD).getToken();
 
@@ -164,7 +164,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().updateAcl(organizationId, studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
         String analystToken = catalogManager.getUserManager().login("view_user", TestParamConstants.PASSWORD).getToken();
 
@@ -958,7 +958,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 sessionIdUser2);
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(organizationId, project2, "alias", null, "name", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
 
         folder = fileManager.createFolder(organizationId, newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
@@ -1345,7 +1345,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, token).first().getUid();
+        catalogManager.getStudyManager().create(organizationId, project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, token).first().getUid();
 
         DataResult<FileTree> fileTree = fileManager.getTree(organizationId, studyFqn, "/", 5, new QueryOptions(),
                 token);

@@ -597,7 +597,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("parents", parents)
                     .append("annotationSetId", annotationSetId);
 
-            return createOkResponse(catalogManager.getFileManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+            return createOkResponse(catalogManager.getFileManager().loadTsvAnnotations(organizationId, studyStr, variableSetId, path, params,
                     additionalParams, FileTsvAnnotationLoader.ID, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -852,8 +852,8 @@ public class FileWSServer extends OpenCGAWSServer {
             FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
-                File file1 = catalogFileUtils.checkFile(studyStr, file, false, token);
-                file1 = fileMetadataReader.updateMetadataInformation(studyStr, file1, token);
+                File file1 = catalogFileUtils.checkFile(organizationId, studyStr, file, false, token);
+                file1 = fileMetadataReader.updateMetadataInformation(organizationId, studyStr, file1, token);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
                 } else {
@@ -863,7 +863,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<File> result = catalogManager.getFileManager().getFilesFromFolder(organizationId, studyStr, fileIdStr, null, token).getResults();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
-                    File file1 = fileMetadataReader.updateMetadataInformation(studyStr, f, token);
+                    File file1 = fileMetadataReader.updateMetadataInformation(organizationId, studyStr, f, token);
                     if (f != file1) {    //Add only modified files.
                         files.add(file1);
                     }

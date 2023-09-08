@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -27,6 +26,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 
 public class OrganizationMongoDBAdaptorFactory {
 
+    public static final String ORGANIZATION_COLLECTION = "organization";
     public static final String USER_COLLECTION = "user";
     public static final String STUDY_COLLECTION = "study";
     public static final String FILE_COLLECTION = "file";
@@ -45,7 +45,6 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
-    public static final String DELETED_ORGANIZATION_COLLECTION = "organization_deleted";
     public static final String DELETED_USER_COLLECTION = "user_deleted";
     public static final String DELETED_STUDY_COLLECTION = "study_deleted";
     public static final String DELETED_FILE_COLLECTION = "file_deleted";
@@ -63,7 +62,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String AUDIT_COLLECTION = "audit";
 
     public static final List<String> COLLECTIONS_LIST = Arrays.asList(
-            MongoDBAdaptorFactory.ORGANIZATION_COLLECTION,
+            ORGANIZATION_COLLECTION,
             USER_COLLECTION,
             STUDY_COLLECTION,
             FILE_COLLECTION,
@@ -82,7 +81,6 @@ public class OrganizationMongoDBAdaptorFactory {
             PANEL_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
-            DELETED_ORGANIZATION_COLLECTION,
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
@@ -105,6 +103,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final MongoDataStore mongoDataStore;
     private final String database;
 
+    private final OrganizationMongoDBAdaptor organizationDBAdaptor;
     private final UserMongoDBAdaptor userDBAdaptor;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private final IndividualMongoDBAdaptor individualDBAdaptor;
@@ -140,6 +139,7 @@ public class OrganizationMongoDBAdaptorFactory {
         metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
+        MongoDBCollection organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
         MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
         MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
@@ -172,6 +172,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
+        organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, configuration, this);
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, configuration, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection, configuration,
                 this);
@@ -197,6 +198,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
         mongoDBCollectionMap.put(MIGRATION_COLLECTION, migrationCollection);
 
+        mongoDBCollectionMap.put(ORGANIZATION_COLLECTION, organizationCollection);
         mongoDBCollectionMap.put(USER_COLLECTION, userCollection);
         mongoDBCollectionMap.put(STUDY_COLLECTION, studyCollection);
         mongoDBCollectionMap.put(FILE_COLLECTION, fileCollection);
@@ -234,17 +236,17 @@ public class OrganizationMongoDBAdaptorFactory {
         return metaCollection.count(Filters.eq("id", METADATA_OBJECT_ID)).getNumMatches() == 1;
     }
 
-    public void createAllCollections(Configuration configuration) throws CatalogException {
-        // TODO: Check META object does not exist. Use {@link isCatalogDBReady}
-        // TODO: Check all collections do not exists, or are empty
-        // TODO: Catch DuplicatedKeyException while inserting META object
-
-        if (!mongoDataStore.getCollectionNames().isEmpty()) {
-            throw new CatalogException("Database " + database + " already exists with the following collections: "
-                    + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
-        }
-        COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
-    }
+//    public void createAllCollections(Configuration configuration) throws CatalogException {
+//        // TODO: Check META object does not exist. Use {@link isCatalogDBReady}
+//        // TODO: Check all collections do not exists, or are empty
+//        // TODO: Catch DuplicatedKeyException while inserting META object
+//
+//        if (!mongoDataStore.getCollectionNames().isEmpty()) {
+//            throw new CatalogException("Database " + database + " already exists with the following collections: "
+//                   + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
+//        }
+//        COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+//    }
 
     public void initialiseMetaCollection(Admin admin) throws CatalogException {
         metaDBAdaptor.initializeMetaCollection(admin);
@@ -287,11 +289,15 @@ public class OrganizationMongoDBAdaptorFactory {
         return metaDBAdaptor;
     }
 
+    public OrganizationMongoDBAdaptor getCatalogOrganizationDBAdaptor() {
+        return organizationDBAdaptor;
+    }
+
     public UserMongoDBAdaptor getCatalogUserDBAdaptor() {
         return userDBAdaptor;
     }
 
-    public ProjectMongoDBAdaptor getCatalogProjectDbAdaptor() {
+    public ProjectMongoDBAdaptor getCatalogProjectDBAdaptor() {
         return projectDBAdaptor;
     }
 

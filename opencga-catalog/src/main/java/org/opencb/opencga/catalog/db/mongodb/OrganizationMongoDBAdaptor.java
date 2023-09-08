@@ -36,15 +36,13 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringPar
 public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements OrganizationDBAdaptor {
 
     private final MongoDBCollection organizationCollection;
-    private final MongoDBCollection deletedOrganizationCollection;
-    private OrganizationConverter organizationConverter;
+    private final OrganizationConverter organizationConverter;
 
-    public OrganizationMongoDBAdaptor(MongoDBCollection organizationCollection, MongoDBCollection deletedOrganizationCollection,
-                                      Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public OrganizationMongoDBAdaptor(MongoDBCollection organizationCollection, Configuration configuration,
+                                      OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(OrganizationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.organizationCollection = organizationCollection;
-        this.deletedOrganizationCollection = deletedOrganizationCollection;
         this.organizationConverter = new OrganizationConverter();
     }
 

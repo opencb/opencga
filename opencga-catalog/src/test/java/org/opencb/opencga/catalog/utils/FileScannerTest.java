@@ -77,11 +77,11 @@ public class FileScannerTest {
 
         String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(organizationId, project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(organizationId, study.getId(), Paths.get("data/test/folder/").toString(),
                 true, null, QueryOptions.empty(), sessionIdUser).first();
 
@@ -108,7 +108,7 @@ public class FileScannerTest {
         CatalogManagerTest.createDebugFile(directory.resolve("subfolder/subsubfolder/file3.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, true, sessionIdUser);
 
         assertEquals(9, files.size());
         files.forEach((File file) -> assertTrue(StringUtils.isNotEmpty(file.getChecksum())));
@@ -125,7 +125,7 @@ public class FileScannerTest {
         File file = queryResult.first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
-        List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
+        List<File> files = new FileScanner(catalogManager).scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
                 true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
@@ -158,7 +158,7 @@ public class FileScannerTest {
         CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         File replacedFile = catalogManager.getFileManager().get(organizationId, study.getFqn(), file.getPath(), null, sessionIdUser).first();
         assertEquals(FileStatus.READY, replacedFile.getInternal().getStatus().getId());
@@ -185,7 +185,7 @@ public class FileScannerTest {
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
         Predicate<URI> uriPredicate = uri -> uri.getPath().endsWith("file1.txt") || uri.getPath().endsWith("file2.txt");
-        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, sessionIdUser);
 
         assertEquals(2, files.size());
         for (File file : files) {
@@ -204,13 +204,13 @@ public class FileScannerTest {
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
         assertEquals(1, files.size());
 
         Path studyUriPath = Paths.get(study.getUri());
         CatalogManagerTest.createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file2.txt").toString());
         File root = catalogManager.getFileManager().search(organizationId, study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
-        files = fileScanner.scan(root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        files = fileScanner.scan(organizationId, root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getSize() > 0));
@@ -225,7 +225,7 @@ public class FileScannerTest {
         //ReSync study folder. Will detect any difference.
         FileScanner fileScanner = new FileScanner(catalogManager);
         List<File> files;
-        files = fileScanner.reSync(study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
         assertEquals(0, files.size());
 
         //Add one extra file. ReSync study folder.
@@ -234,7 +234,7 @@ public class FileScannerTest {
         catalogManager.getIoManagerFactory().getDefault().createDirectory(studyUriPath.resolve("data/test/folder/").toUri(), true);
         Path filePath = CatalogManagerTest
                 .createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").toString()).toPath();
-        files = fileScanner.reSync(study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
 
         assertEquals(1, files.size());
         File file = files.get(0);
@@ -244,7 +244,7 @@ public class FileScannerTest {
 
         //Delete file. CheckStudyFiles. Will detect one File.Status.MISSING file
         Files.delete(filePath);
-        files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
+        files = fileScanner.checkStudyFiles(organizationId, study, true, sessionIdUser);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getId());
@@ -252,7 +252,7 @@ public class FileScannerTest {
 
         //Restore file. CheckStudyFiles. Will detect one re-tracked file. Checksum must be different.
         CatalogManagerTest.createDebugFile(filePath.toString());
-        files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
+        files = fileScanner.checkStudyFiles(organizationId, study, true, sessionIdUser);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getId());
@@ -261,7 +261,7 @@ public class FileScannerTest {
 
         //Delete file. ReSync. Will detect one File.Status.MISSING file (like checkFile)
         Files.delete(filePath);
-        files = fileScanner.reSync(study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getId());
@@ -269,7 +269,7 @@ public class FileScannerTest {
 
         //Restore file. CheckStudyFiles. Will detect one found file. Checksum must be different.
         CatalogManagerTest.createDebugFile(filePath.toString());
-        files = fileScanner.reSync(study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getId());
@@ -292,7 +292,7 @@ public class FileScannerTest {
         CatalogManagerTest.createDebugFile(directory.resolve("file2.sam.gz").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         Map<String, File> map = files.stream().collect(Collectors.toMap(File::getName, (f) -> f));
 

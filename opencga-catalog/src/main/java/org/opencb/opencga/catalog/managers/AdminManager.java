@@ -36,7 +36,7 @@ public class AdminManager extends AbstractManager {
         this.catalogIOManager = catalogIOManager;
     }
 
-    public OpenCGAResult<User> userSearch(Query query, QueryOptions options, String token)
+    public OpenCGAResult<User> userSearch(String organizationId, Query query, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -45,7 +45,7 @@ public class AdminManager extends AbstractManager {
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
             authorizationManager.checkIsInstallationAdministrator(userId);
 
@@ -67,7 +67,7 @@ public class AdminManager extends AbstractManager {
                 query.remove(ParamConstants.USER_CREATION_DATE);
             }
 
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(query, options);
+            OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
             auditManager.auditSearch(userId, Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return userDataResult;
@@ -78,21 +78,22 @@ public class AdminManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Group> updateGroups(String userId, List<String> studyIds, List<String> groupIds,
+    public OpenCGAResult<Group> updateGroups(String organizationId, String userId, List<String> studyIds, List<String> groupIds,
                                              ParamUtils.AddRemoveAction action, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("userId", userId)
                 .append("studyIds", studyIds)
                 .append("groupIds", groupIds)
                 .append("action", action)
                 .append("token", token);
-        String authenticatedUser = catalogManager.getUserManager().getUserId(token);
+        String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
             authorizationManager.checkIsInstallationAdministrator(authenticatedUser);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
-            OpenCGAResult<Long> count = userDBAdaptor.count(query);
+            OpenCGAResult<Long> count = getUserDBAdaptor(organizationId).count(query);
             if (count.getNumMatches() == 0) {
                 throw new CatalogException("User '" + userId + "' not found.");
             }
@@ -119,7 +120,7 @@ public class AdminManager extends AbstractManager {
                 }
             }
 
-            OpenCGAResult<Group> result = studyDBAdaptor.updateUserFromGroups(userId, studyUids, groupIds, action);
+            OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).updateUserFromGroups(userId, studyUids, groupIds, action);
 
             auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -135,31 +136,33 @@ public class AdminManager extends AbstractManager {
      * Add a user to all the remote groups he/she may belong for a particular authentication origin.
      * Also remove the user from other groups he/she may have been associated in the past for the same authentication origin.
      *
-     * @param userId User id.
-     * @param remoteGroupIds List of group ids the user must be associated with.
+     * @param organizationId         Organization id.
+     * @param userId                 User id.
+     * @param remoteGroupIds         List of group ids the user must be associated with.
      * @param authenticationOriginId The authentication origin the groups must be associated to.
-     * @param token Administrator token.
+     * @param token                  Administrator token.
      * @return An empty OpenCGAResult.
      * @throws CatalogException If the token is invalid or belongs to a user other thant the Administrator and if userId does not exist.
      */
-    public OpenCGAResult<Group> syncRemoteGroups(String userId, List<String> remoteGroupIds,
-                                             String authenticationOriginId, String token) throws CatalogException {
+    public OpenCGAResult<Group> syncRemoteGroups(String organizationId, String userId, List<String> remoteGroupIds,
+                                                 String authenticationOriginId, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("userId", userId)
                 .append("remoteGroupIds", remoteGroupIds)
                 .append("authenticationOriginId", authenticationOriginId)
                 .append("token", token);
-        String authenticatedUser = catalogManager.getUserManager().getUserId(token);
+        String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
             authorizationManager.checkIsInstallationAdministrator(authenticatedUser);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
-            OpenCGAResult<Long> count = userDBAdaptor.count(query);
+            OpenCGAResult<Long> count = getUserDBAdaptor(organizationId).count(query);
             if (count.getNumMatches() == 0) {
                 throw new CatalogException("User '" + userId + "' not found.");
             }
-            OpenCGAResult<Group> result = studyDBAdaptor.resyncUserWithSyncedGroups(userId, remoteGroupIds, authenticationOriginId);
+            OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroupIds,
+                    authenticationOriginId);
 
             auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

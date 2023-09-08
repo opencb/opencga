@@ -80,12 +80,12 @@ public class CatalogFileUtilsTest {
         String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         //Create USER
-        catalogManager.getUserManager().create("user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         userSessionId = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
-        String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, "proj", "proj", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
+        Study study = catalogManager.getStudyManager().create(organizationId, projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
                 userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();
@@ -107,7 +107,7 @@ public class CatalogFileUtilsTest {
                         .setDescription("file at root")
                         .setContent(RandomStringUtils.randomAlphanumeric(100)),
                 true, userSessionId).first();
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
         assertEquals(InternalStatus.READY, file.getInternal().getStatus().getId());
@@ -123,14 +123,14 @@ public class CatalogFileUtilsTest {
 
         /** Check READY and missing file **/
         assertTrue(new java.io.File(file.getUri()).delete());
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getId());
 
         /** Check MISSING file still missing **/
         file = catalogManager.getFileManager().get(organizationId, studyFqn, file.getPath(), null, userSessionId).first();
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
 
         assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getId(),
                 returnedFile.getInternal().getStatus().getId());
@@ -141,7 +141,7 @@ public class CatalogFileUtilsTest {
         os.write(RandomStringUtils.randomAlphanumeric(1000).getBytes());
         os.write('\n');
         os.close();
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getId());

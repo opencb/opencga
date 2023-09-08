@@ -100,7 +100,7 @@ public class RgaManagerTest {
                 if (i % 2 == 0) {
                     String id = file.getSampleIds().get(i);
                     SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, ownerToken);
+                    catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, ownerToken);
                 }
             }
 
@@ -141,7 +141,7 @@ public class RgaManagerTest {
             catalogManager.getIndividualManager().updateAcl(organizationId, STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
                     new IndividualAclParams().setPermissions(IndividualPermissions.VIEW.name()),
                     ParamUtils.AclAction.SET, false, ownerToken);
-            catalogManager.getSampleManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
+            catalogManager.getSampleManager().updateAcl(organizationId, STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
                     new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), ParamUtils.AclAction.SET,
                     ownerToken);
 
@@ -183,12 +183,12 @@ public class RgaManagerTest {
     }
 
     public void setUpCatalogManager() throws CatalogException {
-        catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        catalogManager.getUserManager().create(organizationId, OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         ownerToken = catalogManager.getUserManager().login(OWNER, PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
-        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, ownerToken);
+        catalogManager.getStudyManager().create(organizationId, projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, ownerToken);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {
@@ -199,7 +199,7 @@ public class RgaManagerTest {
             catalogManager.getSampleManager().create(organizationId, STUDY, sample, null, ownerToken);
         }
 
-        catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());
+        catalogManager.getUserManager().create(organizationId, USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());
         userToken = catalogManager.getUserManager().login(USER, PASSWORD).getToken();
     }
 

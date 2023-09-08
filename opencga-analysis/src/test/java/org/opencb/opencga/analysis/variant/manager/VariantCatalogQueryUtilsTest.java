@@ -112,14 +112,14 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
+        User user = catalog.getUserManager().create(organizationId, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
-        catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
+        catalog.getProjectManager().create(organizationId, "p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
+        catalog.getStudyManager().create(organizationId, "p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(organizationId, "p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(organizationId, "p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -156,8 +156,8 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getCohortManager().create(organizationId, "s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
-        catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
+        catalog.getProjectManager().create(organizationId, "p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
+        catalog.getStudyManager().create(organizationId, "p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
         myPanel = new Panel("MyPanel", "MyPanel", 1);
         myPanel.setGenes(
@@ -383,8 +383,8 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryBySavedFilter() throws Exception {
-        String userId = catalog.getUserManager().getUserId(sessionId);
-        catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
+        String userId = catalog.getUserManager().getUserId(organizationId, sessionId);
+        catalog.getUserManager().addFilter(organizationId, userId, "myFilter", "", Enums.Resource.VARIANT,
                 new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
 
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), null, sessionId);

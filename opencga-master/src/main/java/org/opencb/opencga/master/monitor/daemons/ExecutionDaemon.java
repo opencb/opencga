@@ -518,7 +518,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         String userToken;
         try {
-            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), Collections.emptyMap(), token);
+            userToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, job.getUserId(), Collections.emptyMap(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }

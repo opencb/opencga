@@ -78,11 +78,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
         userId = "user1";
-        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", TestParamConstants.PASSWORD, "", -1L, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
+        catalogManager.getUserManager().create(organizationId, userId, userId, "asdasd@asd.asd", TestParamConstants.PASSWORD, "", -1L, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
-        Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create(organizationId, "def", "default", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).getResults().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null,
+        Study study = catalogManager.getStudyManager().create(organizationId, project.getFqn(), "def", null, "default", "", null, null, null, null,
                 new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().upload(organizationId, studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
@@ -121,7 +121,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @Test
     public void testLoadPedigreeCatalog() throws Exception {
-        DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
+        DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(organizationId, pedFile, null, sessionId);
         String variableSetId = sampleDataResult.getResults().get(0).getAnnotationSets().get(0).getVariableSetId();
 
         Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");

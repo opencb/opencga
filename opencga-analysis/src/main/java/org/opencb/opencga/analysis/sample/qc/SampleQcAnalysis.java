@@ -81,7 +81,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         // Check permissions
         try {
             long studyUid = catalogManager.getStudyManager().get(organizationId, getStudy(), QueryOptions.empty(), token).first().getUid();
-            String userId = catalogManager.getUserManager().getUserId(token);
+            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
             catalogManager.getAuthorizationManager().checkStudyPermission(studyUid, userId, WRITE_SAMPLES);
         } catch (CatalogException e) {
             throw new ToolException(e);
@@ -350,7 +350,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             if (genomePlot != null) {
                 qc.getVariant().setGenomePlot(genomePlot);
 
-                catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                catalogManager.getSampleManager().update(organizationId, getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());
                 logger.info("Quality control saved for sample {}", sample.getId());
             }

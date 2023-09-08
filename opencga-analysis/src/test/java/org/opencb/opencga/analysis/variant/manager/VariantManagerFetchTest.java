@@ -161,10 +161,10 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD, sessionId);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600"), "*",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("NA19600"), "*",
                 new SampleAclParams().setPermissions(SamplePermissions.VIEW.name()), // View is not enough
                 ADD, sessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19660"), "*",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("NA19660"), "*",
                 new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
                 ADD, sessionId);
 
@@ -181,7 +181,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousViewSampleVariantsWithoutAggregatedVariants() throws Exception {
         // Only 2 samples
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SamplePermissions.VIEW + "," + SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);
@@ -208,7 +208,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SamplePermissions.VIEW + "," + SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);
@@ -228,7 +228,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SamplePermissions.VIEW + "," + SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);

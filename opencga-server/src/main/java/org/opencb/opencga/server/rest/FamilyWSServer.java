@@ -269,7 +269,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     .append("parents", parents)
                     .append("annotationSetId", annotationSetId);
 
-            return createOkResponse(catalogManager.getFamilyManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+            return createOkResponse(catalogManager.getFamilyManager().loadTsvAnnotations(organizationId, studyStr, variableSetId, path, params,
                     additionalParams, FamilyTsvAnnotationLoader.ID, token));
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -178,11 +178,11 @@ public class VariantAnalysisTest {
                 String id = file.getSampleIds().get(i);
                 if (id.equals(son)) {
                     SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
+                    catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
                 }
                 if (i % 2 == 0) {
                     SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
+                    catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
                 }
             }
 
@@ -235,7 +235,7 @@ public class VariantAnalysisTest {
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
 
             SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-            catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+            catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -261,12 +261,12 @@ public class VariantAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        catalogManager.getUserManager().create(organizationId, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
-        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(organizationId, projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {
@@ -279,7 +279,7 @@ public class VariantAnalysisTest {
 
         // Cancer
         List<Sample> samples = new ArrayList<>();
-        catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(organizationId, projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
         Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
         samples.add(sample);
 //        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
@@ -397,7 +397,7 @@ public class VariantAnalysisTest {
             SampleQualityControl qualityControl = sample.getQualityControl();
             if (qualityControl != null && qualityControl.getVariant() != null && CollectionUtils.isNotEmpty(qualityControl.getVariant().getVariantStats())) {
                 qualityControl.getVariant().setVariantStats(Collections.emptyList());
-                catalogManager.getSampleManager().update(STUDY, sample.getId(), new SampleUpdateParams()
+                catalogManager.getSampleManager().update(organizationId, STUDY, sample.getId(), new SampleUpdateParams()
                         .setQualityControl(qualityControl), new QueryOptions(), token);
             }
         }
@@ -760,7 +760,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Collections.singletonList(signature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
         params.setSample(cancer_sample);
@@ -878,7 +878,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Collections.singletonList(signature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
         params.setSample(cancer_sample);
@@ -929,7 +929,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Arrays.asList(snvSignature, svSignature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         // SNV fitting
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();

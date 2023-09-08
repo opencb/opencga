@@ -87,7 +87,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         if (toolParams.isIndex()) {
-            String userId = getCatalogManager().getUserManager().getUserId(getToken());
+            String userId = getCatalogManager().getUserManager().getUserId(organizationId, getToken());
             Study study = getCatalogManager().getStudyManager().get(organizationId, this.study, new QueryOptions(), getToken()).first();
             boolean isOwner = study.getFqn().startsWith(userId + "@");
             if (!isOwner) {
@@ -322,7 +322,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             }
                             SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);
                             getCatalogManager().getSampleManager()
-                                    .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
+                                    .update(organizationId, study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
 
                             progressLogger.increment(1);
                         }

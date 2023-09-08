@@ -213,7 +213,7 @@ public class VariantOperationsTest {
             if (i % 2 == 0) {
                 String id = file.getSampleIds().get(i);
                 SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
+                catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
             }
         }
 
@@ -259,12 +259,12 @@ public class VariantOperationsTest {
     }
 
     public void setUpCatalogManager() throws Exception {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        catalogManager.getUserManager().create(organizationId, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
-        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(organizationId, projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {

@@ -63,7 +63,7 @@ public class MetaCommandExecutor extends AdminCommandExecutor {
             params.putIfNotEmpty(MetaDBAdaptor.SECRET_KEY, executor.updateSecretKey);
             params.putIfNotEmpty(MetaDBAdaptor.ALGORITHM, executor.algorithm);
 
-            catalogManager.updateJWTParameters(params, token);
+            catalogManager.updateJWTParameters(organizationId, params, token);
         }
 
     }

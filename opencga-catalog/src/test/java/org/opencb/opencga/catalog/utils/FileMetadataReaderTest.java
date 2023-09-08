@@ -77,11 +77,11 @@ public class FileMetadataReaderTest {
 
         String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(organizationId, project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(organizationId, study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 

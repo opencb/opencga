@@ -75,16 +75,16 @@ public abstract class AbstractManager {
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    protected OrganizationDBAdaptor getOrganizationDBAdaptor() {
-        return catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor();
-    }
-
     protected MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getMigrationDBAdaptor(organization);
     }
 
     protected MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organization);
+    }
+
+    protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) {
+        return catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organization);
     }
 
     protected UserDBAdaptor getUserDBAdaptor(String organization) throws CatalogDBException {

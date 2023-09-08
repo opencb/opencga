@@ -67,6 +67,7 @@ public class FileUtils {
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
      *
+     * @param organizationId    Organization id.
      * @param studyStr          Study corresponding to the file to be checked.
      * @param file              File to check
      * @param calculateChecksum Calculate checksum for "found files"
@@ -74,7 +75,8 @@ public class FileUtils {
      * @return If there is any change, returns the modified file. Else, return the same file.
      * @throws CatalogException CatalogException
      */
-    public File checkFile(String studyStr, File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+    public File checkFile(String organizationId, String studyStr, File file, boolean calculateChecksum, String sessionId)
+            throws CatalogException {
         if (!file.getType().equals(File.Type.FILE)) {
             return file;
         }
@@ -98,15 +100,17 @@ public class FileUtils {
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                                 new FileStatus(FileStatus.MISSING));
                         catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, null, sessionId);
-                        modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
+                        modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId)
+                                .first();
                     }
                 } else if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + FileStatus.READY);
-                    ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                    ObjectMap params = getModifiedFileAttributes(organizationId, file, fileUri, calculateChecksum);
                     params.put(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                             new FileStatus(FileStatus.READY));
-                    catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
+                    catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, QueryOptions.empty(),
+                            sessionId);
                     modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
@@ -134,15 +138,17 @@ public class FileUtils {
      * checksum
      * uri
      *
+     * @param organizationId    Organization id.
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
-     *                                                   TODO: Lazy checksum: Only calculate checksum if the size has changed.
+     * TODO: Lazy checksum: Only calculate checksum if the size has changed.
      * @param calculateChecksum Calculate checksum to check if have changed
      * @return ObjectMap ObjectMap
      * @throws CatalogException CatalogException
      */
-    public ObjectMap getModifiedFileAttributes(File file, URI fileUri, boolean calculateChecksum) throws CatalogException {
+    public ObjectMap getModifiedFileAttributes(String organizationId, File file, URI fileUri, boolean calculateChecksum)
+            throws CatalogException {
         if (fileUri == null) {
             fileUri = catalogManager.getFileManager().getUri(organizationId, file);
         }
@@ -154,7 +160,7 @@ public class FileUtils {
                 throw CatalogIOException.ioManagerException(fileUri, e);
             }
         }
-        return getModifiedFileAttributes(file, checksum, fileUri, null);
+        return getModifiedFileAttributes(organizationId, file, checksum, fileUri, null);
     }
 
     /**
@@ -165,7 +171,8 @@ public class FileUtils {
      *
      * @throws CatalogException CatalogException
      */
-    private ObjectMap getModifiedFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters) throws CatalogException {
+    private ObjectMap getModifiedFileAttributes(String organizationId, File file, String checksum, URI fileUri, ObjectMap parameters)
+            throws CatalogException {
         parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
         if (fileUri == null) {
             fileUri = catalogManager.getFileManager().getUri(organizationId, file);

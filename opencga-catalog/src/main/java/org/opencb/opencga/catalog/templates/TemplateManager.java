@@ -79,23 +79,24 @@ public class TemplateManager {
         List<String> projectIndexVcfJobIds = new ArrayList<>();
         List<String> statsJobIds = new ArrayList<>();
 
+        String organizationId = manifest.getConfiguration().getOrganizationId();
         TemplateStudy study = manifest.getStudy();
 
         // NOTE: Do not change the order of the following resource creation.
-        String studyFqn = addStudyMetadata(manifest.getConfiguration().getProjectId(), study);
+        String studyFqn = addStudyMetadata(organizationId, manifest.getConfiguration().getProjectId(), study);
 
-        createIndividuals(studyFqn, path);
-        createSamples(studyFqn, path);
-        createCohorts(studyFqn, path);
-        createFamilies(studyFqn, path);
-        createPanels(studyFqn, path);
-        createClinicalAnalyses(studyFqn, path);
+        createIndividuals(organizationId, studyFqn, path);
+        createSamples(organizationId, studyFqn, path);
+        createCohorts(organizationId, studyFqn, path);
+        createFamilies(organizationId, studyFqn, path);
+        createPanels(organizationId, studyFqn, path);
+        createClinicalAnalyses(organizationId, studyFqn, path);
 
         // TODO: What is this?
 //        if (study.getVariantEngineConfiguration() != null) {
 //            configureVariantEngine(studyFqn, study);
 //        }
-        createFiles(studyFqn, path);
+        createFiles(organizationId, studyFqn, path);
 //            if (CollectionUtils.isNotEmpty(study.getFiles())) {
 //                List<String> studyIndexVcfJobIds = fetchFiles(template, studyFqn, study);
 //                projectIndexVcfJobIds.addAll(studyIndexVcfJobIds);
@@ -114,6 +115,9 @@ public class TemplateManager {
         if (manifest.getConfiguration() == null) {
             throw new IllegalStateException("Missing 'configuration' section from the Manifest file");
         }
+        if (StringUtils.isEmpty(manifest.getConfiguration().getOrganizationId())) {
+            throw new IllegalStateException("Missing 'configuration.organizationId' from the Manifest file");
+        }
         if (StringUtils.isEmpty(manifest.getConfiguration().getProjectId())) {
             throw new IllegalStateException("Missing 'configuration.projectId' from the Manifest file");
         }
@@ -129,7 +133,7 @@ public class TemplateManager {
         String version = gitRepositoryState.getBuildVersion();
         String versionShort;
         if (version.contains("-")) {
-            logger.warn("Using development OpenCGA version: " + version);
+            logger.warn("Using development OpenCGA version: {}", version);
             versionShort = version.split("-")[0];
         } else {
             versionShort = version;
@@ -138,8 +142,9 @@ public class TemplateManager {
         checkVersion(versionShort, templateVersion);
 
         // Study should already exist
-        Study study = getStudy(manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
-        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = getStudy(manifest.getConfiguration().getOrganizationId(), manifest.getConfiguration().getProjectId(),
+                manifest.getStudy().getId());
+        String userId = catalogManager.getUserManager().getUserId(manifest.getConfiguration().getOrganizationId(), token);
         catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
 
 //        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
@@ -166,17 +171,17 @@ public class TemplateManager {
             }
         }
         logger.warn("Using a template version lower than the OpenCGA installation version. Some things may not work properly. "
-                + "Template version: " + templateVersion + ", OpenCGA version: " + opencgaVersion);
+                + "Template version: {}, OpenCGA version: {}", templateVersion, opencgaVersion);
     }
 
-    private Study getStudy(String projectId, String studyId) throws CatalogException {
+    private Study getStudy(String organizationId, String projectId, String studyId) throws CatalogException {
         OpenCGAResult<Study> studyOpenCGAResult =
                 catalogManager.getStudyManager().get(organizationId, projectId + ":" + studyId, QueryOptions.empty(), token);
         return studyOpenCGAResult.first();
     }
 
-    private String addStudyMetadata(String projectId, TemplateStudy tmplStudy) throws CatalogException {
-        Study origStudy = getStudy(projectId, tmplStudy.getId());
+    private String addStudyMetadata(String organizationId, String projectId, TemplateStudy tmplStudy) throws CatalogException {
+        Study origStudy = getStudy(organizationId, projectId, tmplStudy.getId());
         String fqn;
 //        if (origStudy == null) {
 //            Study study = new Study()
@@ -261,7 +266,7 @@ public class TemplateManager {
 //        return openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId();
 //    }
 
-    private void createIndividuals(String studyFqn, Path path) throws CatalogException {
+    private void createIndividuals(String organizationId, String studyFqn, Path path) throws CatalogException {
         boolean hasParents = false;
         // Process/Create individuals without parents
         try (TemplateEntryIterator<IndividualUpdateParams> iterator =
@@ -293,7 +298,8 @@ public class TemplateManager {
 
                     // Create individual
                     logger.info("Create individual '{}'", individual.getId());
-                    catalogManager.getIndividualManager().create(organizationId, studyFqn, individual.toIndividual(), QueryOptions.empty(), token);
+                    catalogManager.getIndividualManager().create(organizationId, studyFqn, individual.toIndividual(), QueryOptions.empty(),
+                            token);
 
                     count++;
                 } else if (overwrite) {
@@ -302,7 +308,8 @@ public class TemplateManager {
                     individual.setId(null);
 
                     logger.info("Update individual '{}'", individual.getId());
-                    catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, individual, QueryOptions.empty(), token);
+                    catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, individual, QueryOptions.empty(),
+                            token);
 
                     count++;
                 }
@@ -329,8 +336,8 @@ public class TemplateManager {
                                 .setMother(individual.getMother());
                         logger.info("Updating individual '{}' parents", individual.getId());
 
-                        catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, QueryOptions.empty(),
-                                token);
+                        catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams,
+                                QueryOptions.empty(), token);
 
                         count++;
                     }
@@ -423,7 +430,7 @@ public class TemplateManager {
 //        }
 //    }
 
-    private void createSamples(String studyFqn, Path path) throws CatalogException {
+    private void createSamples(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create samples
         try (TemplateEntryIterator<SampleUpdateParams> iterator =
                      new TemplateEntryIterator<>(path, "samples", SampleUpdateParams.class)) {
@@ -453,7 +460,7 @@ public class TemplateManager {
                     sample.setId(null);
 
                     logger.info("Update sample '{}'", sample.getId());
-                    catalogManager.getSampleManager().update(studyFqn, sampleId, sample, QueryOptions.empty(), token);
+                    catalogManager.getSampleManager().update(organizationId, studyFqn, sampleId, sample, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -464,7 +471,7 @@ public class TemplateManager {
         }
     }
 
-    private void createCohorts(String studyFqn, Path path) throws CatalogException {
+    private void createCohorts(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create cohorts
         try (TemplateEntryIterator<CohortUpdateParams> iterator =
                      new TemplateEntryIterator<>(path, "cohorts", CohortUpdateParams.class)) {
@@ -506,7 +513,7 @@ public class TemplateManager {
         }
     }
 
-    private void createFamilies(String studyFqn, Path path) throws CatalogException {
+    private void createFamilies(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create families
         try (TemplateEntryIterator<FamilyUpdateParams> iterator =
                      new TemplateEntryIterator<>(path, "families", FamilyUpdateParams.class)) {
@@ -532,7 +539,8 @@ public class TemplateManager {
                     if (CollectionUtils.isNotEmpty(completeFamily.getMembers())) {
                         List<String> memberIds = completeFamily.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
                         completeFamily.setMembers(null);
-                        catalogManager.getFamilyManager().create(organizationId, studyFqn, completeFamily, memberIds, QueryOptions.empty(), token);
+                        catalogManager.getFamilyManager().create(organizationId, studyFqn, completeFamily, memberIds, QueryOptions.empty(),
+                                token);
                     } else {
                         catalogManager.getFamilyManager().create(organizationId, studyFqn, family.toFamily(), QueryOptions.empty(), token);
                     }
@@ -555,7 +563,7 @@ public class TemplateManager {
         }
     }
 
-    private void createPanels(String studyFqn, Path path) throws CatalogException {
+    private void createPanels(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create panels
         try (TemplateEntryIterator<PanelUpdateParams> iterator =
                      new TemplateEntryIterator<>(path, "panels", PanelUpdateParams.class)) {
@@ -586,7 +594,7 @@ public class TemplateManager {
                     panel.setId(null);
 
                     logger.info("Update panel '{}'", panel.getId());
-                    catalogManager.getPanelManager().update(studyFqn, panelId, panel, QueryOptions.empty(), token);
+                    catalogManager.getPanelManager().update(organizationId, studyFqn, panelId, panel, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -597,7 +605,7 @@ public class TemplateManager {
         }
     }
 
-    private void createClinicalAnalyses(String studyFqn, Path path) throws CatalogException {
+    private void createClinicalAnalyses(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create Clinical Anlyses
         try (TemplateEntryIterator<ClinicalAnalysisUpdateParams> iterator =
                      new TemplateEntryIterator<>(path, "clinical", ClinicalAnalysisUpdateParams.class)) {
@@ -606,7 +614,8 @@ public class TemplateManager {
                 ClinicalAnalysisUpdateParams clinical = iterator.next();
 
                 Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinical.getId());
-                boolean exists = catalogManager.getClinicalAnalysisManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getClinicalAnalysisManager().count(organizationId, studyFqn, query, token)
+                        .getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Clinical Analysis '" + clinical.getId()
@@ -620,8 +629,8 @@ public class TemplateManager {
 
                     // Create Clinical Analysis
                     logger.info("Create Clinical Analysis '{}'", clinical.getId());
-                    catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, clinical.toClinicalAnalysis(), QueryOptions.empty(),
-                            token);
+                    catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, clinical.toClinicalAnalysis(),
+                            QueryOptions.empty(), token);
 
                     count++;
                 } else if (overwrite) {
@@ -630,7 +639,8 @@ public class TemplateManager {
                     clinical.setId(null);
 
                     logger.info("Update Clinical Analysis '{}'", clinical.getId());
-                    catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, clinicalId, clinical, QueryOptions.empty(), token);
+                    catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, clinicalId, clinical, QueryOptions.empty(),
+                            token);
 
                     count++;
                 }
@@ -641,7 +651,7 @@ public class TemplateManager {
         }
     }
 
-    private void createFiles(String studyFqn, Path path) throws CatalogException {
+    private void createFiles(String organizationId, String studyFqn, Path path) throws CatalogException {
         // Process/Create Files
         try (TemplateEntryIterator<TemplateFile> iterator =
                      new TemplateEntryIterator<>(path, "files", TemplateFile.class)) {

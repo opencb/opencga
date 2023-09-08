@@ -75,7 +75,7 @@ public class OrganizationManager extends AbstractManager {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Organization> organizationDataResult = organizationDBAdaptor.get(queryCopy, queryOptions);
+        OpenCGAResult<Organization> organizationDataResult = getOrganizationDBAdaptor(organization).get(queryCopy, queryOptions);
 
         Function<Organization, String> organizationStringFunction = Organization::getId;
         if (idQueryParam.equals(OrganizationDBAdaptor.QueryParams.UUID)) {
@@ -115,7 +115,7 @@ public class OrganizationManager extends AbstractManager {
 
     public OpenCGAResult<Organization> create(OrganizationCreateParams organizationCreateParams, QueryOptions options, String token)
             throws CatalogException {
-        String userId = this.catalogManager.getUserManager().getUserId(token);
+        String userId = this.catalogManager.getUserManager().getUserId(ParamConstants.ADMIN_ORGANIZATION, token);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationCreateParams", organizationCreateParams)
@@ -137,9 +137,9 @@ public class OrganizationManager extends AbstractManager {
             organization = organizationCreateParams.toOrganization();
             validateOrganizationForCreation(organization);
 
-            queryResult = organizationDBAdaptor.insert(organization, options);
+            queryResult = getOrganizationDBAdaptor(organization).insert(organization, options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                OpenCGAResult<Organization> result = organizationDBAdaptor.get(organization.getUid(), options);
+                OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organization).get(organization.getUid(), options);
                 organization = result.first();
                 // Fetch created organization
                 queryResult.setResults(result.getResults());
@@ -156,7 +156,7 @@ public class OrganizationManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
-                organizationDBAdaptor.delete(organization);
+                getOrganizationDBAdaptor(organization).delete(organization);
             } catch (Exception e1) {
                 logger.error("Error deleting organization from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -200,7 +200,7 @@ public class OrganizationManager extends AbstractManager {
             organizationId = organization.getId();
             organizationUuid = organization.getUuid();
 
-            OpenCGAResult<Organization> updateResult = organizationDBAdaptor.update(organization.getUid(), updateMap, options);
+            OpenCGAResult<Organization> updateResult = getOrganizationDBAdaptor(organization).update(organization.getUid(), updateMap, options);
             result.append(updateResult);
 
             auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "",

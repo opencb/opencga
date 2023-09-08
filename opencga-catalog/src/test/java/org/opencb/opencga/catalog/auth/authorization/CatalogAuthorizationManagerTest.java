@@ -141,11 +141,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         fileManager = catalogManager.getFileManager();
 
-        catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(memberUser, memberUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(externalUser, externalUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, ownerUser, ownerUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, studyAdminUser1, studyAdminUser1, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, studyAdminUser2, studyAdminUser2, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, memberUser, memberUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, externalUser, externalUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
 
         ownerSessionId = catalogManager.getUserManager().login(ownerUser, TestParamConstants.PASSWORD).getToken();
         studyAdmin1SessionId = catalogManager.getUserManager().login(studyAdminUser1, TestParamConstants.PASSWORD).getToken();
@@ -153,9 +153,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         memberSessionId = catalogManager.getUserManager().login(memberUser, TestParamConstants.PASSWORD).getToken();
         externalSessionId = catalogManager.getUserManager().login(externalUser, TestParamConstants.PASSWORD).getToken();
 
-        p1 = catalogManager.getProjectManager().create("p1", "p1", null, "Homo sapiens",
+        p1 = catalogManager.getProjectManager().create(organizationId, "p1", "p1", null, "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerSessionId).first().getId();
-        Study study = catalogManager.getStudyManager().create(p1, "studyFqn", "studyFqn", "studyFqn", null, null, null,
+        Study study = catalogManager.getStudyManager().create(organizationId, p1, "studyFqn", "studyFqn", "studyFqn", null, null, null,
                 null, null, INCLUDE_RESULT, ownerSessionId).first();
         studyFqn = study.getFqn();
         studyUid = study.getUid();
@@ -207,15 +207,15 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId(ind2), Collections.singletonList(smp2.getId()),
                 QueryOptions.empty(), ownerSessionId);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp1.getId()), externalUser, allSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp1.getId()), externalUser, allSamplePermissions,
                 SET, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp3.getId()), externalUser, noSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp3.getId()), externalUser, noSamplePermissions,
                 SET, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp2.getId()), "*", noSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp2.getId()), "*", noSamplePermissions,
                 SET, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp5.getId()), externalUser, noSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp5.getId()), externalUser, noSamplePermissions,
                 SET, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp6.getId()), "@members", allSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp6.getId()), "@members", allSamplePermissions,
                 SET, ownerSessionId);
     }
 
@@ -364,7 +364,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingUserToRole() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
         StudyAclParams aclParams = new StudyAclParams("", AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(organizationId, Arrays.asList(studyFqn), newUser, aclParams, ParamUtils.AclAction.ADD, ownerSessionId);
     }
@@ -373,7 +373,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingUserToRole2() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Only owners or administrative users");
         StudyAclParams aclParams = new StudyAclParams("", AuthorizationManager.ROLE_ANALYST);
@@ -383,7 +383,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void addExistingGroupToRole() throws CatalogException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "email@ccc.ccc", TestParamConstants.PASSWORD, "ASDF", null, Account.AccountType.FULL, opencgaToken);
         String group = "@newGroup";
 //        catalogManager.addUsersToGroup(studyFqn, group, newUser, studyAdmin1SessionId);
         catalogManager.getStudyManager().createGroup(organizationId, studyFqn, group, Collections.singletonList(newUser), studyAdmin1SessionId);
@@ -509,7 +509,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         StudyAclParams aclParams = new StudyAclParams(null, null);
         catalogManager.getStudyManager().updateAcl(organizationId, Arrays.asList(studyFqn), group, aclParams, RESET, ownerSessionId);
-        String userId = catalogManager.getUserManager().getUserId(ownerSessionId);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, ownerSessionId);
         studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(1, studyAcls.first().getAcl().size());
@@ -634,7 +634,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(newUser, TestParamConstants.PASSWORD).getToken();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().get(organizationId, studyFqn, data, null, sessionId);
@@ -644,7 +644,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readFileSharedForGroup() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(newUser, TestParamConstants.PASSWORD).getToken();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
@@ -674,7 +674,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readFileForbiddenForGroupSharedWithUser() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(ownerUser, TestParamConstants.PASSWORD).getToken();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
@@ -734,7 +734,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void createFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(newUser, TestParamConstants.PASSWORD).getToken();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().createFolder(organizationId, studyFqn, Paths.get("data/my_folder/").toString(), false, null,
@@ -757,7 +757,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Owner always have access even if he has been removed all the permissions
         StudyAclParams aclParams = new StudyAclParams("", null);
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), ownerUser, aclParams, ADD, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp1.getId()), ownerUser, noSamplePermissions, SET,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp1.getId()), ownerUser, noSamplePermissions, SET,
                 ownerSessionId);
 
         sample = catalogManager.getSampleManager().get(organizationId, studyFqn, smp1.getId(), null, ownerSessionId);
@@ -795,7 +795,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readSampleExternalUser() throws CatalogException, IOException {
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(newUser, TestParamConstants.PASSWORD).getToken();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(organizationId, studyFqn, smp2.getId(), null, sessionId);
@@ -811,7 +811,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readSampleForbiddenForExternalUser() throws CatalogException {
-        catalogManager.getSampleManager().updateAcl(String.valueOf(studyFqn), Arrays.asList(smp2.getId()), externalUser,
+        catalogManager.getSampleManager().updateAcl(organizationId, String.valueOf(studyFqn), Arrays.asList(smp2.getId()), externalUser,
                 new SampleAclParams(null, null, null, null, ""), SET, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(organizationId, studyFqn, smp2.getId(), null, externalSessionId);
@@ -821,7 +821,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleSharedForGroup() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(ownerUser, TestParamConstants.PASSWORD).getToken();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
@@ -831,7 +831,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), newGroup, aclParams, ADD, ownerSessionId);
 
         // Share the sample with the group
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp4.getId()), newGroup, allSamplePermissions, SET,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp4.getId()), newGroup, allSamplePermissions, SET,
                 ownerSessionId);
 
         DataResult<Sample> sample = catalogManager.getSampleManager().get(organizationId, studyFqn, smp4.getId(), null, sessionId);
@@ -849,7 +849,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleSharedForOthersNotWithStudyPermissions() throws CatalogException, IOException {
         // Add a new user to a new group
         String newUser = "newUser";
-        catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, newUser, newUser, "asda@mail.com", TestParamConstants.PASSWORD, "org", 1000L, Account.AccountType.FULL, opencgaToken);
         String sessionId = catalogManager.getUserManager().login(ownerUser, TestParamConstants.PASSWORD).getToken();
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(newUser)), ownerSessionId);
@@ -860,7 +860,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void adminShareSampleWithOtherUser() throws CatalogException {
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp4.getId()), externalUser, allSamplePermissions,
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList(smp4.getId()), externalUser, allSamplePermissions,
                 SET, studyAdmin1SessionId);
         DataResult<Sample> sample = catalogManager.getSampleManager().get(organizationId, studyFqn, smp4.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
@@ -906,14 +906,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         sampleManager.create(organizationId, studyFqn, new Sample().setId("s4"), QueryOptions.empty(), ownerSessionId);
         sampleManager.create(organizationId, studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
 
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser,
+        sampleManager.updateAcl(organizationId, studyFqn, Collections.singletonList("s1"), memberUser,
                 new SampleAclParams(null, null, null, null, SamplePermissions.DELETE.name()), SET, ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser,
+        sampleManager.updateAcl(organizationId, studyFqn, Collections.singletonList("s2"), memberUser,
                 new SampleAclParams(null, null, null, null, SamplePermissions.VIEW_ANNOTATIONS.name()), SET,
                 ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
+        sampleManager.updateAcl(organizationId, studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
                 null, null, null, null, SamplePermissions.DELETE.name()), SET, ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
+        sampleManager.updateAcl(organizationId, studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
                 null, null, null, null, SamplePermissions.VIEW.name()), SET, ownerSessionId);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());

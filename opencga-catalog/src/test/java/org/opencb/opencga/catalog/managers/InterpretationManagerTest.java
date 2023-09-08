@@ -60,15 +60,15 @@ public class InterpretationManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
+        catalogManager.getUserManager().create(organizationId, "user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
                 opencgaToken);
 
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After

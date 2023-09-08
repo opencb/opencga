@@ -95,7 +95,7 @@ public class MonitorService {
         logger = LoggerFactory.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);
-        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(OPENCGA, Collections.emptyMap(), token);
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(organizationId, OPENCGA, Collections.emptyMap(), token);
 
         executionDaemon = new ExecutionDaemon(
                 configuration.getMonitor().getExecutionDaemonInterval(),

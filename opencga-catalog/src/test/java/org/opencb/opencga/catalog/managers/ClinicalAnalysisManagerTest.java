@@ -109,15 +109,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
+        catalogManager.getUserManager().create(organizationId, "user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
                 opencgaToken);
 
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -270,7 +270,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, case1.getId(), new ClinicalAnalysisUpdateParams().setLocked(true), QueryOptions.empty(), sessionIdUser);
         // Update proband's sample
-        catalogManager.getSampleManager().update(STUDY, case1.getProband().getSamples().get(0).getId(),
+        catalogManager.getSampleManager().update(organizationId, STUDY, case1.getProband().getSamples().get(0).getId(),
                 new SampleUpdateParams().setDescription("new description"), QueryOptions.empty(), sessionIdUser);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(organizationId, STUDY, new Query(), new QueryOptions(),
@@ -1154,7 +1154,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
-        catalogManager.getUserManager().create("external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, "external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, opencgaToken);
 
         OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> aclResult =
@@ -1179,7 +1179,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("external", iAclResult.first().getAcl().get(0).getMember());
         assertNull(iAclResult.first().getAcl().get(0).getPermissions());
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> sAclResult = catalogManager.getSampleManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
         assertEquals(1, sAclResult.getNumResults());
         assertEquals(1, sAclResult.first().getAcl().size());
@@ -1209,7 +1209,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("external", iAclResult.first().getAcl().get(0).getMember());
         assertNull(iAclResult.first().getAcl().get(0).getPermissions());
 
-        sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        sAclResult = catalogManager.getSampleManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
         assertEquals(1, sAclResult.getNumResults());
         assertEquals(1, sAclResult.first().getAcl().size());
@@ -1236,7 +1236,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, iAclResult.getNumResults());
         assertEquals(2, iAclResult.first().getAcl().get(0).getPermissions().size());
 
-        sAclResult = catalogManager.getSampleManager().getAcls(STUDY,
+        sAclResult = catalogManager.getSampleManager().getAcls(organizationId, STUDY,
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
         assertEquals(1, sAclResult.getNumResults());
         assertEquals(2, sAclResult.first().getAcl().get(0).getPermissions().size());
@@ -2525,7 +2525,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createClinicalAnalysisWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(organizationId, STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(organizationId, STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();
@@ -2561,7 +2561,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createInterpretationWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(organizationId, STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(organizationId, STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
@@ -2580,7 +2580,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updatePanelsInClinicalAnalysis() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(STUDY, "gene-census", "", sessionIdUser);
+        catalogManager.getPanelManager().importFromSource(organizationId, STUDY, "gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(organizationId, STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();
@@ -2697,7 +2697,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(organizationId, STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         // Update to force a version increment and therefore, an update over the case
-        catalogManager.getSampleManager().update(STUDY, sample.getId(), new SampleUpdateParams().setDescription("descr"),
+        catalogManager.getSampleManager().update(organizationId, STUDY, sample.getId(), new SampleUpdateParams().setDescription("descr"),
                 QueryOptions.empty(), sessionIdUser);
 
         QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;

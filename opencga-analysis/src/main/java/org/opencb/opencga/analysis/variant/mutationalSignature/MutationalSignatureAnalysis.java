@@ -296,7 +296,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         }
         // Update sample quality control
         try {
-            catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+            catalogManager.getSampleManager().update(organizationId, getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());
             logger.info("Quality control saved for sample {}", sample.getId());
         } catch (CatalogException e) {

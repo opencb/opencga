@@ -51,7 +51,7 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDefaultVariableSets() throws Exception {
-        String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+        String fqn = catalogManager.getStudyManager().create(organizationId, project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first().getFqn();
 
         Study study = catalogManager.getStudyManager().get(organizationId, fqn, null, token).first();
@@ -120,7 +120,7 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void internalVariableSetTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+        Study study = catalogManager.getStudyManager().create(organizationId, project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();
 
         Set<Variable> variables = new HashSet<>();
@@ -148,7 +148,7 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateInternalRecessiveGene() throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+        Study study = catalogManager.getStudyManager().create(organizationId, project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();
         assertEquals(RecessiveGeneSummaryIndex.Status.NOT_INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
 
@@ -171,7 +171,7 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateClinicalConfiguration() throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+        Study study = catalogManager.getStudyManager().create(organizationId, project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();
         assertNotNull(study.getInternal().getConfiguration());
         assertNotNull(study.getInternal().getConfiguration().getClinical());
@@ -263,7 +263,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         Group first = catalogManager.getStudyManager().getGroup(organizationId, studyFqn, "@test", token).first();
         assertNotNull(first.getUserIds());
 
-        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, opencgaToken);
         catalogManager.getStudyManager().createGroup(organizationId, studyFqn, "@test2", Collections.singletonList("dummy"), token);
         catalogManager.getStudyManager().updateAcl(organizationId, studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, token);
 

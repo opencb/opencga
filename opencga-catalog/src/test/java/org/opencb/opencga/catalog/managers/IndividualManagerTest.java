@@ -285,7 +285,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
 
         // Increase sample2 version
-        catalogManager.getSampleManager().update(studyFqn, sample2.getId(), new SampleUpdateParams().setDescription("new description"),
+        catalogManager.getSampleManager().update(organizationId, studyFqn, sample2.getId(), new SampleUpdateParams().setDescription("new description"),
                 new QueryOptions(), token);
 
         // Add sample2 (with new version) and sample3

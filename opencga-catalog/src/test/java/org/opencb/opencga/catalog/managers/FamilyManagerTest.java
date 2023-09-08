@@ -94,13 +94,13 @@ public class FamilyManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -621,7 +621,7 @@ public class FamilyManagerTest extends GenericTest {
     public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
@@ -653,7 +653,7 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(organizationId, STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
             assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
@@ -671,7 +671,7 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
+        acls = catalogManager.getSampleManager().getAcls(organizationId, STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
             assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
@@ -683,7 +683,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, opencgaToken);
         String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 

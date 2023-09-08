@@ -118,7 +118,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     public void clearCache(String studyId, String type, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
 
     }
 
@@ -830,7 +830,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             numReadSamples += samplesInResult.size();
 
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
-                            String userId = catalogManager.getUserManager().getUserId(token);
+                            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
                             List<String> validSamples = catalogManager.getSampleManager()
                                     .search(organizationId, study,
                                             new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
@@ -1209,7 +1209,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // deprecated
                 .append("operationName", toolId);
         R result = null;
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
 
@@ -1268,7 +1268,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("query", new Query(query))
                 .append("queryOptions", new QueryOptions(queryOptions));
         R result = null;
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
@@ -1338,7 +1338,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                       Enums.Action auditAction, String token)
             throws CatalogException {
         final Map<String, List<String>> samplesMap = new HashMap<>();
-        String userId = catalogManager.getUserManager().getUserId(token);
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (auditAction == Enums.Action.FACET) {
             if (VariantQueryProjectionParser.isIncludeNoSamples(query, VariantField.all())) {

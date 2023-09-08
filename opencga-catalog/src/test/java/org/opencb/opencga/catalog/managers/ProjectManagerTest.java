@@ -82,25 +82,25 @@ public class ProjectManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
         sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
         sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
 
-        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        project1 = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
+        project2 = catalogManager.getProjectManager().create(organizationId, "pmp", "Project Management Project", "life art intelligent system",
                 "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser2).first().getId();
-        project3 = catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens",
+        project3 = catalogManager.getProjectManager().create(organizationId, "p1", "project 1", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser3).first().getId();
 
-        studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
-        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
+        studyId = catalogManager.getStudyManager().create(organizationId, project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
+        studyId2 = catalogManager.getStudyManager().create(organizationId, project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
 
-        studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getFqn();
+        studyId3 = catalogManager.getStudyManager().create(organizationId, project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getFqn();
     }
 
     @Test
@@ -134,14 +134,14 @@ public class ProjectManagerTest extends GenericTest {
     @Test
     public void searchProjects() throws CatalogException {
 
-        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(organizationId, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
-        catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         String otherUsertoken = catalogManager.getUserManager().login(otherUser, TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(organizationId, new Query(), QueryOptions.empty(), otherUsertoken);
@@ -149,7 +149,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals(0, result.getEvents().size());
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
+        String s2 = catalogManager.getStudyManager().create(organizationId, project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
         catalogManager.getStudyManager().updateGroup(organizationId, s2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(otherUser)), sessionIdUser2);
 
@@ -170,7 +170,7 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
+        String s2 = catalogManager.getStudyManager().create(organizationId, project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
         catalogManager.getStudyManager().updateGroup(organizationId, s2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser2);
 
@@ -188,7 +188,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("user2@pmp", queryResult.first().getFqn());
 
         // Add permissions to user in a study of user3
-        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser3).first().getId();
+        String s3 = catalogManager.getStudyManager().create(organizationId, project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser3).first().getId();
         catalogManager.getStudyManager().updateGroup(organizationId, String.valueOf(s3), "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser3);
 
@@ -205,7 +205,7 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void updateOrganismInProject() throws CatalogException {
-        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
+        Project pr = catalogManager.getProjectManager().create(organizationId, "project2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
 
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
@@ -281,7 +281,7 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void updateCellbaseInProject() throws CatalogException, JsonProcessingException {
-        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
+        Project pr = catalogManager.getProjectManager().create(organizationId, "project2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         assertNotNull(pr.getCellbase());
         assertEquals("https://ws.zettagenomics.com/cellbase", pr.getCellbase().getUrl());

@@ -59,7 +59,8 @@ public class CatalogSampleAnnotationsLoader {
         this.catalogManager = null;
     }
 
-    public DataResult<Sample> loadSampleAnnotations(File pedFile, String variableSetId, String sessionId) throws CatalogException {
+    public DataResult<Sample> loadSampleAnnotations(String organizationId, File pedFile, String variableSetId, String sessionId)
+            throws CatalogException {
         if (!pedFile.getFormat().equals(File.Format.PED)) {
             throw new CatalogException(pedFile.getUid() + " is not a pedigree file");
         }
@@ -76,7 +77,8 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getStudyManager().getVariableSet(organizationId, study.getFqn(), variableSetId, null, sessionId).first();
+            variableSet = catalogManager.getStudyManager().getVariableSet(organizationId, study.getFqn(), variableSetId, null, sessionId)
+                    .first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             AnnotationUtils.checkVariableSet(variableSet);
@@ -105,8 +107,8 @@ public class CatalogSampleAnnotationsLoader {
             List<Variable> variableList = new ArrayList<>();
             variableList.addAll(variableSet.getVariables());
             String name = pedFile.getName();
-            variableSet = catalogManager.getStudyManager().createVariableSet(organizationId, study.getFqn(), name, name, true, false, "Auto-generated  "
-                            + "VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
+            variableSet = catalogManager.getStudyManager().createVariableSet(organizationId, study.getFqn(), name, name, true, false,
+                    "Auto-generated VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
                     variableList, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId).getResults().get(0);
             variableSetId = variableSet.getId();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
@@ -115,7 +117,8 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().search(organizationId, study.getFqn(), samplesQuery, null, sessionId).getResults()) {
+        for (Sample sample : catalogManager.getSampleManager().search(organizationId, study.getFqn(), samplesQuery, null, sessionId)
+                .getResults()) {
             loadedSamples.put(sample.getId(), sample);
         }
 
@@ -130,7 +133,7 @@ public class CatalogSampleAnnotationsLoader {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
                 logger.info("Annotating sample {}", individual.getId());
-                catalogManager.getSampleManager().update(study.getFqn(), individual.getId(), new SampleUpdateParams()
+                catalogManager.getSampleManager().update(organizationId, study.getFqn(), individual.getId(), new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(annotationSet)), options, sessionId);
             } else {
                 DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(organizationId, study.getFqn(),

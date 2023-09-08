@@ -97,9 +97,9 @@ public class AbstractManagerTest extends GenericTest {
 
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test_org"), null, opencgaToken);
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
         catalogManager.getOrganizationManager().update("test_org", new OrganizationUpdateParams().setOwner("user").setAdmins(Arrays.asList("user2", "user3")), null, opencgaToken);
 
@@ -107,22 +107,22 @@ public class AbstractManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
         sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
 
-        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        project1 = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, token).first().getId();
-        project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
+        project2 = catalogManager.getProjectManager().create(organizationId, "pmp", "Project Management Project", "life art intelligent system",
                 "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser2).first().getId();
-        catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
+        catalogManager.getProjectManager().create(organizationId, "p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
+        Study study = catalogManager.getStudyManager().create(organizationId, project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
+        study = catalogManager.getStudyManager().create(organizationId, project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(organizationId, project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(organizationId, studyFqn2, Paths.get("data/test/folder/").toString(), true,

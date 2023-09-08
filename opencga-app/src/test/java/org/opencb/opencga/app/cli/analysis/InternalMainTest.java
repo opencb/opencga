@@ -102,10 +102,10 @@ public class InternalMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameVariants);
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
+        User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
-        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
+        projectId = catalogManager.getProjectManager().create(organizationId, "p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         datastores = new HashMap<>();
@@ -116,7 +116,7 @@ public class InternalMainTest {
     }
 
     private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, "Study 1", null,
+        Study study = catalogManager.getStudyManager().create(organizationId, projectId, studyName, studyName, studyName, "Study 1", null,
                         null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE), null, sessionId)
                 .first();
         studyId = study.getId();

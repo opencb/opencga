@@ -295,7 +295,7 @@ public class OpenCGAWSServer {
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary();
+            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary(organizationId);
             if (migrationSummary.getMigrationsToBeApplied() > 0) {
                 logger.info("|  * Pending migrations: {}", migrationSummary.getMigrationsToBeApplied());
                 for (Map.Entry<MigrationRun.MigrationStatus, Long> entry : migrationSummary.getStatusCount().entrySet()) {
@@ -857,7 +857,7 @@ public class OpenCGAWSServer {
     public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
                                    String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
-            if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
+            if (!catalogManager.getUserManager().getUserId(organizationId, token).equals(ParamConstants.OPENCGA_USER_ID)) {
                 throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
             }
             return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);

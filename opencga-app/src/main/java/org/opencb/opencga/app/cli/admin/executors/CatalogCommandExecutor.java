@@ -211,7 +211,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
 
-        catalogManager.installIndexes(token);
+        catalogManager.installIndexes(organizationId, token);
     }
 
     private void daemons() throws Exception {

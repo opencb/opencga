@@ -85,7 +85,7 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
                 throw new CatalogException("Parent path " + parents.first().getPath() + " is external. Cannot download to mounted folders");
             }
 
-            String userId = catalogManager.getUserManager().getUserId(token);
+            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
             // Check write permissions over the path
             catalogManager.getAuthorizationManager()
                     .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FilePermissions.WRITE);

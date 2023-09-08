@@ -84,11 +84,11 @@ public class AbstractSolrManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create(organizationId, "owner", "Owner", "owner@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create(organizationId, "admin1", "Admin", "admin@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create(organizationId, "user1", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
         sessionIdOwner = catalogManager.getUserManager().login("owner", TestParamConstants.PASSWORD).getToken();
         sessionIdAdmin = catalogManager.getUserManager().login("admin1", TestParamConstants.PASSWORD).getToken();
@@ -96,9 +96,9 @@ public class AbstractSolrManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
         sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
 
-        Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdOwner).first();
-        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
+        studyFqn = catalogManager.getStudyManager().create(organizationId, project.getFqn(), "phase1", null, "Phase 1", "Done", null,
                 null, null, null, INCLUDE_RESULT, sessionIdOwner).first().getFqn();
 
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
@@ -119,9 +119,9 @@ public class AbstractSolrManagerTest extends GenericTest {
         Sample sample3 = catalogManager.getSampleManager().create(organizationId, studyFqn, new Sample().setId("sample3"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
                 new SampleAclParams(null, null, null, null, "VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
+        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("sample2"), "@study_allow",
                 new SampleAclParams(null, null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
 
         // Cohorts

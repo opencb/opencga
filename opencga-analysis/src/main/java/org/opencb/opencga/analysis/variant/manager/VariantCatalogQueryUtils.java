@@ -279,8 +279,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         if (isValidParam(query, SAVED_FILTER)) {
             String savedFilter = query.getString(SAVED_FILTER.key());
-            String userId = catalogManager.getUserManager().getUserId(token);
-            UserFilter userFilter = catalogManager.getUserManager().getFilter(userId, savedFilter, token).first();
+            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+            UserFilter userFilter = catalogManager.getUserManager().getFilter(organizationId, userId, savedFilter, token).first();
             if (!userFilter.getResource().equals(Enums.Resource.VARIANT)) {
                 throw VariantQueryException.malformedParam(SAVED_FILTER, savedFilter,
                         "The selected saved filter is not a filter for '" + Enums.Resource.VARIANT + "'. "
@@ -1610,7 +1610,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
+                String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
 //                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 long numMatches = catalogManager.getSampleManager()

@@ -132,7 +132,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
-            return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
+            return createOkResponse(panelManager.update(organizationId, studyStr, getIdList(panels), panelParams, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -245,7 +245,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels) {
         try {
-            return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, true, token));
+            return createOkResponse(panelManager.delete(organizationId, studyStr, getIdList(panels), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -264,7 +264,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            return createOkResponse(panelManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(panelManager.getAcls(organizationId, studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -282,7 +282,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             params = ObjectUtils.defaultIfNull(params, new PanelAclUpdateParams());
             AclParams panelAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getPanel(), false);
-            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, action, token));
+            return createOkResponse(panelManager.updateAcl(organizationId, studyStr, idList, memberId, panelAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
