@@ -173,6 +173,13 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             UriBuilder uriBuilder = UriBuilder.fromPath(enterpriseConfiguration.getSso().getCasServerPrefixUrl());
             uriBuilder.path("logout");
             UriBuilder callbackUri = uriInfo.getAbsolutePathBuilder();
+
+            // Scheme may not be properly retrieved so we get it from the header (if present)
+            String scheme = httpServletRequest.getHeader("X-Forwarded-Proto");
+            if (StringUtils.isNotEmpty(scheme)) {
+                callbackUri.scheme(scheme);
+            }
+
             callbackUri.queryParam("logout", true);
             callbackUri.queryParam("url", service);
             uriBuilder.queryParam("service", callbackUri.build());
