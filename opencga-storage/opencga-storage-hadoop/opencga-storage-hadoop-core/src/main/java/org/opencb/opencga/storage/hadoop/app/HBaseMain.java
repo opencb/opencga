@@ -214,23 +214,23 @@ public class HBaseMain extends AbstractMain {
                                         + "[--onExistingTables [fail|skip|drop] ]");
                 System.out.println("      Clone all snapshots into tables matching the regex. "
                                         + "Generated tables can have a table prefix change.");
-//                System.out.println("  " + EXPORT_SNAPSHOTS + " \n"
-//                        + "          --dryRun <arg>        Dry run.\n"
-//                        + "          --snapshot <arg>       Snapshot to restore.\n"
-//                        + "          --copyTo <arg>        Remote destination hdfs://\n"
-//                        + "          --copyFrom <arg>      Input folder hdfs:// (default hbase.rootdir)\n"
-//                        + "          --target <arg>         Target name for the snapshot.\n"
-////                        + "          --no-checksum-verify   Do not verify checksum, use name+length only.\n"
-////                        + "          --no-target-verify     Do not verify the integrity of the exported snapshot.\n"
-//                        + "          --overwrite            Rewrite the snapshot manifest if already exists.\n"
-////                        + "          --chuser <arg>         Change the owner of the files to the specified one.\n"
-////                        + "          --chgroup <arg>        Change the group of the files to the specified one.\n"
-////                        + "          --chmod <arg>          Change the permission of the files to the specified one.\n"
-////                        + "          --bandwidth <arg>      Limit bandwidth to this value in MB/second.\n"
-//                        + "          --mappers <arg>        Number of mappers to use during the copy (mapreduce.job.maps).\n"
-//                        + "          -Dkey=value            Other key-value fields");
-//                System.out.println("      Clone all snapshots into tables matching the regex. "
-//                                        + "Generated tables can have a table prefix change.");
+                System.out.println("  " + EXPORT_SNAPSHOTS + " \n"
+                        + "          --dryRun <arg>         Dry run.\n"
+                        + "          --snapshot <arg>       Snapshot to restore.\n"
+                        + "          --copy-to <arg>        Remote destination hdfs://\n"
+                        + "          --copy-to-local        Flag to indicate that must copy to local hbase.rootdir (for imports)\n"
+                        + "          --copy-from <arg>      Input folder hdfs:// (default hbase.rootdir)\n"
+                        + "          --target <arg>         Target name for the snapshot.\n"
+//                        + "          --no-checksum-verify   Do not verify checksum, use name+length only.\n"
+//                        + "          --no-target-verify     Do not verify the integrity of the exported snapshot.\n"
+                        + "          --overwrite            Rewrite the snapshot manifest if already exists.\n"
+//                        + "          --chuser <arg>         Change the owner of the files to the specified one.\n"
+//                        + "          --chgroup <arg>        Change the group of the files to the specified one.\n"
+//                        + "          --chmod <arg>          Change the permission of the files to the specified one.\n"
+//                        + "          --bandwidth <arg>      Limit bandwidth to this value in MB/second.\n"
+                        + "          --mappers <arg>        Number of mappers to use during the copy (mapreduce.job.maps).\n"
+                        + "          -Dkey=value            Other key-value fields");
+                System.out.println("      Export a given snapshot an external location.");
                 System.out.println("  " + EXEC + "[hadoop|yarn|hbase|hdfs]");
                 System.out.println("      Execute a MR job on the hadoop cluster. Use \"exec yarn jar ....\"");
                 System.out.println("  " + DISABLE_TABLE + " <table-name-regex> [--dryRun]");
@@ -258,7 +258,10 @@ public class HBaseMain extends AbstractMain {
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
         MRExecutor mrExecutor = engine.getMRExecutor();
-        mrExecutor.run(tool, args.toArray(new String[0]));
+        int exitError = mrExecutor.run(tool, args.toArray(new String[0]));
+        if (exitError != 0) {
+            throw new Exception("Exec failed with exit number '" + exitError + "'");
+        }
     }
 
     private void exportSnapshot(String storageConfigurationPath, String snapshot, String copyTo, boolean copyToLocal,
@@ -280,12 +283,17 @@ public class HBaseMain extends AbstractMain {
         }
         args.add("--snapshot");
         args.add(snapshot);
+
+        args.add("--copy-to");
         if (StringUtils.isNotEmpty(copyTo)) {
-            args.add("--copy-to");
             args.add(copyTo);
+            if (copyToLocal) {
+                throw new Exception("Incompatible arguments `--copy-to` and `--copy-to-local`. Use only one of them");
+            }
         } else if (copyToLocal) {
-            args.add("--copy-to");
             args.add(hBaseManager.getConf().get(HConstants.HBASE_DIR));
+        } else {
+            throw new Exception("Missing copy destination. Add either `--copy-to` or `--copy-to-local`");
         }
         if (StringUtils.isNotEmpty(copyFrom)) {
             args.add("--copy-from");
@@ -310,7 +318,10 @@ public class HBaseMain extends AbstractMain {
             engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "");
 
             MRExecutor mrExecutor = engine.getMRExecutor();
-            mrExecutor.run("hbase", args.toArray(new String[0]));
+            int exitError = mrExecutor.run("hbase", args.toArray(new String[0]));
+            if (exitError != 0) {
+                throw new Exception("ExportSnapshot failed with exit number '" + exitError + "'");
+            }
         }
     }
 
