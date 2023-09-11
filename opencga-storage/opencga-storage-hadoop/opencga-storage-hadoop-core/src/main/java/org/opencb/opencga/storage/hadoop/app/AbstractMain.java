@@ -122,24 +122,52 @@ public abstract class AbstractMain {
         ObjectMap argsMap;
         argsMap = new ObjectMap();
         int i = firstIdx;
+        int offset;
         while (i < args.length) {
-            String key = args[i];
-            while (key.startsWith("-")) {
-                key = key.substring(1);
+            String inputKey = args[i];
+            offset = 1;
+            String key;
+            String value;
+            if (inputKey.startsWith("--")) {
+                key = inputKey.substring(2);
+                value = safeArg(args, i + 1);
+                offset++; // one extra value read
+            } else if (inputKey.startsWith("-")) {
+                key = inputKey.substring(1, 2);
+                value = inputKey.substring(2);
+                if (value.isEmpty()) {
+                    value = safeArg(args, i + 1);
+                    offset++; // one extra value read
+                }
+            } else {
+                throw new IllegalArgumentException("Unknown argument '" + inputKey + "'");
+            }
+            if (value == null || value.startsWith("-")) {
+                value = "true";
+                offset--; // extra value discarded
             }
             if (!acceptedKeys.isEmpty()) {
                 if (!acceptedKeys.contains(key)) {
-                    throw new IllegalArgumentException("Unknown argument '" + args[i] + "'");
+                    throw new IllegalArgumentException("Unknown argument '" + inputKey + "'");
                 }
             }
-            String value = safeArg(args, i + 1);
-            if (value == null || value.startsWith("-")) {
-                argsMap.put(key, true);
-                i += 1;
+
+            if (key.equals("D")) {
+                ObjectMap dynamic = (ObjectMap) argsMap.computeIfAbsent(key, k -> new ObjectMap());
+                String[] split = value.split("=", 2);
+                if (split.length != 2) {
+                    throw new IllegalArgumentException("Expected '-D key=value'");
+                }
+                if (dynamic.put(split[0], split[1]) != null) {
+                    throw new IllegalArgumentException("Duplicated argument '-D " + value + "'");
+                }
             } else {
-                argsMap.put(key, value);
-                i += 2;
+                if (argsMap.put(key, value) != null) {
+                    throw new IllegalArgumentException("Duplicated param '" + inputKey + "'");
+                }
             }
+            i += offset;
+
         }
         return argsMap;
     }

@@ -170,4 +170,12 @@ public abstract class IndexField<T> {
         };
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("IndexField{");
+        sb.append("configuration=").append(configuration);
+        sb.append(", bitOffset=").append(bitOffset);
+        sb.append('}');
+        return sb.toString();
+    }
 }

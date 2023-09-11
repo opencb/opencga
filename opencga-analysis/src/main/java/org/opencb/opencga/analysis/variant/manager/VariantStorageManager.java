@@ -49,6 +49,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -564,7 +565,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                        String annotationSaveId, String token)
             throws CatalogException, StorageEngineException {
         StopWatch stopwatch = StopWatch.createStarted();
-        return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
+        return secureOperationByProject("configureCellbase", project, new ObjectMap()
+                .append("cellbaseConfiguration", cellbaseConfiguration)
+                .append("annotate", annotate)
+                .append("annotationSaveId", annotationSaveId), token, engine -> {
             OpenCGAResult<Job> result = new OpenCGAResult<>();
             result.setResultType(Job.class.getCanonicalName());
             result.setResults(new ArrayList<>());
@@ -1017,8 +1021,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .get(organizationId, project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
                 .first().getCellbase();
         if (cellbase != null) {
-            if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
-                cellbase.setToken(storageConfiguration.getCellbase().getToken());
+            // To ensure that we use the project API key before using the storage API key
+            if (StringUtils.isEmpty(cellbase.getApiKey()) && storageConfiguration.getCellbase() != null) {
+                cellbase.setApiKey(storageConfiguration.getCellbase().getApiKey());
             }
             engine.getConfiguration().setCellbase(cellbase);
             engine.reloadCellbaseConfiguration();
@@ -1225,7 +1230,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throw e;
         } catch (Exception e) {
             exception = e;
-            throw new StorageEngineException("Error executing operation " + toolId, e);
+            throw new StorageEngineException("Error executing operation '" + toolId + "' : " + e.getMessage(), e);
         } finally {
             if (result instanceof DataResult) {
                 auditAttributes.append("dbTime", ((DataResult) result).getTime());
@@ -1237,6 +1242,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             if (exception != null) {
                 auditAttributes.append("errorType", exception.getClass());
                 auditAttributes.append("errorMessage", exception.getMessage());
+                auditAttributes.append("errorMessageFull", ExceptionUtils.prettyExceptionMessage(exception, false, true));
+                auditAttributes.append("exceptionStackTrace", ExceptionUtils.prettyExceptionStackTrace(exception));
                 status = new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                         new Error(-1, exception.getClass().getName(), exception.getMessage()));
             } else {

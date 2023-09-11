@@ -7,6 +7,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -18,7 +19,7 @@ public class RangeIndexField extends IndexField<Double> {
     private final double[] thresholds;
     private final double min;
     private final double max;
-    private final int numBits;
+    private final int bitLength;
     private final IndexCodec<Double> codec;
     private int numRanges;
 
@@ -40,7 +41,7 @@ public class RangeIndexField extends IndexField<Double> {
         } else {
             codec = new NonNullableRangeCodec();
         }
-        numBits = Math.max(1, IndexUtils.log2(numRanges - 1) + 1);
+        bitLength = Math.max(1, IndexUtils.log2(numRanges - 1) + 1);
         if (configuration.getType().equals(IndexFieldConfiguration.Type.RANGE_GT)) {
             // Add one DELTA to each value to invert ranges from [s, e) to (s, e], therefore the operation ">" is exact
             for (int i = 0; i < thresholds.length; i++) {
@@ -77,7 +78,7 @@ public class RangeIndexField extends IndexField<Double> {
 
     @Override
     public int getBitLength() {
-        return numBits;
+        return bitLength;
     }
 
     @Override
@@ -120,12 +121,19 @@ public class RangeIndexField extends IndexField<Double> {
 
         @Override
         public Double decode(int code) {
-            return code == thresholds.length ? max : code < 0 ? min : thresholds[code];
+            return code <= 0 ? min : thresholds[code - 1];
         }
 
         @Override
         public boolean ambiguous(int code) {
             return true;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("NonNullableRangeCodec{");
+            sb.append('}');
+            return sb.toString();
         }
     }
 
@@ -141,6 +149,13 @@ public class RangeIndexField extends IndexField<Double> {
         @Override
         public Double decode(int code) {
             return code == NA ? null : super.decode(code - 1);
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("NullableRangeCodec{");
+            sb.append('}');
+            return sb.toString();
         }
     }
 
@@ -173,5 +188,20 @@ public class RangeIndexField extends IndexField<Double> {
 
     public static boolean equalsTo(double a, double b) {
         return Math.abs(a - b) < (DELTA / 10);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RangeIndexField{");
+        sb.append("configuration=").append(getConfiguration());
+        sb.append(", bitOffset=").append(getBitOffset());
+        sb.append(", bitLength=").append(bitLength);
+        sb.append(", thresholds=").append(Arrays.toString(thresholds));
+        sb.append(", min=").append(min);
+        sb.append(", max=").append(max);
+        sb.append(", codec=").append(codec);
+        sb.append(", numRanges=").append(numRanges);
+        sb.append('}');
+        return sb.toString();
     }
 }

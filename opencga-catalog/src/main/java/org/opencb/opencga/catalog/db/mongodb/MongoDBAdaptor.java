@@ -376,6 +376,41 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return new OpenCGAResult<>(aggregate);
     }
 
+    public static QueryOptions addPrefixInOptions(QueryOptions options, String prefix) {
+        if (options == null) {
+            return null;
+        }
+
+        QueryOptions queryOptions = new QueryOptions(options);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            List<String> newInclude = new ArrayList<>(includeList.size());
+            for (String key : includeList) {
+                if (key.startsWith(prefix)) {
+                    newInclude.add(key);
+                } else {
+                    newInclude.add(prefix + key);
+                }
+            }
+            queryOptions.put(QueryOptions.INCLUDE, newInclude);
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            List<String> newExclude = new ArrayList<>(excludeList.size());
+            for (String key : excludeList) {
+                if (key.startsWith(prefix)) {
+                    newExclude.add(key);
+                } else {
+                    newExclude.add(prefix + key);
+                }
+            }
+            queryOptions.put(QueryOptions.EXCLUDE, newExclude);
+        }
+
+        return queryOptions;
+    }
+
     /**
      * Filter QueryOptions object to ensure the keys provided are always included.
      *

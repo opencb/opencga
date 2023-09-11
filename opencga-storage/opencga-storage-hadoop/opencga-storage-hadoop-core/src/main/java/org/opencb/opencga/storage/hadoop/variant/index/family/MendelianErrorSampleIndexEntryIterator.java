@@ -125,9 +125,12 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     @Override
     public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
-        BitBuffer fileIndex = null;
+        List<BitBuffer> filesIndex = new ArrayList<>();
         if (hasFileIndex()) {
-            fileIndex = nextFileIndexEntry();
+            filesIndex.add(nextFileIndexEntry());
+            while (isMultiFileIndex()) {
+                filesIndex.add(nextMultiFileIndexEntry());
+            }
         }
         String genotype = nextGenotype();
         int meCode = nextMendelianErrorCode();
@@ -136,7 +139,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
             parentsCode = nextParentsIndexEntry();
         }
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, parentsCode, meCode);
+        return new SampleVariantIndexEntry(variant, filesIndex, genotype, annotationIndexEntry, parentsCode, meCode);
     }
 
     @Override

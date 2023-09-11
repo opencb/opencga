@@ -38,6 +38,8 @@ public class ParamConstants {
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
+            + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
     public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
     public static final String INTERNAL_VARIANT_INDEX_STATUS_PARAM = "internalVariantIndexStatus";
@@ -66,9 +68,9 @@ public class ParamConstants {
     public static final String DISTINCT_FIELD_PARAM = "field";
     public static final String DISTINCT_FIELD_DESCRIPTION = "Comma separated list of fields for which to obtain the distinct values";
     public static final String PHENOTYPES_PARAM = "phenotypes";
-    public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
+    public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names" + REGEX_SUPPORT;
     public static final String DISORDERS_PARAM = "disorders";
-    public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
+    public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names" + REGEX_SUPPORT;
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
 
@@ -76,7 +78,7 @@ public class ParamConstants {
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.1";
     public static final String CELLBASE_DATA_RELEASE = "2";
-    public static final String CELLBASE_TOKEN = "";
+    public static final String CELLBASE_APIKEY = "";
 
     public static final String POP_FREQ_1000G_CB_V4 = "1kG_phase3";
     public static final String POP_FREQ_1000G_CB_V5 = "1000G";
@@ -170,12 +172,12 @@ public class ParamConstants {
             + "exception whenever one of the entries looked for cannot be shown for whichever reason";
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
-    public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names";
+    public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names"  + REGEX_SUPPORT;
     // ---------------------------------------------
     public static final String FILE_PATH_PARAM = "path";
     public static final String FILE_PATH_DESCRIPTION = "File path";
-    public static final String FILE_PATHS_DESCRIPTION = "Comma separated list of paths";
-    public static final String FILE_URIS_DESCRIPTION = "Comma separated list of uris";
+    public static final String FILE_PATHS_DESCRIPTION = "Comma separated list of paths" + REGEX_SUPPORT;
+    public static final String FILE_URIS_DESCRIPTION = "Comma separated list of uris" + REGEX_SUPPORT;
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
     public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
@@ -183,7 +185,7 @@ public class ParamConstants {
             "files/bioformats";
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
-    public static final String FILE_TAGS_DESCRIPTION = "Tags";
+    public static final String FILE_TAGS_DESCRIPTION = "Tags" + REGEX_SUPPORT;
     public static final String FILE_SOFTWARE_NAME_PARAM = "softwareName";
     public static final String FILE_SOFTWARE_NAME_DESCRIPTION = "Software name";
     public static final String FILE_JOB_ID_DESCRIPTION = "Job ID that created the file(s) or folder(s)";
@@ -317,12 +319,12 @@ public class ParamConstants {
     public static final String INDIVIDUAL_MOTHER_DESCRIPTION = "Mother ID, name or UUID";
     public static final String INDIVIDUAL_SAMPLES_DESCRIPTION = "Sample ID, name or UUID";
     public static final String INDIVIDUAL_SEX_DESCRIPTION = "Individual sex";
-    public static final String INDIVIDUAL_ETHNICITY_DESCRIPTION = "Individual ethnicity";
+    public static final String INDIVIDUAL_ETHNICITY_DESCRIPTION = "Individual ethnicity" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION = "Individual date of birth";
     public static final String INDIVIDUAL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
     public static final String INDIVIDUAL_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION;
-    public static final String INDIVIDUAL_POPULATION_NAME_DESCRIPTION = "Population name";
-    public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION = "Subpopulation name";
+    public static final String INDIVIDUAL_POPULATION_NAME_DESCRIPTION = "Population name" + REGEX_SUPPORT;
+    public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION = "Subpopulation name" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION = "Individual karyotypic sex";
     public static final String INDIVIDUAL_LIFE_STATUS_DESCRIPTION = "Individual life status";
     public static final String INDIVIDUAL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
@@ -423,7 +425,7 @@ public class ParamConstants {
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
-    public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder";
+    public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder" + REGEX_SUPPORT;
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
     public static final String CLINICAL_SAMPLE_DESCRIPTION = "Sample associated to the proband or any member of a family";
     public static final String CLINICAL_INDIVIDUAL_DESCRIPTION = "Proband or any member of a family";
@@ -467,7 +469,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_LOCKED_PARAM = "locked";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical Analysis id";
     public static final String INTERPRETATION_ANALYST_ID_DESCRIPTION = "Analyst ID";
-    public static final String INTERPRETATION_METHOD_NAME_DESCRIPTION = "Interpretation method name";
+    public static final String INTERPRETATION_METHOD_NAME_DESCRIPTION = "Interpretation method name" + REGEX_SUPPORT;
     public static final String INTERPRETATION_PANELS_DESCRIPTION = "Interpretation panels";
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";
@@ -499,12 +501,12 @@ public class ParamConstants {
     public static final String PANEL_ACL_PARAM = ACL_PARAM;
     public static final String PANEL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String PANEL_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
-    public static final String PANEL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
-    public static final String PANEL_VARIANTS_DESCRIPTION = "Comma separated list of variant ids";
-    public static final String PANEL_GENES_DESCRIPTION = "Comma separated list of gene ids";
-    public static final String PANEL_REGIONS_DESCRIPTION = "Comma separated list of regions";
-    public static final String PANEL_CATEGORIES_DESCRIPTION = "Comma separated list of category names";
-    public static final String PANEL_TAGS_DESCRIPTION = "Panel tags";
+    public static final String PANEL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION + REGEX_SUPPORT;
+    public static final String PANEL_VARIANTS_DESCRIPTION = "Comma separated list of variant ids" + REGEX_SUPPORT;
+    public static final String PANEL_GENES_DESCRIPTION = "Comma separated list of gene ids" + REGEX_SUPPORT;
+    public static final String PANEL_REGIONS_DESCRIPTION = "Comma separated list of regions" + REGEX_SUPPORT;
+    public static final String PANEL_CATEGORIES_DESCRIPTION = "Comma separated list of category names" + REGEX_SUPPORT;
+    public static final String PANEL_TAGS_DESCRIPTION = "Panel tags" + REGEX_SUPPORT;
     public static final String PANEL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
     public static final String PANEL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
 
@@ -540,7 +542,7 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
-    public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job";
+    public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
@@ -1476,34 +1478,34 @@ public class ParamConstants {
     public static final String ADMIN_CATALOG_JWT_SECRETKEY = "The body web service secretKey parameter";
     private static final String UP_TO_100 = " up to a maximum of 100";
     public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
-    public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100;
+    public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
-    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100;
+    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String SAMPLES_UUID_DESCRIPTION = "Comma separated list sample UUIDs" + UP_TO_100;
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual IDs, names or UUIDs" + UP_TO_100;
-    public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100;
-    public static final String INDIVIDUAL_NAME_DESCRIPTION = "Comma separated list individual names" + UP_TO_100;
+    public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String INDIVIDUAL_NAME_DESCRIPTION = "Comma separated list individual names" + UP_TO_100 + REGEX_SUPPORT;
     public static final String INDIVIDUAL_UUID_DESCRIPTION = "Comma separated list individual UUIDs" + UP_TO_100;
     public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
-    public static final String FAMILY_ID_DESCRIPTION = "Comma separated list family IDs" + UP_TO_100;
-    public static final String FAMILY_NAME_DESCRIPTION = "Comma separated list family names" + UP_TO_100;
+    public static final String FAMILY_ID_DESCRIPTION = "Comma separated list family IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String FAMILY_NAME_DESCRIPTION = "Comma separated list family names" + UP_TO_100 + REGEX_SUPPORT;
     public static final String FAMILY_UUID_DESCRIPTION = "Comma separated list family UUIDs" + UP_TO_100;
     public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort IDs or UUIDs" + UP_TO_100;
-    public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
-    public static final String COHORT_NAMES_DESCRIPTION = "Comma separated list of cohort names" + UP_TO_100;
+    public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100  + REGEX_SUPPORT;
+    public static final String COHORT_NAMES_DESCRIPTION = "Comma separated list of cohort names" + UP_TO_100 + REGEX_SUPPORT;
     public static final String COHORT_UUIDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
-    public static final String CLINICAL_ID_DESCRIPTION = "Comma separated list of Clinical Analysis IDs" + UP_TO_100;
+    public static final String CLINICAL_ID_DESCRIPTION = "Comma separated list of Clinical Analysis IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String CLINICAL_UUID_DESCRIPTION = "Comma separated list of Clinical Analysis UUIDs" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
-    public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100;
+    public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
-    public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100;
+    public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100 + REGEX_SUPPORT;
     public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;
-    public static final String PANEL_NAME_DESCRIPTION = "Comma separated list of panel names " + UP_TO_100;
+    public static final String PANEL_NAME_DESCRIPTION = "Comma separated list of panel names " + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
-    public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100;
+    public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
     // ---------------------------------------------
     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
