@@ -8,6 +8,7 @@ on:
         required: true
       mvn_opts:
         type: string
+
         required: false
         default: ""
     secrets:
@@ -82,3 +83,4 @@ jobs:
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
+
