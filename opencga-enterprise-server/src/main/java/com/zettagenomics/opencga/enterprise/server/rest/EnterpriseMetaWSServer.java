@@ -138,10 +138,8 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
             queryParams.append("token").append("=").append(token);
             queryParams.append("&").append("user").append("=").append(principal.getName());
-            for (Cookie cookie : cookies) {
-                queryParams.append("&");
-                queryParams.append(cookie.getName()).append("=").append(cookie.getValue());
-            }
+            // Add session id
+            queryParams.append("&").append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
 
             targetURIForRedirection = new URI(service + queryParams);
             logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
