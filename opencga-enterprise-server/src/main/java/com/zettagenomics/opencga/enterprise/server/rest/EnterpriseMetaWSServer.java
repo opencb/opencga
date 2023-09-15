@@ -119,27 +119,18 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
         URI targetURIForRedirection;
         try {
-            AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
-
-            String token = getEnterpriseUserManager().ssoLogin(principal);
-
-            Cookie[] cookies = httpServletRequest.getCookies();
-            if (cookies == null) {
-                throw new CatalogException("Unexpected event. Could not retrieve cookies");
-            }
-            logger.debug("SSO cookies: ");
-            for (Cookie cookie : cookies) {
-                logger.debug("{}: {}", cookie.getName(), cookie.getValue());
-            }
             StringBuilder queryParams = new StringBuilder();
             if (!service.endsWith("?")) {
                 queryParams.append("?");
             }
-
-            queryParams.append("token").append("=").append(token);
-            queryParams.append("&").append("user").append("=").append(principal.getName());
             // Add session id
-            queryParams.append("&").append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
+            queryParams.append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
+
+            AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
+            String token = getEnterpriseUserManager().ssoLogin(principal);
+            // Add user and token
+            queryParams.append("&").append("token").append("=").append(token);
+            queryParams.append("&").append("user").append("=").append(principal.getName());
 
             targetURIForRedirection = new URI(service + queryParams);
             logger.debug("Redirecting /sso call to {}", targetURIForRedirection);
@@ -164,19 +155,23 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         }
 
         // Logout is performed in 2 steps. Users must call to /logout without any query parameter. This will redirect to
-        // CAS logout WS with a callback url to this same WS adding the query paramter "logout=true". When it reaches
+        // CAS logout WS with a callback url to this same WS adding the query parameter "logout=true". When it reaches
         // the WS with the query parameter, it will return the html redirecting to the original callback url and remove
         // local cookies.
         if (!logout) {
+            // Get the public address
+            String serverName = enterpriseConfiguration.getSso().getServerName();
+            // Get the internal address
+            String internalUrlCalled = uriInfo.getAbsolutePath().toString();
+            int i = internalUrlCalled.indexOf("/opencga");
+            // Remove preceded section of internal url and replace it for serverName configuration url.
+            // serverName should always contain the external public url users call, whereas internalUrlCalled will
+            // normally be the internal url (when in use with a reverse proxy)
+            String originalUrl = serverName + internalUrlCalled.substring(i);
+
             UriBuilder uriBuilder = UriBuilder.fromPath(enterpriseConfiguration.getSso().getCasServerPrefixUrl());
             uriBuilder.path("logout");
-            UriBuilder callbackUri = uriInfo.getAbsolutePathBuilder();
-
-            // Scheme may not be properly retrieved so we get it from the header (if present)
-            String scheme = httpServletRequest.getHeader("X-Forwarded-Proto");
-            if (StringUtils.isNotEmpty(scheme)) {
-                callbackUri.scheme(scheme);
-            }
+            UriBuilder callbackUri = UriBuilder.fromPath(originalUrl);
 
             callbackUri.queryParam("logout", true);
             callbackUri.queryParam("url", service);
@@ -223,18 +218,10 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                     .append("  </body>\n")
                     .append("</html>");
 
-            Response.ResponseBuilder responseBuilder = Response.ok(htmlBuilder.toString(), MediaType.TEXT_HTML_TYPE);
+            logger.info("CAS logout requested. Invalidating session '{}'", httpServletRequest.getSession().getId());
+            httpServletRequest.getSession().invalidate();
 
-            logger.debug("Deleting session cookies");
-            for (Cookie cookie : httpServletRequest.getCookies()) {
-                NewCookie newCookie = new NewCookie(cookie.getName(), "", "/", cookie.getDomain(), cookie.getComment(),
-                        0, cookie.getSecure());
-                responseBuilder.cookie(newCookie);
-                newCookie = new NewCookie(cookie.getName(), "", "/opencga", cookie.getDomain(), cookie.getComment(), 0,
-                        cookie.getSecure());
-                responseBuilder.cookie(newCookie);
-            }
-            return responseBuilder.build();
+            return Response.ok(htmlBuilder.toString(), MediaType.TEXT_HTML_TYPE).build();
         }
     }
 }
