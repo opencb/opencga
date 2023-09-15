@@ -46,7 +46,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("studyClient", "OpencgaR", function(OpencgaR, group, templateId, studies, study, members, variableSet, endpointName, params=NULL, ...) {
+setMethod("studyClient", "OpencgaR", function(OpencgaR, study, group, variableSet, templateId, studies, members, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/studies/acl/{members}/update:

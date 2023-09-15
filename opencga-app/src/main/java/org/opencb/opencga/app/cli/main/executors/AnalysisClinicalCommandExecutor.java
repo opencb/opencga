@@ -18,40 +18,6 @@ import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomAnalysisClinicalCommandExecutor;
-import java.io.InputStream;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -74,6 +40,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
@@ -729,10 +696,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> load() throws Exception {
         logger.debug("Executing load in Analysis - Clinical command line");
 
-        CustomAnalysisClinicalCommandOptions.LoadCommandOptions commandOptions = analysisClinicalCommandOptions.loadCommandOptions;
+        AnalysisClinicalCommandOptions.LoadCommandOptions commandOptions = analysisClinicalCommandOptions.loadCommandOptions;
+
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("file", commandOptions.file);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -741,8 +707,27 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-        CustomAnalysisClinicalCommandExecutor customAnalysisClinicalCommandExecutor = new CustomAnalysisClinicalCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
-        return customAnalysisClinicalCommandExecutor.load();
+
+
+        ClinicalAnalysisLoadParams clinicalAnalysisLoadParams = null;
+        if (commandOptions.jsonDataModel) {
+            clinicalAnalysisLoadParams = new ClinicalAnalysisLoadParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(clinicalAnalysisLoadParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalAnalysisLoadParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisLoadParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+
+            clinicalAnalysisLoadParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalAnalysisLoadParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().load(clinicalAnalysisLoadParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {

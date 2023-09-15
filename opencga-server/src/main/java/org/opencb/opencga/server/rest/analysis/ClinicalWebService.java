@@ -16,12 +16,8 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
@@ -39,13 +35,8 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -54,7 +45,6 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -62,17 +52,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.core.api.ParamConstants.*;
+import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -172,31 +160,17 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/load")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ApiOperation(httpMethod = "POST", value = "Gzipped file containing clinical analyses", response = Job.class)
+    @ApiOperation(value = ClinicalAnalysisLoadTask.DESCRIPTION, response = Job.class)
     public Response load(
-            @ApiParam(value = "Gzipped file") @FormDataParam("file") InputStream fileInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags) {
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ClinicalAnalysisLoadParams.DESCRIPTION, required = true) ClinicalAnalysisLoadParams params) {
         try {
-            // Prepare input file
-            java.nio.file.Path scratchDir = Paths.get(catalogManager.getConfiguration().getAnalysis().getScratchDir())
-                    .resolve(ClinicalAnalysisLoadTask.ID + "_" + RandomStringUtils.randomAlphanumeric(10));
-            scratchDir.toFile().mkdirs();
-            File inputFile = scratchDir.resolve(fileMetaData.getFileName()).toFile();
-            logger.info("Uploaded clinical analyses file at {}", inputFile.getAbsolutePath());
-            IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
-            ioManager.copy(fileInputStream, inputFile.toURI());
-
             // Execute load as a job
-            ClinicalAnalysisLoadParams params = new ClinicalAnalysisLoadParams();
-            params.setPath(inputFile.toPath());
-            return submitJob(ClinicalAnalysisLoadTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+            return submitJob(ClinicalAnalysisLoadTask.ID, study, params, jobId, jobDescription, dependsOn, jobTags);
         } catch (Exception e) {
             return createErrorResponse("Load clinical analyses from file", e.getMessage());
         }

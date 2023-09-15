@@ -597,7 +597,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public int load(String studyStr, Path filePath, String token) throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         // Check gzip format
         int counter = 0;

@@ -18,10 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
@@ -77,6 +74,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -134,7 +133,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Individual mother = new Individual().setId("mother")
                 .setSex(SexOntologyTermAnnotation.initFemale())
                 .setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                null)));
+                        null)));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
@@ -3493,5 +3492,37 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(proband.getId(), result.getResults().get(1).getProband().getId());
         assertEquals(1, result.getResults().get(1).getProband().getSamples().size());
         assertEquals(proband.getSamples().get(1).getId(), result.getResults().get(1).getProband().getSamples().get(0).getId());
+    }
+
+    @Test
+    public void loadClinicalAnalysesTest() throws CatalogException, IOException {
+        String gzFile = getClass().getResource("/biofiles/ca2.json.gz").getFile();
+        File file = catalogManager.getFileManager().link(STUDY, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
+                null), false, sessionIdUser).first();
+
+        Path filePath = Paths.get(file.getUri());
+
+        System.out.println("Loading clinical analyses file: " + filePath + " ....");
+        int numLoaded = catalogManager.getClinicalAnalysisManager().load(STUDY, filePath, sessionIdUser);
+        System.out.println("\t\t.... " + numLoaded + " clinical analyses loaded from file " + filePath);
+
+        String ca1Id = "SAP-45016-1";
+        String ca2Id = "OPA-6607-1";
+
+        Query query = new Query();
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser);
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca1Id));
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca2Id));
+
+        query.put("id", ca1Id);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser).first();
+        Assert.assertEquals(ca1Id, clinicalAnalysis.getId());
+
+        query.put("id", ca2Id);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser).first();
+        Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
     }
 }

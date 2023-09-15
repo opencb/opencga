@@ -316,12 +316,13 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/zetta', data=data, **options)
 
-    def load(self, study, **options):
+    def load(self, data=None, **options):
         """
-        Gzipped file containing clinical analyses.
+        Load clinical analyses from a file.
         PATH: /{apiVersion}/analysis/clinical/load
 
-        :param inputstream file: Gzipped file.
+        :param dict data: Parameters to load clinical analysis in OpenCGA
+            catalog from a file. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the
@@ -332,8 +333,7 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        options['study'] = study
-        return self._post(category='analysis', resource='load', subcategory='clinical', **options)
+        return self._post(category='analysis', resource='load', subcategory='clinical', data=data, **options)
 
     def aggregation_stats_rga(self, field, **options):
         """

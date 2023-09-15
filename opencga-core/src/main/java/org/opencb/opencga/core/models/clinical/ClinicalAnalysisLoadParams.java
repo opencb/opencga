@@ -7,31 +7,32 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.nio.file.Path;
 
 public class ClinicalAnalysisLoadParams extends ToolParams {
+    public static final String DESCRIPTION = "Parameters to load clinical analysis in OpenCGA catalog from a file";
+    public static final String FILE = "file";
 
-    @DataField(id = ParamConstants.FILE_PATH_PARAM, description = ParamConstants.FILE_PATH_DESCRIPTION)
-    private Path path;
+    private String file;
 
     public ClinicalAnalysisLoadParams() {
     }
 
-    public ClinicalAnalysisLoadParams(Path path) {
-        this.path = path;
+    public ClinicalAnalysisLoadParams(String file) {
+        this.file = file;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisLoadParams{");
-        sb.append("path=").append(path);
+        sb.append("file=").append(file);
         sb.append('}');
         return sb.toString();
     }
 
-    public Path getPath() {
-        return path;
+    public String getFile() {
+        return file;
     }
 
-    public ClinicalAnalysisLoadParams setPath(Path path) {
-        this.path = path;
+    public ClinicalAnalysisLoadParams setFile(String file) {
+        this.file = file;
         return this;
     }
 }

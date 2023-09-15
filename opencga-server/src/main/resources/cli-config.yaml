@@ -163,12 +163,7 @@ apiConfig:
       ignore: False
       key: ClinicalAnalysis
       analysis: True
-      executorExtended: True
-      optionExtended: True
       commands:
-        - name: load
-          executorExtended: True
-          optionExtended: True
         - name: update
           subcommands:
             - name: commentsAction
