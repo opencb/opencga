@@ -111,7 +111,7 @@ public class SessionManager {
     private Session createEmptySession() {
         Session session = new Session();
         session.setHost(host);
-        session.setVersion(GitRepositoryState.get().getBuildVersion());
+        session.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         session.setTimestamp(System.currentTimeMillis());
         session.setStudies(new ArrayList());
         session.setCurrentStudy(NO_STUDY);

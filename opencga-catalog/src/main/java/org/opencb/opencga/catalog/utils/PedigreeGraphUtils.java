@@ -25,7 +25,7 @@ public class PedigreeGraphUtils {
     public static final String PEDIGREE_JSON_FILENAME = "ped_coords.json";
     public static final String PEDIGREE_TSV_FILENAME = "ped_coords.tsv";
 
-    public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
+    public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
     public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
         PedigreeGraph pedigreeGraph = new PedigreeGraph();
