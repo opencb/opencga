@@ -21,6 +21,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>

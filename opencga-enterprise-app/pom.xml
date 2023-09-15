@@ -251,15 +251,10 @@
 <!--                                    <arg value="${build.dir}/misc/git"/>-->
 <!--                                </exec>-->
 
-                                <echo>Copying git.properties and adding OpenCGA version</echo>
+                                <echo>Copying git.properties</echo>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/git.properties"/>
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/git-enterprise.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
-                                </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="8a git.build.opencgaVersion=${opencga.version}"/>
-                                    <arg value="${build.dir}/misc/git/git.properties"/>
                                 </exec>
 
                                 <echo>Copying Python, R and JavaScript to ${build.dir}/clients</echo>
