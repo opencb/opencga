@@ -37,7 +37,7 @@ public class ClinicalAnalysisLoadTask extends OpenCgaToolScopeStudy {
         File file = catalogManager.getFileManager().get(getStudy(), fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         filePath = Paths.get(file.getUri());
         if (!filePath.toFile().exists()) {
-            throw new ToolException("Input file '" + filePath + "' does not exist.");
+            throw new ToolException("Input file '" + fileStr + "' does not exist: " + filePath);
         }
     }
 
