@@ -16,6 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cva;
 
+import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.cva.converters.*;
 import com.zettagenomics.opencga.enterprise.cva.exceptions.CvaException;
 import com.zettagenomics.opencga.enterprise.cva.iterators.ClinicalVariantNativeSolrIterator;
@@ -40,7 +41,6 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -80,10 +80,10 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     public static final String CLINICAL_VARIANTS_COLLECTION = "clinical_variants";
     public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION = "clinical_variant_evidences";
 
-    public static final String ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.get().getBuildVersion();
-    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.get().getBuildVersion();
+    public static final String ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitUtils.getEnterprise().getBuildVersion();
+    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
+    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitUtils.getEnterprise().getBuildVersion();
+    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitUtils.getEnterprise().getBuildVersion();
 
     private static final String CONF_SET = "ClinicalConfSet";
     private static final int DEFAULT_LIMIT = 1000000;
