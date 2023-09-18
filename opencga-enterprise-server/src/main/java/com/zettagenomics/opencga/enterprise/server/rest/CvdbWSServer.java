@@ -12,12 +12,12 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 
-@Path("/{apiVersion}/cva")
+@Path("/{apiVersion}/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Cva", description = "Methods for working with 'cva' endpoint")
-public class CvaWSServer extends OpenCGAWSServer {
+@Api(value = "CVDB", description = "Methods for working with CVDB endpoints")
+public class CvdbWSServer extends OpenCGAWSServer {
 
-    public CvaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public CvdbWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
