@@ -14,9 +14,6 @@ on:
       SSH_TESTING_SERVER_PASSWORD:
         required: true
 
-env:
-  xb_version: "1.7.0"
-
 jobs:
   test:
     name: Test and push Sonar analysis
@@ -41,6 +38,7 @@ jobs:
         with:
           name: workdir
           path: "**/target/site"
+
   publish-test:
     name: Publish test results
     runs-on: ubuntu-22.04

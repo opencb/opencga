@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>1.7.0-SNAPSHOT</version>
+        <version>1.9.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -33,6 +33,11 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <classifier>shaded</classifier>
         </dependency>
         <dependency>
             <groupId>org.jasig.cas.client</groupId>
