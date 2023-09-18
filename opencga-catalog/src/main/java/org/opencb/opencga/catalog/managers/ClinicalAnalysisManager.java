@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -76,6 +78,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -595,13 +598,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
-    public int load(String studyStr, Path filePath, String token) throws CatalogException, IOException {
-        String userId = catalogManager.getUserManager().getUserId(token);
+    public ClinicalAnalysisLoadResult load(String studyStr, Path filePath, String token) throws CatalogException, IOException {
+        ClinicalAnalysisLoadResult result = new ClinicalAnalysisLoadResult();
 
-        // Check gzip format
         int counter = 0;
         ObjectReader objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class);
 
+        StopWatch stopWatch = StopWatch.createStarted();
         try (BufferedReader br = FileUtils.newBufferedReader(filePath)) {
             while (true) {
                 String line = br.readLine();
@@ -618,10 +621,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 } catch (Exception e) {
                     logger.error("Error loading clinical analysis" + (clinicalAnalysis != null ? (": " + clinicalAnalysis.getId()) : "")
                     + ": " + e.getMessage());
+                    result.getFailures().put(clinicalAnalysis.getId(), e.getMessage());
                 }
             }
         }
-        return counter;
+        stopWatch.stop();
+
+        result.setNumLoaded(counter)
+                .setFilename(filePath.getFileName().toString())
+                .setTime((int) stopWatch.getTime(TimeUnit.SECONDS));
+
+        return result;
     }
 
     private void load(ClinicalAnalysis clinicalAnalysis, String study, String token) throws CatalogException {

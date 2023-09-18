@@ -41,6 +41,7 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -3496,15 +3497,17 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void loadClinicalAnalysesTest() throws CatalogException, IOException {
-        String gzFile = getClass().getResource("/biofiles/ca2.json.gz").getFile();
+        String gzFile = getClass().getResource("/biofiles/clinical_analyses.json.gz").getFile();
         File file = catalogManager.getFileManager().link(STUDY, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
                 null), false, sessionIdUser).first();
 
         Path filePath = Paths.get(file.getUri());
 
         System.out.println("Loading clinical analyses file: " + filePath + " ....");
-        int numLoaded = catalogManager.getClinicalAnalysisManager().load(STUDY, filePath, sessionIdUser);
-        System.out.println("\t\t.... " + numLoaded + " clinical analyses loaded from file " + filePath);
+        ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(STUDY, filePath, sessionIdUser);
+        System.out.println(loadResult);
+
+        Assert.assertEquals(1, loadResult.getFailures().size());
 
         String ca1Id = "SAP-45016-1";
         String ca2Id = "OPA-6607-1";

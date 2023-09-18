@@ -1,19 +1,19 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.panel.PanelImportParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 @Tool(id = ClinicalAnalysisLoadTask.ID, resource = Enums.Resource.DISEASE_PANEL, description = ClinicalAnalysisLoadTask.DESCRIPTION)
 public class ClinicalAnalysisLoadTask extends OpenCgaToolScopeStudy {
@@ -43,6 +43,21 @@ public class ClinicalAnalysisLoadTask extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        step(() -> catalogManager.getClinicalAnalysisManager().load(getStudy(), filePath, token));
+        step(() -> {
+            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(getStudy(), filePath, token);
+
+            // Add results as attributes
+            addAttribute("Num. clinical analyses loaded", loadResult.getNumLoaded());
+            addAttribute("Num. clinical analyses not loaded", loadResult.getFailures().size());
+            addAttribute("Loading time (in sec.)", loadResult.getTime());
+            addAttribute("Clinical analyses file name", loadResult.getFilename());
+
+            // Add warnings with the not loaded clinical analysis
+            if (loadResult.getFailures().size() > 0) {
+                for (Map.Entry<String, String> entry : loadResult.getFailures().entrySet()) {
+                    addWarning("Clinical analysis " + entry.getKey() + " could not be loaded due to error: " + entry.getValue());
+                }
+            }
+        });
     }
 }

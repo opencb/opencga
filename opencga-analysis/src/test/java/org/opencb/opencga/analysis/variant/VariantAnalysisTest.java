@@ -1062,7 +1062,7 @@ public class VariantAnalysisTest {
 
     @Test
     public void testClinicalAnalysisLoading() throws IOException, ToolException, CatalogException {
-        String fileStr = "ca2.json.gz";
+        String fileStr = "clinical_analyses.json.gz";
 
         String gzFile = getClass().getResource("/biofiles/" + fileStr).getFile();
         File file = catalogManager.getFileManager().link(CANCER_STUDY, new FileLinkParams(gzFile, "ca", "", "", null, null, null, null,
