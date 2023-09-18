@@ -256,6 +256,21 @@ public class UserManager extends AbstractManager {
         return create(organizationId, user, password, token);
     }
 
+    public JwtPayload validateToken(String token) throws CatalogException {
+        JwtPayload jwtPayload = new JwtPayload(token);
+        ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
+        ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
+
+        OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT);
+        if (userResult.getNumResults() == 0) {
+            throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
+        }
+        String authOrigin = userResult.first().getAccount().getAuthentication().getId();
+
+        // TODO: Call AuthenticationFactory validateToken
+        return null;
+    }
+
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         if (!OPENCGA.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
@@ -800,7 +815,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(token, "token");
         try {
             String authenticatedUserId = getUserId(organizationId, token);
-            authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
+            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
 
@@ -1452,6 +1467,10 @@ public class UserManager extends AbstractManager {
         }
         // We make this call again to get the original exception
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getPayload(token);
+    }
+
+    public void validateToken(String organizationId, String token) {
+        authorizationManager.
     }
 
     /**

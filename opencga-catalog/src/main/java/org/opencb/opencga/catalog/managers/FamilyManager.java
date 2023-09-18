@@ -202,14 +202,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public DBIterator<Family> iterator(String organizationId, String studyStr, Query query, QueryOptions options, String token)
+    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkObj(token, "token");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         Query finalQuery = new Query(query);
         fixQueryObject(organizationId, study, finalQuery, token);
@@ -222,7 +222,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult<Family> create(String organizationId, String studyStr, Family family, QueryOptions options, String token)
+    public OpenCGAResult<Family> create(String studyStr, Family family, QueryOptions options, String token)
             throws CatalogException {
         return create(organizationId, studyStr, family, null, options, token);
     }
@@ -231,7 +231,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                         String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -241,7 +241,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_FAMILIES);
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_FAMILIES);
 
             ParamUtils.checkObj(family, "family");
             ParamUtils.checkIdentifier(family.getId(), "id");
@@ -299,15 +299,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public OpenCGAResult<Family> search(String organizationId, String studyId, Query query, QueryOptions options, String token)
+    public OpenCGAResult<Family> search(String studyId, Query query, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         Query finalQuery = new Query(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -338,13 +338,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String organizationId, String studyId, List<String> fields, Query query, String token)
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        Study study = catalogManager.getStudyManager().resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -408,7 +408,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                 query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
-                        .search(organizationId, study.getFqn(), newQuery, options, token);
+                        .search(study.getFqn(), newQuery, options, token);
 
                 if (individualResult.getNumResults() == 0) {
                     // Add -1 to query so no results are obtained
@@ -424,13 +424,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public OpenCGAResult<Family> count(String organizationId, String studyId, Query query, String token) throws CatalogException {
+    public OpenCGAResult<Family> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         Query finalQuery = new Query(query);
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -458,7 +458,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult delete(String organizationId, String studyStr, List<String> familyIds, QueryOptions options, String token)
+    public OpenCGAResult delete(String studyStr, List<String> familyIds, QueryOptions options, String token)
             throws CatalogException {
         return delete(organizationId, studyStr, familyIds, options, false, token);
     }
@@ -466,8 +466,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public OpenCGAResult delete(String organizationId, String studyStr, List<String> familyIds, ObjectMap params, boolean ignoreException,
                                 String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -482,7 +482,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         boolean checkPermissions;
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -507,7 +507,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyUuid = family.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+                    authorizationManager.checkFamilyPermission(organizationId, study.getUid(), family.getUid(), userId,
                             FamilyPermissions.DELETE);
                 }
 
@@ -547,7 +547,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult delete(String organizationId, String studyStr, Query query, QueryOptions options, String token)
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException {
         return delete(organizationId, studyStr, query, options, false, token);
     }
@@ -558,8 +558,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         OpenCGAResult result = OpenCGAResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -585,7 +585,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             iterator = getFamilyDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -598,7 +598,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+                    authorizationManager.checkFamilyPermission(organizationId, study.getUid(), family.getUid(), userId,
                             FamilyPermissions.DELETE);
                 }
 
@@ -642,7 +642,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         String userId = userManager.getUserId(organizationId, sessionId);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         Query finalQuery = new Query(query);
         fixQueryObject(organizationId, study, finalQuery, sessionId);
@@ -743,7 +743,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public OpenCGAResult<Family> update(String organizationId, String studyStr, Query query, FamilyUpdateParams updateParams,
                                         boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -809,7 +809,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public OpenCGAResult<Family> update(String organizationId, String studyStr, String familyId, FamilyUpdateParams updateParams,
                                         QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -882,7 +882,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public OpenCGAResult<Family> update(String organizationId, String studyStr, List<String> familyIds, FamilyUpdateParams updateParams,
                                         boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -980,13 +980,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (updateParams != null && updateParams.getAnnotationSets() != null) {
-            authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+            authorizationManager.checkFamilyPermission(organizationId, study.getUid(), family.getUid(), userId,
                     FamilyPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
-            authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+            authorizationManager.checkFamilyPermission(organizationId, study.getUid(), family.getUid(), userId,
                     FamilyPermissions.WRITE);
         }
 
@@ -1131,7 +1131,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                                                   List<String> members, boolean ignoreException, String token)
             throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyId, user);
+        Study study = studyManager.resolveId(studyId, user, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
@@ -1156,11 +1156,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             List<Long> familyUids = queryResult.getResults().stream().map(Family::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
-                familyAcls = authorizationManager.getAcl(user, study.getUid(), familyUids, members, Enums.Resource.FAMILY,
-                        FamilyPermissions.class);
+                familyAcls = authorizationManager.getAcl(organizationId, study.getUid(), familyUids, members, Enums.Resource.FAMILY, FamilyPermissions.class, user
+                );
             } else {
-                familyAcls = authorizationManager.getAcl(user, study.getUid(), familyUids, Enums.Resource.FAMILY,
-                        FamilyPermissions.class);
+                familyAcls = authorizationManager.getAcl(organizationId, study.getUid(), familyUids, Enums.Resource.FAMILY, FamilyPermissions.class, user
+                );
             }
 
             // Include non-existing samples to the result list
@@ -1213,7 +1213,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                                                     String memberList, ParamUtils.AclAction action, String token)
             throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(organizationId, studyId, user);
+        Study study = studyManager.resolveId(studyId, user, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1227,7 +1227,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         List<Family> familyList = null;
         try {
             auditManager.initAuditBatch(operationUUID);
-            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), user);
 
             int count = 0;
             count += aclParams.getFamily() != null && !aclParams.getFamily().isEmpty() ? 1 : 0;
@@ -1258,7 +1258,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
 
             if (StringUtils.isNotEmpty(individualStr)) {
-                familyList = catalogManager.getFamilyManager().search(organizationId, studyId,
+                familyList = catalogManager.getFamilyManager().search(studyId,
                                 new Query(FamilyDBAdaptor.QueryParams.MEMBERS.key(), individualStr), FamilyManager.INCLUDE_FAMILY_MEMBERS,
                                 token)
                         .getResults();
@@ -1321,25 +1321,25 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             switch (action) {
                 case SET:
-                    authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.setAcls(organizationId, study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                    authorizationManager.addAcls(organizationId, study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(organizationId, members, aclParamsList);
                     break;
                 case RESET:
                     for (AuthorizationManager.CatalogAclParams auxAclParams : aclParamsList) {
                         auxAclParams.setPermissions(null);
                     }
-                    authorizationManager.removeAcls(members, aclParamsList);
+                    authorizationManager.removeAcls(organizationId, members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
-            OpenCGAResult<AclEntryList<FamilyPermissions>> remainingAcls = authorizationManager.getAcls(study.getUid(),
+            OpenCGAResult<AclEntryList<FamilyPermissions>> remainingAcls = authorizationManager.getAcls(organizationId, study.getUid(),
                     familyUids, members, Enums.Resource.FAMILY, FamilyPermissions.class);
             for (int i = 0; i < remainingAcls.getResults().size(); i++) {
                 remainingAcls.getResults().get(i).setId(familyList.get(i).getId());
@@ -1372,8 +1372,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String userId = userManager.getUserId(organizationId, token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
+        Study study = catalogManager.getStudyManager().resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1424,7 +1424,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (family.getMembers() != null && !family.getMembers().isEmpty()) {
             List<Individual> memberList = new ArrayList<>();
             // Check the user can create new individuals
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyPermissions.Permissions.WRITE_INDIVIDUALS);
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_INDIVIDUALS);
 
             // Validate the individuals can be created and are valid
             for (Individual individual : family.getMembers()) {

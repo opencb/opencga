@@ -245,10 +245,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
-        jobOpenCGAResult = catalogManager.getJobManager().search(organizationId, studyFqn2, new Query(), QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(), QueryOptions.empty(), token);
         assertEquals(0, jobOpenCGAResult.getNumResults());
 
-        jobOpenCGAResult = catalogManager.getJobManager().search(organizationId, studyFqn2, new Query(),
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(),
                 new QueryOptions(ParamConstants.OTHER_STUDIES_FLAG, true), token);
         assertEquals(2, jobOpenCGAResult.getNumResults());
     }
@@ -465,7 +465,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(job.getId() + ".err", job.getStderr().getName());
 
         // Check jobId is properly populated
-        OpenCGAResult<org.opencb.opencga.core.models.file.File> files = catalogManager.getFileManager().search(organizationId, studyFqn,
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> files = catalogManager.getFileManager().search(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), job.getId()), FileManager.INCLUDE_FILE_URI_PATH, token);
         List<String> expectedFiles = Arrays.asList(
                 outDir,
@@ -485,9 +485,9 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
             }
         }
 
-        files = catalogManager.getFileManager().count(organizationId, studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
         assertEquals(10, files.getNumMatches());
-        files = catalogManager.getFileManager().count(organizationId, studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), token);
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), token);
         assertEquals(10, files.getNumMatches());
     }
 

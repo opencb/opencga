@@ -169,7 +169,7 @@ public class DummyModelUtils {
             for (Individual member : family.getMembers()) {
                 if ((member.getFather() == null || createdIndividuals.contains(member.getFather().getId()))
                         && (member.getMother() == null || createdIndividuals.contains(member.getMother().getId()))) {
-                    catalogManager.getIndividualManager().create(organizationId, study, member, QueryOptions.empty(), token);
+                    catalogManager.getIndividualManager().create(study, member, QueryOptions.empty(), token);
                     createdIndividuals.add(member.getId());
                 }
             }

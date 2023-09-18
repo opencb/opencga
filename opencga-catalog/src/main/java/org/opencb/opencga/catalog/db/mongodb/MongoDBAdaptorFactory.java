@@ -44,6 +44,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration mongoDbConfiguration;
+    private final Configuration configuration;
 
     private Map<String, OrganizationMongoDBAdaptorFactory> organizationDBAdaptorMap;
 
@@ -71,6 +72,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         this.mongoDbConfiguration = mongoDBConfiguration;
+        this.configuration = catalogConfiguration;
 //        this.database = getAdminCatalogDatabase(catalogConfiguration.getDatabasePrefix());
 
         logger = LoggerFactory.getLogger(this.getClass());
@@ -80,14 +82,18 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public void createAllCollections(Configuration configuration) throws CatalogException {
         for (OrganizationMongoDBAdaptorFactory orgFactory : organizationDBAdaptorMap.values()) {
-            MongoDataStore mongoDataStore = orgFactory.getMongoDataStore();
-            if (!mongoDataStore.getCollectionNames().isEmpty()) {
-                throw new CatalogException("Database " + mongoDataStore.getDatabaseName() + " already exists with the following "
-                        + "collections: " + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or"
-                        + " choose a different one.");
-            }
-            OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+            createAllCollections(orgFactory);
         }
+    }
+
+    private void createAllCollections(OrganizationMongoDBAdaptorFactory organizationFactory) throws CatalogDBException {
+        MongoDataStore mongoDataStore = organizationFactory.getMongoDataStore();
+        if (!mongoDataStore.getCollectionNames().isEmpty()) {
+            throw new CatalogDBException("Database " + mongoDataStore.getDatabaseName() + " already exists with the following "
+                    + "collections: " + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or"
+                    + " choose a different one.");
+        }
+        OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
     }
 
     @Override
@@ -98,8 +104,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public boolean getDatabaseStatus() {
-        return organizationDBAdaptorMap.get(ParamConstants.ADMIN_ORGANIZATION).getDatabaseStatus();
+    public boolean getDatabaseStatus() throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getDatabaseStatus();
     }
 
     @Override
@@ -110,8 +116,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public boolean isCatalogDBReady() {
-        return organizationDBAdaptorMap.get(ParamConstants.ADMIN_ORGANIZATION).isCatalogDBReady();
+    public boolean isCatalogDBReady() throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).isCatalogDBReady();
     }
 
     @Override
@@ -143,7 +149,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         // Configure admin organization first
         OrganizationMongoDBAdaptorFactory adminFactory = configureOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION,
                 catalogConfiguration);
-        organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION, adminFactory);
+        organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION.toLowerCase(), adminFactory);
 
         // Read organizations present in the installation
         OpenCGAResult<Organization> result = adminFactory.getCatalogOrganizationDBAdaptor().get(new Query(), QueryOptions.empty());
@@ -154,7 +160,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             for (String organizationId : organizationIds) {
                 OrganizationMongoDBAdaptorFactory orgFactory = configureOrganizationMongoDBAdaptorFactory(organizationId,
                         catalogConfiguration);
-                organizationDBAdaptorMap.put(organizationId, orgFactory);
+                organizationDBAdaptorMap.put(organizationId.toLowerCase(), orgFactory);
             }
         }
     }
@@ -166,9 +172,35 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
-        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organization);
+        return getOrganizationMongoDBAdaptorFactory(organization, true);
+    }
+
+    private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization, boolean raiseException)
+            throws CatalogDBException {
+        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organization.toLowerCase());
         if (orgFactory == null) {
-            throw new CatalogDBException("Could not find database for organization '" + organization + "'");
+            if (!organization.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
+                orgFactory = organizationDBAdaptorMap.get(ParamConstants.ADMIN_ORGANIZATION.toLowerCase());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIG.key());
+                OpenCGAResult<Organization> result = orgFactory.getCatalogOrganizationDBAdaptor().get(new Query(), options);
+                if (result.getNumResults() == 1) {
+                    // TODO: look for the organization. Will assume it is not present meanwhile
+                    boolean present = false;
+                    if (present) {
+                        // Create new OrganizationMongoDBAdaptorFactory for the organization
+                        OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
+                                new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organization, configuration);
+                        organizationDBAdaptorMap.put(organization.toLowerCase(), organizationMongoDBAdaptorFactory);
+                        return organizationMongoDBAdaptorFactory;
+                    }
+                }
+            }
+
+            if (raiseException) {
+                throw new CatalogDBException("Could not find database for organization '" + organization + "'");
+            } else {
+                return null;
+            }
         }
         return orgFactory;
     }
@@ -181,6 +213,34 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organization).getCatalogMetaDBAdaptor();
+    }
+
+    @Override
+    public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options) throws CatalogDBException {
+        if (getOrganizationMongoDBAdaptorFactory(organization.getId(), false) != null) {
+            throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
+        }
+
+        // Create organization
+        OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(mongoManager,
+                mongoDbConfiguration, organization.getId(), configuration);
+        organizationDBAdaptorFactory.createAllCollections();
+        organizationDBAdaptorFactory.createIndexes();
+        OpenCGAResult<Organization> result = organizationDBAdaptorFactory.getCatalogOrganizationDBAdaptor()
+                .insert(organization, options);
+
+        // TODO: Add organization id to list of organization ids in ADMIN database
+        return result;
+    }
+
+    @Override
+    public void deleteOrganization(Organization organization) throws CatalogDBException {
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId());
+        orgFactory.deleteCatalogDB();
+        orgFactory.close();
+        organizationDBAdaptorMap.remove(organization.getId());
+
+        // TODO: Remove organization from ADMIN database
     }
 
     @Override

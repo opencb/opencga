@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -46,6 +47,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
@@ -84,8 +86,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
-import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
@@ -102,8 +102,8 @@ public class StudyManager extends AbstractManager {
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
     private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
-    private static final Pattern USER_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN + "):("
-            + STUDY_PATTERN + ")$");
+    private static final Pattern ORGANIZATION_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN
+            + "):(" + STUDY_PATTERN + ")$");
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
 
     static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
@@ -130,29 +130,30 @@ public class StudyManager extends AbstractManager {
 //        return studyDBAdaptor.getProjectIdByStudyUid(studyId);
 //    }
 
-    List<Study> resolveIds(String organizationId, List<String> studyList, String userId) throws CatalogException {
+
+    List<Study> resolveIds(List<String> studyList, String userId, String organizationId) throws CatalogException {
         if (studyList == null || studyList.isEmpty() || (studyList.size() == 1 && studyList.get(0).endsWith("*"))) {
             String studyStr = "*";
             if (studyList != null && !studyList.isEmpty()) {
                 studyStr = studyList.get(0);
             }
 
-            return smartResolutor(organizationId, studyStr, userId, INCLUDE_STUDY_IDS).getResults();
+            return smartResolutor(studyStr, INCLUDE_STUDY_IDS, userId, organizationId).getResults();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
         for (String study : studyList) {
-            returnList.add(resolveId(organizationId, study, userId, INCLUDE_STUDY_IDS));
+            returnList.add(resolveId(study, INCLUDE_STUDY_IDS, userId, organizationId));
         }
         return returnList;
     }
 
-    Study resolveId(String organizationId, String studyStr, String userId) throws CatalogException {
-        return resolveId(organizationId, studyStr, userId, INCLUDE_STUDY_IDS);
+    Study resolveId(String studyStr, String userId, String organizationId) throws CatalogException {
+        return resolveId(studyStr, INCLUDE_STUDY_IDS, userId, organizationId);
     }
 
-    Study resolveId(String organizationId, String studyStr, String userId, QueryOptions options) throws CatalogException {
-        OpenCGAResult<Study> studyDataResult = smartResolutor(organizationId, studyStr, userId, options);
+    Study resolveId(String studyStr, QueryOptions options, String userId, String organizationId) throws CatalogException {
+        OpenCGAResult<Study> studyDataResult = smartResolutor(studyStr, options, userId, organizationId);
 
         if (studyDataResult.getNumResults() > 1) {
             String studyMessage = "";
@@ -166,9 +167,109 @@ public class StudyManager extends AbstractManager {
         return studyDataResult.first();
     }
 
-    private OpenCGAResult<Study> smartResolutor(String organizationId, String studyStr, String userId, QueryOptions options)
+    Study resolveId(CatalogFqn catalogFqn, QueryOptions options, JwtPayload payload) throws CatalogException {
+        OpenCGAResult<Study> studyDataResult = smartResolutor(catalogFqn, options, payload);
+
+        if (studyDataResult.getNumResults() > 1) {
+            String studyMessage = "";
+            if (StringUtils.isNotEmpty(catalogFqn.getProvidedId())) {
+                studyMessage = " given '" + catalogFqn.getProvidedId() + "'";
+            }
+            throw new CatalogException("More than one study found" + studyMessage + ". Please, be more specific."
+                    + " The accepted pattern is [ownerId@projectId:studyId]");
+        }
+
+        return studyDataResult.first();
+    }
+
+    /**
+     * Resolve the study the user wants to access.
+     *
+     * @param catalogFqn     CatalogFqn object.
+     * @param options        Options to include/exclude Study fields.
+     * @param payload        Token payload containing the user requesting the operation.
+     * @return An OpenCGAResult with the appropriate study.
+     * @throws CatalogException if the user cannot access the study, or it is unclear which study they want to access.
+     */
+    private OpenCGAResult<Study> smartResolutor(CatalogFqn catalogFqn, QueryOptions options, JwtPayload payload) throws CatalogException {
+        ParamUtils.checkParameter(payload.getUserId(), "userId");
+        ParamUtils.checkParameter(catalogFqn.getOrganizationId(), "organizationId");
+
+        Query query = new Query();
+        QueryOptions queryOptions;
+        if (options == null) {
+            queryOptions = new QueryOptions();
+        } else {
+            queryOptions = new QueryOptions(options);
+        }
+
+        String studyStr;
+        if (StringUtils.isNotEmpty(catalogFqn.getStudyUuid())) {
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), catalogFqn.getStudyUuid());
+            studyStr = catalogFqn.getStudyUuid();
+        } else {
+            studyStr = catalogFqn.getStudyId();
+            if (!"*".equals(catalogFqn.getStudyId())) {
+                query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), catalogFqn.getStudyId());
+            }
+        }
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogFqn.getProjectId());
+
+        if (!queryOptions.isEmpty()) {
+            // Ensure at least the ids are included
+            fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
+        }
+
+        if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
+            // If it is the administrator, we allow it without checking the user anymore
+            authorizationManager.checkIsInstallationAdministrator(payload.getOrganization(), payload.getUserId());
+            OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            if (studyDataResult.getNumResults() != 0) {
+                return studyDataResult;
+            }
+        } else {
+            OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions,
+                    payload.getUserId());
+            if (studyDataResult.getNumResults() != 0) {
+                return studyDataResult;
+            } else {
+                studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            }
+        }
+
+        if (studyDataResult.getNumResults() == 0) {
+            String studyMessage = "";
+            if (StringUtils.isNotEmpty(studyStr)) {
+                studyMessage = " given '" + studyStr + "'";
+            }
+            throw new CatalogException("No study found" + studyMessage + ".");
+        } else {
+            throw CatalogAuthorizationException.denyAny(payload.getUserId(), "view", "study");
+        }
+
+        return studyDataResult;
+    }
+
+    /**
+     * Resolve the study the user wants to access.
+     *
+     * @param studyStr       Study id or fqn.
+     * @param options        Options to include/exclude Study fields.
+     * @param userId         User requesting the operation.
+     * @param organizationId Organization to which the user belongs.
+     * @return An OpenCGAResult with the appropriate study.
+     * @throws CatalogException if the user cannot access the study, or it is unclear which study they want to access.
+     */
+    private OpenCGAResult<Study> smartResolutor(String studyStr, QueryOptions options, String userId, String organizationId)
             throws CatalogException {
-        String owner = null;
+        if (StringUtils.isEmpty(userId)) {
+            throw new CatalogException("Missing internal mandatory field 'userId'");
+        }
+        if (StringUtils.isEmpty(organizationId)) {
+            throw new CatalogException("Missing internal mandatory field 'organization'");
+        }
+
+        String organizationFqn = null;
         String project = null;
 
         Query query = new Query();
@@ -185,10 +286,10 @@ public class StudyManager extends AbstractManager {
             } else {
                 String study;
 
-                Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyStr);
+                Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyStr);
                 if (matcher.find()) {
                     // studyStr contains the full path (owner@project:study)
-                    owner = matcher.group(1);
+                    organizationFqn = matcher.group(1);
                     project = matcher.group(2);
                     study = matcher.group(3);
                 } else {
@@ -212,23 +313,27 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), owner);
+        if (organizationFqn != null && !organizationId.equals(organizationFqn)
+                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
+                    organizationFqn);
+            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
+        } else {
+            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+            organizationFqn = organizationId;
+        }
+
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
-//        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
 
         if (!queryOptions.isEmpty()) {
             // Ensure at least the ids are included
             fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
-        OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, queryOptions, userId);
+        OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationFqn).get(query, queryOptions, userId);
 
         if (studyDataResult.getNumResults() == 0) {
-            if (!query.containsKey(StudyDBAdaptor.QueryParams.FQN.key())) {
-                // By default, exclude the opencga study for the validation
-                query.put(StudyDBAdaptor.QueryParams.FQN.key(), "!=" + OPENCGA + "@" + ADMIN_PROJECT + ":" + ADMIN_STUDY);
-            }
-            studyDataResult = getStudyDBAdaptor(organizationId).get(query, queryOptions);
+            studyDataResult = getStudyDBAdaptor(organizationFqn).get(query, queryOptions);
             if (studyDataResult.getNumResults() == 0) {
                 String studyMessage = "";
                 if (StringUtils.isNotEmpty(studyStr)) {
@@ -267,6 +372,10 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    public void validateCatalogFqn(CatalogFqn catalogFqn) {
+
+    }
+
     private OpenCGAResult<Study> getStudy(String organizationId, long projectUid, String studyUuid, QueryOptions options)
             throws CatalogDBException {
         Query query = new Query()
@@ -297,7 +406,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkIdentifier(study.getId(), "id");
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Project project = catalogManager.getProjectManager().resolveId(organizationId, projectStr, userId);
+        Project project = catalogManager.getProjectManager().resolveId(projectStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -432,14 +541,14 @@ public class StudyManager extends AbstractManager {
 
     public int getCurrentRelease(String organizationId, Study study, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        authorizationManager.checkCanViewStudy(study.getUid(), userId);
+        authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
         return getCurrentRelease(organizationId, study);
     }
 
     int getCurrentRelease(String organizationId, Study study) throws CatalogException {
         String[] split = StringUtils.split(study.getFqn(), ":");
         String userId = StringUtils.split(split[0], "@")[0];
-        return catalogManager.getProjectManager().resolveId(organizationId, split[0], userId).getCurrentRelease();
+        return catalogManager.getProjectManager().resolveId(split[0], userId, organizationId).getCurrentRelease();
     }
 
     MyResourceId getVariableSetId(String organizationId, String variableStr, @Nullable String studyStr, String sessionId)
@@ -457,7 +566,7 @@ public class StudyManager extends AbstractManager {
         }
 
         userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
         studyId = study.getUid();
 
         Query query = new Query()
@@ -496,7 +605,7 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
         try {
             StopWatch stopWatch = StopWatch.createStarted();
-            Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId, options);
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, options, userId, organizationId);
             auditManager.auditInfo(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             OpenCGAResult<Study> studyDataResult = new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1,
@@ -643,7 +752,7 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
         Study study;
         try {
-            study = resolveId(organizationId, studyId, userId);
+            study = resolveId(studyId, userId, organizationId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, studyId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -654,7 +763,7 @@ public class StudyManager extends AbstractManager {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(parameters, "Parameters");
 
-            authorizationManager.checkCanEditStudy(study.getUid(), userId);
+            authorizationManager.checkCanEditStudy(organizationId, study.getUid(), userId);
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
                 ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
@@ -695,7 +804,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<PermissionRule> createPermissionRule(String organizationId, String studyId, Enums.Entity entry,
                                                               PermissionRule permissionRule, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId, INCLUDE_STUDY_IDS);
+        Study study = resolveId(studyId, INCLUDE_STUDY_IDS, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -707,7 +816,7 @@ public class StudyManager extends AbstractManager {
             ParamUtils.checkObj(entry, "entry");
             ParamUtils.checkObj(permissionRule, "permission rule");
 
-            authorizationManager.checkCanUpdatePermissionRules(study.getUid(), userId);
+            authorizationManager.checkCanUpdatePermissionRules(organizationId, study.getUid(), userId);
             validatePermissionRules(organizationId, study.getUid(), entry, permissionRule);
 
             OpenCGAResult<PermissionRule> result = getStudyDBAdaptor(organizationId).createPermissionRule(study.getUid(), entry,
@@ -730,7 +839,7 @@ public class StudyManager extends AbstractManager {
     public void markDeletedPermissionRule(String organizationId, String studyId, Enums.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -744,7 +853,7 @@ public class StudyManager extends AbstractManager {
             ParamUtils.checkObj(deleteAction, "Delete action");
             ParamUtils.checkObj(permissionRuleId, "permission rule id");
 
-            authorizationManager.checkCanUpdatePermissionRules(study.getUid(), userId);
+            authorizationManager.checkCanUpdatePermissionRules(organizationId, study.getUid(), userId);
             getStudyDBAdaptor(organizationId).markDeletedPermissionRule(study.getUid(), entry, permissionRuleId, deleteAction);
 
             auditManager.audit(userId, Enums.Action.REMOVE_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
@@ -761,7 +870,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<PermissionRule> getPermissionRules(String organizationId, String studyId, Enums.Entity entry, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -769,7 +878,7 @@ public class StudyManager extends AbstractManager {
                 .append("entry", entry)
                 .append("token", token);
         try {
-            authorizationManager.checkCanViewStudy(study.getUid(), userId);
+            authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
             OpenCGAResult<PermissionRule> result = getStudyDBAdaptor(organizationId).getPermissionRules(study.getUid(), entry);
 
             auditManager.audit(userId, Enums.Action.FETCH_STUDY_PERMISSION_RULES, Enums.Resource.STUDY, study.getId(),
@@ -791,7 +900,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(projectId, "projectId");
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        authorizationManager.checkCanViewProject(projectId, userId);
+        authorizationManager.checkCanViewProject(organizationId, projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -818,7 +927,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(projectId, "projectId");
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        authorizationManager.checkCanViewProject(projectId, userId);
+        authorizationManager.checkCanViewProject(organizationId, projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -904,7 +1013,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Group> createGroup(String organizationId, String studyId, Group group, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -926,7 +1035,7 @@ public class StudyManager extends AbstractManager {
                 group.setId("@" + group.getId());
             }
 
-            authorizationManager.checkCreateDeleteGroupPermissions(study.getUid(), userId, group.getId());
+            authorizationManager.checkCreateDeleteGroupPermissions(organizationId, study.getUid(), userId, group.getId());
 
             // Check group exists
             if (existsGroup(organizationId, study.getUid(), group.getId())) {
@@ -967,7 +1076,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Group> getGroup(String organizationId, String studyId, String groupId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -975,7 +1084,7 @@ public class StudyManager extends AbstractManager {
                 .append("groupId", groupId)
                 .append("token", token);
         try {
-            authorizationManager.checkCanViewStudy(study.getUid(), userId);
+            authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
 
             // Fix the groupId
             if (groupId != null && !groupId.startsWith("@")) {
@@ -996,7 +1105,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<CustomGroup> getCustomGroups(String organizationId, String studyId, String groupId, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1007,7 +1116,7 @@ public class StudyManager extends AbstractManager {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
 
-            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
             // Fix the groupId
             if (groupId != null && !groupId.startsWith("@")) {
@@ -1065,7 +1174,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<Group> updateGroup(String organizationId, String studyId, String groupId, ParamUtils.BasicUpdateAction action,
                                             GroupUpdateParams updateParams, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1084,7 +1193,7 @@ public class StudyManager extends AbstractManager {
                 groupId = "@" + groupId;
             }
 
-            authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, action);
+            authorizationManager.checkUpdateGroupPermissions(organizationId, study.getUid(), userId, groupId, action);
 
             if (CollectionUtils.isNotEmpty(updateParams.getUsers())) {
                 List<String> tmpUsers = updateParams.getUsers();
@@ -1126,7 +1235,7 @@ public class StudyManager extends AbstractManager {
                         }
 
                         // We remove the users from all the groups and acls
-                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), updateParams.getUsers());
+                        authorizationManager.resetPermissionsFromAllEntities(organizationId, study.getUid(), updateParams.getUsers());
                         getStudyDBAdaptor(organizationId).removeUsersFromAllGroups(study.getUid(), updateParams.getUsers());
                     } else {
                         getStudyDBAdaptor(organizationId).removeUsersFromGroup(study.getUid(), groupId, updateParams.getUsers());
@@ -1152,7 +1261,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<?> updateSummaryIndex(String organizationId, String studyStr, RecessiveGeneSummaryIndex summaryIndex,
                                                String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyStr, userId);
+        Study study = resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1160,7 +1269,7 @@ public class StudyManager extends AbstractManager {
                 .append("recessiveGeneSummaryIndex", summaryIndex)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
             ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
             summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
@@ -1228,7 +1337,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Group> deleteGroup(String organizationId, String studyId, String groupId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1245,7 +1354,7 @@ public class StudyManager extends AbstractManager {
                 groupId = "@" + groupId;
             }
 
-            authorizationManager.checkCreateDeleteGroupPermissions(study.getUid(), userId, groupId);
+            authorizationManager.checkCreateDeleteGroupPermissions(organizationId, study.getUid(), userId, groupId);
 
             OpenCGAResult<Group> group = getStudyDBAdaptor(organizationId).getGroup(study.getUid(), groupId, Collections.emptyList());
 
@@ -1313,7 +1422,7 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkParameter(variableSet.getId(), "id");
         ParamUtils.checkObj(variableSet.getVariables(), "Variables from VariableSet");
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
+        authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
 
         variableSet.setDescription(ParamUtils.defaultString(variableSet.getDescription(), ""));
         variableSet.setAttributes(ParamUtils.defaultObject(variableSet.getAttributes(), new HashMap<>()));
@@ -1354,7 +1463,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> createVariableSet(String organizationId, String studyId, VariableSet variableSet, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId);
+        Study study = resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1376,7 +1485,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> getVariableSet(String organizationId, String studyId, String variableSetId, QueryOptions options,
                                                      String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = resolveId(studyId, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -1402,7 +1511,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> searchVariableSets(String organizationId, String studyStr, Query query, QueryOptions options,
                                                          String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyStr, userId);
+        Study study = resolveId(studyStr, userId, organizationId);
 //        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
@@ -1419,7 +1528,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> deleteVariableSet(String organizationId, String studyId, String variableSetId, boolean force,
                                                         String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = resolveId(studyId, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         VariableSet variableSet = extractVariableSet(organizationId, study, variableSetId, userId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1429,7 +1538,7 @@ public class StudyManager extends AbstractManager {
                 .append("force", force)
                 .append("token", token);
         try {
-            authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
+            authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
             OpenCGAResult writeResult = getStudyDBAdaptor(organizationId).deleteVariableSet(study.getUid(), variableSet, force);
             auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1445,7 +1554,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> addFieldToVariableSet(String organizationId, String studyId, String variableSetId, Variable variable,
                                                             String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = resolveId(studyId, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         VariableSet variableSet = extractVariableSet(organizationId, study, variableSetId, userId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1462,7 +1571,7 @@ public class StudyManager extends AbstractManager {
                 variable.setId(variable.getName());
             }
 
-            authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
+            authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
             OpenCGAResult result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(variableSet.getUid(), variable, userId);
             auditManager.audit(userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1481,7 +1590,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<VariableSet> removeFieldFromVariableSet(String organizationId, String studyId, String variableSetId,
                                                                  String variableId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = resolveId(studyId, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         VariableSet variableSet = extractVariableSet(organizationId, study, variableSetId, userId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1492,7 +1601,7 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
 
         try {
-            authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
+            authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
             OpenCGAResult result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
             auditManager.audit(userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
@@ -1535,7 +1644,7 @@ public class StudyManager extends AbstractManager {
                                                                              boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        List<Study> studyList = resolveIds(organizationId, studyIdList, userId);
+        List<Study> studyList = resolveIds(studyIdList, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1553,9 +1662,9 @@ public class StudyManager extends AbstractManager {
             try {
                 OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> allStudyAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
+                    allStudyAcls = authorizationManager.getStudyAcl(organizationId, studyId, member, userId);
                 } else {
-                    allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
+                    allStudyAcls = authorizationManager.getAllStudyAcls(organizationId, studyId, userId);
                 }
                 studyAclList.append(allStudyAcls);
 
@@ -1588,7 +1697,7 @@ public class StudyManager extends AbstractManager {
                                                                                ParamUtils.AclAction action, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        List<Study> studies = resolveIds(organizationId, studyIdList, userId);
+        List<Study> studies = resolveIds(studyIdList, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1648,7 +1757,7 @@ public class StudyManager extends AbstractManager {
 
             // Check the user has the permissions needed to change permissions
             for (Study study : studies) {
-                authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+                authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
             }
 
             // Validate that the members are actually valid members
@@ -1670,22 +1779,22 @@ public class StudyManager extends AbstractManager {
 
             switch (action) {
                 case SET:
-                    authorizationManager.setStudyAcls(studyUidList, members, permissions);
+                    authorizationManager.setStudyAcls(organizationId, studyUidList, members, permissions);
                     break;
                 case ADD:
-                    authorizationManager.addStudyAcls(studyUidList, members, permissions);
+                    authorizationManager.addStudyAcls(organizationId, studyUidList, members, permissions);
                     break;
                 case REMOVE:
-                    authorizationManager.removeStudyAcls(studyUidList, members, permissions);
+                    authorizationManager.removeStudyAcls(organizationId, studyUidList, members, permissions);
                     break;
                 case RESET:
-                    authorizationManager.removeStudyAcls(studyUidList, members, null);
+                    authorizationManager.removeStudyAcls(organizationId, studyUidList, members, null);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
-            OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(studyUidList,
+            OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(organizationId, studyUidList,
                     members);
 
             for (Study study : studies) {
@@ -1741,7 +1850,7 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.UID.key(),
                 StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token).first();
 
-        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
@@ -1760,7 +1869,7 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.UID.key(),
                 StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token).first();
 
-        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
@@ -1836,7 +1945,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public String getProjectFqn(String studyFqn) throws CatalogException {
-        Matcher matcher = USER_PROJECT_STUDY_PATTERN.matcher(studyFqn);
+        Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyFqn);
         if (matcher.find()) {
             // studyStr contains the full path (owner@project:study)
             String owner = matcher.group(1);
@@ -1865,7 +1974,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<String> uploadTemplate(String organizationId, String studyStr, String filename, InputStream inputStream,
                                                 String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyStr, userId, QueryOptions.empty());
+        Study study = resolveId(studyStr, QueryOptions.empty(), userId, organizationId);
 
         String templateId = "template." + TimeUtils.getTime() + "." + RandomStringUtils.random(6, true, false);
 
@@ -1877,7 +1986,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
             ParamUtils.checkParameter(filename, "File name");
             if (!filename.endsWith(".zip") && !filename.endsWith(".tar.gz")) {
@@ -1960,7 +2069,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<Boolean> deleteTemplate(String organizationId, String studyStr, String templateId, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = resolveId(organizationId, studyStr, userId, QueryOptions.empty());
+        Study study = resolveId(studyStr, QueryOptions.empty(), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -1970,7 +2079,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = Paths.get(study.getUri());

@@ -363,7 +363,7 @@ public class GwasAnalysis extends OpenCgaTool {
 
                 samples = new ArrayList<>();
                 catalogManager.getSampleManager()
-                        .iterator(organizationId, study, query, options, token)
+                        .iterator(study, query, options, token)
                         .forEachRemaining(sample -> {
                             Phenotype.Status status = null;
                             for (Phenotype p : sample.getPhenotypes()) {
@@ -385,7 +385,7 @@ public class GwasAnalysis extends OpenCgaTool {
                         .collect(Collectors.toList());
             } else {
                 samples = catalogManager.getSampleManager()
-                        .search(organizationId, study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), token)
+                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)

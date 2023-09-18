@@ -75,15 +75,14 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Create an entry in catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param entry          entry that needs to be added in Catalog.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param entry    entry that needs to be added in Catalog.
+     * @param options  QueryOptions object.
+     * @param token    Session id of the user logged in.
      * @return A OpenCGAResult of the object created.
      * @throws CatalogException if any parameter from the entry is incorrect, the user does not have permissions...
      */
-    public abstract OpenCGAResult<R> create(String organizationId, String studyStr, R entry, QueryOptions options, String token)
+    public abstract OpenCGAResult<R> create(String studyStr, R entry, QueryOptions options, String token)
             throws CatalogException;
 
     /**
@@ -100,7 +99,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public OpenCGAResult<R> get(String organizationId, String studyStr, String entryStr, QueryOptions options, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
         return internalGet(organizationId, study.getUid(), entryStr, options, userId);
     }
 
@@ -128,7 +127,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public OpenCGAResult<R> get(String organizationId, String studyId, List<String> entryList, Query query, QueryOptions options,
                                 boolean ignoreException, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyId, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -193,29 +192,27 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Obtain an entry iterator to iterate over the matching entries.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query    Query object.
+     * @param options  QueryOptions object.
+     * @param token    Session id of the user logged in.
      * @return An iterator.
      * @throws CatalogException if there is any internal error.
      */
-    public abstract DBIterator<R> iterator(String organizationId, String studyStr, Query query, QueryOptions options, String token)
+    public abstract DBIterator<R> iterator(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException;
 
     /**
      * Search of entries in catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyId        study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query   Query object.
+     * @param options QueryOptions object.
+     * @param token   Session id of the user logged in.
      * @return The list of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract OpenCGAResult<R> search(String organizationId, String studyId, Query query, QueryOptions options, String token)
+    public abstract OpenCGAResult<R> search(String studyId, Query query, QueryOptions options, String token)
             throws CatalogException;
 
     /**
@@ -231,50 +228,47 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public OpenCGAResult<?> distinct(String organizationId, String studyId, String field, Query query, String token)
             throws CatalogException {
-        return distinct(organizationId, studyId, Collections.singletonList(field), query, token);
+        return distinct(studyId, Collections.singletonList(field), query, token);
     }
 
     /**
      * Fetch a list containing all the distinct values of the key {@code field}.
      *
-     * @param organizationId Organization id.
-     * @param studyId        study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param fields         Fields for which to return distinct values.
-     * @param query          Query object.
-     * @param token          Token of the user logged in.
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param fields  Fields for which to return distinct values.
+     * @param query   Query object.
+     * @param token   Token of the user logged in.
      * @return The list of distinct values.
      * @throws CatalogException CatalogException.
      */
-    public abstract OpenCGAResult<?> distinct(String organizationId, String studyId, List<String> fields, Query query, String token)
+    public abstract OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
             throws CatalogException;
 
     /**
      * Count matching entries in catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyId        study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object.
-     * @param token          Session id of the user logged in.
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query   Query object.
+     * @param token   Session id of the user logged in.
      * @return A OpenCGAResult with the total number of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract OpenCGAResult<R> count(String organizationId, String studyId, Query query, String token) throws CatalogException;
+    public abstract OpenCGAResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract OpenCGAResult delete(String organizationId, String studyStr, List<String> ids, QueryOptions options, String token)
+    public abstract OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token)
             throws CatalogException;
 
     /**
      * Delete all entries matching the query.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object.
-     * @param options        Map containing additional parameters to be considered for the deletion.
-     * @param token          Session id of the user logged in.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query    Query object.
+     * @param options  Map containing additional parameters to be considered for the deletion.
+     * @param token    Session id of the user logged in.
      * @return A OpenCGAResult object containing the number of matching elements, deleted and elements that could not be deleted.
      * @throws CatalogException if the study or the user do not exist.
      */
-    public abstract OpenCGAResult delete(String organizationId, String studyStr, Query query, QueryOptions options, String token)
+    public abstract OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException;
 
     /**

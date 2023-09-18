@@ -93,7 +93,7 @@ public class SampleIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getSampleManager().iterator(organizationId, study.getFqn(), query, sampleQueryOptions,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getSampleManager().iterator(study.getFqn(), query, sampleQueryOptions,
                 token), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
     }
 }

@@ -102,7 +102,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
         variantManager.index(studyId, file.getId(), createTmpOutdir(file), queryOptions, sessionId);
 
-        all = catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+        all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 DEFAULT_COHORT), new QueryOptions(), sessionId).first().getId();
     }
 
@@ -141,12 +141,12 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         List<Cohort> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
-        Map<String, Cohort> cohorts = catalogManager.getCohortManager().search(organizationId, studyId, new Query(), null, sessionId)
+        Map<String, Cohort> cohorts = catalogManager.getCohortManager().search(studyId, new Query(), null, sessionId)
                 .getResults().stream().collect(Collectors.toMap(Cohort::getId, c->c));
         Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(organizationId, studyId, new Cohort()
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setSamples(Collections.emptyList())
                         .setType(Enums.CohortType.COLLECTION), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
@@ -360,7 +360,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
     public void calculateAggregatedStats(VariantStatsIndexParams params) throws Exception {
 //        coh0 = catalogManager.createCohort(studyId, "ALL", Cohort.Type.COLLECTION, "", file.getSampleIds(), null, sessionId).first().getId();
-        String cohId = catalogManager.getCohortManager().search(organizationId, studyId, (Query) null, null, sessionId).first().getId();
+        String cohId = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).first().getId();
 
         calculateStats(params.setCohort(Collections.singletonList(cohId)));
 
@@ -377,7 +377,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         calculateStats(new VariantStatsIndexParams().setCohort(cohortIds).setAggregationMappingFile("exac-tag-mapping.properties"));
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(organizationId, studyId, (Query) null, null, sessionId).getResults();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -399,7 +399,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 .setCohort(Arrays.asList("AFR", "ALL", "AMR", "EAS", "FIN", "NFE", "OTH", "SAS"))
                 .setAggregationMappingFile("exac-tag-mapping.properties"));
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(organizationId, studyId, (Query) null, null, sessionId).getResults();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -449,7 +449,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         linkFile("exac-tag-mapping.properties");
         calculateStats(new VariantStatsIndexParams().setAggregationMappingFile("exac-tag-mapping.properties"));
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(organizationId, studyId, (Query) null, null, sessionId).getResults();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)

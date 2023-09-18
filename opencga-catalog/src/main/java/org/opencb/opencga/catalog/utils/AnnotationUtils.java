@@ -796,7 +796,7 @@ public class AnnotationUtils {
 
                     if (authorizationManager != null && !confidentialPermissionChecked && variableSet.isConfidential()) {
                         // We only check the confidential permission if needed once
-                        authorizationManager.checkStudyPermission(study.getUid(), user,
+                        authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
                                 StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                         confidentialPermissionChecked = true;
                     }
@@ -858,7 +858,7 @@ public class AnnotationUtils {
                 if (authorizationManager != null  && !confidentialPermissionChecked && variableSetMap.get(variableSetString)
                         .isConfidential()) {
                     // We only check the confidential permission if needed once
-                    authorizationManager.checkStudyPermission(study.getUid(), user,
+                    authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
                             StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                     confidentialPermissionChecked = true;
                 }

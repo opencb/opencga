@@ -594,7 +594,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected void checkToolExecutionPermission(Job job) throws Exception {
         Tool tool = new ToolFactory().getTool(job.getTool().getId());
 
-        if (catalogManager.getAuthorizationManager().isInstallationAdministrator(job.getUserId())) {
+        if (catalogManager.getAuthorizationManager().isInstallationAdministrator(organizationId, job.getUserId())) {
             // Installation administrator user can run everything
             return;
         }
@@ -1012,7 +1012,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             for (URI externalFile : execution.getExternalFiles()) {
                 Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
                 try {
-                    OpenCGAResult<File> search = fileManager.search(organizationId, job.getStudy().getId(), query, FileManager.INCLUDE_FILE_URI_PATH,
+                    OpenCGAResult<File> search = fileManager.search(job.getStudy().getId(), query, FileManager.INCLUDE_FILE_URI_PATH,
                             token);
                     if (search.getNumResults() == 0) {
                         throw new CatalogException("File not found");

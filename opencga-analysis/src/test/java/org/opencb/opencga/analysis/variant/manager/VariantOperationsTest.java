@@ -272,7 +272,7 @@ public class VariantOperationsTest {
             if (i % 2 == 0) {
                 sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
             }
-            catalogManager.getSampleManager().create(organizationId, STUDY, sample, null, token);
+            catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
     }
@@ -387,9 +387,9 @@ public class VariantOperationsTest {
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         List<Sample> samples = catalogManager.getSampleManager().get(organizationId, STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(organizationId, STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
         samples = catalogManager.getSampleManager().get(organizationId, STUDY, file.getSampleIds().subList(2, 4), QueryOptions.empty(), token).getResults();
-        catalogManager.getCohortManager().create(organizationId, STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
 
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")

@@ -104,7 +104,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
         assertNotNull(getVariantSetMetrics(getFile(2).getId()));
 
@@ -119,7 +119,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(4).getId()));
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
     }
 
@@ -210,7 +210,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         File file = getFile(0);
         Path pathParent = Paths.get(file.getPath()).getParent();
 
-        File parent = catalogManager.getFileManager().search(organizationId, studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
+        File parent = catalogManager.getFileManager().search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
         indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
     }
 
@@ -232,10 +232,10 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         File inputFile = getFile(0);
         File transformedFile = transformFile(inputFile, queryOptions);
 
-        catalogManager.getFileManager().delete(organizationId, studyFqn,
+        catalogManager.getFileManager().delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new QueryOptions(Constants.SKIP_TRASH, true),
                 sessionId);
-        catalogManager.getFileManager().delete(organizationId, studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
+        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                         VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
                 new QueryOptions(Constants.SKIP_TRASH, true), sessionId);
 
@@ -261,7 +261,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("ALL cannot be deleted");
-        catalogManager.getCohortManager().delete(organizationId, studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId);
+        catalogManager.getCohortManager().delete(studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId);
     }
 
     @Test

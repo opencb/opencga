@@ -218,7 +218,7 @@ public class AuditManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -226,7 +226,7 @@ public class AuditManager {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
             query.remove(AuditDBAdaptor.QueryParams.STUDY_ID.key());
             query.put(AuditDBAdaptor.QueryParams.STUDY_UUID.key(), study.getUuid());
@@ -262,7 +262,7 @@ public class AuditManager {
 
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        if (authorizationManager.isInstallationAdministrator(userId)) {
+        if (authorizationManager.isInstallationAdministrator(organizationId, userId)) {
             return auditDBAdaptor.groupBy(query, fields, options);
         }
         throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");

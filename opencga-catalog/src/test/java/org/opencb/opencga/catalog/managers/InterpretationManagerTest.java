@@ -77,7 +77,7 @@ public class InterpretationManagerTest extends GenericTest {
 
     private DataResult<Family> createDummyFamily() throws CatalogException {
         Family family = DummyModelUtils.getDummyFamily("family");
-        return familyManager.create(organizationId, STUDY, family, INCLUDE_RESULT, sessionIdUser);
+        return familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
     }
 
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
@@ -276,7 +276,7 @@ public class InterpretationManagerTest extends GenericTest {
         for (int i = 0; i < 3; i++) {
             Panel panel = new Panel().setId("panel" + i);
             panelReferenceParamList.add(new PanelReferenceParam(panel.getId()));
-            catalogManager.getPanelManager().create(organizationId, STUDY, panel, QueryOptions.empty(), sessionIdUser);
+            catalogManager.getPanelManager().create(STUDY, panel, QueryOptions.empty(), sessionIdUser);
         }
 
         // Add panels to the case and set panelLock to true

@@ -85,26 +85,30 @@ public class ProjectManager extends AbstractManager {
         this.catalogIOManager = catalogIOManager;
     }
 
+    @Deprecated
     public String getOwner(String organizationId, long projectId) throws CatalogException {
-        return getProjectDBAdaptor(organizationId).getOwnerId(projectId);
+        return organizationId;
     }
 
     /**
      * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
      *
-     * @param organizationId Organization id.
      * @param projectStr     string that can contain the full qualified name (owner@projectId) or just the projectId.
-     * @param userId         user asking for the project information.
+     * @param userId         User asking for the project information.
+     * @param organizationId Organization where the user belongs.
      * @return a OpenCGAResult containing the project.
      * @throws CatalogException if multiple projects are found.
      */
-    Project resolveId(String organizationId, String projectStr, String userId) throws CatalogException {
+    Project resolveId(String projectStr, String userId, String organizationId) throws CatalogException {
         if (StringUtils.isEmpty(userId)) {
-            throw new CatalogException("Missing mandatory parameter userId");
+            throw new CatalogException("Missing internal mandatory field 'userId'");
+        }
+        if (StringUtils.isEmpty(organizationId)) {
+            throw new CatalogException("Missing internal mandatory field 'organization'");
         }
 
         String auxProject = "";
-        String auxOwner = "";
+        String auxOrganization = "";
         boolean isUuid = false;
 
         if (StringUtils.isNotEmpty(projectStr)) {
@@ -115,12 +119,22 @@ public class ProjectManager extends AbstractManager {
                 if (split.length == 1) {
                     auxProject = projectStr;
                 } else if (split.length == 2) {
-                    auxOwner = split[0];
+                    auxOrganization = split[0];
                     auxProject = split[1];
                 } else {
                     throw new CatalogException(projectStr + " does not follow the expected pattern [ownerId@projectId]");
                 }
             }
+        }
+
+        if (auxOrganization != null && !organizationId.equals(auxOrganization)
+                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
+                    auxOrganization);
+            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
+        } else {
+            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+            auxOrganization = organizationId;
         }
 
         QueryOptions projectOptions = new QueryOptions()
@@ -129,61 +143,142 @@ public class ProjectManager extends AbstractManager {
                         ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(),
                         ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
 
-        if (StringUtils.isEmpty(auxOwner) || auxOwner.equals(userId)) {
-            // We look for own projects
-            Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            if (isUuid) {
-                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
-            } else {
-                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
-            }
 
-            OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(organizationId).get(query, projectOptions);
-            if (projectDataResult.getNumResults() > 1) {
-                throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
-            } else if (projectDataResult.getNumResults() == 1) {
-                return projectDataResult.first();
-            }
-        }
-
-        // Look for shared projects. First, we will check all the studies in which the user is a member
         Query query = new Query();
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
         if (isUuid) {
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
+            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
         } else {
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
+            query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
-        OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, queryOptions, userId);
-
-        if (studyDataResult.getNumResults() > 0) {
-            Set<String> projectFqnSet = new HashSet<>();
-            for (Study study : studyDataResult.getResults()) {
-                projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
-            }
-
-            if (projectFqnSet.size() == 1) {
-                query = new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqnSet);
-                return getProjectDBAdaptor(organizationId).get(query, projectOptions).first();
-            } else {
-                throw new CatalogException("More than one project shared with user " + userId + ". Please, be more specific. "
-                        + "The accepted pattern is [ownerId@projectId]");
-            }
+        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(auxOrganization).get(query, projectOptions, userId);
+        if (projectDataResult.getNumResults() > 1) {
+            throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
+        } else if (projectDataResult.getNumResults() == 1) {
+            return projectDataResult.first();
         } else {
-            if (StringUtils.isNotEmpty(projectStr)) {
-                // Check if it is a matter of permissions
-                if (getStudyDBAdaptor(organizationId).count(query).getNumMatches() == 0) {
-                    throw new CatalogException("Project " + projectStr + " not found");
-                } else {
-                    throw CatalogAuthorizationException.deny(userId, "view", "project", projectStr, null);
+            projectDataResult = getProjectDBAdaptor(auxOrganization).get(query, projectOptions);
+            if (projectDataResult.getNumResults() == 0) {
+                String projectMessage = "";
+                if (StringUtils.isNotEmpty(projectStr)) {
+                    projectMessage = " given '" + projectStr + "'";
                 }
+                throw new CatalogException("No project found" + projectMessage + ".");
             } else {
-                throw new CatalogException("No projects shared or owned by user " + userId);
+                throw CatalogAuthorizationException.denyAny(userId, "view", "project");
             }
         }
     }
+
+
+//    /**
+//     * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
+//     *
+//     * @param projectStr     string that can contain the full qualified name (owner@projectId) or just the projectId.
+//     * @param userId         User asking for the project information.
+//     * @param organizationId Organization where the user belongs.
+//     * @return a OpenCGAResult containing the project.
+//     * @throws CatalogException if multiple projects are found.
+//     */
+//    Project resolveId(String projectStr, String userId, String organizationId) throws CatalogException {
+//        if (StringUtils.isEmpty(userId)) {
+//            throw new CatalogException("Missing internal mandatory field 'userId'");
+//        }
+//        if (StringUtils.isEmpty(organizationId)) {
+//            throw new CatalogException("Missing internal mandatory field 'organization'");
+//        }
+//
+//        String auxProject = "";
+//        String auxOrganization = "";
+//        boolean isUuid = false;
+//
+//        if (StringUtils.isNotEmpty(projectStr)) {
+//            if (UuidUtils.isOpenCgaUuid(projectStr)) {
+//                isUuid = true;
+//            } else {
+//                String[] split = projectStr.split("@");
+//                if (split.length == 1) {
+//                    auxProject = projectStr;
+//                } else if (split.length == 2) {
+//                    auxOrganization = split[0];
+//                    auxProject = split[1];
+//                } else {
+//                    throw new CatalogException(projectStr + " does not follow the expected pattern [ownerId@projectId]");
+//                }
+//            }
+//        }
+//
+//        if (auxOrganization != null && !organizationId.equals(auxOrganization)
+//                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+//            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
+//                    auxOrganization);
+//            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
+//        } else {
+//            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+//            auxOrganization = organizationId;
+//        }
+//
+//        QueryOptions projectOptions = new QueryOptions()
+//                .append(QueryOptions.INCLUDE, Arrays.asList(
+//                        ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
+//                        ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key(),
+//                        ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+//
+//        if (StringUtils.isEmpty(auxOwner) || auxOwner.equals(userId)) {
+//            // We look for own projects
+//            Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+//            if (isUuid) {
+//                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.UUID.key(), projectStr);
+//            } else {
+//                query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
+//            }
+//
+//            OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(organizationId).get(query, projectOptions);
+//            if (projectDataResult.getNumResults() > 1) {
+//                throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
+//            } else if (projectDataResult.getNumResults() == 1) {
+//                return projectDataResult.first();
+//            }
+//        }
+//
+//        // Look for shared projects. First, we will check all the studies in which the user is a member
+//        Query query = new Query();
+//        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
+//        if (isUuid) {
+//            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectStr);
+//        } else {
+//            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
+//        }
+//
+//        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+//        OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, queryOptions, userId);
+//
+//        if (studyDataResult.getNumResults() > 0) {
+//            Set<String> projectFqnSet = new HashSet<>();
+//            for (Study study : studyDataResult.getResults()) {
+//                projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
+//            }
+//
+//            if (projectFqnSet.size() == 1) {
+//                query = new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqnSet);
+//                return getProjectDBAdaptor(organizationId).get(query, projectOptions).first();
+//            } else {
+//                throw new CatalogException("More than one project shared with user " + userId + ". Please, be more specific. "
+//                        + "The accepted pattern is [ownerId@projectId]");
+//            }
+//        } else {
+//            if (StringUtils.isNotEmpty(projectStr)) {
+//                // Check if it is a matter of permissions
+//                if (getStudyDBAdaptor(organizationId).count(query).getNumMatches() == 0) {
+//                    throw new CatalogException("Project " + projectStr + " not found");
+//                } else {
+//                    throw CatalogAuthorizationException.deny(userId, "view", "project", projectStr, null);
+//                }
+//            } else {
+//                throw new CatalogException("No projects shared or owned by user " + userId);
+//            }
+//        }
+//    }
 
     private OpenCGAResult<Project> getProject(String organizationId, String userId, String projectUuid, QueryOptions options)
             throws CatalogDBException {
@@ -261,7 +356,7 @@ public class ProjectManager extends AbstractManager {
             project = projectCreateParams.toProject();
             validateProjectForCreation(project);
 
-            queryResult = getProjectDBAdaptor(organizationId).insert(organization.getId(), project, options);
+            queryResult = getProjectDBAdaptor(organizationId).insert(project, options);
             OpenCGAResult<Project> result = getProject(organizationId, organization.getId(), project.getUuid(), options);
             project = result.first();
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
@@ -344,7 +439,7 @@ public class ProjectManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
         try {
-            Project project = resolveId(organizationId, projectId, userId);
+            Project project = resolveId(projectId, userId, organizationId);
             OpenCGAResult<Project> queryResult = getProjectDBAdaptor(organizationId).get(project.getUid(), options);
             auditManager.auditInfo(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -407,7 +502,7 @@ public class ProjectManager extends AbstractManager {
             // If study is provided, we need to check if it will be study alias or id
             if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
                 List<Study> studies = catalogManager.getStudyManager()
-                        .resolveIds(organizationId, query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key()), userId);
+                        .resolveIds(query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key()), userId, organizationId);
                 query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), studies.stream().map(Study::getUid).collect(Collectors.toList()));
             }
@@ -465,7 +560,7 @@ public class ProjectManager extends AbstractManager {
 
         Project project;
         try {
-            project = resolveId(organizationId, projectId, userId);
+            project = resolveId(projectId, userId, organizationId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, projectId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -478,7 +573,7 @@ public class ProjectManager extends AbstractManager {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             long projectUid = project.getUid();
-            authorizationManager.checkCanEditProject(projectUid, userId);
+            authorizationManager.checkCanEditProject(organizationId, projectUid, userId);
 
             for (String s : parameters.keySet()) {
                 if (UPDATABLE_FIELDS.contains(s)) {
@@ -576,7 +671,7 @@ public class ProjectManager extends AbstractManager {
                                      String individualFields, String cohortFields, String familyFields, String jobFields,
                                      boolean defaultStats, String token) throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Project project = resolveId(organizationId, projectStr, userId);
+        Project project = resolveId(projectStr, userId, organizationId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
         OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query,
                 new QueryOptions(QueryOptions.INCLUDE,
@@ -595,10 +690,10 @@ public class ProjectManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
 
         try {
-            Project project = resolveId(organizationId, projectStr, userId);
+            Project project = resolveId(projectStr, userId, organizationId);
             long projectUid = project.getUid();
 
-            authorizationManager.checkCanEditProject(projectUid, userId);
+            authorizationManager.checkCanEditProject(organizationId, projectUid, userId);
 
             // Obtain the current release number
             int currentRelease = project.getCurrentRelease();
@@ -646,7 +741,7 @@ public class ProjectManager extends AbstractManager {
     public void importReleases(String organizationId, String owner, String inputDirStr, String sessionId)
             throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-        if (!authorizationManager.isInstallationAdministrator(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
 
@@ -763,7 +858,7 @@ public class ProjectManager extends AbstractManager {
     public void exportByFileNames(String organizationId, String studyStr, File outputDir, File filePath, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        if (!authorizationManager.isInstallationAdministrator(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 
@@ -807,7 +902,7 @@ public class ProjectManager extends AbstractManager {
 
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
                     OpenCGAResult<org.opencb.opencga.core.models.file.File> fileDataResult = catalogManager.getFileManager()
-                            .search(organizationId, studyStr, query, QueryOptions.empty(), ownerToken);
+                            .search(studyStr, query, QueryOptions.empty(), ownerToken);
                     if (fileDataResult.getNumResults() == 0) {
                         logger.error("File " + vcfFile + " not found. Skipping...");
                         continue;
@@ -828,7 +923,7 @@ public class ProjectManager extends AbstractManager {
                                         org.opencb.opencga.core.models.file.File.Format.BIGWIG));
 
                         OpenCGAResult<org.opencb.opencga.core.models.file.File> otherFiles = catalogManager.getFileManager()
-                                .search(organizationId, studyStr, query, QueryOptions.empty(), ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
                         if (otherFiles.getNumResults() > 0) {
                             fileList.addAll(otherFiles.getResults());
                         }
@@ -836,7 +931,7 @@ public class ProjectManager extends AbstractManager {
                         // Look for the whole sample information
                         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                         OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager()
-                                .search(organizationId, studyStr, query, QueryOptions.empty(), ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
                         if (sampleDataResult.getNumResults() == 0 || sampleDataResult.getNumResults() != sampleIds.size()) {
                             logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
                                     + "Samples ids {}", sampleDataResult.getNumResults(), sampleIds);
@@ -850,7 +945,7 @@ public class ProjectManager extends AbstractManager {
                         // Look for the whole sample information
                         query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
                         OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager()
-                                .search(organizationId, studyStr, query, QueryOptions.empty(), ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
 
 //                        for (Individual individual : individualDataResult.getResults()) {
 //                            OpenCGAResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
@@ -870,7 +965,7 @@ public class ProjectManager extends AbstractManager {
                                 .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleIds)
                                 .append(CohortDBAdaptor.QueryParams.ID.key(), "!=ALL");
                         OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager()
-                                .search(organizationId, studyStr, query, QueryOptions.empty(), ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
 
 //                        for (Cohort cohort : cohortDataResult.getResults()) {
 //                            OpenCGAResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()
@@ -948,7 +1043,7 @@ public class ProjectManager extends AbstractManager {
     public void exportReleases(String organizationId, String projectStr, int release, String outputDirStr, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        if (!authorizationManager.isInstallationAdministrator(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 
@@ -975,7 +1070,7 @@ public class ProjectManager extends AbstractManager {
                         ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()
                 ))
                 .append(QueryOptions.EXCLUDE, "studies");
-        Project project = resolveId(organizationId, projectStr, userId);
+        Project project = resolveId(projectStr, userId, organizationId);
 
         long projectId = project.getUid();
         int currentRelease = project.getCurrentRelease();

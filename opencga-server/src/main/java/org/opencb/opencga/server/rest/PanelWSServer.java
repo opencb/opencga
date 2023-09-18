@@ -66,7 +66,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
-            return createOkResponse(panelManager.create(organizationId, studyStr, params.toPanel(), queryOptions, token));
+            return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -198,7 +198,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PANEL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SNAPSHOT_PARAM) int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(panelManager.search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

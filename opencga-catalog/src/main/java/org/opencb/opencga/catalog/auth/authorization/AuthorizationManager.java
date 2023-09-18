@@ -17,8 +17,10 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
@@ -80,62 +82,67 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
-    void checkCanViewProject(long projectId, String userId) throws CatalogException;
+    void checkCanAccessOrganization(CatalogFqn catalogFqn, JwtPayload jwtPayload) throws CatalogException;
 
-    void checkCanEditProject(long projectId, String userId) throws CatalogException;
+    void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException;
 
-    void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission) throws CatalogException;
+    void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException;
 
-    void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission, String message)
+    void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
             throws CatalogException;
 
-    void checkCanEditStudy(long studyId, String userId) throws CatalogException;
+    void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission, String message)
+            throws CatalogException;
 
-    void checkCanViewStudy(long studyId, String userId) throws CatalogException;
+    void checkCanEditStudy(String organizationId, long studyId, String userId) throws CatalogException;
 
-    void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException;
+    void checkCanViewStudy(String organizationId, long studyId, String userId) throws CatalogException;
 
-    void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException;
+    void checkCanUpdatePermissionRules(String organizationId, long studyId, String userId) throws CatalogException;
 
-    void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException;
+    void checkCreateDeleteGroupPermissions(String organizationId, long studyId, String userId, String group) throws CatalogException;
 
-    void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.BasicUpdateAction action)
+    void checkSyncGroupPermissions(String organizationId, long studyId, String userId, String group) throws CatalogException;
+
+    void checkUpdateGroupPermissions(String organizationId, long studyId, String userId, String group, ParamUtils.BasicUpdateAction action)
             throws CatalogException;
 
     void checkNotAssigningPermissionsToAdminsGroup(List<String> members) throws CatalogException;
 
-    void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException;
+    void checkCanAssignOrSeePermissions(String organizationId, long studyId, String userId) throws CatalogException;
 
-    void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException;
+    void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
 
-    Boolean isInstallationAdministrator(String user);
+    boolean isInstallationAdministrator(String organizationId, String user);
 
-    void checkIsInstallationAdministrator(String user) throws CatalogException;
+    void checkIsInstallationAdministrator(String organizationId, String user) throws CatalogException;
 
-    void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException;
+    void checkIsOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
 
-    Boolean isOwnerOrAdmin(long studyId, String userId) throws CatalogException;
+    boolean isOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
 
-    void checkFilePermission(long studyId, long fileId, String userId, FilePermissions permission) throws CatalogException;
-
-    void checkSamplePermission(long studyId, long sampleId, String userId, SamplePermissions permission)
+    void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException;
 
-    void checkIndividualPermission(long studyId, long individualId, String userId, IndividualPermissions permission)
+    void checkSamplePermission(String organizationId, long studyId, long sampleId, String userId, SamplePermissions permission)
             throws CatalogException;
 
-    void checkJobPermission(long studyId, long jobId, String userId, JobPermissions permission) throws CatalogException;
-
-    void checkCohortPermission(long studyId, long cohortId, String userId, CohortPermissions permission)
+    void checkIndividualPermission(String organizationId, long studyId, long individualId, String userId, IndividualPermissions permission)
             throws CatalogException;
 
-    void checkPanelPermission(long studyId, long panelId, String userId, PanelPermissions permission)
+    void checkJobPermission(String organizationId, long studyId, long jobId, String userId, JobPermissions permission)
             throws CatalogException;
 
-    void checkFamilyPermission(long studyId, long familyId, String userId, FamilyPermissions permission)
+    void checkCohortPermission(String organizationId, long studyId, long cohortId, String userId, CohortPermissions permission)
             throws CatalogException;
 
-    void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
+    void checkPanelPermission(String organizationId, long studyId, long panelId, String userId, PanelPermissions permission)
+            throws CatalogException;
+
+    void checkFamilyPermission(String organizationId, long studyId, long familyId, String userId, FamilyPermissions permission)
+            throws CatalogException;
+
+    void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
 
     //------------------------- Study ACL -----------------------------
@@ -143,61 +150,67 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined in the study.
      *
-     * @param userId  user id asking for the ACLs.
-     * @param studyId study id.
+     * @param organizationId Organization id.
+     * @param studyId        study id.
+     * @param userId         user id asking for the ACLs.
      * @return a list of studyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the study does not have proper permissions.
      */
-    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String userId, long studyId) throws CatalogException;
-
-    /**
-     * Return the ACL defined for the member.
-     *
-     * @param userId  user asking for the ACL.
-     * @param studyId study id.
-     * @param member  member whose permissions will be retrieved.
-     * @return the studyAcl for the member.
-     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
-     */
-    default OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String userId, long studyId, String member)
-            throws CatalogException {
-        return getStudyAcl(userId, studyId, Collections.singletonList(member));
-    }
-
-    /**
-     * Return the ACL defined for the member.
-     *
-     * @param userId  user asking for the ACL.
-     * @param studyId study id.
-     * @param members  members whose permissions will be retrieved.
-     * @return the studyAcl for the member.
-     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
-     */
-    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String userId, long studyId, List<String> members)
+    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String organizationId, long studyId, String userId)
             throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param studyUid study id.
-     * @param members  members whose permissions will be retrieved.
+     * @param organizationId Organization id.
+     * @param studyId        study id.
+     * @param member         member whose permissions will be retrieved.
+     * @param userId         user asking for the ACL.
      * @return the studyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    default OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(long studyUid, List<String> members)
-            throws CatalogException {
-        return getStudyAcl(Collections.singletonList(studyUid), members);
+    default OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, long studyId, String member,
+                                                                                  String userId) throws CatalogException {
+        return getStudyAcl(organizationId, studyId, Collections.singletonList(member), userId);
     }
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param studyUids study uids.
-     * @param members  members whose permissions will be retrieved.
+     * @param organizationId Organization id.
+     * @param studyId        study id.
+     * @param members        members whose permissions will be retrieved.
+     * @param userId         user asking for the ACL.
      * @return the studyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(List<Long> studyUids, List<String> members)
+    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, long studyId, List<String> members,
+                                                                          String userId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param organizationId Organization id.
+     * @param studyUid       study id.
+     * @param members        members whose permissions will be retrieved.
+     * @return the studyAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    default OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, long studyUid,
+                                                                                  List<String> members) throws CatalogException {
+        return getStudyAcl(organizationId, Collections.singletonList(studyUid), members);
+    }
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param organizationId Organization id.
+     * @param studyUids      study uids.
+     * @param members        members whose permissions will be retrieved.
+     * @return the studyAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, List<Long> studyUids, List<String> members)
             throws CatalogException;
 
     //------------------------- End of study ACL ----------------------
@@ -205,98 +218,111 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId  user asking for the ACL.
-     * @param studyId study uid.
-     * @param resourceUid Resource uid.
-     * @param members  members whose permissions will be retrieved.
-     * @param resource Resource where those permissions need to be checked.
-     * @param clazz Permissions enum class.
+     * @param <T>            Permissions enum type.
+     * @param organizationId Organization id.
+     * @param studyId        study uid.
+     * @param resourceUid    Resource uid.
+     * @param members        members whose permissions will be retrieved.
+     * @param resource       Resource where those permissions need to be checked.
+     * @param clazz          Permissions enum class.
+     * @param userId         user asking for the ACL.
      * @return the studyAcl for the member.
-     * @param <T> Permissions enum type.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    default <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyId, long resourceUid, List<String> members,
-                                                              Enums.Resource resource, Class<T> clazz) throws CatalogException {
-        return getAcl(userId, studyId, Collections.singletonList(resourceUid), members, resource, clazz);
+    default <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String organizationId, long studyId, long resourceUid,
+                                                                      List<String> members, Enums.Resource resource, Class<T> clazz,
+                                                                      String userId) throws CatalogException {
+        return getAcl(organizationId, studyId, Collections.singletonList(resourceUid), members, resource, clazz, userId);
     }
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId  user asking for the ACL.
-     * @param studyId study uid.
-     * @param resourceUids List of resource uids.
-     * @param members  members whose permissions will be retrieved.
-     * @param resource Resource where those permissions need to be checked.
-     * @param clazz Permissions enum class.
+     * @param <T>            Permissions enum type.
+     * @param organizationId Organization id.
+     * @param studyId        study uid.
+     * @param resourceUids   List of resource uids.
+     * @param members        members whose permissions will be retrieved.
+     * @param resource       Resource where those permissions need to be checked.
+     * @param clazz          Permissions enum class.
+     * @param userId         user asking for the ACL.
      * @return the studyAcl for the member.
-     * @param <T> Permissions enum type.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyId, List<Long> resourceUids, List<String> members,
-                                                              Enums.Resource resource, Class<T> clazz) throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String organizationId, long studyId, List<Long> resourceUids,
+                                                              List<String> members, Enums.Resource resource, Class<T> clazz, String userId)
+            throws CatalogException;
 
-    default <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, long resourceUid, Enums.Resource resource,
-                                                               Class<T> clazz) throws CatalogException {
-        return getAcls(studyUid, Collections.singletonList(resourceUid), resource, clazz);
+    default <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, long resourceUid,
+                                                                       Enums.Resource resource, Class<T> clazz) throws CatalogException {
+        return getAcls(organizationId, studyUid, Collections.singletonList(resourceUid), resource, clazz);
     }
 
     /**
      * Return the ACLs of the resources asked.
      *
-     * @param userId  user asking for the ACL.
-     * @param studyId study uid.
-     * @param resourceUids List of resource uid.
-     * @param resource Resource where those permissions need to be checked.
-     * @param clazz Permissions enum class.
+     * @param <T>            Permissions enum type.
+     * @param organizationId Organization id.
+     * @param studyId        study uid.
+     * @param resourceUids   List of resource uid.
+     * @param resource       Resource where those permissions need to be checked.
+     * @param clazz          Permissions enum class.
+     * @param userId         user asking for the ACL.
      * @return the studyAcl for the member.
-     * @param <T> Permissions enum type.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyId, List<Long> resourceUids, Enums.Resource resource,
-                                                              Class<T> clazz) throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String organizationId, long studyId, List<Long> resourceUids,
+                                                              Enums.Resource resource, Class<T> clazz, String userId)
+            throws CatalogException;
 
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, Enums.Resource resource,
-                                                               Class<T> clazz) throws CatalogException;
-
-    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, List<String> members,
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, List<Long> resourceUids,
                                                                Enums.Resource resource, Class<T> clazz) throws CatalogException;
 
-    void setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
+    <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, List<Long> resourceUids,
+                                                               List<String> members, Enums.Resource resource, Class<T> clazz)
+            throws CatalogException;
 
-    void addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
+    void setStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
 
-    void removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions) throws CatalogException;
+    void addStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException;
 
-    default void setAcls(long studyUid, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
-        setAcls(studyUid, members, Arrays.asList(aclParams));
+    void removeStudyAcls(String organizationId, List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
+            throws CatalogException;
+
+    default void setAcls(String organizationId, long studyUid, List<String> members, CatalogAclParams... aclParams)
+            throws CatalogException {
+        setAcls(organizationId, studyUid, members, Arrays.asList(aclParams));
     }
 
-    void setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
+    void setAcls(String organizationId, long studyUid, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    default void addAcls(long studyId, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
-        addAcls(studyId, members, Arrays.asList(aclParams));
+    default void addAcls(String organizationId, long studyId, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
+        addAcls(organizationId, studyId, members, Arrays.asList(aclParams));
     }
 
-    void addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
+    void addAcls(String organizationId, long studyId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    default void removeAcls(List<String> members, CatalogAclParams... aclParams) throws CatalogException {
-        removeAcls(members, Arrays.asList(aclParams));
+    default void removeAcls(String organizationId, List<String> members, CatalogAclParams... aclParams) throws CatalogException {
+        removeAcls(organizationId, members, Arrays.asList(aclParams));
     }
 
-    void removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
+    void removeAcls(String organizationId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    void replicateAcls(List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource) throws CatalogException;
+    void replicateAcls(String organizationId, List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource)
+            throws CatalogException;
 
-    void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
+    void resetPermissionsFromAllEntities(String organizationId, long studyId, List<String> members) throws CatalogException;
 
-    void applyPermissionRule(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException;
+    void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.Entity entry)
+            throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Enums.Entity entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
+            throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Enums.Entity entry) throws CatalogException;
+    void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
+            throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException;
+    void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException;
 
     class CatalogAclParams {
         private List<Long> ids;

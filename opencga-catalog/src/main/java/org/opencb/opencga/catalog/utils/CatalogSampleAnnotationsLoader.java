@@ -117,7 +117,7 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().search(organizationId, study.getFqn(), samplesQuery, null, sessionId)
+        for (Sample sample : catalogManager.getSampleManager().search(study.getFqn(), samplesQuery, null, sessionId)
                 .getResults()) {
             loadedSamples.put(sample.getId(), sample);
         }
@@ -136,7 +136,7 @@ public class CatalogSampleAnnotationsLoader {
                 catalogManager.getSampleManager().update(organizationId, study.getFqn(), individual.getId(), new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(annotationSet)), options, sessionId);
             } else {
-                DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(organizationId, study.getFqn(),
+                DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),
                         new Sample()
                                 .setId(individual.getId())
                                 .setFileIds(Collections.singletonList(pedFile.getPath()))
@@ -166,7 +166,7 @@ public class CatalogSampleAnnotationsLoader {
 
         //TODO: Create Cohort
 
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(organizationId, study.getFqn(),
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(study.getFqn(),
                 new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), null, sessionId);
         return new DataResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(),
                 sampleMap.size(), sampleDataResult.getResults(), sampleMap.size());

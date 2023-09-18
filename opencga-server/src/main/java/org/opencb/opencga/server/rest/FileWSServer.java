@@ -334,7 +334,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(fileManager.search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(fileManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

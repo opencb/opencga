@@ -1,5 +1,12 @@
 package org.opencb.opencga.core.models;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
+
+import java.util.Base64;
 import java.util.Date;
 
 public class JwtPayload {
@@ -21,6 +28,46 @@ public class JwtPayload {
         this.expirationTime = expirationTime;
     }
 
+    /**
+     * Parse payload from token to fill the JwtPayload fields.
+     * IMPORTANT: This method doesn't validate that the token hasn't been modified !!
+     *
+     * @param token JWT token.
+     */
+    public JwtPayload(String token) {
+        if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
+            this.userId = ParamConstants.ANONYMOUS_USER_ID;
+        } else {
+            // Analyse token
+            String[] split = StringUtils.split(token, ".");
+            if (split.length != 3) {
+                throw new IllegalArgumentException("Invalid JWT token");
+            }
+            String claims = new String(Base64.getDecoder().decode(split[1]));
+
+            ObjectMap claimsMap;
+            try {
+                claimsMap = JacksonUtils.getDefaultObjectMapper().readerFor(ObjectMap.class).readValue(claims);
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Invalid JWT token. Token could not be parsed.", e);
+            }
+
+            this.userId = claimsMap.getString("sub");
+            this.audience = claimsMap.getString("aud");
+            this.organization = claimsMap.getString("bla");
+
+            if (claimsMap.containsKey("iat")) {
+                long iat = 1000L * claimsMap.getLong("iat");
+                this.issuedAt = new Date(iat);
+            }
+
+            if (claimsMap.containsKey("exp")) {
+                long exp = 1000L * claimsMap.getLong("exp");
+                this.expirationTime = new Date(exp);
+            }
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JwtPayload{");
@@ -37,44 +84,19 @@ public class JwtPayload {
         return userId;
     }
 
-    public JwtPayload setUserId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
     public String getOrganization() {
         return organization;
-    }
-
-    public JwtPayload setOrganization(String organization) {
-        this.organization = organization;
-        return this;
     }
 
     public String getAudience() {
         return audience;
     }
 
-    public JwtPayload setAudience(String audience) {
-        this.audience = audience;
-        return this;
-    }
-
     public Date getIssuedAt() {
         return issuedAt;
     }
 
-    public JwtPayload setIssuedAt(Date issuedAt) {
-        this.issuedAt = issuedAt;
-        return this;
-    }
-
     public Date getExpirationTime() {
         return expirationTime;
-    }
-
-    public JwtPayload setExpirationTime(Date expirationTime) {
-        this.expirationTime = expirationTime;
-        return this;
     }
 }

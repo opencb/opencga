@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
@@ -29,9 +27,9 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 
 public class OrganizationManager extends AbstractManager {
 
@@ -49,68 +47,89 @@ public class OrganizationManager extends AbstractManager {
         this.catalogIOManager = catalogIOManager;
     }
 
-    OpenCGAResult<Organization> internalGet(String organizationId, QueryOptions options, String user) throws CatalogException {
-        return internalGet(Collections.singletonList(organizationId), null, options, user, false);
-    }
+//    OpenCGAResult<Organization> internalGet(String organizationId, QueryOptions options, String user) throws CatalogException {
+//        return internalGet(Collections.singletonList(organizationId), null, options, user, false);
+//    }
+//
+//    OpenCGAResult<Organization> internalGet(List<String> organizationList, @Nullable Query query, QueryOptions options, String user,
+//                                            boolean ignoreException) throws CatalogException {
+//        if (CollectionUtils.isEmpty(organizationList)) {
+//            throw new CatalogException("Missing organization entries.");
+//        }
+//        List<String> uniqueList = ListUtils.unique(organizationList);
+//
+//        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
+//
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//
+//        OrganizationDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
+//        queryCopy.put(idQueryParam.key(), uniqueList);
+//
+//        if (!authorizationManager.isInstallationAdministrator(user)) {
+//            // Only admins and owner are allowed to see the organizations
+//            queryCopy.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), user);
+//        }
+//
+//        // Ensure the field by which we are querying for will be kept in the results
+//        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+//
+//        OpenCGAResult<Organization> organizationDataResult = getOrganizationDBAdaptor(organization).get(queryCopy, queryOptions);
+//
+//        Function<Organization, String> organizationStringFunction = Organization::getId;
+//        if (idQueryParam.equals(OrganizationDBAdaptor.QueryParams.UUID)) {
+//            organizationStringFunction = Organization::getUuid;
+//        }
+//
+//        if (ignoreException || organizationDataResult.getNumResults() == uniqueList.size()) {
+//            return organizationDataResult;
+//        }
+//
+//        List<String> missingOrganizations = new ArrayList<>(organizationList.size());
+//        for (Organization organization : organizationDataResult.getResults()) {
+//            if (!uniqueList.contains(organizationStringFunction.apply(organization))) {
+//                missingOrganizations.add(organizationStringFunction.apply(organization));
+//            }
+//        }
+//
+//        throw CatalogException.notFound("organizations", missingOrganizations);
+//    }
 
-    OpenCGAResult<Organization> internalGet(List<String> organizationList, @Nullable Query query, QueryOptions options, String user,
-                                            boolean ignoreException) throws CatalogException {
-        if (CollectionUtils.isEmpty(organizationList)) {
-            throw new CatalogException("Missing organization entries.");
+//    OrganizationDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+//        OrganizationDBAdaptor.QueryParams idQueryParam = null;
+//        for (String entry : idList) {
+//            OrganizationDBAdaptor.QueryParams param = OrganizationDBAdaptor.QueryParams.ID;
+//            if (UuidUtils.isOpenCgaUuid(entry)) {
+//                param = OrganizationDBAdaptor.QueryParams.UUID;
+//            }
+//            if (idQueryParam == null) {
+//                idQueryParam = param;
+//            }
+//            if (idQueryParam != param) {
+//                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+//            }
+//        }
+//        return idQueryParam;
+//    }
+
+    public OpenCGAResult<Organization> get(String organizationId, QueryOptions options, String token) throws CatalogException {
+        String userId = this.catalogManager.getUserManager().getUserId(organizationId, token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("options", options)
+                .append("token", token);
+
+        OpenCGAResult<Organization> queryResult;
+        try {
+            queryResult = getOrganizationDBAdaptor(organizationId).get(options);
+        } catch (CatalogException e) {
+            auditManager.auditInfo(userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
-        List<String> uniqueList = ListUtils.unique(organizationList);
-
-        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-
-        Query queryCopy = query == null ? new Query() : new Query(query);
-
-        OrganizationDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
-        queryCopy.put(idQueryParam.key(), uniqueList);
-
-        if (!authorizationManager.isInstallationAdministrator(user)) {
-            // Only admins and owner are allowed to see the organizations
-            queryCopy.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), user);
-        }
-
-        // Ensure the field by which we are querying for will be kept in the results
-        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
-
-        OpenCGAResult<Organization> organizationDataResult = getOrganizationDBAdaptor(organization).get(queryCopy, queryOptions);
-
-        Function<Organization, String> organizationStringFunction = Organization::getId;
-        if (idQueryParam.equals(OrganizationDBAdaptor.QueryParams.UUID)) {
-            organizationStringFunction = Organization::getUuid;
-        }
-
-        if (ignoreException || organizationDataResult.getNumResults() == uniqueList.size()) {
-            return organizationDataResult;
-        }
-
-        List<String> missingOrganizations = new ArrayList<>(organizationList.size());
-        for (Organization organization : organizationDataResult.getResults()) {
-            if (!uniqueList.contains(organizationStringFunction.apply(organization))) {
-                missingOrganizations.add(organizationStringFunction.apply(organization));
-            }
-        }
-
-        throw CatalogException.notFound("organizations", missingOrganizations);
-    }
-
-    OrganizationDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
-        OrganizationDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : idList) {
-            OrganizationDBAdaptor.QueryParams param = OrganizationDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = OrganizationDBAdaptor.QueryParams.UUID;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
-        return idQueryParam;
+        auditManager.auditInfo(userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        return queryResult;
     }
 
     public OpenCGAResult<Organization> create(OrganizationCreateParams organizationCreateParams, QueryOptions options, String token)
@@ -129,7 +148,7 @@ public class OrganizationManager extends AbstractManager {
             // The first time we create the ADMIN_ORGANIZATION as there are no users yet, we should not check anything
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
                 //Only the OpenCGA administrator can create an organization
-                authorizationManager.checkIsInstallationAdministrator(userId);
+                authorizationManager.checkIsInstallationAdministrator(ParamConstants.ADMIN_ORGANIZATION, userId);
             }
 
             ParamUtils.checkObj(organizationCreateParams, "organizationCreateParams");
@@ -137,9 +156,9 @@ public class OrganizationManager extends AbstractManager {
             organization = organizationCreateParams.toOrganization();
             validateOrganizationForCreation(organization);
 
-            queryResult = getOrganizationDBAdaptor(organization).insert(organization, options);
+            queryResult = catalogDBAdaptorFactory.createOrganization(organization, options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organization).get(organization.getUid(), options);
+                OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organization.getId()).get(options);
                 organization = result.first();
                 // Fetch created organization
                 queryResult.setResults(result.getResults());
@@ -151,12 +170,12 @@ public class OrganizationManager extends AbstractManager {
         }
 
         try {
-            catalogIOManager.createOrganization(Long.toString(organization.getUid()));
+            catalogIOManager.createOrganization(organization.getId().toLowerCase());
         } catch (CatalogIOException e) {
             auditManager.auditCreate(userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
-                getOrganizationDBAdaptor(organization).delete(organization);
+                catalogDBAdaptorFactory.deleteOrganization(organization);
             } catch (Exception e1) {
                 logger.error("Error deleting organization from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -187,10 +206,8 @@ public class OrganizationManager extends AbstractManager {
                 .append("token", token);
 
         OpenCGAResult<Organization> result = OpenCGAResult.empty(Organization.class);
-        String organizationUuid = "";
         try {
-            OpenCGAResult<Organization> internalResult = internalGet(Collections.singletonList(organizationId), null,
-                    INCLUDE_ORGANIZATION_ADMINS, payload.getUserId(), false);
+            OpenCGAResult<Organization> internalResult = get(organizationId, INCLUDE_ORGANIZATION_ADMINS, token);
             if (internalResult.getNumResults() == 0) {
                 throw new CatalogException("Organization '" + organizationId + "' not found");
             }
@@ -198,9 +215,9 @@ public class OrganizationManager extends AbstractManager {
 
             // We set the proper values for the audit
             organizationId = organization.getId();
-            organizationUuid = organization.getUuid();
 
-            OpenCGAResult<Organization> updateResult = getOrganizationDBAdaptor(organization).update(organization.getUid(), updateMap, options);
+            OpenCGAResult<Organization> updateResult = getOrganizationDBAdaptor(organizationId)
+                    .update(organizationId, updateMap, options);
             result.append(updateResult);
 
             auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "",
@@ -211,7 +228,7 @@ public class OrganizationManager extends AbstractManager {
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update organization {}: {}", organizationId, e.getMessage());
-            auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organizationId, organizationUuid, "", "",
+            auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

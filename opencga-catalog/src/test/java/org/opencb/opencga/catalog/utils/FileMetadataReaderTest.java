@@ -153,7 +153,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, IOException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
-            catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(sampleName), new QueryOptions(), sessionIdUser);
+            catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName), new QueryOptions(), sessionIdUser);
         }
         testGetMetadataFromVcf();
     }
@@ -161,20 +161,20 @@ public class FileMetadataReaderTest {
     @Test
     public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, IOException {
         //Create samples in a different order than the file order
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), sessionIdUser);
 
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(3)), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(1)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(3)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(1)), new QueryOptions(), sessionIdUser);
 
         testGetMetadataFromVcf();
     }
 
     @Test
     public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, IOException {
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
                 sessionIdUser);
-        catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
                 sessionIdUser);
 
         testGetMetadataFromVcf();
@@ -194,7 +194,7 @@ public class FileMetadataReaderTest {
         assertEquals(4, file.getSampleIds().size());
 
         //Add a sampleId
-        String sampleId = catalogManager.getSampleManager().create(organizationId, study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
+        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
                 .first().getId();
         catalogManager.getFileManager().update(organizationId, study.getFqn(), file.getPath(),
                 new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);

@@ -73,7 +73,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
 
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), analysisParams.getFile());
         query.put(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(organizationId, getStudy(), query, QueryOptions.empty(), token);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(getStudy(), query, QueryOptions.empty(), token);
         if (fileResult.getNumResults() != 1) {
             throw new ToolException("File " + analysisParams.getFile() + " must be a BAM file in study " + getStudy());
         }

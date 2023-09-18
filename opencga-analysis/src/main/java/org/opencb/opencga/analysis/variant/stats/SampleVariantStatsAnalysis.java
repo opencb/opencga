@@ -118,7 +118,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
         if (CollectionUtils.isNotEmpty(toolParams.getIndividual())) {
             Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), toolParams.getIndividual());
-            catalogManager.getSampleManager().search(organizationId, study, query, new QueryOptions(), token)
+            catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                     .getResults()
                     .stream()
                     .map(Sample::getId)
@@ -142,7 +142,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
         if (toolParams.isIndex()) {
             if (!toolParams.isIndexOverwrite()) {
-                List<String> alreadyIndexedSamples = getCatalogManager().getSampleManager().search(organizationId, study,
+                List<String> alreadyIndexedSamples = getCatalogManager().getSampleManager().search(study,
                         new Query(SampleDBAdaptor.QueryParams.ID.key(), allSamples)
                                 .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, toolParams.getIndexId())
                                 .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, ">=0"),

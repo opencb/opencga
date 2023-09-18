@@ -17,12 +17,14 @@
 package org.opencb.opencga.catalog.db;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
 
@@ -35,7 +37,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
      * Says if the catalog database is ready to be used. If false, needs to be initialized.
      * @return boolean
      */
-    boolean isCatalogDBReady();
+    boolean isCatalogDBReady() throws CatalogDBException;
 
     /**
      * Create all collections for the database.
@@ -53,26 +55,13 @@ public interface DBAdaptorFactory extends AutoCloseable {
      */
     void initialiseMetaCollection(Admin admin) throws CatalogException;
 
-    default String getAdminCatalogDatabase(String prefix) {
-        return getCatalogOrganizationDatabase(prefix, ParamConstants.ADMIN_ORGANIZATION);
-    }
-
     default String getCatalogDatabase(String prefix) {
         String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
         dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
         return dbPrefix + "catalog";
     }
 
-    default String getCatalogOrganizationDatabase(String prefix, String organization) {
-        String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
-        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
-
-        String dbOrganization = organization.endsWith("_") ? organization : organization + "_";
-
-        return dbPrefix + dbOrganization + "catalog";
-    }
-
-    boolean getDatabaseStatus();
+    boolean getDatabaseStatus() throws CatalogDBException;
 
     /**
      * Removes the catalog database.
@@ -90,6 +79,10 @@ public interface DBAdaptorFactory extends AutoCloseable {
     MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException;
 
     MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
+
+    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options) throws CatalogDBException;
+
+    void deleteOrganization(Organization organization) throws CatalogDBException;
 
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException;
 

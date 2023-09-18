@@ -20,7 +20,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -79,14 +78,6 @@ public abstract class AuthenticationManager {
      * for any other reason.
      */
     public abstract AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException;
-
-    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
-        if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
-            return new JwtPayload().setUserId(ParamConstants.ANONYMOUS_USER_ID);
-        }
-
-        return jwtManager.getPayload(token);
-    }
 
     /**
      * Obtains the userId corresponding to the token.

@@ -361,7 +361,7 @@ public class CatalogStorageMetadataSynchronizer {
         if (!calculatedStats.isEmpty()) {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), calculatedStats.keySet());
 
-            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(organizationId, study.getName(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
                     query, COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
@@ -404,7 +404,7 @@ public class CatalogStorageMetadataSynchronizer {
         //Check if any cohort stat has been invalidated
         if (!invalidStats.isEmpty()) {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), invalidStats.keySet());
-            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(organizationId, study.getName(),
+            try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
                     query,
                     COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
@@ -540,7 +540,7 @@ public class CatalogStorageMetadataSynchronizer {
                     int processedFilesInBatch = 0;
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), batch);
                     try (DBIterator<File> iterator = catalogManager.getFileManager()
-                            .iterator(organizationId, study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, token)) {
+                            .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, token)) {
                         while (iterator.hasNext()) {
                             File file = iterator.next();
                             boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getName());
@@ -598,7 +598,7 @@ public class CatalogStorageMetadataSynchronizer {
             indexedFilesQuery = new Query(INDEXED_FILES_QUERY).append(ID.key(), catalogFileIds);
         }
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(organizationId, study.getName(), indexedFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
+                .iterator(study.getName(), indexedFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Integer fileId = fileNameMap.get(file.getName());
@@ -634,7 +634,7 @@ public class CatalogStorageMetadataSynchronizer {
             runningIndexFilesQuery = new Query(RUNNING_INDEX_FILES_QUERY).append(ID.key(), catalogFileIds);
         }
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(organizationId, study.getName(), runningIndexFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
+                .iterator(study.getName(), runningIndexFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 Integer fileId = fileNameMap.get(file.getName());
@@ -649,7 +649,7 @@ public class CatalogStorageMetadataSynchronizer {
                 if (fileMetadata != null && fileMetadata.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
                     OpenCGAResult<Job> jobsFromFile = catalogManager
                             .getJobManager()
-                            .search(organizationId, study.getName(),
+                            .search(study.getName(),
                                     new Query()
                                             .append(JobDBAdaptor.QueryParams.INPUT.key(), file.getId())
                                             .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
@@ -701,7 +701,7 @@ public class CatalogStorageMetadataSynchronizer {
 
         if (!loadingFilesRegardingStorage.isEmpty()) {
             try (DBIterator<File> iterator = catalogManager.getFileManager()
-                    .iterator(organizationId, study.getName(), new Query(URI.key(), loadingFilesRegardingStorage),
+                    .iterator(study.getName(), new Query(URI.key(), loadingFilesRegardingStorage),
                             INDEXED_FILES_QUERY_OPTIONS, token)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
@@ -805,7 +805,7 @@ public class CatalogStorageMetadataSynchronizer {
                 sampleMetadataMap.put(sampleMetadata.getName(), sampleMetadata);
             }
             try (DBIterator<Sample> iterator = catalogManager.getSampleManager()
-                    .iterator(organizationId, study.getName(), new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(sampleMetadataMap.keySet())),
+                    .iterator(study.getName(), new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(sampleMetadataMap.keySet())),
                             SAMPLE_QUERY_OPTIONS, token)) {
                 while (iterator.hasNext()) {
                     Sample sample = iterator.next();
@@ -937,7 +937,7 @@ public class CatalogStorageMetadataSynchronizer {
                 "Study has been removed from storage", token);
 
         try (DBIterator<File> iterator = catalogManager.getFileManager()
-                .iterator(organizationId, study, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, token)) {
+                .iterator(study, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, file, FileInternalVariantIndex.init()

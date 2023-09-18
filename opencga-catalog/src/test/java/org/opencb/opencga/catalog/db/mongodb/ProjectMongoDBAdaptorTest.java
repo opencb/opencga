@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -41,15 +42,15 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
         Project p = new Project("1000G", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, null));
         p = new Project("2000G", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, null));
         p = new Project("pmp", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(user2.getId(), p, null));
-        System.out.println(catalogProjectDBAdaptor.insert(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, null));
 
         try {
-            System.out.println(catalogProjectDBAdaptor.insert(user1.getId(), p, null));
+            System.out.println(catalogProjectDBAdaptor.insert(p, null));
             fail("Expected \"projectAlias already exists\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -57,33 +58,29 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getProjectIdTest() throws CatalogDBException {
-        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId()) != -1);
-        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), "nonExistingProject") == -1);
-    }
-
-    @Test
     public void incrementCurrentRelease() throws CatalogDBException {
-        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
-        DataResult<Project> projectDataResult = catalogProjectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
+        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), user3.getProjects().get(0).getId()),
+                QueryOptions.empty()).first().getUid();
+        DataResult<Project> projectDataResult = catalogProjectDBAdaptor.get(projectUid, new QueryOptions(QueryOptions.INCLUDE,
                 ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
         assertEquals(1, projectDataResult.first().getCurrentRelease());
 
-        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
-        int currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectUid);
+        int currentRelease = catalogProjectDBAdaptor.get(projectUid, QueryOptions.empty()).first().getCurrentRelease();
         assertEquals(2, currentRelease);
 
-        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
-        currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectUid);
+        currentRelease = catalogProjectDBAdaptor.get(projectUid, QueryOptions.empty()).first().getCurrentRelease();
         assertEquals(3, currentRelease);
     }
 
 
     @Test
     public void getProjectTest() throws CatalogDBException {
-        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
-        System.out.println("projectId = " + projectId);
-        DataResult<Project> project = catalogProjectDBAdaptor.get(projectId, null);
+        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), user3.getProjects().get(0).getId()),
+                QueryOptions.empty()).first().getUid();
+        System.out.println("projectUid = " + projectUid);
+        DataResult<Project> project = catalogProjectDBAdaptor.get(projectUid, null);
         System.out.println(project);
         assertNotNull(project.first());
 
@@ -131,9 +128,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        catalogProjectDBAdaptor.insert(user1.getId(), new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
         Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(user1.getId(), new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
         Project p2 = getProject(user1.getId(), "p2");
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
@@ -154,9 +151,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void test() throws Exception {
-        catalogProjectDBAdaptor.insert(user1.getId(), new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
         Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(user1.getId(), new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
         Project p2 = getProject(user1.getId(), "p2");
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(),

@@ -121,7 +121,7 @@ public class FileUnlinkTask extends OpenCgaTool {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE)
                     .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
-            try (DBIterator<File> iterator = fileManager.iterator(organizationId, studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
+            try (DBIterator<File> iterator = fileManager.iterator(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     try {

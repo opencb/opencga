@@ -74,7 +74,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
         int scannedFiles = 0;
         List<File> files = new ArrayList<>(200);
         try (DBIterator<File> dbIterator = getCatalogManager().getFileManager()
-                .iterator(organizationId, getStudy(), filesQuery, filesInclude, getToken())) {
+                .iterator(getStudy(), filesQuery, filesInclude, getToken())) {
             while (dbIterator.hasNext()) {
                 files.add(dbIterator.next());
             }
@@ -90,7 +90,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
             String indexStatus = getVariantIndexStatus(file);
             OpenCGAResult<Job> jobsFromFile = getCatalogManager()
                     .getJobManager()
-                    .search(organizationId, getStudy(),
+                    .search(getStudy(),
                             new Query()
                                     .append(JobDBAdaptor.QueryParams.INPUT.key(), file.getId())
                                     .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)

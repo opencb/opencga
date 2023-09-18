@@ -165,7 +165,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public DataResult<ClinicalVariant> index(String study, String token) throws IOException, ClinicalVariantException, CatalogException {
         DBIterator<ClinicalAnalysis> clinicalAnalysisDBIterator =
-                clinicalAnalysisManager.iterator(organizationId, study, new Query(), QueryOptions.empty(), token);
+                clinicalAnalysisManager.iterator(study, new Query(), QueryOptions.empty(), token);
 
         while (clinicalAnalysisDBIterator.hasNext()) {
             ClinicalAnalysis clinicalAnalysis = clinicalAnalysisDBIterator.next();
@@ -885,7 +885,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             if (studyIds.size() == 1) {
                 // This checks that the user has permission to the clinical analysis, family, sample or individual
                 DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                        .search(organizationId, studyIds.get(0), query, QueryOptions.empty(), token);
+                        .search(studyIds.get(0), query, QueryOptions.empty(), token);
 
                 if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
                     throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");
@@ -953,7 +953,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
         DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .search(organizationId, studyId, query, QueryOptions.empty(), token);
+                .search(studyId, query, QueryOptions.empty(), token);
 
         if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
             throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist or the user does"

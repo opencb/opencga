@@ -118,7 +118,7 @@ public class IndividualQcUtils {
             Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples.id");
 
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(organizationId, study, query, queryOptions, token);
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(study, query, queryOptions, token);
             for (Individual individual : individualResult.getResults()) {
                 sampleSet.addAll(individual.getSamples().stream().map(s -> s.getId()).collect(Collectors.toList()));
             }
@@ -162,7 +162,7 @@ public class IndividualQcUtils {
         query.put("members", individualId);
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -204,7 +204,7 @@ public class IndividualQcUtils {
         query.put("samples", sampleId);
         OpenCGAResult<Individual> individualResult;
         try {
-            individualResult = catalogManager.getIndividualManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
+            individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -224,7 +224,7 @@ public class IndividualQcUtils {
         query.put("individualId", individualId);
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -246,7 +246,7 @@ public class IndividualQcUtils {
         query.put("individualId", individualId);
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().search(organizationId, studyId, query, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

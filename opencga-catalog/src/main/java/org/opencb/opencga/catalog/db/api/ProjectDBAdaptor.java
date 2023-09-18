@@ -136,7 +136,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult<Project> insert(String organizationId, Project project, QueryOptions options)
+    OpenCGAResult<Project> insert(Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
@@ -144,11 +144,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
     OpenCGAResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;
-
-    long getId(String userId, String projectAlias) throws CatalogDBException;
-
-    String getOwnerId(long projectId) throws CatalogDBException;
-
 
     default OpenCGAResult<Long> count() throws CatalogDBException {
         return count(new Query());

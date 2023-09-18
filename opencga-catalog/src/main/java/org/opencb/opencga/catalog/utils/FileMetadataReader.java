@@ -88,7 +88,7 @@ public class FileMetadataReader {
                     // Check and create missing samples
                     List<String> missingSamples = new LinkedList<>(updateParams.getSampleIds());
                     catalogManager.getSampleManager()
-                            .iterator(organizationId, studyId,
+                            .iterator(studyId,
                                     new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSampleIds()),
                                     new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
                             .forEachRemaining(sample -> {
@@ -96,7 +96,7 @@ public class FileMetadataReader {
                             });
                     if (!missingSamples.isEmpty()) {
                         for (String missingSample : missingSamples) {
-                            catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId(missingSample),
+                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample),
                                     new QueryOptions(), token);
                         }
                     }

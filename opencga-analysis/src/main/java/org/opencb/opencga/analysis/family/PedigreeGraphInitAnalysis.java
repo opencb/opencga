@@ -69,7 +69,7 @@ public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
         step(getId(), () -> {
             // Get all families from that study
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "members", "pedigreeGraph"));
-            OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(organizationId, study, new Query(), queryOptions, token);
+            OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(study, new Query(), queryOptions, token);
 
             // Get families to update by filtering
             List<Family> familiesToUpdate = results.getResults().stream().filter(family -> PedigreeGraphUtils.hasMinTwoGenerations(family)

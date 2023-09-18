@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -94,9 +93,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
 //    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 //
-    OpenCGAResult<Organization> get(long organization, QueryOptions options) throws CatalogDBException;
-
-    OpenCGAResult<Organization> get(Query query, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException;
 //
 //    OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;
 //
@@ -155,7 +152,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //        return queryResults;
 //    }
 //
-    OpenCGAResult<Organization> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 //
 //    OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
@@ -195,13 +192,13 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
     @Override
     default DBIterator<Organization> iterator() {
         try {
-            return iterator(new Query(), new QueryOptions());
+            return iterator(new QueryOptions());
         } catch (CatalogDBException e) {
             throw new RuntimeException(e);
         }
     }
 
-    DBIterator<Organization> iterator(Query query, QueryOptions options) throws CatalogDBException;
+    DBIterator<Organization> iterator(QueryOptions options) throws CatalogDBException;
 
 //    default DBIterator nativeIterator() throws CatalogDBException {
 //        return nativeIterator(new Query(), new QueryOptions());

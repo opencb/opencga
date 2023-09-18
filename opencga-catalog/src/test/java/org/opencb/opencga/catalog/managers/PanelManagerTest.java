@@ -92,7 +92,7 @@ public class PanelManagerTest extends GenericTest {
     public void createTest() throws IOException, CatalogException {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
 
-        DataResult<Panel> diseasePanelDataResult = panelManager.create(organizationId, studyFqn, panel, INCLUDE_RESULT, sessionIdUser);
+        DataResult<Panel> diseasePanelDataResult = panelManager.create(studyFqn, panel, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, diseasePanelDataResult.getNumResults());
         assertEquals(panel.getId(), diseasePanelDataResult.first().getId());
         assertEquals(panel.toString(), diseasePanelDataResult.first().toString());
@@ -178,7 +178,7 @@ public class PanelManagerTest extends GenericTest {
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
-        OpenCGAResult<?> result = panelManager.delete(organizationId, studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumDeleted());
 
         result = panelManager.get(organizationId, studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
@@ -202,7 +202,7 @@ public class PanelManagerTest extends GenericTest {
         DataResult<Panel> updateResult = panelManager.update(organizationId, studyFqn, "gene-census", updateParams, null, sessionIdUser);
         assertEquals(1, updateResult.getNumUpdated());
 
-        OpenCGAResult<?> result = panelManager.delete(organizationId, studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumDeleted());
 
         result = panelManager.get(organizationId, studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
@@ -249,17 +249,17 @@ public class PanelManagerTest extends GenericTest {
                 .setLocked(true);
         Interpretation interpretation9 = DummyModelUtils.getDummyInterpretation(Collections.singletonList(panel3));
 
-        catalogManager.getPanelManager().create(organizationId, studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(organizationId, studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(organizationId, studyFqn, panel3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getPanelManager().create(organizationId, studyFqn, panel4, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getPanelManager().create(studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getPanelManager().create(studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getPanelManager().create(studyFqn, panel3, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getPanelManager().create(studyFqn, panel4, QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getFamilyManager().create(organizationId, studyFqn, family1, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getFamilyManager().create(studyFqn, family1, QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case1, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case2, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case4, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, case4, QueryOptions.empty(), sessionIdUser);
 
         // case1
         catalogManager.getInterpretationManager().create(organizationId, studyFqn, case1.getId(), interpretation1,
@@ -302,7 +302,7 @@ public class PanelManagerTest extends GenericTest {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.ID.key(), panel1.getId())
                 .append(PanelDBAdaptor.QueryParams.VERSION.key(), 1);
-        resultPanel = panelManager.search(organizationId, studyFqn, query, QueryOptions.empty(), sessionIdUser);
+        resultPanel = panelManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, resultPanel.first().getVersion());
         assertNotEquals("name", resultPanel.first().getName());
 
@@ -381,34 +381,34 @@ public class PanelManagerTest extends GenericTest {
                 .setId("panel2")
                 .setGenes(Arrays.asList(createGenePanel("geneId1", "geneName1"), createGenePanel("geneId3", "geneName3")));
 
-        panelManager.create(organizationId, studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
-        panelManager.create(organizationId, studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
+        panelManager.create(studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
+        panelManager.create(studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
 
-        OpenCGAResult<Panel> result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName2"), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Panel> result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName2"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals("panel1", result.first().getId());
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId2"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId2"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals("panel1", result.first().getId());
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName1"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName1"), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
         assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId1"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId1"), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
         assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId3"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId3"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals("panel2", result.first().getId());
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName3"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName3"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals("panel2", result.first().getId());
 
-        result = panelManager.search(organizationId, studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId4"), QueryOptions.empty(), sessionIdUser);
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId4"), QueryOptions.empty(), sessionIdUser);
         assertEquals(0, result.getNumResults());
     }
 

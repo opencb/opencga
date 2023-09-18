@@ -19,8 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -28,10 +26,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ProjectCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -45,7 +40,6 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -63,15 +57,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
 
     private final MongoDBCollection projectCollection;
-    private final MongoDBCollection deletedUserCollection;
+    private final MongoDBCollection deletedProjectCollection;
     private ProjectConverter projectConverter;
 
-    public ProjectMongoDBAdaptor(MongoDBCollection projectCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
-                                 OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
+    public ProjectMongoDBAdaptor(MongoDBCollection projectCollection, MongoDBCollection deletedProjectCollection,
+                                 Configuration configuration, OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.projectCollection = projectCollection;
-        this.deletedUserCollection = deletedUserCollection;
+        this.deletedProjectCollection = deletedProjectCollection;
         this.projectConverter = new ProjectConverter();
     }
 
@@ -83,32 +77,24 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
-        Bson query = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
-                Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.get(QueryParams.ID.key())));
-        Bson update = Updates.push("projects", getMongoDBDocument(project, "project"));
-
-        //Update object
-        DataResult result = projectCollection.update(query, update, null);
-        if (result.getNumInserted() == 0) { // Check if the project has been inserted
-            throw new CatalogDBException("Project {" + project.get(QueryParams.ID.key()) + "\"} already exists for this user");
-        }
-        return new OpenCGAResult(result);
+        Document projectDocument = getMongoDBDocument(project, "project");
+        return new OpenCGAResult(projectCollection.insert(projectDocument, null));
     }
 
     @Override
-    public OpenCGAResult<Project> insert(String organizationId, Project project, QueryOptions options)
+    public OpenCGAResult<Project> insert(Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
 
-            insert(clientSession, organizationId, project);
+            insert(clientSession, project);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
         }, e -> logger.error("Could not create project {}: {}", project.getId(), e.getMessage()));
     }
 
-    Project insert(ClientSession clientSession, String organizationId, Project project) throws CatalogDBException,
-            CatalogParameterException, CatalogAuthorizationException {
+    Project insert(ClientSession clientSession, Project project)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
@@ -122,7 +108,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         long projectUid = getNewUid();
         project.setUid(projectUid);
-        project.setFqn(organizationId + "@" + project.getId());
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
@@ -139,9 +124,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException {
-        long startTime = startQuery();
         Query query = new Query(QueryParams.UID.key(), projectId);
-        Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
+        Bson update = new Document("$inc", new Document(QueryParams.CURRENT_RELEASE.key(), 1));
 
         DataResult updateQR = projectCollection.update(parseQuery(query), update, null);
         if (updateQR == null || updateQR.getNumMatches() == 0) {
@@ -152,7 +136,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return new OpenCGAResult(updateQR);
     }
 
-    private void editId(ClientSession clientSession, String owner, long projectUid, String newId) throws CatalogDBException {
+    private void editId(ClientSession clientSession, String organizationId, long projectUid, String newId) throws CatalogDBException {
         if (!exists(projectUid)) {
             logger.error("Project {} not found", projectUid);
             throw new CatalogDBException("Project not found.");
@@ -163,8 +147,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), newId)
         );
         Bson update = new Document("$set", new Document()
-                .append("projects.$." + QueryParams.ID.key(), newId)
-                .append("projects.$." + QueryParams.FQN.key(), owner + "@" + newId)
+                .append(QueryParams.ID.key(), newId)
+                .append(QueryParams.FQN.key(), organizationId + "@" + newId)
         );
         DataResult result = projectCollection.update(clientSession, query, update, null);
         if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
@@ -173,47 +157,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // Update all the internal project ids stored in the study documents
         dbAdaptorFactory.getCatalogStudyDBAdaptor().updateProjectId(clientSession, projectUid, newId);
-    }
-
-    @Override
-    public long getId(final String userId, final String projectIdStr) throws CatalogDBException {
-
-        String projectId = projectIdStr;
-
-        if (projectId.contains("@")) {
-            projectId = projectId.split("@", 2)[1];
-        }
-
-        Bson filter = Filters.and(
-                Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), projectId),
-                Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId)
-        );
-        Bson projection = Projections.elemMatch("projects", Filters.eq(QueryParams.ID.key(), projectId));
-        DataResult<Document> queryResult = projectCollection.find(filter, projection, null);
-        User user = parseUser(queryResult);
-        if (user == null || user.getProjects().isEmpty()) {
-            return -1;
-        } else {
-            return user.getProjects().get(0).getUid();
-        }
-    }
-
-    @Override
-    public String getOwnerId(long projectId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId);
-        Bson query = Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId);
-
-//        DBObject projection = new BasicDBObject(UserDBAdaptor.QueryParams.ID.key(), "true");
-        Bson projection = Projections.include(UserDBAdaptor.QueryParams.ID.key());
-
-//        DataResult<DBObject> result = userCollection.find(query, projection, null);
-        DataResult<Document> result = projectCollection.find(query, projection, null);
-
-        if (result.getResults().isEmpty()) {
-            throw CatalogDBException.uidNotFound("Project", projectId);
-        } else {
-            return result.getResults().get(0).get(UserDBAdaptor.QueryParams.ID.key()).toString();
-        }
     }
 
     @Override
@@ -391,6 +334,47 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return projectParameters;
     }
 
+    UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters) throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
+
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        final String[] acceptedObjectParams = {QueryParams.CELLBASE.key(), QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
+                QueryParams.INTERNAL_DATASTORES.key(), QueryParams.INTERNAL_STATUS.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(QueryParams.MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
+        }
+
+        return document;
+    }
+
     @Deprecated
     @Override
     public OpenCGAResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
@@ -471,7 +455,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // First, we delete the studies
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        List<Document> studyList = studyDBAdaptor.nativeGet(studyQuery, QueryOptions.empty()).getResults();
+        List<Document> studyList = studyDBAdaptor.nativeGet(clientSession, studyQuery, QueryOptions.empty()).getResults();
         if (studyList != null) {
             for (Document study : studyList) {
                 studyDBAdaptor.privateDelete(clientSession, study);
@@ -751,7 +735,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException {
-
         if (!query.containsKey(INTERNAL_STATUS_ID.key())) {
             query.append(INTERNAL_STATUS_ID.key(), "!=" + InternalStatus.DELETED);
         }
@@ -850,21 +833,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             try {
                 switch (queryParam) {
                     case UID:
-                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case USER_ID:
                         addAutoOrQuery(ID, queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery("projects." + entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = "projects." + entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = "projects." + entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
@@ -877,8 +849,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery("projects." + INTERNAL_STATUS_ID.key(), queryParam.key(), query, INTERNAL_STATUS_ID.type(),
-                                andBsonList);
+                        addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), query, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case NAME:
                     case UUID:
@@ -894,7 +865,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case INTERNAL_STATUS_DATE:
                     case INTERNAL_DATASTORES:
                     case ACL_USER_ID:
-                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());

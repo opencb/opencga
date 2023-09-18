@@ -414,7 +414,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
-                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(organizationId, study, new Query(), new QueryOptions(), token);
+                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), new QueryOptions(), token);
                 while (iterator.hasNext()) {
                     Family family = iterator.next();
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, true, token));
@@ -836,7 +836,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
                             String userId = catalogManager.getUserManager().getUserId(organizationId, token);
                             List<String> validSamples = catalogManager.getSampleManager()
-                                    .search(organizationId, study,
+                                    .search(study,
                                             new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
                                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
@@ -1066,7 +1066,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public Set<String> getIndexedSamples(String study, String token) throws CatalogException {
         OpenCGAResult<Cohort> cohortResult = catalogManager
                 .getCohortManager()
-                .search(organizationId, study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
+                .search(study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                         new QueryOptions(INCLUDE, Arrays.asList(
                                 CohortDBAdaptor.QueryParams.ID.key(),
                                 CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
@@ -1381,7 +1381,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 //                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
 //                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
                     long numMatches = catalogManager.getSampleManager()
-                            .count(organizationId, studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue())
+                            .count(studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue())
                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token)
                             .getNumMatches();
                     if (numMatches != entry.getValue().size()) {
@@ -1418,7 +1418,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 for (String study : includeStudies) {
                     study = getStudyFqn(study, token);
                     DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(
-                            organizationId, study,
+                            study,
                             new Query()
                                     .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                             new QueryOptions()
@@ -1479,7 +1479,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         // Check VIEW_AGGREGATED_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
+                    .checkStudyPermission(organizationId, studyUid, userId, StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             exception = e;
@@ -1488,7 +1488,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         // Check VIEW_SAMPLE_VARIANTS
         try {
             catalogManager.getAuthorizationManager()
-                    .checkStudyPermission(studyUid, userId, StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS);
+                    .checkStudyPermission(organizationId, studyUid, userId, StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS);
             return;
         } catch (CatalogAuthorizationException e) {
             // Ignore this exception. Throw exception of missing VIEW_AGGREGATED_VARIANTS
@@ -1497,7 +1497,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
         // Check VIEW_VARIANTS on any sample
         long count = catalogManager.getSampleManager()
-                .count(organizationId, study, new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
+                .count(study, new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS), token).getNumMatches();
         if (count != 0) {
             return;
         }

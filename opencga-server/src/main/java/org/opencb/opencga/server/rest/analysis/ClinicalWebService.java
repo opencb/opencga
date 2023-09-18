@@ -320,7 +320,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION) @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(organizationId, studyStr, query, queryOptions, token);
+            DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -650,7 +650,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM, clinicalAnalyst);
             query.remove("analyst");
             query.remove("methods");
-            return createOkResponse(catalogInterpretationManager.search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

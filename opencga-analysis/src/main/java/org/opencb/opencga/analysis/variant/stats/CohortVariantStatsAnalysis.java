@@ -163,7 +163,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
             if (samplesQuery != null && !samplesQuery.isEmpty()) {
                 catalogManager.getSampleManager()
-                        .search(organizationId, study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
+                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)

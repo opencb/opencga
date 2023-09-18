@@ -143,7 +143,7 @@ public class InternalMainTest {
                 "--file", file1.getPath());
         assertEquals(VariantIndexStatus.READY, catalogManager.getFileManager().get(organizationId, studyId, file1.getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
 
-        assertEquals(CohortStatus.NONE, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.NONE, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
@@ -163,7 +163,7 @@ public class InternalMainTest {
                 "--output-file-name", "myAnnot",
                 "--path", outdirId);
 
-        File outputFile = catalogManager.getFileManager().search(organizationId, studyId, new Query(FileDBAdaptor.QueryParams.NAME.key(),
+        File outputFile = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                 "~myAnnot"), null, sessionId).first();
         assertNotNull(outputFile);
 //        job = catalogManager.getJobManager().get(outputFile.getJob().getId(), null, sessionId).first();
@@ -179,7 +179,7 @@ public class InternalMainTest {
 
         assertEquals(VariantIndexStatus.READY, catalogManager.getFileManager().get(organizationId, studyId, file2.getId(), null, sessionId).first().getInternal().getVariant().getIndex()
                 .getStatus().getId());
-        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
@@ -197,7 +197,7 @@ public class InternalMainTest {
                 "--file", String.valueOf(file3.getId()),
                 "-o", opencga.createTmpOutdir(studyId, "index_3", sessionId));
         assertEquals(VariantIndexStatus.READY, catalogManager.getFileManager().get(organizationId, studyId, file3.getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
-        assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file3.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 //        assertNotEquals(outdirId, job.getOutDir().getId());
@@ -225,7 +225,7 @@ public class InternalMainTest {
                 "-o", opencga.createTmpOutdir(studyId, "index_5", sessionId),
                 "--annotate");
         assertEquals(VariantIndexStatus.READY, catalogManager.getFileManager().get(organizationId, studyId, file5.getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
-        assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
@@ -235,7 +235,7 @@ public class InternalMainTest {
                 "--study", studyId,
                 "--cohort-ids", "ALL",
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
-        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 
         catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("coh1", "", Enums.CohortType.CONTROL_SET, "", null, null,
                         file1.getSampleIds().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null),
@@ -249,8 +249,8 @@ public class InternalMainTest {
                 "--study", studyId,
                 "--cohort-ids", "coh1",
                 "-o", opencga.createTmpOutdir(studyId, "stats_coh1", sessionId));
-        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh1"), null, sessionId).first().getInternal().getStatus().getId());
-        assertEquals(CohortStatus.NONE, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh2"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh1"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.NONE, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "coh2"), null, sessionId).first().getInternal().getStatus().getId());
 
 //        execute(new String[]{"variant", "query", "--session-id", sessionId, "--study", studyId, "--limit", "10"});
     }
@@ -263,7 +263,7 @@ public class InternalMainTest {
 //        File file1 = opencga.createFile(studyId, "100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 //        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
-        DataResult<Sample> allSamples = catalogManager.getSampleManager().search(organizationId, studyId, new Query(), new QueryOptions(), sessionId);
+        DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId);
         List<String> sampleIds = allSamples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         String c1 = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("C1", "", Enums.CohortType.CONTROL_SET, "", null,
@@ -274,7 +274,7 @@ public class InternalMainTest {
                 .map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
         String c3 = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("C3", "", Enums.CohortType.CONTROL_SET, "", null,
                 null, sampleIds.subList(0, 1).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
-        Sample sample = catalogManager.getSampleManager().create(organizationId, studyId, new Sample().setId("Sample"), null, sessionId).first();
+        Sample sample = catalogManager.getSampleManager().create(studyId, new Sample().setId("Sample"), null, sessionId).first();
         String c4 = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("C4", "", Enums.CohortType.CONTROL_SET, "", null,
                 null, Collections.singletonList(new SampleReferenceParam().setId(sample.getId())), null, null, null), null, null, null, sessionId).first().getId();
 
@@ -288,7 +288,7 @@ public class InternalMainTest {
                 "--annotate");
 
         assertEquals(VariantIndexStatus.READY, catalogManager.getFileManager().get(organizationId, studyId, file1.getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
-        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
+        assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getId());
 
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());

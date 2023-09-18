@@ -67,7 +67,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
         try {
-            OpenCGAResult<Job> result = catalogManager.getJobManager().create(organizationId, studyStr, inputJob.toJob(), queryOptions, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -202,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(catalogManager.getJobManager().search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(catalogManager.getJobManager().search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

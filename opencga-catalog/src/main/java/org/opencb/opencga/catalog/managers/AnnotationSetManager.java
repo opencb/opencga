@@ -116,7 +116,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                                  TsvAnnotationParams tsvParams, ObjectMap params, String toolId, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(organizationId, studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         ParamUtils.checkObj(variableSetId, "VariableSetId");
         ParamUtils.checkObj(tsvParams, "AnnotationTsvParams");
@@ -145,7 +145,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), path);
 
-        OpenCGAResult<File> search = catalogManager.getFileManager().search(organizationId, study.getFqn(), query,
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(study.getFqn(), query,
                 FileManager.INCLUDE_FILE_URI_PATH, token);
         if (search.getNumResults() == 0) {
             // File not found under the path. User must have provided a content so we can create the file.
@@ -253,7 +253,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                                 if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
-                                        authorizationManager.checkStudyPermission(study.getUid(), user,
+                                        authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
                                                 StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
                                         confidentialPermissionsChecked = true;
                                     }

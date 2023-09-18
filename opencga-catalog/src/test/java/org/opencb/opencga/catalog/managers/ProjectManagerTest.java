@@ -129,7 +129,7 @@ public class ProjectManagerTest extends GenericTest {
         // User3 looks for any sample without providing any project or study and he has not been granted permissions anywhere
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("cannot view any study");
-        catalogManager.getSampleManager().search(organizationId, "", new Query(), QueryOptions.empty(), sessionIdUser3);
+        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), sessionIdUser3);
     }
 
     @Test

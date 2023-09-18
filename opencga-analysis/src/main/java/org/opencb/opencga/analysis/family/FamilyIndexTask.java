@@ -89,7 +89,7 @@ public class FamilyIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getFamilyManager().iterator(organizationId, study.getFqn(), query,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getFamilyManager().iterator(study.getFqn(), query,
                 familyQueryOptions, token), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
     }
 }

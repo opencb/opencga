@@ -114,7 +114,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(familyManager.search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

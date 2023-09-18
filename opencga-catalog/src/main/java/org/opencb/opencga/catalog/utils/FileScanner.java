@@ -86,7 +86,7 @@ public class FileScanner {
         query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Arrays.asList(
                 FileStatus.READY, FileStatus.MISSING, FileStatus.TRASHED));
 
-        DBIterator<File> iterator = catalogManager.getFileManager().iterator(organizationId, study.getFqn(), query, new QueryOptions(),
+        DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(),
                 sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
@@ -115,7 +115,7 @@ public class FileScanner {
     public List<File> reSync(String organizationId, Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
         Query query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
-        DBIterator<File> iterator = catalogManager.getFileManager().iterator(organizationId, study.getFqn(), query, null, sessionId);
+        DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, null, sessionId);
 
         List<File> scan = new LinkedList<>();
         while (iterator.hasNext()) {
@@ -153,7 +153,7 @@ public class FileScanner {
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        catalogManager.getFileManager().search(organizationId, String.valueOf(studyId), query, queryOptions, sessionId).getResults()
+        catalogManager.getFileManager().search(String.valueOf(studyId), query, queryOptions, sessionId).getResults()
                 .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
@@ -170,7 +170,7 @@ public class FileScanner {
                     URI uri = iterator.next();
                     String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
-                    DataResult<File> searchFile = catalogManager.getFileManager().search(organizationId, String.valueOf(studyId),
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
                             new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
                     if (searchFile.getResults().isEmpty()) {
                         untrackedFiles.put(filePath, uri);
@@ -255,7 +255,7 @@ public class FileScanner {
                     }
 
                     Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-                    DataResult<File> searchFile = catalogManager.getFileManager().search(organizationId, study.getFqn(), query, null,
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null,
                             sessionId);
                     File file = null;
                     boolean overwrite = true;
@@ -275,7 +275,7 @@ public class FileScanner {
                                         QueryOptions.empty(), sessionId);
 
                                 // Delete completely the file/folder !
-                                catalogManager.getFileManager().delete(organizationId, study.getFqn(), tmpQuery,
+                                catalogManager.getFileManager().delete(study.getFqn(), tmpQuery,
                                         new QueryOptions(Constants.SKIP_TRASH, true), sessionId);
                                 overwrite = false;
                                 break;

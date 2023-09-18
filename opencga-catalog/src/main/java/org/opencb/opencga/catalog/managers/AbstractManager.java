@@ -83,7 +83,7 @@ public abstract class AbstractManager {
         return catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organization);
     }
 
-    protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) {
+    protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organization);
     }
 

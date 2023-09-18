@@ -274,7 +274,7 @@ public class VariantAnalysisTest {
             if (i % 2 == 0) {
                 sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
             }
-            catalogManager.getSampleManager().create(organizationId, STUDY, sample, null, token);
+            catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
         // Cancer
@@ -393,7 +393,7 @@ public class VariantAnalysisTest {
     public void testSampleStatsSampleFilter() throws Exception {
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
         // Reset quality control stats
-        for (Sample sample : catalogManager.getSampleManager().search(organizationId, STUDY, new Query(), new QueryOptions(), token).getResults()) {
+        for (Sample sample : catalogManager.getSampleManager().search(STUDY, new Query(), new QueryOptions(), token).getResults()) {
             SampleQualityControl qualityControl = sample.getQualityControl();
             if (qualityControl != null && qualityControl.getVariant() != null && CollectionUtils.isNotEmpty(qualityControl.getVariant().getVariantStats())) {
                 qualityControl.getVariant().setVariantStats(Collections.emptyList());

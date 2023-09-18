@@ -198,7 +198,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         step("list-families", () -> {
             Query familyQuery = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), analysisParams.getSample());
             for (Family family : getCatalogManager().getFamilyManager()
-                    .search(organizationId, getStudy(), familyQuery, new QueryOptions(), getToken()).getResults()) {
+                    .search(getStudy(), familyQuery, new QueryOptions(), getToken()).getResults()) {
                 if (family == null || StringUtils.isEmpty(family.getId())) {
                     continue;
                 }
@@ -270,7 +270,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     samples++;
                     Individual individual = catalogManager
                             .getIndividualManager()
-                            .search(organizationId, getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
+                            .search(getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                             IndividualDBAdaptor.QueryParams.ID.key(),
                                             IndividualDBAdaptor.QueryParams.SEX_ID.key(),
@@ -358,7 +358,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                                 if (individualId == null) {
                                     Individual individualObj = catalogManager
                                             .getIndividualManager()
-                                            .search(organizationId, getStudy(),
+                                            .search(getStudy(),
                                                     new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSampleId()),
                                                     new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
                                                     getToken())

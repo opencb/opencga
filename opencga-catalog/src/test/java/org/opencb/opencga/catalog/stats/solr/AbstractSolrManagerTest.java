@@ -112,11 +112,11 @@ public class AbstractSolrManagerTest extends GenericTest {
         study = catalogManager.getStudyManager().get(organizationId, "phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 
         // Samples
-        Sample sample1 = catalogManager.getSampleManager().create(organizationId, studyFqn, new Sample().setId("sample1"), INCLUDE_RESULT,
+        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
-        Sample sample2 = catalogManager.getSampleManager().create(organizationId, studyFqn, new Sample().setId("sample2"), INCLUDE_RESULT,
+        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
-        Sample sample3 = catalogManager.getSampleManager().create(organizationId, studyFqn, new Sample().setId("sample3"), INCLUDE_RESULT,
+        Sample sample3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
@@ -125,11 +125,11 @@ public class AbstractSolrManagerTest extends GenericTest {
                 new SampleAclParams(null, null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
 
         // Cohorts
-        catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),
                 QueryOptions.empty(), sessionIdAdmin);
-        catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("cohort2").setSamples(Arrays.asList(sample1, sample2)),
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort2").setSamples(Arrays.asList(sample1, sample2)),
                 QueryOptions.empty(), sessionIdAdmin);
-        catalogManager.getCohortManager().create(organizationId, studyFqn, new Cohort().setId("cohort3").setSamples(Arrays.asList(sample2, sample3)),
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort3").setSamples(Arrays.asList(sample2, sample3)),
                 QueryOptions.empty(), sessionIdAdmin);
 
         catalogManager.getCohortManager().updateAcl(organizationId, studyFqn, Collections.singletonList("cohort1"), "@study_deny,user3",

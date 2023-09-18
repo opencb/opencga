@@ -125,7 +125,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 throw new IllegalArgumentException("Missing cohort-id");
             }
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), analysisParams.getCohortId());
-            if (catalogManager.getCohortManager().count(organizationId, studyFqn, query, getToken()).getNumResults() > 0) {
+            if (catalogManager.getCohortManager().count(studyFqn, query, getToken()).getNumResults() > 0) {
                 throw new IllegalArgumentException("Unable to index result. Cohort '" + analysisParams.getCohortId() + "' already exists");
             }
         } else {
@@ -206,7 +206,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         .setId(analysisParams.getCohortId())
                         .setSamples(samplesResult.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()))
                         .setDescription("Result of analysis '" + getId() + "' after executing query " + analysisParams.getQuery());
-                getCatalogManager().getCohortManager().create(organizationId, studyFqn, cohort, new QueryOptions(), getToken());
+                getCatalogManager().getCohortManager().create(studyFqn, cohort, new QueryOptions(), getToken());
             });
         }
     }
@@ -222,7 +222,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 
         if (!samplesResult.isEmpty()) {
             Iterator<Individual> it = getCatalogManager().getIndividualManager()
-                    .iterator(organizationId, studyFqn,
+                    .iterator(studyFqn,
                             new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
                             new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                     IndividualDBAdaptor.QueryParams.ID.key(),
@@ -258,7 +258,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             if (!missingSamples.isEmpty()) {
                 logger.warn("Individual not found for {} samples", missingSamples.size());
                 Iterator<Sample> samples = catalogManager.getSampleManager()
-                        .iterator(organizationId, studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(missingSamples)),
+                        .iterator(studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(missingSamples)),
                                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                         SampleDBAdaptor.QueryParams.ID.key(),
                                         SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
@@ -522,7 +522,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             if (!samples.isEmpty()) {
                 sampleQuery.put(SampleDBAdaptor.QueryParams.ID.key(), samples);
                 samples = getCatalogManager().getSampleManager()
-                        .search(organizationId, studyFqn, sampleQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
+                        .search(studyFqn, sampleQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -543,7 +543,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             int inputSampleSize = samples.size();
             individualQuery.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples);
             samples = getCatalogManager().getIndividualManager()
-                    .search(organizationId, studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id,samples.id"), getToken())
+                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id,samples.id"), getToken())
                     .getResults()
                     .stream()
                     .map(Individual::getSamples)

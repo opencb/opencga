@@ -252,7 +252,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 String cohortName = cohorts.get(0);
 
                 List<Sample> samples = catalogManager.getSampleManager()
-                        .search(organizationId, studyFqn, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), token)
+                        .search(studyFqn, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), token)
                         .getResults();
                 List<String> sampleNames = samples.stream().map(Sample::getId).collect(Collectors.toList());
 

@@ -207,7 +207,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     if (referencePath == null) {
                         // Look for a reference genome in the study
                         Query referenceQuery = new Query(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.REFERENCE_GENOME);
-                        DataResult<File> fileDataResult = catalogManager.getFileManager().search(organizationId, studyStr, referenceQuery, FileManager.INCLUDE_FILE_URI_PATH, token);
+                        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyStr, referenceQuery, FileManager.INCLUDE_FILE_URI_PATH, token);
                         if (fileDataResult.getNumResults() == 0 || fileDataResult.getNumResults() > 1) {
                             throw new CatalogException("Missing referenceGenome field for CRAM file");
                         }

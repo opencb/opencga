@@ -429,7 +429,7 @@ public class MigrationManager {
 
     private String validateAdmin(String organizationId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(userId);
+        catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(organizationId, userId);
         // Extend token life
         return catalogManager.getUserManager().getNonExpiringToken(organizationId, AbstractManager.OPENCGA, Collections.emptyMap(), token);
     }
@@ -715,7 +715,7 @@ public class MigrationManager {
                                 .setEvents(migrationRun.getEvents()));
                         break;
                 }
-                catalogManager.getJobManager().create(organizationId, adminStudy, job, new QueryOptions(), token);
+                catalogManager.getJobManager().create(adminStudy, job, new QueryOptions(), token);
             } catch (CatalogException e) {
                 exceptionToThrow = new MigrationException("Could not register migration in OpenCGA", e);
             }

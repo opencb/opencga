@@ -107,7 +107,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             Sample sample = params.toSample();
 
-            return createOkResponse(sampleManager.create(organizationId, studyStr, sample, queryOptions, token));
+            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -192,7 +192,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM) String consequenceTypeCount) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(sampleManager.search(organizationId, studyStr, query, queryOptions, token));
+            return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -399,7 +399,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
             queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
 
-            return createOkResponse(sampleManager.delete(organizationId, studyStr, getIdList(samples), queryOptions, true, token));
+            return createOkResponse(sampleManager.delete(studyStr, getIdList(samples), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

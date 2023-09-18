@@ -108,6 +108,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return interpretationCollection;
     }
 
+    public MongoDBCollection getArchiveInterpretationCollection() {
+        return archiveInterpretationCollection;
+    }
+
     @Override
     public OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(interpretation, "clinicalAnalysis");

@@ -47,7 +47,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(userId);
+            authorizationManager.checkIsInstallationAdministrator(organizationId, userId);
 
             // Fix query object
             if (query.containsKey(ParamConstants.USER)) {
@@ -89,7 +89,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(authenticatedUser);
+            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUser);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -107,7 +107,7 @@ public class AdminManager extends AbstractManager {
             }
 
             // Check studyIds exist
-            List<Study> studies = catalogManager.getStudyManager().resolveIds(organizationId, studyIds, authenticatedUser);
+            List<Study> studies = catalogManager.getStudyManager().resolveIds(studyIds, authenticatedUser, organizationId);
             List<Long> studyUids = new ArrayList<>(studies.size());
             for (Study study : studies) {
                 if (ParamConstants.ADMIN_STUDY_FQN.equals(study.getFqn())) {
@@ -153,7 +153,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(authenticatedUser);
+            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUser);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);

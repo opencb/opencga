@@ -44,13 +44,13 @@ public class IndividualManagerTest extends AbstractManagerTest {
     public void testAnnotateIndividual() throws CatalogException {
         VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(organizationId, studyFqn, "vs", null, token).first();
 
-        String individualId1 = catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("INDIVIDUAL_1")
+        String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 INCLUDE_RESULT, token).first().getId();
-        String individualId2 = catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("INDIVIDUAL_2")
+        String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 INCLUDE_RESULT, token).first().getId();
-        String individualId3 = catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("INDIVIDUAL_3")
+        String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 INCLUDE_RESULT, token).first().getId();
 
@@ -70,17 +70,17 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), token);
 
         List<String> individuals;
-        individuals = catalogManager.getIndividualManager().search(organizationId, studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
                         variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().search(organizationId, studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
                         variableSet.getId() + ":AGE>10"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().search(organizationId, studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
                         variableSet.getId() + ":AGE>10;" + variableSet.getId() + ":PHEN=CASE"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
@@ -91,22 +91,22 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Individual individual = new Individual()
                 .setId("i1")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder1").setName(null)));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
                 .setId("i2")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
                 .setId("i3")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
                 .setId("i4")
                 .setDisorders(Collections.singletonList(new Disorder().setId("adisorder2")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), token);
@@ -128,23 +128,23 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Individual individual = new Individual()
                 .setId("i1")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder1, description 1")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
                 .setId("i2")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2, description 2")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         individual = new Individual()
                 .setId("i3")
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), token);
         assertEquals(3, result.getNumResults());
 
-        OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(organizationId, studyFqn,
+        OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
                 new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1, description 1,disorder2, description 2"),
                 IndividualManager.INCLUDE_INDIVIDUAL_IDS, token);
         assertEquals(2, search.getNumResults());
@@ -154,7 +154,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdatePhenotypes() throws CatalogException {
         Individual individual = new Individual().setId("i1");
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         List<Phenotype> phenotypeList = Arrays.asList(
                 new Phenotype("phenotype0", "phenotypeName0", "SOURCE"),
@@ -212,7 +212,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateDisorders() throws CatalogException {
         Individual individual = new Individual().setId("i1");
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, individual, null, token);
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
 
         List<Disorder> disorderList = Arrays.asList(
                 new Disorder("disorder0", "disorderName0", "SOURCE", null, "", null),
@@ -274,9 +274,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Sample sample = new Sample().setId("sample1");
         Sample sample2 = new Sample().setId("sample2");
         Sample sample3 = new Sample().setId("sample3");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample2, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample3, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
 
         Individual individual = catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("individual"),
                 Arrays.asList(sample.getId(), sample2.getId()), INCLUDE_RESULT, token).first();
@@ -344,9 +344,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Sample sample1 = new Sample().setId("sample1");
         Sample sample2 = new Sample().setId("sample2");
         Sample sample3 = new Sample().setId("sample3");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample1, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample2, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample3, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample1, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
         catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("individual1"),
                 Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()), QueryOptions.empty(), token);
         List<Sample> samples = catalogManager.getSampleManager().get(organizationId, studyFqn,
@@ -358,9 +358,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Sample sample4 = new Sample().setId("sample4");
         Sample sample5 = new Sample().setId("sample5");
         Sample sample6 = new Sample().setId("sample6");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample4, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample5, QueryOptions.empty(), token);
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample6, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample4, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample5, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample6, QueryOptions.empty(), token);
 
         catalogManager.getIndividualManager().create(organizationId, studyFqn, new Individual().setId("individual2"),
                 Arrays.asList(sample4.getId(), sample5.getId(), sample6.getId()), QueryOptions.empty(), token);
@@ -438,16 +438,16 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         sample = new Sample().setId("sample2");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         sample = new Sample().setId("sample3");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         sample = new Sample().setId("sample4");
-        catalogManager.getSampleManager().create(organizationId, studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         Individual individual = new Individual()
                 .setId("proband")
@@ -475,7 +475,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setProband(new Individual().setId("proband"))
                 .setFamily(family)
                 .setType(ClinicalAnalysis.Type.FAMILY);
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
 
         // We will create another clinical analysis with the same information. In this test, we will not lock clinical2
         clinicalAnalysis = new ClinicalAnalysis()
@@ -483,7 +483,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setProband(new Individual().setId("proband"))
                 .setFamily(family)
                 .setType(ClinicalAnalysis.Type.FAMILY);
-        catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
 
         // Update brother not used in Clinical Analysis
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "brother", new IndividualUpdateParams()
@@ -616,7 +616,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateIndividualQualityControl() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        DataResult<Individual> individualDataResult = individualManager.create(organizationId, studyFqn, new Individual().setId("Test")
+        DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
                 .setDateOfBirth("19870214"), INCLUDE_RESULT, token);
 
         IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
@@ -637,7 +637,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        DataResult<Individual> individualDataResult = individualManager.create(organizationId, studyFqn, new Individual().setId("Test")
+        DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
                 .setDateOfBirth("19870214"), INCLUDE_RESULT, token);
         assertEquals(1, individualDataResult.getNumResults());
         assertEquals("Test", individualDataResult.first().getId());
@@ -683,9 +683,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateIndividualParents() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(organizationId, studyFqn, new Individual().setId("child"), QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("father"), QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
 
         DataResult<Individual> individualDataResult = individualManager.update(organizationId, studyFqn, "child",
                 new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
@@ -704,9 +704,9 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testRemoveIndividualParents() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(organizationId, studyFqn, new Individual().setId("child"), QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("father"), QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
 
         DataResult<Individual> individualDataResult = individualManager.update(organizationId, studyFqn, "child",
                 new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
@@ -732,15 +732,15 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testIndividualRelatives() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(organizationId, studyFqn, new Individual().setId("proband").setSex(SexOntologyTermAnnotation.initMale()),
+        individualManager.create(studyFqn, new Individual().setId("proband").setSex(SexOntologyTermAnnotation.initMale()),
                 QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("brother").setSex(SexOntologyTermAnnotation.initMale()),
+        individualManager.create(studyFqn, new Individual().setId("brother").setSex(SexOntologyTermAnnotation.initMale()),
                 QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("sister").setSex(SexOntologyTermAnnotation.initFemale()),
+        individualManager.create(studyFqn, new Individual().setId("sister").setSex(SexOntologyTermAnnotation.initFemale()),
                 QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("father").setSex(SexOntologyTermAnnotation.initMale()),
+        individualManager.create(studyFqn, new Individual().setId("father").setSex(SexOntologyTermAnnotation.initMale()),
                 QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("mother").setSex(SexOntologyTermAnnotation.initFemale()),
+        individualManager.create(studyFqn, new Individual().setId("mother").setSex(SexOntologyTermAnnotation.initFemale()),
                 QueryOptions.empty(), token);
 
         individualManager.update(organizationId, studyFqn, "proband", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
@@ -763,7 +763,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testDeleteIndividualWithFamilies() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        Individual child = individualManager.create(organizationId, studyFqn, new Individual()
+        Individual child = individualManager.create(studyFqn, new Individual()
                         .setId("child")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype1")))
                         .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
@@ -784,14 +784,14 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 Arrays.asList(father.getId(), child.getId()), QueryOptions.empty(), token);
 
         try {
-            DataResult writeResult = individualManager.delete(organizationId, studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
+            DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
                     new QueryOptions(), token);
             fail("Expected fail");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("found in the families"));
         }
 
-        DataResult writeResult = individualManager.delete(organizationId, studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
+        DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
                 new QueryOptions(Constants.FORCE, true), token);
         assertEquals(1, writeResult.getNumDeleted());
 
@@ -818,16 +818,16 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testGetIndividualWithSamples() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(organizationId, studyFqn, new Individual().setId("individual1")
+        individualManager.create(studyFqn, new Individual().setId("individual1")
                         .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"), new Sample().setId(
                                 "sample3"))),
                 QueryOptions.empty(), token);
-        individualManager.create(organizationId, studyFqn, new Individual().setId("individual2")
+        individualManager.create(studyFqn, new Individual().setId("individual2")
                         .setSamples(Arrays.asList(new Sample().setId("sample4"), new Sample().setId("sample5"), new Sample().setId(
                                 "sample6"))),
                 QueryOptions.empty(), token);
 
-        DataResult<Individual> search = individualManager.search(organizationId, studyFqn, new Query(), QueryOptions.empty(), token);
+        DataResult<Individual> search = individualManager.search(studyFqn, new Query(), QueryOptions.empty(), token);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
             assertEquals(3, i.getSamples().size());
@@ -843,7 +843,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
             }
         });
 
-        search = individualManager.search(organizationId, studyFqn, new Query(), new QueryOptions(QueryOptions.EXCLUDE, "samples.creationDate"),
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.EXCLUDE, "samples.creationDate"),
                 token);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
@@ -860,7 +860,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
             }
         });
 
-        search = individualManager.search(organizationId, studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "samples.id"),
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "samples.id"),
                 token);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
@@ -877,7 +877,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
             }
         });
 
-        search = individualManager.search(organizationId, studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,creationDate,samples.id"),
+        search = individualManager.search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,creationDate,samples.id"),
                 token);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
@@ -903,8 +903,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
         Individual dummyIndividual1 = DummyModelUtils.getDummyIndividual(null, null, null, null);
         Individual dummyIndividual2 = DummyModelUtils.getDummyIndividual(null, null, null, null);
 
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, dummyIndividual1, QueryOptions.empty(), token);
-        catalogManager.getIndividualManager().create(organizationId, studyFqn, dummyIndividual2, QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, dummyIndividual1, QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, dummyIndividual2, QueryOptions.empty(), token);
 
         OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(organizationId, studyFqn,
                 Arrays.asList(dummyIndividual1.getId(), dummyIndividual2.getId()), QueryOptions.empty(), token);
@@ -924,7 +924,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), dummyIndividual1.getId())
                 .append(Constants.ALL_VERSIONS, true);
 
-        result = catalogManager.getIndividualManager().search(organizationId, studyFqn, query, QueryOptions.empty(), token);
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), token);
         assertEquals(2, result.getNumResults());
         assertEquals(dummyIndividual1.getId(), result.getResults().get(0).getName());
         assertEquals(1, result.getResults().get(0).getVersion());
@@ -952,13 +952,13 @@ public class IndividualManagerTest extends AbstractManagerTest {
         family.setMembers(null);
 
         QueryOptions options = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        individual1 = catalogManager.getIndividualManager().create(organizationId, studyFqn, individual1, options, token).first();
+        individual1 = catalogManager.getIndividualManager().create(studyFqn, individual1, options, token).first();
         assertEquals(1, individual1.getVersion());
         assertEquals(2, individual1.getSamples().size());
         assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
         assertEquals(2, individual1.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId1)).count());
 
-        individual2 = catalogManager.getIndividualManager().create(organizationId, studyFqn, individual2, options, token).first();
+        individual2 = catalogManager.getIndividualManager().create(studyFqn, individual2, options, token).first();
         assertEquals(1, individual2.getVersion());
         assertEquals(2, individual2.getSamples().size());
         assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
@@ -1025,7 +1025,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         Family family = DummyModelUtils.getDummyCaseFamily("family1");
         for (int i = family.getMembers().size() - 1; i >= 0; i--) {
-            catalogManager.getIndividualManager().create(organizationId, studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
+            catalogManager.getIndividualManager().create(studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
         }
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
@@ -1040,11 +1040,11 @@ public class IndividualManagerTest extends AbstractManagerTest {
         ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null)
                         .setLocked(true);
 
-        case1 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case1, options, token).first();
+        case1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, options, token).first();
         assertFalse(case1.isLocked());
-        case2 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case2, options, token).first();
+        case2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, options, token).first();
         assertFalse(case2.isLocked());
-        case3 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case3, options, token).first();
+        case3 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, options, token).first();
         assertTrue(case3.isLocked());
 
         String oldProbandId = case3.getProband().getId();
@@ -1087,7 +1087,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         Family family = DummyModelUtils.getDummyCaseFamily("family1");
         for (int i = family.getMembers().size() - 1; i >= 0; i--) {
-            catalogManager.getIndividualManager().create(organizationId, studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
+            catalogManager.getIndividualManager().create(studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
         }
 
         List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
@@ -1102,16 +1102,16 @@ public class IndividualManagerTest extends AbstractManagerTest {
         ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null)
                 .setLocked(true);
 
-        case1 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case1, options, token).first();
+        case1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, options, token).first();
         assertFalse(case1.isLocked());
-        case2 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case2, options, token).first();
+        case2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, options, token).first();
         assertFalse(case2.isLocked());
-        case3 = catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, case3, options, token).first();
+        case3 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, options, token).first();
         assertTrue(case3.isLocked());
 
         // Delete proband
         try {
-            catalogManager.getIndividualManager().delete(organizationId, studyFqn, Collections.singletonList(case1.getProband().getId()),
+            catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("in use in 3 cases"));
@@ -1122,7 +1122,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), token);
 
         try {
-            catalogManager.getIndividualManager().delete(organizationId, studyFqn, Collections.singletonList(case1.getProband().getId()),
+            catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("in use in 3 cases"));

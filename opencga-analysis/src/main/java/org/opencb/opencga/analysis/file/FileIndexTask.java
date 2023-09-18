@@ -98,7 +98,7 @@ public class FileIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getFileManager().iterator(organizationId, study.getFqn(), query,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getFileManager().iterator(study.getFqn(), query,
                 fileQueryOptions, token), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
     }
 }

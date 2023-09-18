@@ -145,7 +145,7 @@ public class TemplateManager {
         Study study = getStudy(manifest.getConfiguration().getOrganizationId(), manifest.getConfiguration().getProjectId(),
                 manifest.getStudy().getId());
         String userId = catalogManager.getUserManager().getUserId(manifest.getConfiguration().getOrganizationId(), token);
-        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
 //        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
 //        if (!resume && !overwrite) {
@@ -276,7 +276,7 @@ public class TemplateManager {
                 IndividualUpdateParams individual = iterator.next();
 
                 Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId());
-                boolean exists = catalogManager.getIndividualManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getIndividualManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Individual '" + individual.getId() + "' already exists. Do you want to resume the load?");
@@ -298,7 +298,7 @@ public class TemplateManager {
 
                     // Create individual
                     logger.info("Create individual '{}'", individual.getId());
-                    catalogManager.getIndividualManager().create(organizationId, studyFqn, individual.toIndividual(), QueryOptions.empty(),
+                    catalogManager.getIndividualManager().create(studyFqn, individual.toIndividual(), QueryOptions.empty(),
                             token);
 
                     count++;
@@ -439,7 +439,7 @@ public class TemplateManager {
                 SampleUpdateParams sample = iterator.next();
 
                 Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
-                boolean exists = catalogManager.getSampleManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Sample '" + sample.getId() + "' already exists. Do you want to resume the load?");
@@ -451,7 +451,7 @@ public class TemplateManager {
                     }
                     // Create sample
                     logger.info("Create sample '{}'", sample.getId());
-                    catalogManager.getSampleManager().create(organizationId, studyFqn, sample.toSample(), QueryOptions.empty(), token);
+                    catalogManager.getSampleManager().create(studyFqn, sample.toSample(), QueryOptions.empty(), token);
 
                     count++;
                 } else if (overwrite) {
@@ -480,7 +480,7 @@ public class TemplateManager {
                 CohortUpdateParams cohort = iterator.next();
 
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId());
-                boolean exists = catalogManager.getCohortManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getCohortManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Cohort '" + cohort.getId() + "' already exists. Do you want to resume the load?");
@@ -493,7 +493,7 @@ public class TemplateManager {
 
                     // Create cohort
                     logger.info("Create cohort '{}'", cohort.getId());
-                    catalogManager.getCohortManager().create(organizationId, studyFqn, cohort.toCohort(), QueryOptions.empty(), token);
+                    catalogManager.getCohortManager().create(studyFqn, cohort.toCohort(), QueryOptions.empty(), token);
 
                     count++;
                 } else if (overwrite) {
@@ -522,7 +522,7 @@ public class TemplateManager {
                 FamilyUpdateParams family = iterator.next();
 
                 Query query = new Query(FamilyDBAdaptor.QueryParams.ID.key(), family.getId());
-                boolean exists = catalogManager.getFamilyManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getFamilyManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Family '" + family.getId() + "' already exists. Do you want to resume the load?");
@@ -542,7 +542,7 @@ public class TemplateManager {
                         catalogManager.getFamilyManager().create(organizationId, studyFqn, completeFamily, memberIds, QueryOptions.empty(),
                                 token);
                     } else {
-                        catalogManager.getFamilyManager().create(organizationId, studyFqn, family.toFamily(), QueryOptions.empty(), token);
+                        catalogManager.getFamilyManager().create(studyFqn, family.toFamily(), QueryOptions.empty(), token);
                     }
 
                     count++;
@@ -572,7 +572,7 @@ public class TemplateManager {
                 PanelUpdateParams panel = iterator.next();
 
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panel.getId());
-                boolean exists = catalogManager.getPanelManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getPanelManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("Panel '" + panel.getId() + "' already exists. Do you want to resume the load?");
@@ -585,7 +585,7 @@ public class TemplateManager {
 
                     // Create family
                     logger.info("Create panel '{}'", panel.getId());
-                    catalogManager.getPanelManager().create(organizationId, studyFqn, panel.toPanel(), QueryOptions.empty(), token);
+                    catalogManager.getPanelManager().create(studyFqn, panel.toPanel(), QueryOptions.empty(), token);
 
                     count++;
                 } else if (overwrite) {
@@ -614,7 +614,7 @@ public class TemplateManager {
                 ClinicalAnalysisUpdateParams clinical = iterator.next();
 
                 Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinical.getId());
-                boolean exists = catalogManager.getClinicalAnalysisManager().count(organizationId, studyFqn, query, token)
+                boolean exists = catalogManager.getClinicalAnalysisManager().count(studyFqn, query, token)
                         .getNumMatches() > 0;
 
                 if (exists && !resume) {
@@ -629,7 +629,7 @@ public class TemplateManager {
 
                     // Create Clinical Analysis
                     logger.info("Create Clinical Analysis '{}'", clinical.getId());
-                    catalogManager.getClinicalAnalysisManager().create(organizationId, studyFqn, clinical.toClinicalAnalysis(),
+                    catalogManager.getClinicalAnalysisManager().create(studyFqn, clinical.toClinicalAnalysis(),
                             QueryOptions.empty(), token);
 
                     count++;
@@ -663,7 +663,7 @@ public class TemplateManager {
                     throw new CatalogException("Missing mandatory parameter 'path'");
                 }
                 Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
-                boolean exists = catalogManager.getFileManager().count(organizationId, studyFqn, query, token).getNumMatches() > 0;
+                boolean exists = catalogManager.getFileManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
                     throw new CatalogException("File '" + file.getPath() + "' already exists. Do you want to resume the load?");

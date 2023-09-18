@@ -132,13 +132,13 @@ public class FileDeleteTask extends OpenCgaTool {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE)
                     .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
-            try (DBIterator<File> iterator = fileManager.iterator(organizationId, studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
+            try (DBIterator<File> iterator = fileManager.iterator(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     try {
                         logger.info("Deleting file '{}'...", file.getPath());
                         QueryOptions params = new QueryOptions(Constants.SKIP_TRASH, skipTrash);
-                        fileManager.delete(organizationId, studyFqn, Collections.singletonList(file.getUuid()), params, token);
+                        fileManager.delete(studyFqn, Collections.singletonList(file.getUuid()), params, token);
                     } catch (Exception e) {
                         logger.error("Error deleting file '{}': {}", file.getPath(), e.getMessage(), e);
                         logger.info("Restoring status of file '{}'", file.getPath());
@@ -172,7 +172,7 @@ public class FileDeleteTask extends OpenCgaTool {
             query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.DELETING);
             OpenCGAResult<File> fileResult = null;
             try {
-                fileResult = catalogManager.getFileManager().search(organizationId, studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES,
+                fileResult = catalogManager.getFileManager().search(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES,
                         token);
             } catch (CatalogException e) {
                 logger.error("Critical: Could not check if there are any inconsistent files", e);

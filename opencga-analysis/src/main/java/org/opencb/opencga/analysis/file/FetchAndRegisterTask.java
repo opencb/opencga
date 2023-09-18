@@ -88,7 +88,7 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
             String userId = catalogManager.getUserManager().getUserId(organizationId, token);
             // Check write permissions over the path
             catalogManager.getAuthorizationManager()
-                    .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FilePermissions.WRITE);
+                    .checkFilePermission(organizationId, study.getUid(), parents.first().getUid(), userId, FilePermissions.WRITE);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

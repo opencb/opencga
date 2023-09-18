@@ -224,7 +224,7 @@ public class CatalogSolrManager implements AutoCloseable {
 
         queryCopy.put(CatalogSolrQueryParser.QueryParams.STUDY.key(), study.getFqn());
 
-        if (!catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId)) {
+        if (!catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId)) {
             // We need to add an acl query to perform the facet query
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {

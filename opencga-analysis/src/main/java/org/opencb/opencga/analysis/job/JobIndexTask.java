@@ -89,7 +89,7 @@ public class JobIndexTask extends OpenCgaTool {
                         JobDBAdaptor.QueryParams.TAGS.key(), JobDBAdaptor.QueryParams.EXECUTION.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getJobManager().iterator(organizationId, study.getFqn(), query, jobQueryOptions, token),
+        catalogSolrManager.insertCatalogCollection(catalogManager.getJobManager().iterator(study.getFqn(), query, jobQueryOptions, token),
                 new JobSolrConverter(study), CatalogSolrManager.JOB_SOLR_COLLECTION);
     }
 }

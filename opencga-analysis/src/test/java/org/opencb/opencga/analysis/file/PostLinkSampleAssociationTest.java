@@ -59,11 +59,11 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertFalse(link.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
-        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_postlink"));
@@ -83,19 +83,19 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getUuid());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getPath());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -119,11 +119,11 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertFalse(virtualResult.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
-        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_postlink"));
@@ -145,19 +145,19 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getUuid());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getPath());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -181,11 +181,11 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertFalse(virtualResult.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
-        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_postlink"));
@@ -207,19 +207,19 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getUuid());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getPath());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -237,11 +237,11 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertFalse(link.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
-        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(0, search.getNumResults());
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_postlink"));
@@ -262,7 +262,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-        search = catalogManager.getSampleManager().search(organizationId, studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));

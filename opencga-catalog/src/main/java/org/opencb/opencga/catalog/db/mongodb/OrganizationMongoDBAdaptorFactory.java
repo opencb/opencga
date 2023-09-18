@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -126,10 +127,10 @@ public class OrganizationMongoDBAdaptorFactory {
     private final Logger logger;
 
     public OrganizationMongoDBAdaptorFactory(MongoDataStoreManager mongoDataStoreManager, MongoDBConfiguration mongoDBConfiguration,
-                                             String database, Configuration configuration) throws CatalogDBException {
+                                             String organizationId, Configuration configuration) throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
-        this.database = database;
+        this.database = getCatalogOrganizationDatabase(configuration.getDatabasePrefix(), organizationId);
 
         this.mongoDataStore = mongoManager.get(database, mongoDBConfiguration);
         if (mongoDataStore == null) {
@@ -252,6 +253,15 @@ public class OrganizationMongoDBAdaptorFactory {
         metaDBAdaptor.initializeMetaCollection(admin);
     }
 
+    public void createAllCollections() throws CatalogDBException {
+        if (!mongoDataStore.getCollectionNames().isEmpty()) {
+            throw new CatalogDBException("Database " + mongoDataStore.getDatabaseName() + " already exists with the following "
+                    + "collections: " + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or"
+                    + " choose a different one.");
+        }
+        OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+    }
+
     public void createIndexes() throws CatalogDBException {
         StopWatch stopWatch = StopWatch.createStarted();
         metaDBAdaptor.createIndexes();
@@ -347,5 +357,14 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public MongoDataStore getMongoDataStore() {
         return mongoDataStore;
+    }
+
+    private String getCatalogOrganizationDatabase(String prefix, String organization) {
+        String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
+        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
+
+        String dbOrganization = organization.endsWith("_") ? organization : organization + "_";
+
+        return (dbPrefix + dbOrganization + "catalog").toLowerCase();
     }
 }

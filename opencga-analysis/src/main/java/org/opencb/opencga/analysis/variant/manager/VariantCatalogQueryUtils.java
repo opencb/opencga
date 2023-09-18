@@ -320,7 +320,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         .append(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY);
 
                 for (String study : studies) {
-                    for (File file : catalogManager.getFileManager().search(organizationId, study, fileQuery, fileOptions, token)
+                    for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, token)
                             .getResults()) {
                         includeFiles.add(file.getName());
                     }
@@ -339,7 +339,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     QueryOptions cohortOptions = new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.
-                    DataResult<Cohort> result = catalogManager.getCohortManager().search(organizationId, study, cohortQuery, cohortOptions, token);
+                    DataResult<Cohort> result = catalogManager.getCohortManager().search(study, cohortQuery, cohortOptions, token);
                     if (result.first() != null || result.first().getSamples().isEmpty()) {
                         Set<String> sampleIds = result
                                 .first()
@@ -347,7 +347,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                 .stream()
                                 .map(Sample::getId)
                                 .collect(Collectors.toSet());
-                        for (Sample s : catalogManager.getSampleManager().search(organizationId, study, sampleQuery, sampleOptions, token)
+                        for (Sample s : catalogManager.getSampleManager().search(study, sampleQuery, sampleOptions, token)
                                 .getResults()) {
                             if (sampleIds.contains(s.getId())) {
                                 includeSamples.add(s.getId());
@@ -364,7 +364,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyStr);
             QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-            List<String> sampleIds = catalogManager.getSampleManager().search(organizationId, defaultStudyStr, sampleQuery, options, token)
+            List<String> sampleIds = catalogManager.getSampleManager().search(defaultStudyStr, sampleQuery, options, token)
                     .getResults()
                     .stream()
                     .map(Sample::getId)
@@ -449,7 +449,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(FAMILY, familyId, "Family not indexed in storage");
             }
 
-            List<Sample> samples = catalogManager.getSampleManager().search(organizationId, defaultStudyStr,
+            List<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
                     new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids), new QueryOptions(INCLUDE, Arrays.asList(
                             SampleDBAdaptor.QueryParams.ID.key(),
                             SampleDBAdaptor.QueryParams.UID.key())), token).getResults();
@@ -958,7 +958,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @throws CatalogException on catalog exception
      */
     private String toIndividualId(String study, String individuaOrSample, String token) throws CatalogException {
-        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(organizationId, study,
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(study,
                 new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individuaOrSample),
                 new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
                 token);
@@ -1104,7 +1104,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     private Set<Long> fetchIndexedSampleUIds(String token, String defaultStudyStr) throws CatalogException {
         // Use search instead of get to avoid smartResolutor to fetch all samples
         return catalogManager.getCohortManager()
-                .search(organizationId, defaultStudyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
+                .search(defaultStudyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                         new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()), token)
                 .first()
                 .getSamples()
@@ -1317,7 +1317,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             String studyFqn, VariantStorageMetadataManager metadataManager, Collection<String> sampleIds, String token)
             throws CatalogException {
         OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
-                .search(organizationId, studyFqn,
+                .search(studyFqn,
                         new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                 IndividualDBAdaptor.QueryParams.ID.key(),
@@ -1343,7 +1343,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             if (CollectionUtils.isNotEmpty(individual.getSamples())) {
                 for (Sample sample : individual.getSamples()) {
-                    sample = catalogManager.getSampleManager().search(organizationId, studyFqn,
+                    sample = catalogManager.getSampleManager().search(studyFqn,
                             new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                             new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                     Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
@@ -1358,14 +1358,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Individual father = membersMap.get(uid);
                 if (father == null) {
                     father = catalogManager.getIndividualManager()
-                            .search(organizationId, studyFqn,
+                            .search(studyFqn,
                                     new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
                                     new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
                     membersMap.put(uid, father);
                 }
                 if (CollectionUtils.isNotEmpty(father.getSamples())) {
                     for (Sample sample : father.getSamples()) {
-                        sample = catalogManager.getSampleManager().search(organizationId, studyFqn,
+                        sample = catalogManager.getSampleManager().search(studyFqn,
                                 new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                         Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
@@ -1381,14 +1381,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Individual mother = membersMap.get(uid);
                 if (mother == null) {
                     mother = catalogManager.getIndividualManager()
-                            .search(organizationId, studyFqn,
+                            .search(studyFqn,
                                     new Query(IndividualDBAdaptor.QueryParams.UID.key(), uid),
                                     new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId).first();
                     membersMap.put(uid, mother);
                 }
                 if (CollectionUtils.isNotEmpty(mother.getSamples())) {
                     for (Sample sample : mother.getSamples()) {
-                        sample = catalogManager.getSampleManager().search(organizationId, studyFqn,
+                        sample = catalogManager.getSampleManager().search(studyFqn,
                                 new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                         Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
@@ -1614,12 +1614,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 long numMatches = catalogManager.getSampleManager()
-                        .count(organizationId, defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values)
+                        .count(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values)
                                         .append(ParamConstants.ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
                                 sessionId).getNumMatches();
                 if (numMatches != values.size()) {
                     OpenCGAResult<Sample> samples = catalogManager.getSampleManager()
-                            .search(organizationId, defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
+                            .search(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
                                     SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                     if (samples.getResults().size() != values.size()) {
                         // Can not view some samples. May not exist

@@ -5,7 +5,10 @@ import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -19,7 +22,6 @@ import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -73,9 +75,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Organization { id: '" + organization.getId() + "'} already exists.");
         }
-
-        long organizationUid = getNewUid();
-        organization.setUid(organizationUid);
         if (StringUtils.isEmpty(organization.getUuid())) {
             organization.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.ORGANIZATION));
         }
@@ -96,44 +95,32 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     @Override
-    public OpenCGAResult<Organization> get(long organizationUid, QueryOptions options) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), organizationUid);
-        return get(query, options);
+    public OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException {
+        return get(null, options);
     }
 
     @Override
-    public OpenCGAResult<Organization> get(Query query, QueryOptions options) throws CatalogDBException {
-        return get(null, query, options);
-    }
-
-    @Override
-    public OpenCGAResult<Organization> update(long organizationUid, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
-        OpenCGAResult<Organization> organizationResult = get(organizationUid, options);
-
-        if (organizationResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not update organization. Organization uid '" + organizationUid + "' not found.");
-        }
-
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, organizationResult.first(), parameters, queryOptions));
+            return runTransaction(clientSession -> privateUpdate(clientSession, organizationId, parameters, queryOptions));
         } catch (CatalogDBException e) {
-            logger.error("Could not update organization {}: {}", organizationResult.first().getId(), e.getMessage(), e);
-            throw new CatalogDBException("Could not update organization " + organizationResult.first().getId() + ": " + e.getMessage(),
+            logger.error("Could not update organization {}: {}", organizationId, e.getMessage(), e);
+            throw new CatalogDBException("Could not update organization " + organizationId + ": " + e.getMessage(),
                     e.getCause());
         }
     }
 
-    private OpenCGAResult<Organization> privateUpdate(ClientSession clientSession, Organization organization, ObjectMap parameters,
+    private OpenCGAResult<Organization> privateUpdate(ClientSession clientSession, String organizationId, ObjectMap parameters,
                                                       QueryOptions queryOptions) throws CatalogParameterException, CatalogDBException {
         long tmpStartTime = startQuery();
 
         UpdateDocument updateDocument = getValidatedUpdateParams(parameters, queryOptions);
         Document organizationUpdate = updateDocument.toFinalUpdateDocument();
 
-        Query tmpQuery = new Query(QueryParams.UID.key(), organization.getUid());
-        Bson queryBson = parseQuery(tmpQuery);
+//        Query tmpQuery = new Query(QueryParams.ID.key(), organization.getId());
+//        Bson queryBson = parseQuery(tmpQuery);
+        Bson queryBson = Filters.eq(QueryParams.ID.key(), organizationId);
 
         if (organizationUpdate.isEmpty()) {
             if (!parameters.isEmpty()) {
@@ -152,9 +139,9 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             throw new CatalogDBException("Organization not found");
         }
         if (updateResult.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, organization.getId(), "Organization was already updated"));
+            events.add(new Event(Event.Type.WARNING, organizationId, "Organization was already updated"));
         }
-        logger.debug("Organization {} successfully updated", organization.getId());
+        logger.debug("Organization {} successfully updated", organizationId);
 
 
         return endWrite(tmpStartTime, 1, 1, events);
@@ -250,9 +237,9 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return document;
     }
 
-    OpenCGAResult<Organization> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Organization> get(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        try (DBIterator<Organization> dbIterator = iterator(clientSession, query, options)) {
+        try (DBIterator<Organization> dbIterator = iterator(clientSession, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -263,19 +250,16 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     @Override
-    public DBIterator<Organization> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        return iterator(null, query, options);
+    public DBIterator<Organization> iterator(QueryOptions options) throws CatalogDBException {
+        return iterator(null, options);
     }
 
-    public DBIterator<Organization> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+    public DBIterator<Organization> iterator(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
         return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
     }
 
-    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
-            throws CatalogDBException {
-        Query finalQuery = new Query(query);
-
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -284,61 +268,58 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         }
         qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
 
-        Bson bson = parseQuery(finalQuery);
-        MongoDBCollection collection = getQueryCollection(finalQuery, organizationCollection, null, deletedOrganizationCollection);
-        logger.debug("Organization query: {}", bson.toBsonDocument());
-        return collection.iterator(clientSession, bson, null, null, qOptions);
+        return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
-        List<Bson> andBsonList = new ArrayList<>();
-
-        Query queryCopy = new Query(query);
-        queryCopy.remove(ParamConstants.DELETED_PARAM);
-
-        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
-                    : QueryParams.getParam(key);
-            if (queryParam == null) {
-                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
-                        + "queried for.");
-            }
-            try {
-                switch (queryParam) {
-                    case UID:
-                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case MODIFICATION_DATE:
-                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
-                    case ID:
-                    case UUID:
-                    case NAME:
-                    case DOMAIN:
-                    case OWNER:
-                    case ADMINS:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    default:
-                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
-                }
-            } catch (Exception e) {
-                if (e instanceof CatalogDBException) {
-                    throw e;
-                } else {
-                    throw new CatalogDBException("Error parsing query : " + queryCopy.toJson(), e);
-                }
-            }
-        }
-
-        if (andBsonList.size() > 0) {
-            return Filters.and(andBsonList);
-        } else {
-            return new Document();
-        }
-    }
+//    private Bson parseQuery(Query query) throws CatalogDBException {
+//        List<Bson> andBsonList = new ArrayList<>();
+//
+//        Query queryCopy = new Query(query);
+//        queryCopy.remove(ParamConstants.DELETED_PARAM);
+//
+//        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
+//            String key = entry.getKey().split("\\.")[0];
+//            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+//                    : QueryParams.getParam(key);
+//            if (queryParam == null) {
+//                throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
+//                        + "queried for.");
+//            }
+//            try {
+//                switch (queryParam) {
+//                    case UID:
+//                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+//                        break;
+//                    case CREATION_DATE:
+//                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+//                        break;
+//                    case MODIFICATION_DATE:
+//                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+//                        break;
+//                    case ID:
+//                    case UUID:
+//                    case NAME:
+//                    case DOMAIN:
+//                    case OWNER:
+//                    case ADMINS:
+//                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+//                        break;
+//                    default:
+//                        throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
+//                }
+//            } catch (Exception e) {
+//                if (e instanceof CatalogDBException) {
+//                    throw e;
+//                } else {
+//                    throw new CatalogDBException("Error parsing query : " + queryCopy.toJson(), e);
+//                }
+//            }
+//        }
+//
+//        if (andBsonList.size() > 0) {
+//            return Filters.and(andBsonList);
+//        } else {
+//            return new Document();
+//        }
+//    }
 }

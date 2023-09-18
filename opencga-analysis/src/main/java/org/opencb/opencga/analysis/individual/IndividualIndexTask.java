@@ -97,7 +97,7 @@ public class IndividualIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getIndividualManager().iterator(organizationId, study.getFqn(), query,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getIndividualManager().iterator(study.getFqn(), query,
                         individualQueryOptions, token), new CatalogIndividualToSolrIndividualConverter(study),
                 CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
     }

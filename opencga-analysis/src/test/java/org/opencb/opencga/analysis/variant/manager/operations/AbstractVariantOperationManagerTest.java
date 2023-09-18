@@ -204,7 +204,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected Cohort getDefaultCohort(String studyId) throws CatalogException {
-        return catalogManager.getCohortManager().search(organizationId, studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+        return catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 DEFAULT_COHORT), new QueryOptions(), sessionId).first();
     }
 
@@ -248,7 +248,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), outputId)
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
 
-        File transformedFile = catalogManager.getFileManager().search(organizationId, studyId, searchQuery, new QueryOptions(), sessionId).first();
+        File transformedFile = catalogManager.getFileManager().search(studyId, searchQuery, new QueryOptions(), sessionId).first();
         inputFile = catalogManager.getFileManager().get(organizationId, studyId, inputFile.getId(), null, sessionId).first();
 
         System.out.println("transformedFile = " + transformedFile);
@@ -407,14 +407,14 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     protected void checkEtlResults(String studyId, List<StoragePipelineResult> etlResults, String expectedStatus) throws CatalogException {
         for (StoragePipelineResult etlResult : etlResults) {
-            File input = catalogManager.getFileManager().search(organizationId, studyId, new Query(FileDBAdaptor.QueryParams.URI.key(),
+            File input = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.URI.key(),
                     etlResult.getInput()), null, sessionId).first();
             String indexedFileId;
             if (input.getRelatedFiles().isEmpty()) {
                 indexedFileId = input.getId();
             } else {
                 long indexedFileUid = input.getRelatedFiles().get(0).getFile().getUid();
-                indexedFileId = catalogManager.getFileManager().search(organizationId, studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
+                indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
             assertEquals(expectedStatus, catalogManager.getFileManager().get(organizationId, studyId, indexedFileId, null, sessionId).first()

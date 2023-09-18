@@ -33,7 +33,7 @@ public class AnalysisUtils {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM)
                 .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
         try {
-            fileQueryResult = fileManager.search(organizationId, studyId, query, QueryOptions.empty(), token);
+            fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -55,7 +55,7 @@ public class AnalysisUtils {
 
         query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
         try {
-            fileQueryResult = fileManager.search(organizationId, studyId, query, queryOptions, token);
+            fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -81,7 +81,7 @@ public class AnalysisUtils {
 
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), file);
 
-        fileQueryResult = fileManager.search(organizationId, studyId, query, QueryOptions.empty(), token);
+        fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
 
         // Sanity check
         if (fileQueryResult.getNumResults() == 0) {
@@ -124,7 +124,7 @@ public class AnalysisUtils {
 
     public static boolean waitFor(String jobId, String study, JobManager jobManager, String token) throws ToolException, CatalogException {
         Query query = new Query("id", jobId);
-        OpenCGAResult<Job> result = jobManager.search(organizationId, study, query, QueryOptions.empty(), token);
+        OpenCGAResult<Job> result = jobManager.search(study, query, QueryOptions.empty(), token);
         Job job = result.first();
         String status = job.getInternal().getStatus().getId();
 
@@ -134,7 +134,7 @@ public class AnalysisUtils {
             try {
                 // Sleep for 30 seconds
                 Thread.sleep(30000);
-                result = jobManager.search(organizationId, study, query, QueryOptions.empty(), token);
+                result = jobManager.search(study, query, QueryOptions.empty(), token);
                 job = result.first();
             } catch (CatalogException | InterruptedException e) {
                 new ToolException("Error waiting for job '" + jobId + "': " + e.getMessage());
@@ -146,7 +146,7 @@ public class AnalysisUtils {
 
     public static Job getJob(String jobId, String study, JobManager jobManager, String token) throws ToolException, CatalogException {
         Query query = new Query("id", jobId);
-        OpenCGAResult<Job> result = jobManager.search(organizationId, study, query, QueryOptions.empty(), token);
+        OpenCGAResult<Job> result = jobManager.search(study, query, QueryOptions.empty(), token);
         Job job = result.first();
         if (job == null) {
             new ToolException("Error getting job '" + jobId + "' from study '" + study + "'.");

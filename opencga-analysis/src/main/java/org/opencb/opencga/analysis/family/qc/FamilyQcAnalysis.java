@@ -69,7 +69,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         try {
             Study study = catalogManager.getStudyManager().get(organizationId, studyId, QueryOptions.empty(), token).first();
             String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_FAMILIES);
+            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, WRITE_FAMILIES);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

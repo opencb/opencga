@@ -90,7 +90,7 @@ public class CohortIndexTask extends OpenCgaTool {
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
-        catalogSolrManager.insertCatalogCollection(catalogManager.getCohortManager().iterator(organizationId, study.getFqn(), query,
+        catalogSolrManager.insertCatalogCollection(catalogManager.getCohortManager().iterator(study.getFqn(), query,
                 cohortQueryOptions, token), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
     }
 }

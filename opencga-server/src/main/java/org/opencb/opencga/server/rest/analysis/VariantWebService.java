@@ -1155,14 +1155,14 @@ public class VariantWebService extends AnalysisWebService {
                 OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
 
                 Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
-                fileResult = catalogManager.getFileManager().search(organizationId, study, query, QueryOptions.empty(), token);
+                fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
                 Job deeptoolsJob = null;
                 if (fileResult.getNumResults() == 0) {
                     // Coverage file does not exit, a job must be submitted to create the .bw file
                     // but first, check if .bai (bam index file) exist
 
                     query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
-                    fileResult = catalogManager.getFileManager().search(organizationId, study, query, QueryOptions.empty(), token);
+                    fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
 
                     Job samtoolsJob = null;
                     if (fileResult.getNumResults() == 0) {

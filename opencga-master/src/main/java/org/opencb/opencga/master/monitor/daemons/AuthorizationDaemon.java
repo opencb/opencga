@@ -91,7 +91,7 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
                     if (split.length == 1) {
                         // Apply rules
                         logger.info("Attempting to apply permission rule {} in {}", permissionRule.getId(), entry);
-                        authorizationManager.applyPermissionRule(study.getUid(), permissionRule, entry);
+                        authorizationManager.applyPermissionRule(organizationId, study.getUid(), permissionRule, entry);
                     } else {
                         // Remove permission rule
                         PermissionRule.DeleteAction deleteAction = PermissionRule.DeleteAction.valueOf(split[1].split("_")[1]);
@@ -99,18 +99,18 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
                             case NONE:
                                 logger.info("Removing permission rule {}", permissionRule.getId().split(INTERNAL_DELIMITER)[0],
                                         entry);
-                                authorizationManager.removePermissionRule(study.getUid(), permissionRule.getId(), entry);
+                                authorizationManager.removePermissionRule(organizationId, study.getUid(), permissionRule.getId(), entry);
                                 break;
                             case REVERT:
                                 logger.info("Removing permission rule {} and reverting applied permissions for {}",
                                         permissionRule.getId().split(INTERNAL_DELIMITER)[0], entry);
-                                authorizationManager.removePermissionRuleAndRestorePermissions(study, permissionRule.getId(), entry);
+                                authorizationManager.removePermissionRuleAndRestorePermissions(organizationId, study, permissionRule.getId(), entry);
                                 break;
                             case REMOVE:
                             default:
                                 logger.info("Removing permission rule {} and removing applied permissions for {}",
                                         permissionRule.getId().split(INTERNAL_DELIMITER)[0], entry);
-                                authorizationManager.removePermissionRuleAndRemovePermissions(study, permissionRule.getId(), entry);
+                                authorizationManager.removePermissionRuleAndRemovePermissions(organizationId, study, permissionRule.getId(), entry);
                                 break;
                         }
                     }

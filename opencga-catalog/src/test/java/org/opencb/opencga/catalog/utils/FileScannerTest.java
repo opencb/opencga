@@ -136,7 +136,7 @@ public class FileScannerTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), id)
                 .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
-        return catalogManager.getFileManager().search(organizationId, study.getFqn(), query, null, sessionIdUser).first();
+        return catalogManager.getFileManager().search(study.getFqn(), query, null, sessionIdUser).first();
     }
 
     @Test
@@ -209,7 +209,7 @@ public class FileScannerTest {
 
         Path studyUriPath = Paths.get(study.getUri());
         CatalogManagerTest.createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file2.txt").toString());
-        File root = catalogManager.getFileManager().search(organizationId, study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
+        File root = catalogManager.getFileManager().search(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(organizationId, root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());

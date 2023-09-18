@@ -335,7 +335,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         try {
             Query fileQuery = new Query("name", indexFilename);
             QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
-            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = catalogManager.getFileManager().search(organizationId, study, fileQuery,
+            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = catalogManager.getFileManager().search(study, fileQuery,
                     fileQueryOptions, token);
 
             long maxSize = 0;
