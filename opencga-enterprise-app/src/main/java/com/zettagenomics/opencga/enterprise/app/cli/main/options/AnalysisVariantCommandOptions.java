@@ -925,8 +925,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--phenotype"}, description = "The body web service phenotype parameter", required = false, arity = 1)
         public String phenotype;
     
-        @Parameter(names = {"--index"}, description = "The body web service index parameter", required = false, arity = 1)
-        public Boolean index;
+        @Parameter(names = {"--index"}, description = "The body web service index parameter", required = false, help = true, arity = 0)
+        public boolean index = false;
     
         @Parameter(names = {"--index-score-id"}, description = "The body web service indexScoreId parameter", required = false, arity = 1)
         public String indexScoreId;
