@@ -1,4 +1,5 @@
 name: Build and test OpenCGA Enterprise
+
 on:
   workflow_call:
     secrets:
@@ -12,8 +13,6 @@ on:
         required: true
       SSH_TESTING_SERVER_PASSWORD:
         required: true
-env:
-  xb_version: "1.8.0"
 
 jobs:
   test:
@@ -39,6 +38,7 @@ jobs:
         with:
           name: workdir
           path: "**/target/site"
+
   publish-test:
     name: Publish test results
     runs-on: ubuntu-22.04

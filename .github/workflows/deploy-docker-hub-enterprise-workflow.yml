@@ -1,16 +1,21 @@
-name: Deploy OpenCGA Enterprise HDP to DockerHub
+name: Reusable workflow to build Java application
 
 on:
   workflow_call:
     inputs:
-      options:
+      storage_hadoop:
         type: string
         required: false
-    secrets:
-      DOCKER_HUB_USER:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
+      artifact_name:
+        type: string
+        required: false
+      release:
+        type: string
+        required: false
+    outputs:
+      version:
+        description: "XetaBase project version"
+        value: ${{ jobs.build.outputs.version }}
 
 jobs:
   deploy-docker-hub:
@@ -20,7 +25,7 @@ jobs:
       - name: Download build dir
         uses: actions/download-artifact@v3
         with:
-          name: build-folder
+          name: ${{ inputs.artifact_name }}
           path: build
       - name: Chmod
         run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
@@ -30,4 +35,4 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Push in Docker Hub
-        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base ${{ inputs.options }}
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise ${{ inputs.options }}
