@@ -268,7 +268,7 @@ public class CatalogSolrManager implements AutoCloseable {
     //***************** PRIVATE ****************/
 
     private void populateConfigCollectionMap() {
-        String version = GitRepositoryState.get().getBuildVersion();
+        String version = GitRepositoryState.getInstance().getBuildVersion();
 
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + COHORT_SOLR_COLLECTION, COHORT_CONF_SET + "-" + version);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET + "-" + version);

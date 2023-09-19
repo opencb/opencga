@@ -167,7 +167,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     public static String getDefaultVersion() {
         String version;
-        version = GitRepositoryState.get().getBuildVersion();
+        version = GitRepositoryState.getInstance().getBuildVersion();
         // Remove extra information
         version = version.split("-")[0];
         return version;

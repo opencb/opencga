@@ -30,10 +30,11 @@ import java.util.Properties;
  */
 public class GitRepositoryState {
 
-    public static final String DEFAULT_RESOURCE_NAME = "git.properties";
+    public static final String DEFAULT_RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
     private static GitRepositoryState gitRepositoryState;
     private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
+    private Properties properties;
     private String tags;                    // =${git.tags} // comma separated tag names
     private String branch;                  // =${git.branch}
     private String dirty;                   // =${git.dirty}
@@ -57,36 +58,44 @@ public class GitRepositoryState {
     private String buildHost;               // =${git.build.host}
     private String buildVersion;            // =${git.build.version}
 
-    public static GitRepositoryState get() {
-        if (gitRepositoryState == null) {
-            Properties properties = new Properties();
-            InputStream stream = null;
-            try {
-                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(DEFAULT_RESOURCE_NAME);
-                if (stream != null) {
-                    properties.load(stream);
-                }
-            } catch (IOException e) {
-                logger.warn("Error reading " + DEFAULT_RESOURCE_NAME, e);
-            } finally {
-                if (stream != null) {
-                    try {
-                        stream.close();
-                    } catch (IOException e) {
-                        logger.warn("Error closing stream from " + DEFAULT_RESOURCE_NAME, e);
-                    }
-                }
-            }
+    public static String get(String key) {
+        return getInstance().properties.getProperty(key);
+    }
 
-            gitRepositoryState = new GitRepositoryState(properties);
+    public static GitRepositoryState getInstance() {
+        if (gitRepositoryState == null) {
+            gitRepositoryState = load(DEFAULT_RESOURCE_NAME);
         }
         return gitRepositoryState;
+    }
+
+    public static GitRepositoryState load(String resourceName) {
+        Properties properties = new Properties();
+        InputStream stream = null;
+        try {
+            stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(resourceName);
+            if (stream != null) {
+                properties.load(stream);
+            }
+        } catch (IOException e) {
+            logger.warn("Error reading " + resourceName, e);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    logger.warn("Error closing stream from " + resourceName, e);
+                }
+            }
+        }
+        return new GitRepositoryState(properties);
     }
 
     GitRepositoryState() {
     }
 
     private GitRepositoryState(Properties properties) {
+        this.properties = properties;
         this.tags = properties.getProperty("git.tags");
         this.branch = properties.getProperty("git.branch");
         this.dirty = properties.getProperty("git.dirty");

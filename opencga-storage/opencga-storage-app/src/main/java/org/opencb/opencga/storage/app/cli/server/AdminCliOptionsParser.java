@@ -76,8 +76,8 @@ public class AdminCliOptionsParser extends GeneralCliOptions {
         if (parsedCommand.isEmpty()) {
             System.err.println("");
             System.err.println("Program:     OpenCGA Storage Admin (OpenCB)");
-            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
-            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
+            System.err.println("Version:     " + GitRepositoryState.getInstance().getBuildVersion());
+            System.err.println("Git commit:  " + GitRepositoryState.getInstance().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
             System.err.println("Usage:       opencga-storage-admin.sh [-h|--help] [--version] <command> [options]");
