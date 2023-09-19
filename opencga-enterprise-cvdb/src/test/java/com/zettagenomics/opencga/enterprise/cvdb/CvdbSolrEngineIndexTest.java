@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.microsoft.azure.management.network.implementation.VpnClientRootCertificateInner;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -12,7 +11,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -21,11 +19,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -49,7 +44,7 @@ public class CvdbSolrEngineIndexTest {
     protected Study study;
 
     @Rule
-    public CvaSolrExtenalResource cvaSolrExternalResource = new CvaSolrExtenalResource(true, projectId);;
+    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
 
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
@@ -69,7 +64,7 @@ public class CvdbSolrEngineIndexTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
-        cvdbEngine = cvaSolrExternalResource.configure();
+        cvdbEngine = cvdbSolrExternalResource.configure();
 
         try {
             cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
@@ -177,7 +172,7 @@ public class CvdbSolrEngineIndexTest {
 //
 //        // Execute the Solr query
 //        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvaEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX),
+//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX),
 //                solrQuery);
 //
 //        // Print out the results

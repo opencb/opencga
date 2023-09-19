@@ -14,7 +14,7 @@
         <module>opencga-enterprise-client</module>
         <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-catalog</module>
-        <module>opencga-enterprise-cva</module>
+        <module>opencga-enterprise-cvdb</module>
         <module>opencga-enterprise-server</module>
     </modules>
 
@@ -77,7 +77,7 @@
             </dependency>
             <dependency>
                 <groupId>com.zettagenomics.opencga-enterprise</groupId>
-                <artifactId>opencga-enterprise-cva</artifactId>
+                <artifactId>opencga-enterprise-cvdb</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>

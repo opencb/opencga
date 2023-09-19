@@ -1,60 +1,41 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.PivotField;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.opencb.opencga.core.common.JacksonUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
 public class ClinicalAggregationTest {
 
-    private CvdbSolrEngine cvaEngine;
+    private CvdbSolrEngine cvdbEngine;
     private String projectId = "project1";
 
     @Rule
-    public CvaSolrExtenalResource cvaSolrExternalResource = new CvaSolrExtenalResource(false, projectId);
+    public CvdbSolrExtenalResource cvdbSolrExtenalResource = new CvdbSolrExtenalResource(false, projectId);
 
 //    @Before
 //    public void before() throws IOException, CvdbException {
-//        cvaEngine = cvaSolrExternalResource.configure();
+//        cvdbEngine = cvdbSolrExternalResource.configure();
 //
 //        try {
-//            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-//            cvaEngine.getSolrManager().remove(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-//            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-//            cvaEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+//            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
+//            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
+//            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
+//            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
 //        } catch (Exception e) {
 //            // Nothing to do
 //        }
 //
-//        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+//        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
 //                CLINICAL_ANALYSIS_CONFIGSET);
-//        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), INTERPRETATION_CONFIGSET);
-//        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
+//        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), INTERPRETATION_CONFIGSET);
+//        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
 //                CLINICAL_VARIANT_CONFIGSET);
-//        cvaEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+//        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
 //                CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
 //
 //        InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("interpretation1.json.gz");
 //        GZIPInputStream gzipInputStream = new GZIPInputStream(is);
 //        org.opencb.opencga.core.models.clinical.Interpretation interpretation = JacksonUtils.getDefaultObjectMapper()
 //                .readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class).readValue(gzipInputStream);
-//        cvaEngine.index(interpretation, true, projectId);
+//        cvdbEngine.index(interpretation, true, projectId);
 //        System.out.println("Interpretation " + interpretation.getClinicalAnalysisId() + " loaded !");
 //
 //
@@ -62,7 +43,7 @@ public class ClinicalAggregationTest {
 //        gzipInputStream = new GZIPInputStream(is);
 //        interpretation = JacksonUtils.getDefaultObjectMapper().readerFor(org.opencb.opencga.core.models.clinical.Interpretation.class)
 //                .readValue(gzipInputStream);
-//        cvaEngine.index(interpretation, true, projectId);
+//        cvdbEngine.index(interpretation, true, projectId);
 //        System.out.println("Interpretation " + interpretation.getClinicalAnalysisId() + " loaded !");
 //    }
 //
@@ -75,7 +56,7 @@ public class ClinicalAggregationTest {
 //        // Execute the Solr query
 //        System.out.println("solr query = " + solrQuery.toQueryString());
 //        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
 //                solrQuery);
 //
 //        // Print out the results
@@ -109,7 +90,7 @@ public class ClinicalAggregationTest {
 //        // Execute the Solr query
 //        System.out.println("solr query = " + solrQuery.toQueryString());
 //        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvaEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
 //                solrQuery);
 //        FacetField facetField = response.getFacetField("acmgs");
 //

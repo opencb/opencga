@@ -23,9 +23,7 @@ import java.nio.file.StandardCopyOption;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
-//import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
-
-public class CvaSolrExtenalResource extends ExternalResource {
+public class CvdbSolrExtenalResource extends ExternalResource {
 
     private SolrClient solrClient;
     protected boolean embeded = false;
@@ -33,7 +31,7 @@ public class CvaSolrExtenalResource extends ExternalResource {
 
     private static Path rootDir;
 
-    public CvaSolrExtenalResource(boolean embeded, String projectId) {
+    public CvdbSolrExtenalResource(boolean embeded, String projectId) {
         this.embeded = embeded;
         this.projectId = projectId;
     }
@@ -78,7 +76,7 @@ public class CvaSolrExtenalResource extends ExternalResource {
         try {
             if (solrClient != null) {
                 if (embeded) {
-                    ((CvaSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
+                    ((CvdbSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
                 } else {
                     solrClient.close();
                 }
@@ -103,9 +101,9 @@ public class CvaSolrExtenalResource extends ExternalResource {
     }
 
     public CvdbSolrEngine configure() {
-        CvdbSolrEngine cvaEngine = new CvdbSolrEngine();
-        cvaEngine.setSolrManager(new SolrManager(solrClient, "localhost", "core"));
-        return cvaEngine;
+        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine();
+        cvdbEngine.setSolrManager(new SolrManager(solrClient, "localhost", "core"));
+        return cvdbEngine;
     }
 
     public SolrClient getSolrClient() {
@@ -157,7 +155,7 @@ public class CvaSolrExtenalResource extends ExternalResource {
                 .setConfigSetBaseDirectory(configSetPath.toString())
                 .build();
 
-        final EmbeddedSolrServer embeddedSolrServer = new CvaSolrExtenalResource.MyEmbeddedSolrServer(config, coreName);
+        final EmbeddedSolrServer embeddedSolrServer = new CvdbSolrExtenalResource.MyEmbeddedSolrServer(config, coreName);
 
         return embeddedSolrServer;
     }

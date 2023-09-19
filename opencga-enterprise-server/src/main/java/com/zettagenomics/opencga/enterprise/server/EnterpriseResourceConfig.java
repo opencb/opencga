@@ -46,7 +46,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseApiClasses.put("clinical", ClinicalWebService.class);
         enterpriseApiClasses.put("variantOperation", VariantOperationWebService.class);
         enterpriseApiClasses.put("meta", EnterpriseMetaWSServer.class);
-        enterpriseApiClasses.put("cva", CvdbWSServer.class);
+        enterpriseApiClasses.put("cvdb", CvdbWSServer.class);
         enterpriseApiClasses.put("admin", AdminWSServer.class);
 
         // Utils, Filters and hidden API classes
