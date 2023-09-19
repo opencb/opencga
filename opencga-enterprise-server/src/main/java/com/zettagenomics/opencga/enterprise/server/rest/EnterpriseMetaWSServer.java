@@ -1,6 +1,7 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManager;
+import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -10,7 +11,6 @@ import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
@@ -75,13 +75,13 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @Path("/about")
     @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
     public Response getAbout() {
-        Map<String, String> info = new HashMap<>(5);
+        Map<String, String> info = new LinkedHashMap<>(6);
         info.put("Program", "XetaBase (Zetta Genomics)");
-        info.put("Version", GitRepositoryState.getInstance().getBuildVersion());
-        info.put("Git branch", GitRepositoryState.getInstance().getBranch());
-        info.put("Git commit", GitRepositoryState.getInstance().getCommitId());
+        info.put("Version", GitUtils.getEnterprise().getBuildVersion());
+        info.put("Git branch", GitUtils.getEnterprise().getBranch());
+        info.put("Git commit", GitUtils.getEnterprise().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        info.put("OpenCGA Version", GitRepositoryState.get("git.build.opencgaVersion"));
+        info.put("OpenCGA Version", GitUtils.getOpenCGA().getBuildVersion());
 
         OpenCGAResult<Object> queryResult = new OpenCGAResult<>();
         queryResult.setTime(0);
