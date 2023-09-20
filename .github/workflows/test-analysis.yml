@@ -105,6 +105,8 @@ jobs:
         run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
         ## Skip cancelled()
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
