@@ -16,6 +16,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,6 +31,7 @@ public class OpenCGAHealthCheckMonitor {
     private final CatalogManager catalogManager;
     private final StorageEngineFactory storageEngineFactory;
     private final VariantStorageManager variantManager;
+    private final ExecutorService executorService;
 
     public OpenCGAHealthCheckMonitor(Configuration configuration, CatalogManager catalogManager,
                                      StorageEngineFactory storageEngineFactory,
@@ -37,6 +40,7 @@ public class OpenCGAHealthCheckMonitor {
         this.catalogManager = catalogManager;
         this.storageEngineFactory = storageEngineFactory;
         this.variantManager = variantManager;
+        executorService = Executors.newCachedThreadPool();
     }
 
     public static class HealthCheckStatus {
@@ -145,6 +149,15 @@ public class OpenCGAHealthCheckMonitor {
         }
     }
 
+    public void asyncUpdate() {
+        if (shouldUpdateStatus()) {
+            executorService.submit(() -> {
+                logger.debug("Update HealthCheck cache status");
+                updateHealthCheck();
+            });
+        }
+    }
+
     public OpenCGAResult<HealthCheckStatus> getStatus() {
 
         OpenCGAResult<HealthCheckStatus> queryResult = new OpenCGAResult<>();
@@ -176,8 +189,17 @@ public class OpenCGAHealthCheckMonitor {
         return elapsedTime > configuration.getHealthCheck().getInterval();
     }
 
-    private synchronized void updateHealthCheck() {
+    private void updateHealthCheck() {
+        updateHealthCheck(StopWatch.createStarted());
+    }
+
+    private synchronized void updateHealthCheck(StopWatch totalTime) {
         if (!shouldUpdateStatus()) {
+            if (totalTime.getTime(TimeUnit.SECONDS) > 5) {
+                logger.warn("Slow OpenCGA status. Synchronized time wait: {} . Skip update.",
+                        totalTime.getTime(TimeUnit.MILLISECONDS) / 1000.0
+                );
+            }
             // Skip update!
             return;
         }
@@ -186,7 +208,6 @@ public class OpenCGAHealthCheckMonitor {
 
         HealthCheckStatus status = new HealthCheckStatus();
 
-        StopWatch totalTime = StopWatch.createStarted();
         StopWatch catalogMongoDBTime = StopWatch.createStarted();
         try {
             if (catalogManager.getCatalogDatabaseStatus()) {

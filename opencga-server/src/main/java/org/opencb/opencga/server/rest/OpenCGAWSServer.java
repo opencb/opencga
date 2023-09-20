@@ -298,6 +298,7 @@ public class OpenCGAWSServer {
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
             healthCheckMonitor = new OpenCGAHealthCheckMonitor(configuration, catalogManager, storageEngineFactory, variantManager);
+            healthCheckMonitor.asyncUpdate();
 
             MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary();
             if (migrationSummary.getMigrationsToBeApplied() > 0) {
