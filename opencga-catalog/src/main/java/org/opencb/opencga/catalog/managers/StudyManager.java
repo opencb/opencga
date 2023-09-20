@@ -1819,7 +1819,7 @@ public class StudyManager extends AbstractManager {
                                      String individualFields, String cohortFields, String familyFields, String jobFields,
                                      boolean defaultStats, String sessionId) throws CatalogException, IOException {
         Map<String, Object> result = new HashMap<>();
-        result.put("sample", catalogManager.getSampleManager().facet(organizationId, studyStr, new Query(), setFacetFields(sampleFields),
+        result.put("sample", catalogManager.getSampleManager().facet(studyStr, new Query(), setFacetFields(sampleFields),
                 defaultStats, sessionId));
         result.put("file", catalogManager.getFileManager().facet(organizationId, studyStr, new Query(), setFacetFields(fileFields),
                 defaultStats, sessionId));
@@ -1827,7 +1827,7 @@ public class StudyManager extends AbstractManager {
                 setFacetFields(individualFields), defaultStats, sessionId));
         result.put("family", catalogManager.getFamilyManager().facet(organizationId, studyStr, new Query(), setFacetFields(familyFields),
                 defaultStats, sessionId));
-        result.put("cohort", catalogManager.getCohortManager().facet(organizationId, studyStr, new Query(), setFacetFields(cohortFields),
+        result.put("cohort", catalogManager.getCohortManager().facet(studyStr, new Query(), setFacetFields(cohortFields),
                 defaultStats, sessionId));
         result.put("job", catalogManager.getJobManager().facet(organizationId, studyStr, new Query(), setFacetFields(jobFields),
                 defaultStats, sessionId));

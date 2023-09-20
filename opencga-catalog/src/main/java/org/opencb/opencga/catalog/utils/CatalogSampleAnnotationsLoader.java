@@ -133,7 +133,7 @@ public class CatalogSampleAnnotationsLoader {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
                 logger.info("Annotating sample {}", individual.getId());
-                catalogManager.getSampleManager().update(organizationId, study.getFqn(), individual.getId(), new SampleUpdateParams()
+                catalogManager.getSampleManager().update(study.getFqn(), individual.getId(), new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(annotationSet)), options, sessionId);
             } else {
                 DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),

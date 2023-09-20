@@ -315,7 +315,7 @@ public class CatalogStorageMetadataSynchronizer {
                     } else {
                         status = CohortStatus.NONE;
                     }
-                    catalogManager.getCohortManager().setStatus(organizationId, study.getName(), defaultCohortName, status, null, sessionId);
+                    catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
                 logger.info("Update cohort " + defaultCohortName);
 
@@ -330,7 +330,7 @@ public class CatalogStorageMetadataSynchronizer {
                     List<SampleReferenceParam> samples = samplesToRemove.stream()
                             .map(s -> new SampleReferenceParam().setId(s))
                             .collect(Collectors.toList());
-                    catalogManager.getCohortManager().update(organizationId, study.getName(), defaultCohortName,
+                    catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                             new CohortUpdateParams().setSamples(samples),
                             true, options, sessionId);
                 }
@@ -342,7 +342,7 @@ public class CatalogStorageMetadataSynchronizer {
                     List<SampleReferenceParam> samples = samplesToAdd.stream()
                             .map(s -> new SampleReferenceParam().setId(s))
                             .collect(Collectors.toList());
-                    catalogManager.getCohortManager().update(organizationId, study.getName(), defaultCohortName,
+                    catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                             new CohortUpdateParams().setSamples(samples),
                             true, options, sessionId);
                     progressLogger.increment(samplesToAdd.size());
@@ -389,7 +389,7 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getId().equals(CohortStatus.READY)) {
                         logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.READY);
-                        catalogManager.getCohortManager().setStatus(organizationId, study.getName(), cohort.getId(), CohortStatus.READY,
+                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.READY,
                                 "Update status from Storage", sessionId);
                         modified = true;
                     }
@@ -411,7 +411,7 @@ public class CatalogStorageMetadataSynchronizer {
                     Cohort cohort = iterator.next();
                     if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getId().equals(CohortStatus.INVALID)) {
                         logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.INVALID);
-                        catalogManager.getCohortManager().setStatus(organizationId, study.getName(), cohort.getId(), CohortStatus.INVALID,
+                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.INVALID,
                                 "Update status from Storage", sessionId);
                         modified = true;
                     }
@@ -927,13 +927,13 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     public void synchronizeRemovedStudyFromStorage(String study, String token) throws CatalogException {
-        catalogManager.getCohortManager().update(organizationId, study, StudyEntry.DEFAULT_COHORT,
+        catalogManager.getCohortManager().update(study, StudyEntry.DEFAULT_COHORT,
                 new CohortUpdateParams().setSamples(Collections.emptyList()),
                 true,
                 new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
                 token);
 
-        catalogManager.getCohortManager().setStatus(organizationId, study, StudyEntry.DEFAULT_COHORT, CohortStatus.NONE,
+        catalogManager.getCohortManager().setStatus(study, StudyEntry.DEFAULT_COHORT, CohortStatus.NONE,
                 "Study has been removed from storage", token);
 
         try (DBIterator<File> iterator = catalogManager.getFileManager()

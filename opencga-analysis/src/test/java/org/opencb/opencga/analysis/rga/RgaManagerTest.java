@@ -104,10 +104,10 @@ public class RgaManagerTest {
                 }
             }
 
-            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c1")
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
                             .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, ownerToken);
-            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c2")
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
                             .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, ownerToken);
 
@@ -141,7 +141,7 @@ public class RgaManagerTest {
             catalogManager.getIndividualManager().updateAcl(organizationId, STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
                     new IndividualAclParams().setPermissions(IndividualPermissions.VIEW.name()),
                     ParamUtils.AclAction.SET, false, ownerToken);
-            catalogManager.getSampleManager().updateAcl(organizationId, STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
+            catalogManager.getSampleManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
                     new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), ParamUtils.AclAction.SET,
                     ownerToken);
 

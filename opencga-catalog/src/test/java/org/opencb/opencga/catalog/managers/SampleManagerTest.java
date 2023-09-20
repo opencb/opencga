@@ -1287,7 +1287,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(organizationId, Arrays.asList(studyFqn), "@myGroup",
                 new StudyAclParams("", null), SET, token);
 
-        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Arrays.asList("s_1"), "@myGroup",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup",
                 new SampleAclParams(null, null, null, null, "VIEW"), SET, token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
@@ -1321,9 +1321,9 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample = catalogManager.getSampleManager().get(organizationId, studyFqn, s_1, QueryOptions.empty(), token).first();
         assertEquals(3, sample.getAnnotationSets().size());
 
-        catalogManager.getSampleManager().removeAnnotationSet(organizationId, studyFqn, s_1, "annotation1", QueryOptions.empty(), token);
+        catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "annotation1", QueryOptions.empty(), token);
         update = catalogManager.getSampleManager()
-                .removeAnnotationSet(organizationId, studyFqn, s_1, "annotation2", QueryOptions.empty(), token);
+                .removeAnnotationSet(studyFqn, s_1, "annotation2", QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
 
         sample = catalogManager.getSampleManager().get(organizationId, studyFqn, s_1, QueryOptions.empty(), token).first();
@@ -1331,7 +1331,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
-        catalogManager.getSampleManager().removeAnnotationSet(organizationId, studyFqn, s_1, "non_existing", QueryOptions.empty(), token);
+        catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "non_existing", QueryOptions.empty(), token);
     }
 
     @Test
@@ -1881,7 +1881,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
-        catalogManager.getSampleManager().updateAnnotations(organizationId, studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
                 ParamUtils.CompleteUpdateAction.SET, new QueryOptions(), token);
 
         Consumer<AnnotationSet> check = as -> {
@@ -1911,7 +1911,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
-        catalogManager.getSampleManager().updateAnnotations(organizationId, studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
                 ParamUtils.CompleteUpdateAction.SET, new QueryOptions(), token);
 
         check = as -> {
@@ -1932,7 +1932,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(),
                 annotationSet.getAnnotations(), ParamUtils.CompleteUpdateAction.SET, new QueryOptions(),
                 token);
-        catalogManager.getSampleManager().updateAnnotations(organizationId, studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationSet.getAnnotations(),
                 ParamUtils.CompleteUpdateAction.SET, new QueryOptions(), token);
 
         check = as -> {
@@ -1953,7 +1953,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         // Action now is ADD, we only want to change that annotation
         catalogManager.getIndividualManager().updateAnnotations(organizationId, studyFqn, ind.getId(), annotationSet.getId(), annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(), token);
-        catalogManager.getSampleManager().updateAnnotations(organizationId, studyFqn, s_1, annotationSet.getId(), annotationUpdate,
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, annotationSet.getId(), annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(), token);
 
         check = as -> {
@@ -2048,7 +2048,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         // We add one of the non mandatory annotations
 
         // First update
-        catalogManager.getSampleManager().updateAnnotations(organizationId, studyFqn, s_1, "annot1", new ObjectMap("EXTRA", "extra"),
+        catalogManager.getSampleManager().updateAnnotations(studyFqn, s_1, "annot1", new ObjectMap("EXTRA", "extra"),
                 ParamUtils.CompleteUpdateAction.ADD, QueryOptions.empty(), token);
 
         Sample sample = catalogManager.getSampleManager().get(organizationId, studyFqn, s_1, null, token).first();
@@ -2072,7 +2072,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDeleteAnnotationSet() throws CatalogException {
-        catalogManager.getSampleManager().removeAnnotationSet(organizationId, studyFqn, s_1, "annot1", QueryOptions.empty(), token);
+        catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "annot1", QueryOptions.empty(), token);
 
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(organizationId, studyFqn, s_1,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);
@@ -2186,7 +2186,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample = catalogManager.getSampleManager().get(organizationId, studyFqn, sampleId1, QueryOptions.empty(), token).first();
         assertEquals(individualId, sample.getIndividualId());
 
-        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
                 new SampleAclParams(null, null, null, null, SamplePermissions.VIEW.name()), SET, token);
 
         sample = catalogManager.getSampleManager().get(organizationId, studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true),
@@ -2509,7 +2509,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample = new Sample().setId("sample");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> dataResult = catalogManager.getSampleManager().updateAcl(organizationId, studyFqn,
+        OpenCGAResult<AclEntryList<SamplePermissions>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 Collections.singletonList("sample"), "user2", new SampleAclParams(null, null, null, null, "VIEW"), SET, token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().getAcl().size());
@@ -2541,7 +2541,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getFamilyManager().create(organizationId, studyFqn, family2, Collections.singletonList(individual2.getId()), QueryOptions.empty(),
                 token);
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> permissions = catalogManager.getSampleManager().getAcls(organizationId, studyFqn,
+        OpenCGAResult<AclEntryList<SamplePermissions>> permissions = catalogManager.getSampleManager().getAcls(studyFqn,
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
         assertEquals(2, permissions.getNumResults());
         for (AclEntryList<SamplePermissions> result : permissions.getResults()) {
@@ -2551,12 +2551,12 @@ public class SampleManagerTest extends AbstractManagerTest {
         }
 
         // Assign permissions to both families
-        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.emptyList(), "user2",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.emptyList(), "user2",
                 new SampleAclParams()
                         .setFamily(family.getId() + "," + family2.getId())
                         .setPermissions(SamplePermissions.VIEW.name()), ADD, token);
 
-        permissions = catalogManager.getSampleManager().getAcls(organizationId, studyFqn,
+        permissions = catalogManager.getSampleManager().getAcls(studyFqn,
                 Arrays.asList(sample.getId(), sample2.getId()), "user2", false, token);
         assertEquals(2, permissions.getNumResults());
         for (AclEntryList<SamplePermissions> result : permissions.getResults()) {

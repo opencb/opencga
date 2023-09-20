@@ -777,7 +777,7 @@ public class VariantWebService extends AnalysisWebService {
                                       @ApiParam(value = ParamConstants.COHORT_DESCRIPTION) @QueryParam("cohort") String cohort) {
         return run(() -> catalogManager
                 .getCohortManager()
-                .removeAnnotationSet(organizationId, studyStr, cohort, CohortVariantStatsAnalysis.VARIABLE_SET_ID, queryOptions, token));
+                .removeAnnotationSet(studyStr, cohort, CohortVariantStatsAnalysis.VARIABLE_SET_ID, queryOptions, token));
     }
 
     @Deprecated

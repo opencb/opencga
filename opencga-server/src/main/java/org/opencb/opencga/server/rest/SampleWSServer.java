@@ -326,7 +326,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), phenotypesAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(organizationId, studyStr, getIdList(sampleStr), parameters, true, queryOptions, token), "Sample update success");
+            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, queryOptions, token), "Sample update success");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -374,7 +374,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (action == null) {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
-            return createOkResponse(catalogManager.getSampleManager().updateAnnotations(organizationId, studyStr, sampleStr, annotationSetId,
+            return createOkResponse(catalogManager.getSampleManager().updateAnnotations(studyStr, sampleStr, annotationSetId,
                     updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -415,7 +415,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            return createOkResponse(sampleManager.getAcls(organizationId, studyStr, idList, member, silent, token));
+            return createOkResponse(sampleManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -436,7 +436,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             SampleAclParams sampleAclParams = new SampleAclParams(
                     params.getIndividual(), params.getFamily(), params.getFile(), params.getCohort(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
-            return createOkResponse(sampleManager.updateAcl(organizationId, studyStr, idList, memberId, sampleAclParams, action, token));
+            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -470,7 +470,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getSampleManager().facet(organizationId, studyStr, query, queryOptions, defaultStats,
+            DataResult<FacetField> queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

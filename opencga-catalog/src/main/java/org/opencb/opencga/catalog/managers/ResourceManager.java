@@ -274,17 +274,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object containing the query that will be executed.
-     * @param field          A field or a comma separated list of fields by which the results will be grouped in.
-     * @param numResults     Maximum number of results to be reported.
-     * @param asc            Order in which the results will be reported.
-     * @param token          Session id of the user logged in.
+     * @param studyStr   study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query      Query object containing the query that will be executed.
+     * @param field      A field or a comma separated list of fields by which the results will be grouped in.
+     * @param numResults Maximum number of results to be reported.
+     * @param asc        Order in which the results will be reported.
+     * @param token      Session id of the user logged in.
      * @return A OpenCGAResult object containing each of the fields in field and the count of them matching the query.
      * @throws CatalogException CatalogException
      */
-    public abstract OpenCGAResult rank(String organizationId, String studyStr, Query query, String field, int numResults, boolean asc,
+    public abstract OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc,
                                        String token) throws CatalogException;
 
     /**
@@ -304,22 +303,21 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(organizationId, studyStr, query, Arrays.asList(fields.split(",")), options, token);
+        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, token);
     }
 
     /**
      * Groups the matching entries by some fields.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param query          Query object.
-     * @param fields         A field or a comma separated list of fields by which the results will be grouped in.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param query    Query object.
+     * @param fields   A field or a comma separated list of fields by which the results will be grouped in.
+     * @param options  QueryOptions object.
+     * @param token    Session id of the user logged in.
      * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public abstract OpenCGAResult groupBy(String organizationId, @Nullable String studyStr, Query query, List<String> fields,
+    public abstract OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields,
                                           QueryOptions options, String token) throws CatalogException;
 
     /**

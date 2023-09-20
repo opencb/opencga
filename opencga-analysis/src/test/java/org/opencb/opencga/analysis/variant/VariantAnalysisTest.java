@@ -186,10 +186,10 @@ public class VariantAnalysisTest {
                 }
             }
 
-            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c1")
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
                             .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
-            catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c2")
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
                             .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
 
@@ -533,7 +533,7 @@ public class VariantAnalysisTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REPLACE));
 
         catalogManager.getCohortManager()
-                .update(organizationId, STUDY, StudyEntry.DEFAULT_COHORT, updateParams, true, options, token);
+                .update(STUDY, StudyEntry.DEFAULT_COHORT, updateParams, true, options, token);
 
         toolParams = new CohortVariantStatsAnalysisParams()
                 .setCohort(StudyEntry.DEFAULT_COHORT)

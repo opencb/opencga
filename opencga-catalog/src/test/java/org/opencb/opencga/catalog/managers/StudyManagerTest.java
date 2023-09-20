@@ -180,7 +180,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
 
         study.getInternal().getConfiguration().getClinical().setPriorities(Collections.singletonList(new ClinicalPriorityValue("bla", "bla", 1, true)));
-        catalogManager.getClinicalAnalysisManager().configureStudy(organizationId, "newStudy", study.getInternal().getConfiguration().getClinical(), token);
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", study.getInternal().getConfiguration().getClinical(), token);
 
         study = catalogManager.getStudyManager().get(organizationId, "newStudy", QueryOptions.empty(), token).first();
         assertNotNull(study.getInternal().getConfiguration());
@@ -191,7 +191,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertFalse(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
         assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
 
-        catalogManager.getClinicalAnalysisManager().configureStudy(organizationId, "newStudy", ClinicalAnalysisStudyConfiguration.defaultConfiguration(), token);
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", ClinicalAnalysisStudyConfiguration.defaultConfiguration(), token);
 
         study = catalogManager.getStudyManager().get(organizationId, "newStudy", QueryOptions.empty(), token).first();
         assertNotNull(study.getInternal().getConfiguration());

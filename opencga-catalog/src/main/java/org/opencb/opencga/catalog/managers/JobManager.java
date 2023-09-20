@@ -1678,7 +1678,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult rank(String organizationId, String studyId, Query query, String field, int numResults, boolean asc, String token)
+    public OpenCGAResult rank(String studyId, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
@@ -1701,7 +1701,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult groupBy(String organizationId, @Nullable String studyId, Query query, List<String> fields, QueryOptions options,
+    public OpenCGAResult groupBy(@Nullable String studyId, Query query, List<String> fields, QueryOptions options,
                                  String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);

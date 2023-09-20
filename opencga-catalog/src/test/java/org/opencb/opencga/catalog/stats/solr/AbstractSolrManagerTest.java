@@ -119,9 +119,9 @@ public class AbstractSolrManagerTest extends GenericTest {
         Sample sample3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
 
-        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
                 new SampleAclParams(null, null, null, null, "VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
-        catalogManager.getSampleManager().updateAcl(organizationId, studyFqn, Collections.singletonList("sample2"), "@study_allow",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
                 new SampleAclParams(null, null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
 
         // Cohorts
@@ -132,9 +132,9 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort3").setSamples(Arrays.asList(sample2, sample3)),
                 QueryOptions.empty(), sessionIdAdmin);
 
-        catalogManager.getCohortManager().updateAcl(organizationId, studyFqn, Collections.singletonList("cohort1"), "@study_deny,user3",
+        catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort1"), "@study_deny,user3",
                 new AclParams("VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
-        catalogManager.getCohortManager().updateAcl(organizationId, studyFqn, Collections.singletonList("cohort2"), "@study_allow",
+        catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort2"), "@study_allow",
                 new AclParams(""), ParamUtils.AclAction.SET, sessionIdAdmin);
     }
 

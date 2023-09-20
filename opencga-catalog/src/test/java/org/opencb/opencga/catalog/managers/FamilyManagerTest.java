@@ -653,7 +653,7 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(organizationId, STUDY,
+        OpenCGAResult<AclEntryList<SamplePermissions>> acls = catalogManager.getSampleManager().getAcls(STUDY,
                 sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
             assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));
@@ -671,7 +671,7 @@ public class FamilyManagerTest extends GenericTest {
         }
         assertEquals(3, sampleList.size());
 
-        acls = catalogManager.getSampleManager().getAcls(organizationId, STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
+        acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
                 "user2", false, sessionIdUser);
         for (AclEntryList<SamplePermissions> result : acls.getResults()) {
             assertTrue(result.getAcl().get(0).getPermissions().contains(SamplePermissions.VIEW));

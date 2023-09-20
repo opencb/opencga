@@ -755,7 +755,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        DataResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(organizationId, studyFqn,
+        DataResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
@@ -812,7 +812,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 SamplePermissions.VIEW.name() + "," + SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
-        OpenCGAResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(organizationId, studyFqn,
+        OpenCGAResult<AclEntryList<SamplePermissions>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (AclEntryList<SamplePermissions> result : sampleAclResult.getResults()) {
@@ -1752,14 +1752,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), INCLUDE_RESULT, token).first();
 
-        DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort", token);
+        DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", token);
         assertEquals(3, myCohort1.getNumResults());
 
         thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort,AnotherCohort", token);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,AnotherCohort", token);
 
         thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(organizationId, studyId, "MyCohort,MyCohort", token);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", token);
     }
 
     @Test
@@ -1857,11 +1857,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token);
 
         Query query = new Query();
-        Cohort myCohort = catalogManager.getCohortManager().generate(organizationId, studyId, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, token).first();
+        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, token).first();
         assertEquals(12, myCohort.getSamples().size());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
-        myCohort = catalogManager.getCohortManager().generate(organizationId, studyId, query, new Cohort()
+        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort()
                 .setId("MyCohort2")
                 .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, token).first();
         assertEquals(3, myCohort.getSamples().size());

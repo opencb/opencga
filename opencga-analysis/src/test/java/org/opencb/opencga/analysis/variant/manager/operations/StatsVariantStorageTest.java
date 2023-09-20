@@ -95,7 +95,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                     .stream()
                     .map(s -> new SampleReferenceParam().setId(s))
                     .collect(Collectors.toList());
-            Cohort cohort = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams("coh" + i,
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
                     "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first();
             coh[i] = cohort.getId();
         }
@@ -313,7 +313,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         calculateStats(coh[0]);
 
-        catalogManager.getCohortManager().setStatus(organizationId, studyId, coh[1], CohortStatus.CALCULATING, "", sessionId);
+        catalogManager.getCohortManager().setStatus(studyId, coh[1], CohortStatus.CALCULATING, "", sessionId);
         Cohort coh1 = catalogManager.getCohortManager().get(organizationId, studyId, coh[1], null, sessionId).first();
         Exception expected = VariantStatsOperationManager.unableToCalculateCohortCalculating(coh1);
         try {

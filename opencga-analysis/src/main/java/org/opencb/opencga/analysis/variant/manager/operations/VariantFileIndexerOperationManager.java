@@ -474,7 +474,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    catalogManager.getCohortManager().setStatus(organizationId, study, defaultCohort.getId(), CohortStatus.READY, null,
+                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), CohortStatus.READY, null,
                             sessionId);
 //                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
 //                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
@@ -542,7 +542,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(organizationId, studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
+        return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
                         "", Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
                 null, null,
                 QueryOptions.empty(), sessionId).first();
@@ -561,7 +561,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         Cohort defaultCohort = catalogManager.getCohortManager().search(study, query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getInternal().getStatus().getId();
 
-        catalogManager.getCohortManager().setStatus(organizationId, study, defaultCohort.getId(), status, null,
+        catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
                 sessionId);
 
         return prevStatus;

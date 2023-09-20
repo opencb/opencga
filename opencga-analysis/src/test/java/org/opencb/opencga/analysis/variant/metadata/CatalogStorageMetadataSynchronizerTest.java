@@ -106,7 +106,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 //        files.add(create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
 //        files.add(create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
         String cohortName = "ALL";
-        Cohort cohort = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams().setId(cohortName), null, null, INCLUDE_RESULT,
+        Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams().setId(cohortName), null, null, INCLUDE_RESULT,
                 sessionId).first();
         cohortId = cohort.getId();
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
@@ -114,7 +114,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12881_S1.genome.vcf.gz"));
-        catalogManager.getCohortManager().setStatus(organizationId, study.getFqn(), cohortName, "READY", "", sessionId);
+        catalogManager.getCohortManager().setStatus(study.getFqn(), cohortName, "READY", "", sessionId);
     }
 
     @Before
@@ -152,10 +152,10 @@ public class CatalogStorageMetadataSynchronizerTest {
             catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, file,
                     FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(InternalStatus.READY)), sessionId);
             indexedFiles.add(file.getName());
-            List<String> samples = catalogManager.getCohortManager().getSamples(organizationId, studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
+            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSampleIds());
             List<SampleReferenceParam> sampleReferenceParams = samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList());
-            catalogManager.getCohortManager().update(organizationId, studyId, cohortId,
+            catalogManager.getCohortManager().update(studyId, cohortId,
                     new CohortUpdateParams().setSamples(sampleReferenceParams), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(organizationId, studyId, file.getId(), null, sessionId).first();
@@ -166,7 +166,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         StudyMetadata sm = studyConfigurationFactory.getStudyMetadata(studyId);
 
-        List<String> samples = catalogManager.getCohortManager().getSamples(organizationId, studyId, cohortId, sessionId)
+        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId)
                 .getResults()
                 .stream()
                 .map(Sample::getId)
@@ -175,7 +175,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         metadataManager.registerCohorts(studyId, Collections.singletonMap(cohortId, samples));
 
-        catalogManager.getCohortManager().setStatus(organizationId, studyId, cohortId, CohortStatus.CALCULATING, "", sessionId);
+        catalogManager.getCohortManager().setStatus(studyId, cohortId, CohortStatus.CALCULATING, "", sessionId);
 
         File nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
         assertNotNull(nonIndexedFile);
@@ -323,7 +323,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         String fileId = files.get(1).getId();
         catalogManager.getFileManager().update(organizationId, studyId, fileId, new FileUpdateParams().setSampleIds(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), sessionId);
 
-        catalogManager.getCohortManager().update(organizationId, studyId, "ALL", new CohortUpdateParams()
+        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams()
                 .setSamples(Collections.singletonList(new SampleReferenceParam().setId("NA12878"))), true, new QueryOptions(Constants.ACTIONS,
                 Collections.singletonMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE)), sessionId);
         catalogManager.getSampleManager().delete(organizationId, studyId, Collections.singletonList("NA12878"), new QueryOptions(), sessionId);

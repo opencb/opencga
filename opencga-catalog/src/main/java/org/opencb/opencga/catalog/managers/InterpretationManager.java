@@ -1455,14 +1455,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //    }
 
     @Override
-    public OpenCGAResult rank(String organizationId, String studyStr, Query query, String field, int numResults, boolean asc,
+    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc,
                               String token)
             throws CatalogException {
         return null;
     }
 
     @Override
-    public OpenCGAResult groupBy(String organizationId, @Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
                                  String token) throws CatalogException {
         return null;
     }

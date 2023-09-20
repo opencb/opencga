@@ -129,7 +129,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response clinicalConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Configuration params to update") ClinicalAnalysisStudyConfiguration params) {
-        return run(() -> clinicalManager.configureStudy(organizationId, study, params, token));
+        return run(() -> clinicalManager.configureStudy(study, params, token));
     }
 
     @POST
@@ -150,7 +150,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
             ClinicalAnalysisCreateParams params) {
         try {
-            return createOkResponse(clinicalManager.create(organizationId, studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
+            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -185,7 +185,7 @@ public class ClinicalWebService extends AnalysisWebService {
             ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(clinicalManager.update(organizationId, studyStr, query, params, true, queryOptions, token));
+            return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -235,7 +235,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(clinicalManager.update(organizationId, studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
+            return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -249,7 +249,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Force deletion if the ClinicalAnalysis contains interpretations or is locked", defaultValue = "false") @QueryParam(Constants.FORCE) boolean force,
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(ParamConstants.CLINICAL_ANALYSES_PARAM) String clinicalAnalyses) {
         try {
-            return createOkResponse(clinicalManager.delete(organizationId, studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));
+            return createOkResponse(clinicalManager.delete(studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -381,7 +381,7 @@ public class ClinicalWebService extends AnalysisWebService {
                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(clinicalAnalysis);
-            return createOkResponse(clinicalManager.getAcls(organizationId, studyStr, idList, member, silent, token));
+            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -400,7 +400,7 @@ public class ClinicalWebService extends AnalysisWebService {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(organizationId, studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

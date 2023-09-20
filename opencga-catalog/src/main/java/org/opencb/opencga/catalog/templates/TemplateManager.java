@@ -460,7 +460,7 @@ public class TemplateManager {
                     sample.setId(null);
 
                     logger.info("Update sample '{}'", sample.getId());
-                    catalogManager.getSampleManager().update(organizationId, studyFqn, sampleId, sample, QueryOptions.empty(), token);
+                    catalogManager.getSampleManager().update(studyFqn, sampleId, sample, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -502,7 +502,7 @@ public class TemplateManager {
                     cohort.setId(null);
 
                     logger.info("Update cohort '{}'", cohort.getId());
-                    catalogManager.getCohortManager().update(organizationId, studyFqn, cohortId, cohort, QueryOptions.empty(), token);
+                    catalogManager.getCohortManager().update(studyFqn, cohortId, cohort, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -639,7 +639,7 @@ public class TemplateManager {
                     clinical.setId(null);
 
                     logger.info("Update Clinical Analysis '{}'", clinical.getId());
-                    catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, clinicalId, clinical, QueryOptions.empty(),
+                    catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalId, clinical, QueryOptions.empty(),
                             token);
 
                     count++;

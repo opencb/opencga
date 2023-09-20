@@ -217,10 +217,10 @@ public class VariantOperationsTest {
             }
         }
 
-        catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c1")
+        catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
                         .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                 null, null, null, token);
-        catalogManager.getCohortManager().create(organizationId, STUDY, new CohortCreateParams().setId("c2")
+        catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
                         .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                 null, null, null, token);
 

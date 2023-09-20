@@ -129,7 +129,7 @@ public class VariantStatsOperationManager extends OperationManager {
     protected void updateCohorts(String studyId, Collection<String> cohortIds, String sessionId, String status, String message)
             throws CatalogException {
         for (String cohortId : cohortIds) {
-            catalogManager.getCohortManager().setStatus(organizationId, studyId, cohortId, status, message, sessionId);
+            catalogManager.getCohortManager().setStatus(studyId, cohortId, status, message, sessionId);
         }
     }
 
@@ -216,7 +216,7 @@ public class VariantStatsOperationManager extends OperationManager {
                     break;
                 case CohortStatus.READY:
                     if (overwriteStats) {
-                        catalogManager.getCohortManager().setStatus(organizationId, studyFqn, cohortId, CohortStatus.INVALID, "", sessionId);
+                        catalogManager.getCohortManager().setStatus(studyFqn, cohortId, CohortStatus.INVALID, "", sessionId);
                         break;
                     } else {
                         // If not updating the stats or resuming, can't calculate statistics for a cohort READY
@@ -269,7 +269,7 @@ public class VariantStatsOperationManager extends OperationManager {
                 .collect(Collectors.toSet());
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
-                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(organizationId, studyId, new CohortCreateParams(cohortName,
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
                                 "", Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null,
                         new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 logger.info("Creating cohort {}", cohortName);

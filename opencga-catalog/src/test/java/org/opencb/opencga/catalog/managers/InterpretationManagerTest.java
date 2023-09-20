@@ -94,7 +94,7 @@ public class InterpretationManagerTest extends GenericTest {
         clinicalAnalysis.setFamily(new Family().setId("family")
                 .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
 
-        return catalogManager.getClinicalAnalysisManager().create(organizationId, STUDY, clinicalAnalysis, !createDefaultInterpretation,
+        return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, !createDefaultInterpretation,
                 INCLUDE_RESULT, sessionIdUser);
     }
 

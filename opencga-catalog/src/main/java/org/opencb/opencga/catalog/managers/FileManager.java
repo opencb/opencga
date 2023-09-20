@@ -2414,7 +2414,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult rank(String organizationId, String studyStr, Query query, String field, int numResults, boolean asc,
+    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc,
                               String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -2439,7 +2439,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult groupBy(String organizationId, @Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
                                  String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
