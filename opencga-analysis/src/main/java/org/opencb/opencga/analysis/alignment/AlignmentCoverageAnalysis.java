@@ -153,7 +153,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             }
             if (!isLinked) {
                 logger.info("{}: linking file {} in catalog", ID, bwCatalogPath.toFile().getName());
-                catalogManager.getFileManager().link(organizationId, getStudy(), bwCatalogPath.toUri(), outputCatalogPath.getParent().toString(),
+                catalogManager.getFileManager().link(getStudy(), bwCatalogPath.toUri(), outputCatalogPath.getParent().toString(),
                         new ObjectMap("parents", true), getToken());
             }
         });

@@ -309,8 +309,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public void matchUpVariantFiles(String organizationId, String studyStr, List<File> transformedFiles, String token)
-            throws CatalogException {
+    public void matchUpVariantFiles(String studyStr, List<File> transformedFiles, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
@@ -516,13 +515,13 @@ public class FileManager extends AnnotationSetManager<File> {
         return getParents(organizationId, fileDataResult.first().getStudyUid(), fileDataResult.first().getPath(), true, options);
     }
 
-    public OpenCGAResult<File> createFolder(String organizationId, String studyStr, String path, boolean parents, String description,
-                                            QueryOptions options, String token) throws CatalogException {
-        return createFolder(organizationId, studyStr, path, parents, description, "", options, token);
+    public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, QueryOptions options,
+                                            String token) throws CatalogException {
+        return createFolder(studyStr, path, parents, description, "", options, token);
     }
 
-    public OpenCGAResult<File> createFolder(String organizationId, String studyStr, String path, boolean parents, String description,
-                                            String jobId, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, String jobId,
+                                            QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkPath(path, "folderPath");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -544,7 +543,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         .setDescription(description)
                         .setType(File.Type.DIRECTORY)
                         .setJobId(jobId);
-                fileDataResult = create(organizationId, studyStr, file, parents, token);
+                fileDataResult = create(studyStr, file, parents, token);
                 break;
             case DIRECTORY_EXISTS:
                 Query query = new Query()
@@ -567,13 +566,12 @@ public class FileManager extends AnnotationSetManager<File> {
         throw new NotImplementedException("Call to create passing parents and content variables");
     }
 
-    public OpenCGAResult<File> create(String organizationId, String studyStr, FileCreateParams createParams, boolean parents, String token)
+    public OpenCGAResult<File> create(String studyStr, FileCreateParams createParams, boolean parents, String token)
             throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("createParams", createParams)
                 .append("parents", parents)
@@ -864,7 +862,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     Enums.Resource.FILE);
         }
 
-        matchUpVariantFiles(organizationId, study.getFqn(), queryResult.getResults(), token);
+        matchUpVariantFiles(study.getFqn(), queryResult.getResults(), token);
 
         return queryResult;
     }
@@ -891,7 +889,6 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param organizationId    Organization id.
      * @param studyStr          study where the file will be uploaded.
      * @param fileInputStream   Input stream of the file to be uploaded.
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
@@ -902,15 +899,14 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
-    public OpenCGAResult<File> upload(String organizationId, String studyStr, InputStream fileInputStream, File file, boolean overwrite,
-                                      boolean parents, boolean calculateChecksum, String token) throws CatalogException {
-        return upload(organizationId, studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
+    public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
+                                      boolean calculateChecksum, String token) throws CatalogException {
+        return upload(studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
     }
 
     /**
      * Upload a file in Catalog.
      *
-     * @param organizationId    Organization id.
      * @param studyStr          study where the file will be uploaded.
      * @param fileInputStream   Input stream of the file to be uploaded.
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
@@ -923,8 +919,8 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
-    public OpenCGAResult<File> upload(String organizationId, String studyStr, InputStream fileInputStream, File file, boolean overwrite,
-                                      boolean parents, boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+    public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
+                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
@@ -935,7 +931,6 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyStr", studyStr)
                 .append("file", file)
                 .append("overwrite", overwrite)
@@ -1138,22 +1133,20 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Moves a file not yet registered in OpenCGA from origin to finalDestiny in the file system and then registers it in the study.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study to which the file will belong.
-     * @param fileSource     Current location of the file (file system).
-     * @param folderDestiny  Directory where the file needs to be moved (file system).
-     * @param path           Directory in catalog where the file will be registered (catalog).
-     * @param token          Token of the user.
+     * @param studyStr      Study to which the file will belong.
+     * @param fileSource    Current location of the file (file system).
+     * @param folderDestiny Directory where the file needs to be moved (file system).
+     * @param path          Directory in catalog where the file will be registered (catalog).
+     * @param token         Token of the user.
      * @return An OpenCGAResult with the file registry after moving it to the final destination.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<File> moveAndRegister(String organizationId, String studyStr, Path fileSource, @Nullable Path folderDestiny,
-                                               @Nullable String path, String token) throws CatalogException {
+    public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, @Nullable Path folderDestiny, @Nullable String path,
+                                               String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyStr", studyStr)
                 .append("fileSource", fileSource)
                 .append("folderDestiny", folderDestiny)
@@ -1245,7 +1238,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
             OpenCGAResult<File> result;
             if (external) {
-                result = link(organizationId, study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true),
+                result = link(study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true),
                         token);
             } else {
                 CheckPath checkPath = checkPathExists(organizationId, study.getUid(), filePath);
@@ -1284,8 +1277,8 @@ public class FileManager extends AnnotationSetManager<File> {
         return get(organizationId, null, String.valueOf(fileUid), options, token);
     }
 
-    public OpenCGAResult<FileTree> getTree(String organizationId, @Nullable String studyId, String fileId, int maxDepth,
-                                           QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<FileTree> getTree(@Nullable String studyId, String fileId, int maxDepth, QueryOptions options, String token)
+            throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1294,7 +1287,6 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fileId", fileId)
                 .append("options", options)
@@ -1370,8 +1362,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<File> getFilesFromFolder(String organizationId, String studyStr, String folderStr, QueryOptions options,
-                                                  String token) throws CatalogException {
+    public OpenCGAResult<File> getFilesFromFolder(String studyStr, String folderStr, QueryOptions options, String token)
+            throws CatalogException {
         ParamUtils.checkObj(folderStr, "folder");
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
@@ -1389,8 +1381,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public DBIterator<File> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public DBIterator<File> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userManager.getUserId(organizationId, sessionId);
@@ -1407,8 +1398,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult<File> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<File> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         Query finalQuery = new Query(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1418,7 +1408,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
@@ -1443,8 +1432,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
-            throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(organizationId, token);
@@ -1452,7 +1440,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fields", fields)
                 .append("query", new Query(query))
@@ -1531,7 +1518,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("token", token);
@@ -1557,13 +1543,12 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, String token)
-            throws CatalogException {
-        return delete(organizationId, studyStr, fileIds, options, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, fileIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException,
-                                String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
@@ -1571,7 +1556,6 @@ public class FileManager extends AnnotationSetManager<File> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileIds", fileIds)
                 .append("params", params)
@@ -1629,13 +1613,12 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
-        return delete(organizationId, studyStr, query, options, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, Query query, ObjectMap params, boolean ignoreException,
-                                String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
@@ -1649,7 +1632,6 @@ public class FileManager extends AnnotationSetManager<File> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
@@ -1747,26 +1729,24 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Given a registered folder in OpenCGA, it will scan its contents to register any nested file/folder that might not be registered.
      *
-     * @param organizationId Organization id.
-     * @param studyId        Study id.
-     * @param folderId       Folder id, path or uuid.
-     * @param token          Token of the user. The user will need to have read and write access to the folderId.
+     * @param studyId  Study id.
+     * @param folderId Folder id, path or uuid.
+     * @param token    Token of the user. The user will need to have read and write access to the folderId.
      * @return An OpenCGAResult containing the number of files that have been added and the full list of files registered (old and new).
      * @throws CatalogException If there is any of the following errors: Study not found, folderId does not exist or user does not have
      *                          permissions.
      */
-    public OpenCGAResult<File> syncUntrackedFiles(String organizationId, String studyId, String folderId, String token)
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, String token) throws CatalogException {
+        return syncUntrackedFiles(studyId, folderId, uri -> true, "", token);
+    }
+
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, Predicate<URI> filter, String token)
             throws CatalogException {
-        return syncUntrackedFiles(organizationId, studyId, folderId, uri -> true, "", token);
+        return syncUntrackedFiles(studyId, folderId, filter, "", token);
     }
 
-    public OpenCGAResult<File> syncUntrackedFiles(String organizationId, String studyId, String folderId, Predicate<URI> filter,
-                                                  String token) throws CatalogException {
-        return syncUntrackedFiles(organizationId, studyId, folderId, filter, "", token);
-    }
-
-    public OpenCGAResult<File> syncUntrackedFiles(String organizationId, String studyId, String folderId, Predicate<URI> filter,
-                                                  String jobId, String token) throws CatalogException {
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, Predicate<URI> filter, String jobId, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, userId, organizationId);
 
@@ -1837,13 +1817,11 @@ public class FileManager extends AnnotationSetManager<File> {
         return result;
     }
 
-    public OpenCGAResult<File> unlink(String organizationId, @Nullable String studyId, String fileId, String token)
-            throws CatalogException {
+    public OpenCGAResult<File> unlink(@Nullable String studyId, String fileId, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyId)
                 .append("file", fileId)
                 .append("token", token);
@@ -1965,9 +1943,9 @@ public class FileManager extends AnnotationSetManager<File> {
         return false;
     }
 
-    public OpenCGAResult<File> updateAnnotations(String organizationId, String studyStr, String fileStr, String annotationSetId,
-                                                 Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                                 QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<File> updateAnnotations(String studyStr, String fileStr, String annotationSetId, Map<String, Object> annotations,
+                                                 ParamUtils.CompleteUpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
             throw new CatalogException("Missing array of annotations.");
         }
@@ -1976,28 +1954,28 @@ public class FileManager extends AnnotationSetManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(organizationId, studyStr, fileStr, updateParams, options, token);
+        return update(studyStr, fileStr, updateParams, options, token);
     }
 
-    public OpenCGAResult<File> removeAnnotations(String organizationId, String studyStr, String fileStr, String annotationSetId,
-                                                 List<String> annotations, QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(organizationId, studyStr, fileStr, annotationSetId,
+    public OpenCGAResult<File> removeAnnotations(String studyStr, String fileStr, String annotationSetId, List<String> annotations,
+                                                 QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, fileStr, annotationSetId,
                 new ObjectMap("remove", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
-    public OpenCGAResult<File> resetAnnotations(String organizationId, String studyStr, String fileStr, String annotationSetId,
-                                                List<String> annotations, QueryOptions options, String token) throws CatalogException {
-        return updateAnnotations(organizationId, studyStr, fileStr, annotationSetId,
+    public OpenCGAResult<File> resetAnnotations(String studyStr, String fileStr, String annotationSetId, List<String> annotations,
+                                                QueryOptions options, String token) throws CatalogException {
+        return updateAnnotations(studyStr, fileStr, annotationSetId,
                 new ObjectMap("reset", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    public OpenCGAResult<File> update(String organizationId, String studyStr, Query query, FileUpdateParams updateParams,
-                                      QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyStr, query, updateParams, false, options, token);
+    public OpenCGAResult<File> update(String studyStr, Query query, FileUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<File> update(String organizationId, String studyStr, Query query, FileUpdateParams updateParams,
-                                      boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<File> update(String studyStr, Query query, FileUpdateParams updateParams, boolean ignoreException,
+                                      QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -2011,7 +1989,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateMap)
@@ -2059,8 +2036,8 @@ public class FileManager extends AnnotationSetManager<File> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<File> update(String organizationId, String studyStr, String fileId, FileUpdateParams updateParams,
-                                      QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<File> update(String studyStr, String fileId, FileUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -2074,7 +2051,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("updateParams", updateMap)
@@ -2115,23 +2091,22 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Update a File from catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param fileIds        List of file ids. Could be either the id, path or uuid.
-     * @param updateParams   Data model filled only with the parameters to be updated.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param fileIds      List of file ids. Could be either the id, path or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<File> update(String organizationId, String studyStr, List<String> fileIds, FileUpdateParams updateParams,
-                                      QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyStr, fileIds, updateParams, false, options, token);
+    public OpenCGAResult<File> update(String studyStr, List<String> fileIds, FileUpdateParams updateParams, QueryOptions options,
+                                      String token) throws CatalogException {
+        return update(studyStr, fileIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<File> update(String organizationId, String studyStr, List<String> fileIds, FileUpdateParams updateParams,
-                                      boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<File> update(String studyStr, List<String> fileIds, FileUpdateParams updateParams, boolean ignoreException,
+                                      QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -2145,7 +2120,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileIds", fileIds)
                 .append("updateParams", updateMap)
@@ -2267,7 +2241,7 @@ public class FileManager extends AnnotationSetManager<File> {
         //Name must be changed with "rename".
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getName())) {
             logger.info("Rename file using update method!");
-            rename(organizationId, study.getFqn(), file.getPath(), updateParams.getName(), token);
+            rename(study.getFqn(), file.getPath(), updateParams.getName(), token);
             parameters.remove(FileDBAdaptor.QueryParams.NAME.key());
         }
 
@@ -2285,8 +2259,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Deprecated
-    public OpenCGAResult<File> update(String organizationId, String studyStr, String entryStr, ObjectMap parameters, QueryOptions options,
-                                      String token) throws CatalogException {
+    public OpenCGAResult<File> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
+            throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -2296,7 +2270,6 @@ public class FileManager extends AnnotationSetManager<File> {
         File file = internalGet(organizationId, study.getUid(), entryStr, QueryOptions.empty(), userId).first();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", entryStr)
                 .append("updateParams", parameters)
@@ -2332,7 +2305,7 @@ public class FileManager extends AnnotationSetManager<File> {
             //Name must be changed with "rename".
             if (parameters.containsKey(FileDBAdaptor.QueryParams.NAME.key())) {
                 logger.info("Rename file using update method!");
-                rename(organizationId, studyStr, file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.NAME.key()), token);
+                rename(studyStr, file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.NAME.key()), token);
             }
 
             OpenCGAResult<File> queryResult = unsafeUpdate(organizationId, study, file, parameters, options, userId);
@@ -2365,15 +2338,13 @@ public class FileManager extends AnnotationSetManager<File> {
         return getFileDBAdaptor(organizationId).get(file.getUid(), options);
     }
 
-    public OpenCGAResult<File> link(String organizationId, String studyStr, FileLinkParams params, boolean parents, String token)
-            throws CatalogException {
+    public OpenCGAResult<File> link(String studyStr, FileLinkParams params, boolean parents, String token) throws CatalogException {
         // We make two attempts to link to ensure the behaviour remains even if it is being called at the same time link from different
         // threads
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("params", params)
                 .append("parents", parents)
@@ -2402,20 +2373,19 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Deprecated
-    public OpenCGAResult<File> link(String organizationId, String studyStr, URI uriOrigin, String pathDestiny, ObjectMap params,
-                                    String token) throws CatalogException {
+    public OpenCGAResult<File> link(String studyStr, URI uriOrigin, String pathDestiny, ObjectMap params, String token)
+            throws CatalogException {
         params = ParamUtils.defaultObject(params, ObjectMap::new);
         FileLinkParams linkParams = new FileLinkParams()
                 .setDescription(params.getString("description", ""))
                 .setPath(pathDestiny)
                 .setUri(uriOrigin.toString())
                 .setRelatedFiles(params.getAsList("relatedFiles", SmallRelatedFileParams.class));
-        return link(organizationId, studyStr, linkParams, params.getBoolean("parents", false), token);
+        return link(studyStr, linkParams, params.getBoolean("parents", false), token);
     }
 
     @Override
-    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc,
-                              String sessionId)
+    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
@@ -2439,8 +2409,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
-                                 String sessionId)
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -2462,8 +2431,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
-    OpenCGAResult<File> rename(String organizationId, String studyStr, String fileStr, String newName, String sessionId)
-            throws CatalogException {
+    OpenCGAResult<File> rename(String studyStr, String fileStr, String newName, String sessionId) throws CatalogException {
         ParamUtils.checkFileName(newName, "name");
 
         String userId = userManager.getUserId(organizationId, sessionId);
@@ -2525,15 +2493,14 @@ public class FileManager extends AnnotationSetManager<File> {
         return getFileDBAdaptor(organizationId).get(file.getUid(), QueryOptions.empty());
     }
 
-    public OpenCGAResult<FileContent> grep(String organizationId, String studyId, String fileId, String pattern, boolean ignoreCase,
-                                           int numLines, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> grep(String studyId, String fileId, String pattern, boolean ignoreCase, int numLines, String token)
+            throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fileId", fileId)
                 .append("pattern", pattern)
@@ -2564,14 +2531,13 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> image(String organizationId, String studyStr, String fileId, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> image(String studyStr, String fileId, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         long startTime = System.currentTimeMillis();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("token", token);
@@ -2604,7 +2570,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> head(String organizationId, String studyStr, String fileId, long offset, int lines, String token)
+    public OpenCGAResult<FileContent> head(String studyStr, String fileId, long offset, int lines, String token)
             throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
@@ -2612,7 +2578,6 @@ public class FileManager extends AnnotationSetManager<File> {
         long startTime = System.currentTimeMillis();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("offset", offset)
@@ -2641,7 +2606,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> tail(String organizationId, String studyStr, String fileId, int lines, String token)
+    public OpenCGAResult<FileContent> tail(String studyStr, String fileId, int lines, String token)
             throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
@@ -2649,7 +2614,6 @@ public class FileManager extends AnnotationSetManager<File> {
         long startTime = System.currentTimeMillis();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("lines", lines)
@@ -2677,17 +2641,15 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public DataInputStream download(String organizationId, String studyStr, String fileId, String token) throws CatalogException {
-        return download(organizationId, studyStr, fileId, -1, -1, token);
+    public DataInputStream download(String studyStr, String fileId, String token) throws CatalogException {
+        return download(studyStr, fileId, -1, -1, token);
     }
 
-    public DataInputStream download(String organizationId, String studyStr, String fileId, int start, int limit, String token)
-            throws CatalogException {
+    public DataInputStream download(String studyStr, String fileId, int start, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("start", start)
@@ -2716,21 +2678,19 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String organizationId, String studyId, List<String> fileList, String member,
+    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, String member,
                                                                 boolean ignoreException, String token) throws CatalogException {
-        return getAcls(organizationId, studyId, fileList,
+        return getAcls(studyId, fileList,
                 StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String organizationId, String studyId, List<String> fileList,
-                                                                List<String> members, boolean ignoreException, String token)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<FilePermissions>> getAcls(String studyId, List<String> fileList, List<String> members,
+                                                                boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, user, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fileList", fileList)
                 .append("members", members)
@@ -2802,14 +2762,13 @@ public class FileManager extends AnnotationSetManager<File> {
         return fileAcls;
     }
 
-    public OpenCGAResult<AclEntryList<FilePermissions>> updateAcl(String organizationId, String studyId, List<String> fileStrList,
-                                                                  String memberList, FileAclParams aclParams, ParamUtils.AclAction action,
-                                                                  String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<FilePermissions>> updateAcl(String studyId, List<String> fileStrList, String memberList,
+                                                                  FileAclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, user, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fileStrList", fileStrList)
                 .append("memberList", memberList)
@@ -2920,8 +2879,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<File> getParents(String organizationId, String studyStr, String path, boolean rootFirst, QueryOptions options,
-                                          String token) throws CatalogException {
+    public OpenCGAResult<File> getParents(String studyStr, String path, boolean rootFirst, QueryOptions options, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
@@ -3085,16 +3044,14 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Method to check if a file or folder can be deleted. It will check for indexation, status, permissions and file system availability.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study.
-     * @param fileId         File or folder id.
-     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove the
-     *                       file from disk.
-     * @param token          Token of the user for which DELETE permissions will be checked.
+     * @param studyStr Study.
+     * @param fileId   File or folder id.
+     * @param unlink   Boolean indicating whether the operation only expects to remove the entry from the database or also remove the
+     *                 file from disk.
+     * @param token    Token of the user for which DELETE permissions will be checked.
      * @throws CatalogException if any of the files cannot be deleted.
      */
-    public void checkCanDeleteFile(String organizationId, String studyStr, String fileId, boolean unlink, String token)
-            throws CatalogException {
+    public void checkCanDeleteFile(String studyStr, String fileId, boolean unlink, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
         checkCanDeleteFile(organizationId, study, fileId, unlink, Arrays.asList(FileStatus.READY, FileStatus.TRASHED), userId);
@@ -3268,8 +3225,8 @@ public class FileManager extends AnnotationSetManager<File> {
         throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getInternal().getStatus().getId());
     }
 
-    public DataResult<FacetField> facet(String organizationId, String studyId, Query query, QueryOptions options, boolean defaultStats,
-                                        String token) throws CatalogException, IOException {
+    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
+            throws CatalogException, IOException {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -3279,7 +3236,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
@@ -3746,7 +3702,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Try to link transformed files with their corresponding original files if any
         try {
             if (transformedFiles.size() > 0) {
-                matchUpVariantFiles(organizationId, study.getFqn(), transformedFiles, token);
+                matchUpVariantFiles(study.getFqn(), transformedFiles, token);
             }
         } catch (CatalogException e) {
             logger.warn("Matching avro to variant file: {}", e.getMessage());
@@ -3814,7 +3770,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // If it is a transformed file, we will try to link it with the correspondent original file
         try {
             if (isTransformedFile(subfile.getName())) {
-                matchUpVariantFiles(organizationId, study.getFqn(), Arrays.asList(subfile), token);
+                matchUpVariantFiles(study.getFqn(), Arrays.asList(subfile), token);
             }
         } catch (CatalogException e1) {
             logger.warn("Matching avro to variant file: {}", e1.getMessage());

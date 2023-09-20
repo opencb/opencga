@@ -271,7 +271,7 @@ public class FileScanner {
                                 // Set the status of the file to PENDING DELETE
                                 FileUpdateParams updateParams = new FileUpdateParams()
                                         .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
-                                catalogManager.getFileManager().update(organizationId, study.getFqn(), tmpQuery, updateParams,
+                                catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams,
                                         QueryOptions.empty(), sessionId);
 
                                 // Delete completely the file/folder !
@@ -295,13 +295,13 @@ public class FileScanner {
                     if (file == null) {
                         long start, end;
                         if (uri.getPath().endsWith("/")) {
-                            file = catalogManager.getFileManager().createFolder(organizationId, study.getFqn(),
+                            file = catalogManager.getFileManager().createFolder(study.getFqn(),
                                     Paths.get(filePath).toString(), true, null, QueryOptions.empty(), sessionId).first();
                         } else {
                             start = System.currentTimeMillis();
 
                             InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
-                            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                                     new File().setPath(filePath), overwrite, true, calculateChecksum, sessionId).first();
                             if (deleteSource) {
                                 ioManager.deleteFile(uri);
@@ -325,7 +325,7 @@ public class FileScanner {
                             long start = System.currentTimeMillis();
 
                             InputStream inputStream = new FileInputStream(new java.io.File(uri));
-                            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream, file, overwrite,
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite,
                                     true, calculateChecksum, sessionId).first();
 
                             long end = System.currentTimeMillis();

@@ -91,7 +91,7 @@ public class FileUnlinkTask extends OpenCgaTool {
                 File catalogFile;
                 try {
                     catalogFile = fileManager.get(organizationId, studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                    fileManager.checkCanDeleteFile(organizationId, studyFqn, catalogFile.getUuid(), true, token);
+                    fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), true, token);
                 } catch (CatalogException e) {
                     logger.error("Error checking file '{}': {}", file, e.getMessage(), e);
                     addError(e);
@@ -126,7 +126,7 @@ public class FileUnlinkTask extends OpenCgaTool {
                     File file = iterator.next();
                     try {
                         logger.info("Unlinking file '{}'...", file.getPath());
-                        fileManager.unlink(organizationId, studyFqn, file.getUuid(), token);
+                        fileManager.unlink(studyFqn, file.getUuid(), token);
                     } catch (Exception e) {
                         logger.error("Error unlinking file '{}': {}", file.getPath(), e.getMessage(), e);
                         logger.info("Restoring status of file '{}'", file.getPath());

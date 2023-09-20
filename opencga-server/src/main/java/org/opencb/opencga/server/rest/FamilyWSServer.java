@@ -171,7 +171,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyCreateParams());
-            DataResult<Family> queryResult = familyManager.create(organizationId, studyStr,
+            DataResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(), getIdListOrEmpty(members), queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -244,7 +244,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             List<String> familyIds = getIdList(familyStr);
 
-            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(organizationId, studyStr, familyIds, parameters, true, queryOptions, token);
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -292,7 +292,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
 
-            return createOkResponse(catalogManager.getFamilyManager().updateAnnotations(organizationId, studyStr, familyStr, annotationSetId,
+            return createOkResponse(catalogManager.getFamilyManager().updateAnnotations(studyStr, familyStr, annotationSetId,
                     updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -307,7 +307,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of family ids") @PathParam("families") String families) {
         try {
             List<String> familyIds = getIdList(families);
-            return createOkResponse(familyManager.delete(organizationId, studyStr, familyIds, queryOptions, true, token));
+            return createOkResponse(familyManager.delete(studyStr, familyIds, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -326,7 +326,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(familyIdsStr);
-            return createOkResponse(familyManager.getAcls(organizationId, studyStr, idList, member, silent, token));
+            return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -343,7 +343,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyAclUpdateParams params) {
         try {
             FamilyAclParams aclParams = new FamilyAclParams(params.getPermissions(), params.getFamily(), params.getIndividual(), params.getSample(), propagate);
-            return createOkResponse(familyManager.updateAcl(organizationId, studyStr, aclParams, memberList, action, token));
+            return createOkResponse(familyManager.updateAcl(studyStr, aclParams, memberList, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -376,7 +376,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getFamilyManager().facet(organizationId, studyStr, query, queryOptions, defaultStats,
+            DataResult<FacetField> queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

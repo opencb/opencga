@@ -118,27 +118,27 @@ public class RgaManagerTest {
             QueryOptions includeResult = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
             // Father
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(FATHER, FATHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(FATHER, FATHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(FATHER), includeResult, ownerToken).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(MOTHER, MOTHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(MOTHER, MOTHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(MOTHER), includeResult, ownerToken).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(SON, SON, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(SON, SON, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(SON), includeResult, ownerToken).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(DAUGHTER), includeResult, ownerToken).first());
             catalogManager.getFamilyManager().create(
-                    organizationId, STUDY,
+                    STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
                     individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(), ownerToken);
 
             // Share father, mother and daughter with USER but not son
-            catalogManager.getIndividualManager().updateAcl(organizationId, STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
+            catalogManager.getIndividualManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
                     new IndividualAclParams().setPermissions(IndividualPermissions.VIEW.name()),
                     ParamUtils.AclAction.SET, false, ownerToken);
             catalogManager.getSampleManager().updateAcl(STUDY, Arrays.asList(FATHER, MOTHER, DAUGHTER), USER,
@@ -167,7 +167,7 @@ public class RgaManagerTest {
 
             toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, ownerToken);
 
-            File file = catalogManager.getFileManager().link(organizationId, STUDY,
+            File file = catalogManager.getFileManager().link(STUDY,
                     new FileLinkParams()
                             .setUri(outDir.resolve("knockout.individuals.json.gz").toUri().toString())
                             .setPath("."),

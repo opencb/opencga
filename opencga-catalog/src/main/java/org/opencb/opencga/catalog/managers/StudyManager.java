@@ -1821,11 +1821,11 @@ public class StudyManager extends AbstractManager {
         Map<String, Object> result = new HashMap<>();
         result.put("sample", catalogManager.getSampleManager().facet(studyStr, new Query(), setFacetFields(sampleFields),
                 defaultStats, sessionId));
-        result.put("file", catalogManager.getFileManager().facet(organizationId, studyStr, new Query(), setFacetFields(fileFields),
+        result.put("file", catalogManager.getFileManager().facet(studyStr, new Query(), setFacetFields(fileFields),
                 defaultStats, sessionId));
-        result.put("individual", catalogManager.getIndividualManager().facet(organizationId, studyStr, new Query(),
+        result.put("individual", catalogManager.getIndividualManager().facet(studyStr, new Query(),
                 setFacetFields(individualFields), defaultStats, sessionId));
-        result.put("family", catalogManager.getFamilyManager().facet(organizationId, studyStr, new Query(), setFacetFields(familyFields),
+        result.put("family", catalogManager.getFamilyManager().facet(studyStr, new Query(), setFacetFields(familyFields),
                 defaultStats, sessionId));
         result.put("cohort", catalogManager.getCohortManager().facet(studyStr, new Query(), setFacetFields(cohortFields),
                 defaultStats, sessionId));

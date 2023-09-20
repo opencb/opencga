@@ -98,7 +98,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         Study study = catalogManager.getStudyManager().create(organizationId, projectId, "s1", null, "s1", "Study " + "1", null, null,
                 null, null, INCLUDE_RESULT, sessionId).first();
         studyId = study.getFqn();
-        catalogManager.getFileManager().createFolder(organizationId, studyId, Paths.get("data", "index").toString(),
+        catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
                 true, null, INCLUDE_RESULT, sessionId);
 //        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
@@ -147,7 +147,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         FileLinkParams params = new FileLinkParams()
                 .setUri(uri.toString())
                 .setPath("data/vcfs/");
-        file = catalogManager.getFileManager().link(organizationId, studyId, params, true, sessionId).first();
+        file = catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
         if (indexed) {
             catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, file,
                     FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(InternalStatus.READY)), sessionId);

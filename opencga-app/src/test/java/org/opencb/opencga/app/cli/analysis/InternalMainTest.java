@@ -120,7 +120,7 @@ public class InternalMainTest {
                         null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE), null, sessionId)
                 .first();
         studyId = study.getId();
-        outdirId = catalogManager.getFileManager().createFolder(organizationId, studyId, Paths.get("data", "index").toString(),
+        outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
     }

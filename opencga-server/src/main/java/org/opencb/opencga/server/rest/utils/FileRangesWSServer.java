@@ -92,7 +92,7 @@ public class FileRangesWSServer extends OpenCGAWSServer {
                         .status(Response.Status.PARTIAL_CONTENT).build();
 
             } else {
-                DataInputStream stream = catalogManager.getFileManager().download(organizationId, studyStr, fileIdStr, -1, -1, token);
+                DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, token);
                 return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
             }
         } catch (Exception e) {

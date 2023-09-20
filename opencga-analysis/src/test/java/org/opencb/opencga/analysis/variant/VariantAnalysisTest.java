@@ -201,22 +201,22 @@ public class VariantAnalysisTest {
 
             // Father
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(disorderList), Collections.singletonList(son), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
-                    .create(organizationId, STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                    .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
             catalogManager.getFamilyManager().create(
-                    organizationId, STUDY,
+                    STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), disorderList, null, null, 3, null, null),
                     individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                     token);
@@ -287,7 +287,7 @@ public class VariantAnalysisTest {
         samples.add(sample);
 //        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
         Individual individual = catalogManager.getIndividualManager()
-                .create(organizationId, CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                .create(CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                         samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
         assertEquals(2, individual.getSamples().size());
     }
@@ -866,8 +866,8 @@ public class VariantAnalysisTest {
 
         URI uri = getResourceUri("2019_01_10_all_PCAWG_sigs_rearr.tsv");
         Path path = Paths.get(uri.getPath());
-        catalogManager.getFileManager().createFolder(organizationId, CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
-        catalogManager.getFileManager().link(organizationId, CANCER_STUDY, uri, "signature", new ObjectMap(), token);
+        catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
+        catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
         String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
         File file = catalogManager.getFileManager().get(organizationId, CANCER_STUDY, filename, null, token).first();
         String signatureFileId = file.getId();
@@ -956,8 +956,8 @@ public class VariantAnalysisTest {
         // SV fitting
         uri = getResourceUri("2019_01_10_all_PCAWG_sigs_rearr.tsv");
         path = Paths.get(uri.getPath());
-        catalogManager.getFileManager().createFolder(organizationId, CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
-        catalogManager.getFileManager().link(organizationId, CANCER_STUDY, uri, "signature", new ObjectMap(), token);
+        catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
+        catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
         String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
         File file = catalogManager.getFileManager().get(organizationId, CANCER_STUDY, filename, null, token).first();
         String signatureFileId = file.getId();

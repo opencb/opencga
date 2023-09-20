@@ -102,7 +102,7 @@ public class FileDeleteTask extends OpenCgaTool {
                 File catalogFile;
                 try {
                     catalogFile = fileManager.get(organizationId, studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                    fileManager.checkCanDeleteFile(organizationId, studyFqn, catalogFile.getUuid(), false, token);
+                    fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), false, token);
                 } catch (CatalogException e) {
                     logger.error("Error checking file '{}': {}", file, e.getMessage(), e);
                     addError(e);

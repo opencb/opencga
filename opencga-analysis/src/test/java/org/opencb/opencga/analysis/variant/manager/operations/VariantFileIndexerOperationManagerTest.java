@@ -187,7 +187,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("The status is READY");
-        catalogManager.getFileManager().unlink(organizationId, study.getFqn(), inputFile.getId(), sessionId);
+        catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
     }
 
     @Test
@@ -425,7 +425,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
             }
         }
         assertNotNull(transformFile);
-        catalogManager.getFileManager().matchUpVariantFiles(organizationId, studyId2, singletonList(transformFile), sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(studyId2, singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true);

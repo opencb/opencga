@@ -118,16 +118,16 @@ public class FileMetadataReader {
                                 ? ParamUtils.BasicUpdateAction.SET
                                 : ParamUtils.BasicUpdateAction.ADD;
                         first = false;
-                        catalogManager.getFileManager().update(organizationId, studyId, file.getUuid(), partialUpdate,
+                        catalogManager.getFileManager().update(studyId, file.getUuid(), partialUpdate,
                                 new QueryOptions(Constants.ACTIONS,
                                         Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), action.toString())), token);
                         progressLogger.increment(samplesBatch.size());
                     }
 
-                    catalogManager.getFileManager().update(organizationId, studyId, file.getUuid(), updateParams, QueryOptions.empty(),
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(),
                             token);
                 } else {
-                    catalogManager.getFileManager().update(organizationId, studyId, file.getUuid(), updateParams,
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
                             new QueryOptions(Constants.ACTIONS,
                                     Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                                             ParamUtils.BasicUpdateAction.SET.toString())), token);

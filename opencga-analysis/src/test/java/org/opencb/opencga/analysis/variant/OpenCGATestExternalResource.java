@@ -272,8 +272,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
             folder += resourceName.substring(0, idx);
             resourceName = resourceName.substring(idx + 1);
         }
-        catalogManager.getFileManager().createFolder(organizationId, studyId, folder, true, "", new QueryOptions(), sessionId);
-        catalogManager.getFileManager().link(organizationId, studyId, uri, folder, new ObjectMap(), sessionId);
+        catalogManager.getFileManager().createFolder(studyId, folder, true, "", new QueryOptions(), sessionId);
+        catalogManager.getFileManager().link(studyId, uri, folder, new ObjectMap(), sessionId);
 //        System.out.println("resourceName = " + resourceName);
 //        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
 //        new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);

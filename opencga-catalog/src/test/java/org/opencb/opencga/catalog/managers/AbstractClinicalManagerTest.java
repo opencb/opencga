@@ -179,7 +179,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     private void catalogUploadFile(String path) throws IOException, CatalogException {
         try (InputStream inputStream = getClass().getResource(path).openStream()) {
-            catalogManager.getFileManager().upload(organizationId, studyFqn, inputStream,
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
                     new File().setPath(Paths.get(path).getFileName().toString()), false, true, false, token);
         }
     }

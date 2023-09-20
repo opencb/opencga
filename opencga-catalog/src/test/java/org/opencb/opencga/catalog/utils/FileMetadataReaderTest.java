@@ -82,7 +82,7 @@ public class FileMetadataReaderTest {
         project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         study = catalogManager.getStudyManager().create(organizationId, project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(organizationId, study.getId(), Paths.get("data/vcf/").toString(), true,
+        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
         Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
@@ -97,7 +97,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(organizationId, study.getFqn(),
+        File file = catalogManager.getFileManager().create(study.getFqn(),
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setType(File.Type.FILE)
@@ -128,7 +128,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcf() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
 
@@ -184,7 +184,7 @@ public class FileMetadataReaderTest {
     public void testDoNotOverwriteSampleIds() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
-            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
@@ -208,7 +208,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromBam() throws CatalogException, IOException {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(bamFileUri)))) {
-            file = catalogManager.getFileManager().upload(organizationId, study.getFqn(), inputStream,
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, sessionIdUser).first();
         }
 

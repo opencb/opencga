@@ -99,7 +99,7 @@ public class FileUtils {
                         logger.info("Set status to " + FileStatus.MISSING);
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                                 new FileStatus(FileStatus.MISSING));
-                        catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, null, sessionId);
+                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId)
                                 .first();
                     }
@@ -109,7 +109,7 @@ public class FileUtils {
                     ObjectMap params = getModifiedFileAttributes(organizationId, file, fileUri, calculateChecksum);
                     params.put(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                             new FileStatus(FileStatus.READY));
-                    catalogManager.getFileManager().update(organizationId, studyStr, file.getPath(), params, QueryOptions.empty(),
+                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(),
                             sessionId);
                     modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
                 }

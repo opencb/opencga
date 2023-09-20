@@ -98,7 +98,7 @@ public class CatalogFileUtilsTest {
         File file;
         File returnedFile;
 
-        file = catalogManager.getFileManager().create(organizationId, studyFqn,
+        file = catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
                         .setType(File.Type.FILE)
                         .setFormat(File.Format.PLAIN)

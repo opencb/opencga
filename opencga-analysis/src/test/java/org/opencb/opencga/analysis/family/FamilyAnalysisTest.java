@@ -328,7 +328,7 @@ public class FamilyAnalysisTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(),
                 Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
@@ -409,7 +409,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
         List<Individual> members = Arrays.asList(granma, father, mother, child);
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         return familyOpenCGAResult;
     }
@@ -458,7 +458,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(organizationId, STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(fatherSample))),

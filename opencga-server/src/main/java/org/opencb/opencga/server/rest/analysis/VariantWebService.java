@@ -496,7 +496,7 @@ public class VariantWebService extends AnalysisWebService {
                 penetrance = ClinicalProperty.Penetrance.COMPLETE;
             }
 
-            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(organizationId, studyStr, clinicalAnalysis, family, moi,
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
                     disorder, penetrance, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -515,7 +515,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance,
             @ApiParam(value = "Disorder id") @QueryParam("disorder") String disorder) {
         return run(() -> {
-            Map<String, List<String>> map = catalogManager.getFamilyManager().calculateFamilyGenotypes(organizationId, studyStr, clinicalAnalysis, family, moi,
+            Map<String, List<String>> map = catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
                     disorder, penetrance == null ? ClinicalProperty.Penetrance.COMPLETE : penetrance, token);
             return new OpenCGAResult<>().setResults(Collections.singletonList(map));
         });

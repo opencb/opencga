@@ -307,20 +307,19 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult<Individual> create(String studyStr, Individual individual, QueryOptions options,
-                                            String token) throws CatalogException {
-        return create(organizationId, studyStr, individual, null, options, token);
+    public OpenCGAResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String token)
+            throws CatalogException {
+        return create(studyStr, individual, null, options, token);
     }
 
-    public OpenCGAResult<Individual> create(String organizationId, String studyStr, Individual individual, List<String> sampleIds,
-                                            QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Individual> create(String studyStr, Individual individual, List<String> sampleIds, QueryOptions options,
+                                            String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("individual", individual)
                 .append("sampleIds", sampleIds)
@@ -382,8 +381,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public DBIterator<Individual> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public DBIterator<Individual> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -402,8 +400,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult<Individual> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Individual> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         Query finalQuery = new Query(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -413,7 +410,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
@@ -441,8 +437,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
-            throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(organizationId, token);
@@ -450,7 +445,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fields", fields)
                 .append("query", new Query(query))
@@ -484,7 +478,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", query)
                 .append("token", token);
@@ -508,13 +501,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    public OpenCGAResult<Individual> relatives(String organizationId, String studyId, String individualId, int degree, QueryOptions options,
-                                               String token) throws CatalogException {
+    public OpenCGAResult<Individual> relatives(String studyId, String individualId, int degree, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("individualId", individualId)
                 .append("degree", degree)
@@ -561,13 +553,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> individualIds, QueryOptions options, String token)
-            throws CatalogException {
-        return delete(organizationId, studyStr, individualIds, options, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> individualIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, individualIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, List<String> individualIds, ObjectMap params,
-                                boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> individualIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
@@ -575,7 +566,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("individualIds", individualIds)
                 .append("params", params)
@@ -634,13 +624,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         return delete(organizationId, studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, Query query, ObjectMap params, boolean ignoreException,
-                                String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -650,7 +639,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
@@ -739,60 +727,53 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return getIndividualDBAdaptor(organizationId).delete(individual);
     }
 
-    public OpenCGAResult<Individual> updateAnnotationSet(String organizationId, String studyStr, String individualStr,
-                                                         List<AnnotationSet> annotationSetList, ParamUtils.BasicUpdateAction action,
-                                                         QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                         ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(organizationId, studyStr, individualStr, individualUpdateParams, options, token);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
-    public OpenCGAResult<Individual> addAnnotationSet(String organizationId, String studyStr, String individualStr,
-                                                      AnnotationSet annotationSet, QueryOptions options, String token)
-            throws CatalogException {
-        return addAnnotationSets(organizationId, studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
+    public OpenCGAResult<Individual> addAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
+                                                      QueryOptions options, String token) throws CatalogException {
+        return addAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
     }
 
-    public OpenCGAResult<Individual> addAnnotationSets(String organizationId, String studyStr, String individualStr,
-                                                       List<AnnotationSet> annotationSetList, QueryOptions options, String token)
-            throws CatalogException {
-        return updateAnnotationSet(organizationId, studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options,
+    public OpenCGAResult<Individual> addAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                       QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
+    }
+
+    public OpenCGAResult<Individual> setAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
+                                                      QueryOptions options, String token) throws CatalogException {
+        return setAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
+    }
+
+    public OpenCGAResult<Individual> setAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
+                                                       QueryOptions options, String token) throws CatalogException {
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options,
                 token);
     }
 
-    public OpenCGAResult<Individual> setAnnotationSet(String organizationId, String studyStr, String individualStr,
-                                                      AnnotationSet annotationSet, QueryOptions options, String token)
-            throws CatalogException {
-        return setAnnotationSets(organizationId, studyStr, individualStr, Collections.singletonList(annotationSet), options, token);
+    public OpenCGAResult<Individual> removeAnnotationSet(String studyStr, String individualStr, String annotationSetId,
+                                                         QueryOptions options, String token) throws CatalogException {
+        return removeAnnotationSets(studyStr, individualStr, Collections.singletonList(annotationSetId), options, token);
     }
 
-    public OpenCGAResult<Individual> setAnnotationSets(String organizationId, String studyStr, String individualStr,
-                                                       List<AnnotationSet> annotationSetList, QueryOptions options, String token)
-            throws CatalogException {
-        return updateAnnotationSet(organizationId, studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options,
-                token);
-    }
-
-    public OpenCGAResult<Individual> removeAnnotationSet(String organizationId, String studyStr, String individualStr,
-                                                         String annotationSetId, QueryOptions options, String token)
-            throws CatalogException {
-        return removeAnnotationSets(organizationId, studyStr, individualStr, Collections.singletonList(annotationSetId), options, token);
-    }
-
-    public OpenCGAResult<Individual> removeAnnotationSets(String organizationId, String studyStr, String individualStr,
-                                                          List<String> annotationSetIdList, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Individual> removeAnnotationSets(String studyStr, String individualStr, List<String> annotationSetIdList,
+                                                          QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(organizationId, studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options,
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options,
                 token);
     }
 
-    public OpenCGAResult<Individual> updateAnnotations(String organizationId, String studyStr, String individualStr, String annotationSetId,
+    public OpenCGAResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
                                                        Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
                                                        QueryOptions options, String token) throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
@@ -803,30 +784,30 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(organizationId, studyStr, individualStr, individualUpdateParams, options, token);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
-    public OpenCGAResult<Individual> removeAnnotations(String organizationId, String studyStr, String individualStr, String annotationSetId,
+    public OpenCGAResult<Individual> removeAnnotations(String studyStr, String individualStr, String annotationSetId,
                                                        List<String> annotations, QueryOptions options, String token)
             throws CatalogException {
-        return updateAnnotations(organizationId, studyStr, individualStr, annotationSetId,
+        return updateAnnotations(studyStr, individualStr, annotationSetId,
                 new ObjectMap("remove", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
-    public OpenCGAResult<Individual> resetAnnotations(String organizationId, String studyStr, String individualStr, String annotationSetId,
+    public OpenCGAResult<Individual> resetAnnotations(String studyStr, String individualStr, String annotationSetId,
                                                       List<String> annotations, QueryOptions options, String token)
             throws CatalogException {
-        return updateAnnotations(organizationId, studyStr, individualStr, annotationSetId,
+        return updateAnnotations(studyStr, individualStr, annotationSetId,
                 new ObjectMap("reset", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    public OpenCGAResult<Individual> update(String organizationId, String studyStr, Query query, IndividualUpdateParams updateParams,
-                                            QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyStr, query, updateParams, false, options, token);
+    public OpenCGAResult<Individual> update(String studyStr, Query query, IndividualUpdateParams updateParams, QueryOptions options,
+                                            String token) throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Individual> update(String organizationId, String studyStr, Query query, IndividualUpdateParams updateParams,
-                                            boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Individual> update(String studyStr, Query query, IndividualUpdateParams updateParams, boolean ignoreException,
+                                            QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -840,7 +821,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateMap)
@@ -891,9 +871,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<Individual> update(String organizationId, String studyStr, String individualId,
-                                            IndividualUpdateParams updateParams, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Individual> update(String studyStr, String individualId, IndividualUpdateParams updateParams,
+                                            QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -907,7 +886,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("individualId", individualId)
                 .append("updateParams", updateMap)
@@ -951,25 +929,22 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     /**
      * Update an Individual from catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param individualIds  List of individual ids. Could be either the id or uuid.
-     * @param updateParams   Data model filled only with the parameters to be updated.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr      Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param individualIds List of individual ids. Could be either the id or uuid.
+     * @param updateParams  Data model filled only with the parameters to be updated.
+     * @param options       QueryOptions object.
+     * @param token         Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<Individual> update(String organizationId, String studyStr, List<String> individualIds,
-                                            IndividualUpdateParams updateParams, QueryOptions options, String token)
-            throws CatalogException {
-        return update(organizationId, studyStr, individualIds, updateParams, false, options, token);
+    public OpenCGAResult<Individual> update(String studyStr, List<String> individualIds, IndividualUpdateParams updateParams,
+                                            QueryOptions options, String token) throws CatalogException {
+        return update(studyStr, individualIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Individual> update(String organizationId, String studyStr, List<String> individualIds,
-                                            IndividualUpdateParams updateParams, boolean ignoreException, QueryOptions options,
-                                            String token) throws CatalogException {
+    public OpenCGAResult<Individual> update(String studyStr, List<String> individualIds, IndividualUpdateParams updateParams,
+                                            boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
@@ -983,7 +958,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("individualIds", individualIds)
                 .append("updateParams", updateMap)
@@ -1185,8 +1159,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
-                                 String token) throws CatalogException {
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
@@ -1217,23 +1191,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String organizationId, String studyId, List<String> individualList,
-                                                                      String member, boolean ignoreException,
-                                                                      String token) throws CatalogException {
-        return getAcls(organizationId, studyId, individualList,
+    public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String studyId, List<String> individualList, String member,
+                                                                      boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, individualList,
                 StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(),
                 ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String organizationId, String studyId, List<String> individualList,
-                                                                      List<String> members, boolean ignoreException,
-                                                                      String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<IndividualPermissions>> getAcls(String studyId, List<String> individualList, List<String> members,
+                                                                      boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, user, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("individualList", individualList)
                 .append("members", members)
@@ -1307,15 +1278,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return individualAcls;
     }
 
-    public OpenCGAResult<AclEntryList<IndividualPermissions>> updateAcl(String organizationId, String studyId,
-                                                                        List<String> individualStrList, String memberList,
+    public OpenCGAResult<AclEntryList<IndividualPermissions>> updateAcl(String studyId, List<String> individualStrList, String memberList,
                                                                         IndividualAclParams aclParams, ParamUtils.AclAction action,
                                                                         boolean propagate, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, StudyManager.INCLUDE_STUDY_UID, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("individualStrList", individualStrList)
                 .append("memberList", memberList)
@@ -1428,8 +1397,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    public DataResult<FacetField> facet(String organizationId, String studyId, Query query, QueryOptions options, boolean defaultStats,
-                                        String token) throws CatalogException, IOException {
+    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
+            throws CatalogException, IOException {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -1439,7 +1408,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)

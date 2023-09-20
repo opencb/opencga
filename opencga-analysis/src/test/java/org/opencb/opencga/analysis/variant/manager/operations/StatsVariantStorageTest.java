@@ -465,7 +465,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
     private File linkFile(String fileName) throws IOException, CatalogException {
         URI uri = getResourceUri(fileName);
         return catalogManager.getFileManager()
-                .link(organizationId, studyFqn, new FileLinkParams().setUri(uri.toString()), false, sessionId).first();
+                .link(studyFqn, new FileLinkParams().setUri(uri.toString()), false, sessionId).first();
     }
 
 

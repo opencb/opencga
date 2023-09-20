@@ -176,7 +176,7 @@ public class DummyModelUtils {
         }
 
         Family tmpFamily = new Family().setId(family.getId());
-        catalogManager.getFamilyManager().create(organizationId, study, tmpFamily, new ArrayList<>(createdIndividuals), QueryOptions.empty(), token);
+        catalogManager.getFamilyManager().create(study, tmpFamily, new ArrayList<>(createdIndividuals), QueryOptions.empty(), token);
     }
 
     public static ClinicalAnalysis getDummyClinicalAnalysis(Individual proband, Family family, List<Panel> panelList) {

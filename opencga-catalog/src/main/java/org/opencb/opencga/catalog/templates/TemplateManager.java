@@ -308,7 +308,7 @@ public class TemplateManager {
                     individual.setId(null);
 
                     logger.info("Update individual '{}'", individual.getId());
-                    catalogManager.getIndividualManager().update(organizationId, studyFqn, individualId, individual, QueryOptions.empty(),
+                    catalogManager.getIndividualManager().update(studyFqn, individualId, individual, QueryOptions.empty(),
                             token);
 
                     count++;
@@ -336,7 +336,7 @@ public class TemplateManager {
                                 .setMother(individual.getMother());
                         logger.info("Updating individual '{}' parents", individual.getId());
 
-                        catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams,
+                        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams,
                                 QueryOptions.empty(), token);
 
                         count++;
@@ -539,7 +539,7 @@ public class TemplateManager {
                     if (CollectionUtils.isNotEmpty(completeFamily.getMembers())) {
                         List<String> memberIds = completeFamily.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
                         completeFamily.setMembers(null);
-                        catalogManager.getFamilyManager().create(organizationId, studyFqn, completeFamily, memberIds, QueryOptions.empty(),
+                        catalogManager.getFamilyManager().create(studyFqn, completeFamily, memberIds, QueryOptions.empty(),
                                 token);
                     } else {
                         catalogManager.getFamilyManager().create(studyFqn, family.toFamily(), QueryOptions.empty(), token);
@@ -552,7 +552,7 @@ public class TemplateManager {
                     family.setId(null);
 
                     logger.info("Update family '{}'", family.getId());
-                    catalogManager.getFamilyManager().update(organizationId, studyFqn, familyId, family, QueryOptions.empty(), token);
+                    catalogManager.getFamilyManager().update(studyFqn, familyId, family, QueryOptions.empty(), token);
 
                     count++;
                 }
@@ -681,7 +681,7 @@ public class TemplateManager {
 
                     // Create File
                     logger.info("Create File '{}'", file.getPath());
-                    catalogManager.getFileManager().link(organizationId, studyFqn,
+                    catalogManager.getFileManager().link(studyFqn,
                             new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getCreationDate(),
                                     file.getModificationDate(), null, file.getRelatedFiles(), file.getStatus(), null), true, token);
                     incomplete = true;
@@ -691,7 +691,7 @@ public class TemplateManager {
                     if (overwrite && !incomplete) {
                         logger.info("Update Clinical Analysis '{}'", file.getPath());
                     }
-                    catalogManager.getFileManager().update(organizationId, studyFqn, file.getPath(), file, QueryOptions.empty(), token);
+                    catalogManager.getFileManager().update(studyFqn, file.getPath(), file, QueryOptions.empty(), token);
 
                     count++;
                 }

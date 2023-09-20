@@ -75,7 +75,7 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
         try {
             Study study = catalogManager.getStudyManager().get(organizationId, studyFqn, StudyManager.INCLUDE_STUDY_IDS, token).first();
 
-            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(organizationId, studyFqn, toolParams.getPath(), false,
+            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, toolParams.getPath(), false,
                     QueryOptions.empty(), token);
             if (parents.getNumResults() == 0) {
                 throw new ToolException("No parent folders found for " + toolParams.getPath());
