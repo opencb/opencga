@@ -717,7 +717,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(organizationId, studyStr, "files-unlink", Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -928,7 +928,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(organizationId, studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {

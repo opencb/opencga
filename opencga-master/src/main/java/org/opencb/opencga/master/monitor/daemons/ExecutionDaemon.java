@@ -526,7 +526,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
             try {
-                List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(organizationId, job.getStudy().getId(), job, token);
+                List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
                 updateParams.setInput(inputFiles);
             } catch (CatalogException e) {
                 return abortJob(job, e);
@@ -731,7 +731,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .append("files", folder.getUuid())
                     .append("study", job.getStudy().getId())
                     .append(Constants.SKIP_TRASH, true);
-            jobManager.submit(organizationId, job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
+            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 

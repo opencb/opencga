@@ -161,13 +161,11 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("panel", panel)
                 .append("options", options)
@@ -196,13 +194,11 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
-    public OpenCGAResult<Panel> importFromSource(String organizationId, String studyId, String source, String panelIds, String token)
-            throws CatalogException {
+    public OpenCGAResult<Panel> importFromSource(String studyId, String source, String panelIds, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("source", source)
                 .append("panelIds", panelIds)
@@ -340,13 +336,13 @@ public class PanelManager extends ResourceManager<Panel> {
         panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
     }
 
-    public OpenCGAResult<Panel> update(String organizationId, String studyId, Query query, PanelUpdateParams updateParams,
-                                       QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyId, query, updateParams, false, options, token);
+    public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        return update(studyId, query, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Panel> update(String organizationId, String studyId, Query query, PanelUpdateParams updateParams,
-                                       boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, boolean ignoreException,
+                                       QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
         String userId = userManager.getUserId(organizationId, token);
@@ -362,7 +358,6 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyId)
                 .append("query", query)
                 .append("updateParams", updateMap)
@@ -406,8 +401,8 @@ public class PanelManager extends ResourceManager<Panel> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<Panel> update(String organizationId, String studyStr, String panelId, PanelUpdateParams updateParams,
-                                       QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Panel> update(String studyStr, String panelId, PanelUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
@@ -421,7 +416,6 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("panelId", panelId)
                 .append("updateParams", updateMap)
@@ -463,23 +457,22 @@ public class PanelManager extends ResourceManager<Panel> {
     /**
      * Update Panel from catalog.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param panelIds       List of Panel ids. Could be either the id or uuid.
-     * @param updateParams   Data model filled only with the parameters to be updated.
-     * @param options        QueryOptions object.
-     * @param token          Session id of the user logged in.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param panelIds     List of Panel ids. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<Panel> update(String organizationId, String studyStr, List<String> panelIds, PanelUpdateParams updateParams,
-                                       QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyStr, panelIds, updateParams, false, options, token);
+    public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, QueryOptions options,
+                                       String token) throws CatalogException {
+        return update(studyStr, panelIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<Panel> update(String organizationId, String studyStr, List<String> panelIds, PanelUpdateParams updateParams,
-                                       boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, boolean ignoreException,
+                                       QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
@@ -493,7 +486,6 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("panelIds", panelIds)
                 .append("updateParams", updateMap)
@@ -572,8 +564,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public DBIterator<Panel> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public DBIterator<Panel> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -586,8 +577,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult<Panel> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Panel> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -596,7 +586,6 @@ public class PanelManager extends ResourceManager<Panel> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("options", options)
@@ -618,15 +607,13 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
-            throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fields", fields)
                 .append("query", new Query(query))
@@ -658,7 +645,6 @@ public class PanelManager extends ResourceManager<Panel> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("token", token);
@@ -682,13 +668,12 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> panelIds, QueryOptions options, String token)
-            throws CatalogException {
-        return delete(organizationId, studyStr, panelIds, options, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> panelIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, panelIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException,
-                                String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         if (panelIds == null || ListUtils.isEmpty(panelIds)) {
             throw new CatalogException("Missing list of panel ids");
         }
@@ -699,7 +684,6 @@ public class PanelManager extends ResourceManager<Panel> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("panelIds", panelIds)
                 .append("params", params)
@@ -762,13 +746,12 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
-        return delete(organizationId, studyStr, query, options, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, Query query, ObjectMap params, boolean ignoreException,
-                                String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -778,7 +761,6 @@ public class PanelManager extends ResourceManager<Panel> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
@@ -866,8 +848,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
-                                 String sessionId) throws CatalogException {
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         fixQueryObject(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -886,22 +868,19 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String organizationId, String studyId, List<String> panelList,
-                                                                 String member, boolean ignoreException, String token)
-            throws CatalogException {
-        return getAcls(organizationId, studyId, panelList,
+    public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, String member,
+                                                                 boolean ignoreException, String token) throws CatalogException {
+        return getAcls(studyId, panelList,
                 StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String organizationId, String studyId, List<String> panelList,
-                                                                 List<String> members, boolean ignoreException, String token)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, List<String> members,
+                                                                 boolean ignoreException, String token) throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, user, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("panelList", panelList)
                 .append("members", members)
@@ -975,15 +954,13 @@ public class PanelManager extends ResourceManager<Panel> {
         return panelAcls;
     }
 
-    public OpenCGAResult<AclEntryList<PanelPermissions>> updateAcl(String organizationId, String studyId, List<String> panelStrList,
-                                                                   String memberList, AclParams aclParams,
-                                                                   ParamUtils.AclAction action, String token)
+    public OpenCGAResult<AclEntryList<PanelPermissions>> updateAcl(String studyId, List<String> panelStrList, String memberList,
+                                                                   AclParams aclParams, ParamUtils.AclAction action, String token)
             throws CatalogException {
         String user = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyId, user, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("panelStrList", panelStrList)
                 .append("memberList", memberList)

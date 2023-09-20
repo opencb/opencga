@@ -124,7 +124,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             String fqn = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(organizationId, fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
+            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
         }
     }
 

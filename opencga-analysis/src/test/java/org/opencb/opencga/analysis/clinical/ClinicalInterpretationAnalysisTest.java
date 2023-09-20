@@ -185,7 +185,7 @@ public class ClinicalInterpretationAnalysisTest {
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(findingList);
         ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
-        clinicalTest.catalogManager.getInterpretationManager().update(organizationId, study, clinicalAnalysisId, interpretationId, updateParams, null,
+        clinicalTest.catalogManager.getInterpretationManager().update(study, clinicalAnalysisId, interpretationId, updateParams, null,
                 options, clinicalTest.token);
 
         OpenCGAResult<org.opencb.opencga.core.models.clinical.Interpretation> interpretationResult = clinicalTest.catalogManager
@@ -232,7 +232,7 @@ public class ClinicalInterpretationAnalysisTest {
 
         List<String> interpretationIds = ca.getSecondaryInterpretations().stream().map(i -> i.getId()).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(interpretationIds)) {
-            opencga.getCatalogManager().getInterpretationManager().delete(organizationId, clinicalTest.studyFqn, caId, interpretationIds, true,
+            opencga.getCatalogManager().getInterpretationManager().delete(clinicalTest.studyFqn, caId, interpretationIds, true,
                     clinicalTest.token);
         }
     }

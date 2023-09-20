@@ -100,10 +100,10 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void importFromSource() throws CatalogException {
-        OpenCGAResult<Panel> cancer = panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         assertEquals(1, cancer.getNumInserted());
 
-        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(organizationId, studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
+        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
         assertEquals(2, panelApp.getNumInserted());
     }
 
@@ -111,19 +111,19 @@ public class PanelManagerTest extends GenericTest {
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
-        panelManager.importFromSource(organizationId, studyFqn, "gene-census", "ZSR222", sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", "ZSR222", sessionIdUser);
     }
 
     @Test
     public void importFromInvalidSource() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown source");
-        panelManager.importFromSource(organizationId, studyFqn, "gene-census-wrong", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census-wrong", null, sessionIdUser);
     }
 
     @Test
     public void updateTest() throws CatalogException {
-        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
@@ -174,7 +174,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelTest() throws CatalogException {
-        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -192,7 +192,7 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     public void deletePanelWithVersionsTest() throws CatalogException {
-        panelManager.importFromSource(organizationId, studyFqn, "gene-census", null, sessionIdUser);
+        panelManager.importFromSource(studyFqn, "gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(organizationId, studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
 
@@ -262,33 +262,33 @@ public class PanelManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, case4, QueryOptions.empty(), sessionIdUser);
 
         // case1
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case1.getId(), interpretation1,
+        catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation1,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case1.getId(), interpretation2,
+        catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation2,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case1.getId(), interpretation3,
+        catalogManager.getInterpretationManager().create(studyFqn, case1.getId(), interpretation3,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
 
         // case 2
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case2.getId(), interpretation4,
+        catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation4,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case2.getId(), interpretation5,
+        catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation5,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // case 3
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case3.getId(), interpretation6,
+        catalogManager.getInterpretationManager().create(studyFqn, case3.getId(), interpretation6,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case3.getId(), interpretation7,
+        catalogManager.getInterpretationManager().create(studyFqn, case3.getId(), interpretation7,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // case 4
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case4.getId(), interpretation8,
+        catalogManager.getInterpretationManager().create(studyFqn, case4.getId(), interpretation8,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getInterpretationManager().create(organizationId, studyFqn, case4.getId(), interpretation9,
+        catalogManager.getInterpretationManager().create(studyFqn, case4.getId(), interpretation9,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case4.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);

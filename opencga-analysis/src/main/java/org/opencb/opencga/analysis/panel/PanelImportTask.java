@@ -30,7 +30,7 @@ public class PanelImportTask extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        step(() -> catalogManager.getPanelManager().importFromSource(organizationId, studyFqn, params.getSource(), params.getId(), token));
+        step(() -> catalogManager.getPanelManager().importFromSource(studyFqn, params.getSource(), params.getId(), token));
     }
 
 }

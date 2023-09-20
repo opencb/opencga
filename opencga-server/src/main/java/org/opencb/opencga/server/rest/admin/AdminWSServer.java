@@ -250,22 +250,22 @@ public class AdminWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap();
             List<OpenCGAResult<Job>> results = new ArrayList<>(6);
             if (isEmpty || collection.equalsIgnoreCase("file")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             if (isEmpty || collection.equalsIgnoreCase("sample")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             if (isEmpty || collection.equalsIgnoreCase("individual")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             if (isEmpty || collection.equalsIgnoreCase("family")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             if (isEmpty || collection.equalsIgnoreCase("cohort")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             if (isEmpty || collection.equalsIgnoreCase("job")) {
-                results.add(catalogManager.getJobManager().submit(organizationId, ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             }
             return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {

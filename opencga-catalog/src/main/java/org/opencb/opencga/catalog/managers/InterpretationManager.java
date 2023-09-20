@@ -191,20 +191,19 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options,
-                                                String token) throws CatalogException {
+    public OpenCGAResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String token)
+            throws CatalogException {
         throw new CatalogException("Non-supported. Use other create method");
     }
 
-    public OpenCGAResult<Interpretation> create(String organizationId, String studyStr, String clinicalAnalysisStr,
-                                                Interpretation interpretation, ParamUtils.SaveInterpretationAs saveInterpretationAs,
-                                                QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
+                                                ParamUtils.SaveInterpretationAs saveInterpretationAs, QueryOptions options, String token)
+            throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysisStr)
                 .append("interpretation", interpretation)
@@ -393,13 +392,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
     }
 
-    public OpenCGAResult<Interpretation> clear(String organizationId, String studyStr, String clinicalAnalysisId,
-                                               List<String> interpretationList, String token) throws CatalogException {
+    public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("token", token);
@@ -623,15 +621,15 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //        }
 //    }
 
-    public OpenCGAResult<Interpretation> update(String organizationId, String studyStr, Query query,
-                                                InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
-                                                QueryOptions options, String token) throws CatalogException {
-        return update(organizationId, studyStr, query, updateParams, as, false, options, token);
+    public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
+                                                ParamUtils.SaveInterpretationAs as, QueryOptions options, String token)
+            throws CatalogException {
+        return update(studyStr, query, updateParams, as, false, options, token);
     }
 
-    public OpenCGAResult<Interpretation> update(String organizationId, String studyStr, Query query,
-                                                InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
-                                                boolean ignoreException, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
+                                                ParamUtils.SaveInterpretationAs as, boolean ignoreException, QueryOptions options,
+                                                String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(organizationId, token);
@@ -647,7 +645,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateMap)
@@ -705,7 +702,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<Interpretation> update(String organizationId, String studyStr, String clinicalAnalysisId, String intepretationId,
+    public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, String intepretationId,
                                                 InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
                                                 QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -723,7 +720,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("intepretationId", intepretationId)
@@ -787,7 +783,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     /**
      * Update interpretations from catalog.
      *
-     * @param organizationId     Organization id
      * @param studyStr           Study id in string format. Could be one of [id|user@projectId:studyId|projectId:studyId].
      * @param clinicalAnalysisId ClinicalAnalysis id.
      * @param interpretationIds  List of interpretation ids. Could be either the id or uuid.
@@ -799,17 +794,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<Interpretation> update(String organizationId, String studyStr, String clinicalAnalysisId,
-                                                List<String> interpretationIds, InterpretationUpdateParams updateParams,
-                                                ParamUtils.SaveInterpretationAs as, QueryOptions options, String token)
+    public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, List<String> interpretationIds,
+                                                InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
+                                                QueryOptions options, String token)
             throws CatalogException {
-        return update(organizationId, studyStr, clinicalAnalysisId, interpretationIds, updateParams, as, false, options, token);
+        return update(studyStr, clinicalAnalysisId, interpretationIds, updateParams, as, false, options, token);
     }
 
-    public OpenCGAResult<Interpretation> update(String organizationId, String studyStr, String clinicalAnalysisId,
-                                                List<String> interpretationIds, InterpretationUpdateParams updateParams,
-                                                ParamUtils.SaveInterpretationAs as, boolean ignoreException, QueryOptions options,
-                                                String token) throws CatalogException {
+    public OpenCGAResult<Interpretation> update(String studyStr, String clinicalAnalysisId, List<String> interpretationIds,
+                                                InterpretationUpdateParams updateParams, ParamUtils.SaveInterpretationAs as,
+                                                boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(organizationId, token);
@@ -825,7 +819,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("interpretationIds", interpretationIds)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
@@ -1087,13 +1080,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return update;
     }
 
-    public OpenCGAResult<Interpretation> revert(String organizationId, String studyStr, String clinicalAnalysisId, String interpretationId,
+    public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId,
                                                 int version, String token) throws CatalogException {
         String userId = userManager.getUserId(organizationId, token);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("interpretationId", interpretationId)
@@ -1181,8 +1173,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -1225,15 +1216,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token)
-            throws CatalogException {
+    public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("fields", fields)
                 .append("query", new Query(query))
@@ -1261,18 +1250,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("Use other implemented delete method");
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, String clinicalAnalysisId, List<String> interpretationIds,
-                                String token) throws CatalogException {
-        return delete(organizationId, studyStr, clinicalAnalysisId, interpretationIds, false, token);
+    public OpenCGAResult delete(String studyStr, String clinicalAnalysisId, List<String> interpretationIds, String token)
+            throws CatalogException {
+        return delete(studyStr, clinicalAnalysisId, interpretationIds, false, token);
     }
 
-    public OpenCGAResult delete(String organizationId, String studyStr, String clinicalAnalysisId, List<String> interpretationIds,
-                                boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, String clinicalAnalysisId, List<String> interpretationIds, boolean ignoreException,
+                                String token) throws CatalogException {
         if (interpretationIds == null || ListUtils.isEmpty(interpretationIds)) {
             throw new CatalogException("Missing list of interpretation ids");
         }
@@ -1283,7 +1271,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("interpretationIds", interpretationIds)
@@ -1372,8 +1359,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("Use other delete implementation");
     }
 //
@@ -1455,15 +1441,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //    }
 
     @Override
-    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc,
-                              String token)
+    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException {
         return null;
     }
 
     @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options,
-                                 String token) throws CatalogException {
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
+            throws CatalogException {
         return null;
     }
 

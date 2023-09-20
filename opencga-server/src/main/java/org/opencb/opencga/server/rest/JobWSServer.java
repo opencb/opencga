@@ -101,7 +101,7 @@ public class JobWSServer extends OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(organizationId, study, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
                     null, jobId, jobDescription, jobDependsOn, jobTags, token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -145,7 +145,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 lines = 20;
             }
             ParamUtils.checkIsSingleID(jobId);
-            return createOkResponse(catalogManager.getJobManager().log(organizationId, studyStr, jobId, offset, lines, type, false, token));
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, offset, lines, type, false, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -164,7 +164,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 lines = 20;
             }
             ParamUtils.checkIsSingleID(jobId);
-            return createOkResponse(catalogManager.getJobManager().log(organizationId, studyStr, jobId, 0, lines, type, true, token));
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, 0, lines, type, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -299,7 +299,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
         try {
-            return createOkResponse(jobManager.delete(organizationId, studyStr, getIdList(jobs), queryOptions, true, token));
+            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -335,7 +335,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         return run(() -> {
             List<String> idList = getIdList(jobIdsStr);
-            return jobManager.getAcls(organizationId, null, idList, member, silent, token);
+            return jobManager.getAcls(null, idList, member, silent, token);
         });
     }
 
@@ -350,7 +350,7 @@ public class JobWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(params, new JobAclUpdateParams());
             AclParams aclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getJob(), false);
-            return createOkResponse(jobManager.updateAcl(organizationId, null, idList, memberId, aclParams, action, token));
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -385,7 +385,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(organizationId, studyStr, query, queryOptions, defaultStats,
+            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

@@ -594,7 +594,7 @@ public class TemplateManager {
                     panel.setId(null);
 
                     logger.info("Update panel '{}'", panel.getId());
-                    catalogManager.getPanelManager().update(organizationId, studyFqn, panelId, panel, QueryOptions.empty(), token);
+                    catalogManager.getPanelManager().update(studyFqn, panelId, panel, QueryOptions.empty(), token);
 
                     count++;
                 }
