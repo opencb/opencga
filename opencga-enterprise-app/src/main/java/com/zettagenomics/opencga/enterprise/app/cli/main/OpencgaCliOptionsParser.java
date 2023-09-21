@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-09-18 OpenCB
+* Copyright 2015-2023-09-21 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -44,13 +44,13 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
-    private final CvaCommandOptions cvaCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
+    private final CvdbCommandOptions cvdbCommandOptions;
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
@@ -140,6 +140,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpreter-team-run", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-tiering-run", analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
+        analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-query", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-summary", analysisClinicalCommandOptions.summaryRgaGeneCommandOptions);
@@ -189,6 +190,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
+        adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -251,11 +253,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
 
-        cvaCommandOptions = new CvaCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("cva", cvaCommandOptions);
-        JCommander cvaSubCommands = jCommander.getCommands().get("cva");
-        cvaSubCommands.addCommand("info", cvaCommandOptions.infoCommandOptions);
-
         analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
         JCommander analysisAlignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -281,7 +278,8 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
-        metaSubCommands.addCommand("sso", metaCommandOptions.ssoCommandOptions);
+        metaSubCommands.addCommand("sso-login", metaCommandOptions.loginSsoCommandOptions);
+        metaSubCommands.addCommand("sso-logout", metaCommandOptions.logoutSsoCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
         studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
@@ -385,6 +383,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         cohortsSubCommands.addCommand("info", cohortsCommandOptions.infoCommandOptions);
         cohortsSubCommands.addCommand("update", cohortsCommandOptions.updateCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-annotations-update", cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+
+        cvdbCommandOptions = new CvdbCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cvdb", cvdbCommandOptions);
+        JCommander cvdbSubCommands = jCommander.getCommands().get("cvdb");
+        cvdbSubCommands.addCommand("info", cvdbCommandOptions.infoCommandOptions);
     }
     
     public AnalysisVariantCommandOptions getAnalysisVariantCommandOptions() {
@@ -437,11 +440,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     }
     
     
-    public CvaCommandOptions getCvaCommandOptions() {
-        return cvaCommandOptions;
-    }
-    
-    
     public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
         return analysisAlignmentCommandOptions;
     }
@@ -469,6 +467,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public CohortsCommandOptions getCohortsCommandOptions() {
         return cohortsCommandOptions;
+    }
+    
+    
+    public CvdbCommandOptions getCvdbCommandOptions() {
+        return cvdbCommandOptions;
     }
     
 }

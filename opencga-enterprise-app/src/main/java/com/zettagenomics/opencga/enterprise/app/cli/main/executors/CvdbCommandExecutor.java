@@ -16,7 +16,7 @@ import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
-import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvaCommandOptions;
+import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvdbCommandOptions;
 
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -31,24 +31,24 @@ import org.opencb.opencga.core.models.sample.Sample;
 *  
 */
 /**
- * This class contains methods for the Cva command line.
- *    PATH: /{apiVersion}/cva
+ * This class contains methods for the Cvdb command line.
+ *    PATH: /{apiVersion}/cvdb
  */
-public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
+public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
-    public CvaCommandOptions cvaCommandOptions;
+    public CvdbCommandOptions cvdbCommandOptions;
 
-    public CvaCommandExecutor(CvaCommandOptions cvaCommandOptions) throws CatalogAuthenticationException {
-        super(cvaCommandOptions.commonCommandOptions);
-        this.cvaCommandOptions = cvaCommandOptions;
+    public CvdbCommandExecutor(CvdbCommandOptions cvdbCommandOptions) throws CatalogAuthenticationException {
+        super(cvdbCommandOptions.commonCommandOptions);
+        this.cvdbCommandOptions = cvdbCommandOptions;
     }
 
     @Override
     public void execute() throws Exception {
 
-        logger.debug("Executing Cva command line");
+        logger.debug("Executing Cvdb command line");
 
-        String subCommandString = getParsedSubCommand(cvaCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(cvdbCommandOptions.jCommander);
 
         RestResponse queryResponse = null;
 
@@ -66,9 +66,9 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
     }
 
     private RestResponse<Sample> info() throws Exception {
-        logger.debug("Executing info in Cva command line");
+        logger.debug("Executing info in Cvdb command line");
 
-        CvaCommandOptions.InfoCommandOptions commandOptions = cvaCommandOptions.infoCommandOptions;
+        CvdbCommandOptions.InfoCommandOptions commandOptions = cvdbCommandOptions.infoCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -82,6 +82,6 @@ public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCvaClient().info(commandOptions.caseId, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().info(commandOptions.caseId, queryParams);
     }
 }

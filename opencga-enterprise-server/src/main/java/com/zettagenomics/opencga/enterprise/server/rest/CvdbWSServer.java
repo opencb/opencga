@@ -14,7 +14,7 @@ import java.io.IOException;
 
 @Path("/{apiVersion}/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "CVDB", description = "Methods for working with CVDB endpoints")
+@Api(value = "Cvdb", description = "Methods for working with CVDB endpoints")
 public class CvdbWSServer extends OpenCGAWSServer {
 
     public CvdbWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {

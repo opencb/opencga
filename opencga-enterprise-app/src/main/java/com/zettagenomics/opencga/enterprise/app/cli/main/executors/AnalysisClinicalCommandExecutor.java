@@ -40,6 +40,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
@@ -132,6 +133,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                 break;
             case "interpreter-zetta-run":
                 queryResponse = runInterpreterZetta();
+                break;
+            case "load":
+                queryResponse = load();
                 break;
             case "rga-aggregation-stats":
                 queryResponse = aggregationStatsRga();
@@ -687,6 +691,43 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                     .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> load() throws Exception {
+        logger.debug("Executing load in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.LoadCommandOptions commandOptions = analysisClinicalCommandOptions.loadCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ClinicalAnalysisLoadParams clinicalAnalysisLoadParams = null;
+        if (commandOptions.jsonDataModel) {
+            clinicalAnalysisLoadParams = new ClinicalAnalysisLoadParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(clinicalAnalysisLoadParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalAnalysisLoadParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisLoadParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "file",commandOptions.file, true);
+
+            clinicalAnalysisLoadParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalAnalysisLoadParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().load(clinicalAnalysisLoadParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {

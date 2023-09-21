@@ -24,11 +24,11 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 */
 
 /**
- * This class contains methods for the Cva command line.
- *    PATH: /{apiVersion}/cva
+ * This class contains methods for the Cvdb command line.
+ *    PATH: /{apiVersion}/cvdb
  */
-@Parameters(commandNames = {"cva"}, commandDescription = "Cva commands")
-public class CvaCommandOptions {
+@Parameters(commandNames = {"cvdb"}, commandDescription = "Cvdb commands")
+public class CvdbCommandOptions {
 
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
@@ -36,7 +36,7 @@ public class CvaCommandOptions {
         public InfoCommandOptions infoCommandOptions;
 
 
-    public CvaCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CvdbCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
