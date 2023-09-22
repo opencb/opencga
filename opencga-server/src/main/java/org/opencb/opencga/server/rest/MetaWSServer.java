@@ -64,9 +64,9 @@ public class MetaWSServer extends OpenCGAWSServer {
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "OpenCGA (OpenCB)");
-        info.put("Version", GitRepositoryState.get().getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get().getBranch());
-        info.put("Git commit", GitRepositoryState.get().getCommitId());
+        info.put("Version", GitRepositoryState.getInstance().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.getInstance().getBranch());
+        info.put("Git commit", GitRepositoryState.getInstance().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
         OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);

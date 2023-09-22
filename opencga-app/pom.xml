@@ -306,7 +306,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/git.properties"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 

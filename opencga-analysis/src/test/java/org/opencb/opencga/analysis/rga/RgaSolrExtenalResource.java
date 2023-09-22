@@ -5,10 +5,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
@@ -40,8 +38,8 @@ public class RgaSolrExtenalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion();
-        String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.get().getBuildVersion();
+        String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.getInstance().getBuildVersion();
         copyConfigSetConfiguration(mainConfigSet, "managed-schema");
         copyConfigSetConfiguration(auxConfigSet, "aux-managed-schema");
 
