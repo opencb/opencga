@@ -213,7 +213,32 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
                                 } else {
                                     return Arrays.asList(s.split(VCFConstants.FILTER_CODE_SEPARATOR));
                                 }
-                            }, v -> v == null ? null : String.join(VCFConstants.FILTER_CODE_SEPARATOR, v));
+                            }, values -> {
+                                if (values == null || values.isEmpty()) {
+                                    return null;
+                                }
+                                if (values.size() == 1) {
+                                    String value = values.get(0);
+                                    if (value == null) {
+                                        return null;
+                                    } else {
+                                        return value;
+                                    }
+                                } else {
+                                    StringBuilder sb = new StringBuilder();
+                                    for (String v : values) {
+                                        if (sb.length() != 0) {
+                                            sb.append(VCFConstants.FILTER_CODE_SEPARATOR);
+                                        }
+                                        if (v == null) {
+                                            sb.append("NA");
+                                        } else {
+                                            sb.append(v);
+                                        }
+                                    }
+                                    return sb.toString();
+                                }
+                            });
                 } else {
                     return new CategoricalMultiValuedIndexField<>(conf, bitOffset, conf.getValues())
                             .from(s -> {

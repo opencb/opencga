@@ -206,7 +206,12 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
                         entry.getSampleId(),
                         entry.getChromosome(), entry.getBatchStart(),
                         gtEntry.getGt());
-                logger.warn(gtEntry.toStringSummary());
+                try {
+                    logger.warn(gtEntry.toStringSummary());
+                    logger.warn(converter.getSchema().toString());
+                } catch (Exception exception) {
+                    e.addSuppressed(exception);
+                }
                 throw e;
             }
             if (!variants.isEmpty()) {

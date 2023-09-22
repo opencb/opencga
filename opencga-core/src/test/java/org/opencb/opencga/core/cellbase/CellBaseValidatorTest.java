@@ -1,6 +1,8 @@
 package org.opencb.opencga.core.cellbase;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -70,4 +72,45 @@ public class CellBaseValidatorTest {
         thrown.expectMessage("No active data releases found on cellbase");
         CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, null), "mmusculus", "GRCm38", true);
     }
+
+    @Test
+    public void testToken() throws IOException {
+        String token = System.getenv("CELLBASE_HGMD_TOKEN");
+        Assume.assumeTrue(StringUtils.isNotEmpty(token));
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getToken());
+    }
+
+    @Test
+    public void testTokenNotSupported() throws IOException {
+        String token = System.getenv("CELLBASE_HGMD_TOKEN");
+        Assume.assumeTrue(StringUtils.isNotEmpty(token));
+        thrown.expectMessage("Token not supported");
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getToken());
+    }
+
+    @Test
+    public void testTokenEmpty() throws IOException {
+        String token = "";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
+        Assert.assertNull(validated.getToken());
+    }
+
+    @Test
+    public void testMalformedToken() throws IOException {
+        thrown.expectMessage("Malformed token for cellbase");
+        String token = "MALFORMED_TOKEN";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getToken());
+    }
+
+    @Test
+    public void testUnsignedToken() throws IOException {
+        thrown.expectMessage("Invalid token for cellbase");
+        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2OTMyMTY5MDd9.invalidsignature";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getToken());
+    }
+
 }

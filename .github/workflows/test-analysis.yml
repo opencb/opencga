@@ -8,6 +8,10 @@ on:
       report_context:
         type: string
         required: true
+      mvn_opts:
+        type: string
+        required: false
+        default: ""
     secrets:
       SONAR_TOKEN:
         required: true
@@ -20,7 +24,7 @@ on:
       SSH_TESTING_SERVER_PASSWORD:
         required: true
 env:
-  xb_version: "1.6.2"
+  xb_version: "1.6.4"
 jobs:
   analysis:
     name: Execute Sonar Analysis
@@ -61,7 +65,7 @@ jobs:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+        run: mvn -B verify surefire-report:report -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
       - name: Upload result dir
         uses: actions/upload-artifact@v3
         with:

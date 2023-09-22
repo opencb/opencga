@@ -41,7 +41,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 
         Path rootDir = getOpencgaHome();
 
-        String version = GitRepositoryState.get().getBuildVersion();
+        String version = GitRepositoryState.getInstance().getBuildVersion();
 
         // Copy configuration
         copyConfiguration("cohort-managed-schema", CatalogSolrManager.COHORT_CONF_SET + "-" + version);
