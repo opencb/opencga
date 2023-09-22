@@ -150,7 +150,7 @@ public class JobsTopManager {
 
         jobTable.restoreCursorPosition();
         jobTable.println("OpenCGA jobs TOP");
-        jobTable.println("  Version " + GitRepositoryState.get().getBuildVersion());
+        jobTable.println("  Version " + GitRepositoryState.getInstance().getBuildVersion());
         jobTable.println("  " + TextOutputWriter.SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
         jobTable.println();
         jobTable.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");

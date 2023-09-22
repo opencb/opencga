@@ -137,8 +137,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
             CatalogException, IOException {
         // Interpretation method
-        InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.get().getBuildVersion(),
-                GitRepositoryState.get().getCommitId(), Collections.singletonList(
+        InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.getInstance().getBuildVersion(),
+                GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
                 new Software()
                         .setName("Exomiser")
                         .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)

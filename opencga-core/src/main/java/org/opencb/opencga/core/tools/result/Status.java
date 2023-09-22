@@ -61,8 +61,8 @@ public class Status {
 
     public static Status initStatus() {
         Status status = new Status();
-        status.version = GitRepositoryState.get().getBuildVersion();
-        status.commit = GitRepositoryState.get().getCommitId();
+        status.version = GitRepositoryState.getInstance().getBuildVersion();
+        status.commit = GitRepositoryState.getInstance().getCommitId();
         return status;
     }
 
