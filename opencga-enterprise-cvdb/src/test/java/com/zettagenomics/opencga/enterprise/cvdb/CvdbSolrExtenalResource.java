@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -11,6 +12,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.SearchConfiguration;
 
 import java.io.File;
 import java.io.IOException;

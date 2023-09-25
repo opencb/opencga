@@ -30,11 +30,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.rga.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -48,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,23 +76,28 @@ public class CvdbSolrEngine {
     public static final String CLINICAL_VARIANTS_COLLECTION_SUFFIX = "_cvdb_variants";
     public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX = "_cvdb_evidences";
 
+    public static final List<String> COLLECTION_SUFFIXES = Arrays.asList(CLINICAL_ANALYSES_COLLECTION_SUFFIX,
+            INTERPRETATIONS_COLLECTION_SUFFIX,
+            CLINICAL_VARIANTS_COLLECTION_SUFFIX,
+            CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+
     public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
     public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
     public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
     public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
 
+    public static final List<String> COLLECTION_CONFIGSETS = Arrays.asList(CLINICAL_ANALYSIS_CONFIGSET,
+            INTERPRETATION_CONFIGSET,
+            CLINICAL_VARIANT_CONFIGSET,
+            CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
+
     public static final String WITHOUT_ID = "-234";
 
-    private static final String CONF_SET = "ClinicalConfSet";
-    private static final int DEFAULT_LIMIT = 1000000;
-
     public CvdbSolrEngine() {
-        this.queryParser = new ClinicalQueryParser(null);
         init();
     }
 
-    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, StorageConfiguration storageConfig,
-                          VariantStorageMetadataManager variantStorageMetadataManager) {
+    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, VariantStorageMetadataManager variantStorageMetadataManager) {
         solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
 
@@ -607,6 +615,33 @@ public class CvdbSolrEngine {
 //            throw new CvdbException("", e);
 //        }
 //    }
+
+
+    public boolean existCollections(String projectId) throws CvdbException {
+        try {
+            for (String suffix : COLLECTION_SUFFIXES) {
+                if (!solrManager.exists(getCollectionName(projectId, suffix))) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (SolrException e) {
+            throw new CvdbException("Checking if Solr collections exist for project " + projectId, e);
+        }
+    }
+
+    public void createCollections(String projectId) throws CvdbException {
+        try {
+            for (int i = 0 ; i < COLLECTION_SUFFIXES.size() ; i++) {
+                String name = getCollectionName(projectId, COLLECTION_SUFFIXES.get(i));
+                if (!solrManager.exists(name)) {
+                    solrManager.create(name, COLLECTION_CONFIGSETS.get(i));
+                }
+            }
+        } catch (SolrException e) {
+            throw new CvdbException("Creating Solr collections for project " + projectId, e);
+        }
+    }
 
     //----------------------------------------------------------------------
     // G E T T E R S     A N D      S E T T E R S

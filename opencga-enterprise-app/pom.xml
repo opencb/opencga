@@ -214,6 +214,11 @@
                                     <arg value="${build.dir}/cloud/"/>
                                 </exec>
 
+                                <exec executable="${project.basedir}/app/cvdb/prepare_configsets.sh">
+                                    <arg value="${project.basedir}/.."/>
+                                    <arg value="${project.parent.version}"/>
+                                </exec>
+
                                 <echo>Copying git.properties</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/git-enterprise.properties"/>

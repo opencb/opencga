@@ -11,3 +11,9 @@ sso:
     email: ${ENTERPRISE.SSO.ATTRIBUTES.EMAIL}
     organization: ${ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION}
     groups: ${ENTERPRISE.SSO.ATTRIBUTES.GROUPS}
+cvdb:
+  active: ${ENTERPRISE.CVDB.ACTIVE}
+  database:
+    hosts:
+      - ${ENTERPRISE.CVDB.DATABASE.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+    timeout: ${ENTERPRISE.CVDB.DATABASE.TIMEOUT}

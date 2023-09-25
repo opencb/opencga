@@ -1,8 +1,13 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -11,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
@@ -47,6 +54,24 @@ public class CvdbWSServer extends OpenCGAWSServer {
             return createOkResponse("Pajote!");
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/index/run")
+    @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
+    public Response load(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = CvdbIndexTaskParams.DESCRIPTION, required = true) CvdbIndexTaskParams params) {
+        try {
+            // Execute CVDB index as a job
+            return submitJob(CvdbIndexTask.ID, study, params, jobId, jobDescription, dependsOn, jobTags);
+        } catch (Exception e) {
+            return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
         }
     }
 }

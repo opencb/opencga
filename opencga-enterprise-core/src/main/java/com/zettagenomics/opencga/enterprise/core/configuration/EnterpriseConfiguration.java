@@ -164,4 +164,13 @@ public class EnterpriseConfiguration {
         this.sso = sso;
         return this;
     }
+
+    public CvdbConfiguration getCvdb() {
+        return cvdb;
+    }
+
+    public EnterpriseConfiguration setCvdb(CvdbConfiguration cvdb) {
+        this.cvdb = cvdb;
+        return this;
+    }
 }

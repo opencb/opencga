@@ -17,6 +17,8 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bson.Document;
@@ -27,10 +29,13 @@ import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,7 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngineIndexTest.INCLUDE_RESULT;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -199,6 +209,44 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         return resourcePath.toUri();
+    }
+
+    public void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId, String sessionIdUser)
+            throws IOException, CatalogException {
+        for (String caFilename : caFilenames) {
+            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
+            GZIPInputStream gzipInputStream = new GZIPInputStream(is);
+            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
+                    .readValue(gzipInputStream);
+
+            // Import panels
+            try {
+                List<String> panelIds = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
+                    panelIds = clinicalAnalysis.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList());
+                }
+                catalogManager.getPanelManager().importFromSource(studyId, "panelapp", StringUtils.join(panelIds, ","), sessionIdUser);
+            } catch (CatalogException e) {
+                System.out.println("---------------------------------------------------------------------------------");
+                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
+                System.out.println("---------------------------------------------------------------------------------");
+                continue;
+            }
+
+            // Create family
+            if (clinicalAnalysis.getFamily() != null) {
+                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), INCLUDE_RESULT, sessionIdUser);
+            }
+
+            // Create clinical analysis
+            clinicalAnalysis.getInterpretation().setId(null);
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    secondaryInterpretation.setId(null);
+                }
+            }
+            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+        }
     }
 
 }

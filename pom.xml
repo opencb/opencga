@@ -484,6 +484,14 @@
                 <ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>organization</ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>
                 <ENTERPRISE.SSO.ATTRIBUTES.GROUPS>groups</ENTERPRISE.SSO.ATTRIBUTES.GROUPS>
 
+                <ENTERPRISE.CVDB.ACTIVE>true</ENTERPRISE.CVDB.ACTIVE>
+                <ENTERPRISE.CVDB.DATABASE.HOST>http://localhost:8983/solr/</ENTERPRISE.CVDB.DATABASE.HOST>
+                <ENTERPRISE.CVDB.DATABASE.TIMEOUT>30000</ENTERPRISE.CVDB.DATABASE.TIMEOUT>
+                <ENTERPRISE.CVDB.CA_CONFIG_SET>opencga-ca-configset-${project.parent.version}</ENTERPRISE.CVDB.CA_CONFIG_SET>
+                <ENTERPRISE.CVDB.CI_CONFIG_SET>opencga-ci-configset-${project.parent.version}</ENTERPRISE.CVDB.CI_CONFIG_SET>
+                <ENTERPRISE.CVDB.CV_CONFIG_SET>opencga-cv-configset-${project.parent.version}</ENTERPRISE.CVDB.CV_CONFIG_SET>
+                <ENTERPRISE.CVDB.CVE_CONFIG_SET>opencga-cve-configset-${project.parent.version}</ENTERPRISE.CVDB.CVE_CONFIG_SET>
+
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>

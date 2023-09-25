@@ -54,10 +54,10 @@ public class CvdbSolrEngineIndexTest {
     protected String sessionIdUser;
     private FamilyManager familyManager;
 
-    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+    public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void before() throws CatalogException, IOException {
+    public void before() throws CatalogException, IOException, CvdbException {
         // Catalog
         catalogManager = catalogManagerResource.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
@@ -66,22 +66,9 @@ public class CvdbSolrEngineIndexTest {
         // CVDB
         cvdbEngine = cvdbSolrExternalResource.configure();
 
-        try {
-            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-            cvdbEngine.getSolrManager().remove(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
-        } catch (Exception e) {
-            // Nothing to do
+        if (!cvdbEngine.existCollections(projectId)) {
+            cvdbEngine.createCollections(projectId);
         }
-
-        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-                CLINICAL_ANALYSIS_CONFIGSET);
-        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), INTERPRETATION_CONFIGSET);
-        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
-                CLINICAL_VARIANT_CONFIGSET);
-        cvdbEngine.getSolrManager().createCore(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-                CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
@@ -204,7 +191,7 @@ public class CvdbSolrEngineIndexTest {
 
         // Print out the results
         System.out.println("Number of clinical variants: " + response.getResults().getNumFound());
-        Assert.assertEquals(1, response.getResults().getNumFound());
+        Assert.assertEquals(2, response.getResults().getNumFound());
         for (int i = 0; i < response.getResults().size(); i++) {
             System.out.println("Clinical variant #" + i + ":");
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
@@ -284,39 +271,25 @@ public class CvdbSolrEngineIndexTest {
             ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
                     .readValue(gzipInputStream);
 
-            // Path to fix accession from SO terms
-//            List<Interpretation> interpretations = new ArrayList<>();
-//            interpretations.add(clinicalAnalysis.getInterpretation());
-//            interpretations.addAll(clinicalAnalysis.getSecondaryInterpretations());
-//            for (Interpretation interpretation : interpretations) {
-//                for (ClinicalVariant cv : interpretation.getPrimaryFindings()) {
-//                    for (ConsequenceType ct : cv.getAnnotation().getConsequenceTypes()) {
-//                        for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
-//                            if (!so.getAccession().startsWith("SO")) {
-//                                so.setAccession(ConsequenceTypeMappings.getSoAccessionString(so.getName()));
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//            JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysis.class).writeValue(Paths.get("/tmp")
-//                    .resolve(name).toFile(), clinicalAnalysis);
-
             cvdbEngine.index(clinicalAnalysis, projectId);
             System.out.println("Clinical analysis " + clinicalAnalysis.getId() + " loaded !");
         }
     }
 
     private void loadClinicalVariants() throws IOException, CvdbException {
-//            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream("clinical_variants.json.gz");
-        InputStream is = new FileInputStream(Paths.get("/home/jtarraga/data/reanalysis/test/clinical_variants.test.json.gz").toFile());
+        String name = "ca1.json.gz";
+        InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(name);
         GZIPInputStream gzipInputStream = new GZIPInputStream(is);
+        ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
+                .readValue(gzipInputStream);
 
-        Map<Integer, ClinicalVariant> cvs = JacksonUtils.getDefaultObjectMapper().readerFor(Map.class).readValue(gzipInputStream);
+        List<ClinicalVariant> primaryFindings = clinicalAnalysis.getInterpretation().getPrimaryFindings();
+        System.out.println(primaryFindings.size());
+
         List<ClinicalVariant> clinicalVariantList = new ArrayList<>();
-        for (ClinicalVariant cv : cvs.values()) {
-            clinicalVariantList.add(cv);
-        }
+        clinicalVariantList.add(primaryFindings.get(0));
+        clinicalVariantList.add(primaryFindings.get(1));
+
         cvdbEngine.index(clinicalVariantList, false, projectId);
     }
 }
