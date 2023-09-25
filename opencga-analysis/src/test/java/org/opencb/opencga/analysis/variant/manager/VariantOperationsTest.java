@@ -43,9 +43,7 @@ import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualInternal;
-import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
@@ -148,6 +146,16 @@ public class VariantOperationsTest {
     @After
     public void tearDown() {
         if (hadoopExternalResource != null) {
+
+            try {
+                VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
+                if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+                    VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants_AFTER")).toUri());
+                }
+            } catch (Exception ignore) {
+                ignore.printStackTrace();
+            }
+
             hadoopExternalResource.after();
             hadoopExternalResource = null;
         }
@@ -246,7 +254,7 @@ public class VariantOperationsTest {
                         Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
         catalogManager.getFamilyManager().create(
                 STUDY,
-                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
+                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 4, null, null),
                 individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                 token);
 
@@ -372,6 +380,50 @@ public class VariantOperationsTest {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
             }
             assertEquals(3, sampleIndex.getVersion().intValue());
+        }
+    }
+
+    @Test
+    public void testVariantSecondarySampleIndexPartialFamily() throws Exception {
+        Assume.assumeThat(storageEngine, anyOf(
+//                is(DummyVariantStorageEngine.STORAGE_ENGINE_ID),
+                is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+        ));
+        for (String sample : samples) {
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
+            assertEquals(sample, IndexStatus.NONE, sampleIndex.getFamilyStatus().getId());
+            assertEquals(sample, 1, sampleIndex.getVersion().intValue());
+        }
+
+        Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
+        Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
+
+        catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList("f1"), null, token);
+        catalogManager.getIndividualManager().update(STUDY, daughter, new IndividualUpdateParams()
+                .setMother(new IndividualReferenceParam(null, null)), null, token);
+        catalogManager.getFamilyManager().create(
+                STUDY,
+                new Family("f2", "f2", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 2, null, null),
+                Arrays.asList(father, daughter), new QueryOptions(),
+                token);
+
+        // Run family index. The family index status should be READY on offspring
+        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+                new VariantSecondarySampleIndexParams()
+                        .setFamilyIndex(true)
+                        .setSample(Arrays.asList(daughter)),
+                Paths.get(opencga.createTmpOutdir()), "index", token);
+
+        for (String sample : samples) {
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
+            if (sample.equals(daughter)) {
+                assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
+            } else {
+                assertEquals(sample, IndexStatus.NONE, sampleIndex.getFamilyStatus().getId());
+            }
+            assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
     }
 
