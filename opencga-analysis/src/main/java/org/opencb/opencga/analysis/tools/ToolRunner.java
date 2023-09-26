@@ -64,7 +64,7 @@ public class ToolRunner {
      */
     public ExecutionResult execute(String study, String jobId, String token) throws CatalogException, ToolException {
         // We get the job information.
-        Job job = catalogManager.getJobManager().get(organizationId, study, jobId, QueryOptions.empty(), token).first();
+        Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
 
         return execute(job, token);
     }

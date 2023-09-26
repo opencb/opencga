@@ -192,7 +192,9 @@ public class StudyManager extends AbstractManager {
      * @throws CatalogException if the user cannot access the study, or it is unclear which study they want to access.
      */
     private OpenCGAResult<Study> smartResolutor(CatalogFqn catalogFqn, QueryOptions options, JwtPayload payload) throws CatalogException {
-        ParamUtils.checkParameter(payload.getUserId(), "userId");
+        String userId = payload.getUserId(catalogFqn.getOrganizationId());
+
+        ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(catalogFqn.getOrganizationId(), "organizationId");
 
         Query query = new Query();
@@ -220,20 +222,18 @@ public class StudyManager extends AbstractManager {
             fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
+        OpenCGAResult<Study> studyDataResult;
         if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
             // If it is the administrator, we allow it without checking the user anymore
             authorizationManager.checkIsInstallationAdministrator(payload.getOrganization(), payload.getUserId());
-            OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
-            if (studyDataResult.getNumResults() != 0) {
-                return studyDataResult;
-            }
+            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
         } else {
-            OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions,
-                    payload.getUserId());
-            if (studyDataResult.getNumResults() != 0) {
-                return studyDataResult;
-            } else {
+            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+            if (studyDataResult.getNumResults() == 0) {
                 studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+                if (studyDataResult.getNumResults() != 0) {
+                    throw CatalogAuthorizationException.denyAny(userId, "view", "study");
+                }
             }
         }
 
@@ -244,10 +244,8 @@ public class StudyManager extends AbstractManager {
             }
             throw new CatalogException("No study found" + studyMessage + ".");
         } else {
-            throw CatalogAuthorizationException.denyAny(payload.getUserId(), "view", "study");
+            return studyDataResult;
         }
-
-        return studyDataResult;
     }
 
     /**

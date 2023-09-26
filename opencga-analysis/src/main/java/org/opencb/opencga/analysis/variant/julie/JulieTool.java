@@ -67,7 +67,7 @@ public class JulieTool extends OpenCgaTool {
             for (Map.Entry<String, List<String>> entry : cohorts.entrySet()) {
                 String study = entry.getKey();
                 List<Cohort> cohorts = getCatalogManager().getCohortManager()
-                        .get(organizationId, study, entry.getValue(), new QueryOptions(QueryOptions.INCLUDE, "id"), getToken()).getResults();
+                        .get(study, entry.getValue(), new QueryOptions(QueryOptions.INCLUDE, "id"), getToken()).getResults();
                 if (cohorts.size() != entry.getValue().size()) {
                     // This should not happen. The previous command should throw exception if some cohort is missing
                     throw new IllegalArgumentException("Missing cohorts from study " + study);

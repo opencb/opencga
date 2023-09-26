@@ -274,7 +274,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("clinicalAnalysis");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(organizationId, studyStr, analysisList, queryOptions, true, token);
+            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, true, token);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -609,7 +609,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("interpretations");
 
             List<String> interpretationList = getIdList(interpretations);
-            DataResult<Interpretation> interpretationOpenCGAResult = catalogInterpretationManager.get(organizationId, studyStr, interpretationList, query, queryOptions, true, token);
+            DataResult<Interpretation> interpretationOpenCGAResult = catalogInterpretationManager.get(studyStr, interpretationList, query, queryOptions, true, token);
             return createOkResponse(interpretationOpenCGAResult);
         } catch (Exception e) {
             return createErrorResponse(e);

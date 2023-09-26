@@ -80,7 +80,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 if (files.isEmpty()) {
                     break;
                 }
-                fileResult = catalogManager.getFileManager().get(organizationId, study, files.remove(0), options, token);
+                fileResult = catalogManager.getFileManager().get(study, files.remove(0), options, token);
             }
             if (numPendingFiles < 0) {
                 numPendingFiles = ((int) fileResult.getNumMatches());
@@ -103,7 +103,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 }
             }
             if (!virtualFiles.isEmpty()) {
-                fileResult = catalogManager.getFileManager().get(organizationId, study, new ArrayList<>(virtualFiles), options, token);
+                fileResult = catalogManager.getFileManager().get(study, new ArrayList<>(virtualFiles), options, token);
                 fileList.addAll(fileResult.getResults());
             }
 

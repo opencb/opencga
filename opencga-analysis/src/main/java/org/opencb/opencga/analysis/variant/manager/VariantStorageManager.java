@@ -349,13 +349,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String cohort1Id;
             String cohort2Id;
 
-            Cohort cohort1Obj = catalogManager.getCohortManager().get(organizationId, study, cohort1, new QueryOptions(), token).first();
+            Cohort cohort1Obj = catalogManager.getCohortManager().get(study, cohort1, new QueryOptions(), token).first();
             List<String> cohort1Samples = cohort1Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
             engine.getMetadataManager().registerCohort(studyFqn, cohort1Obj.getId(), cohort1Samples);
             cohort1Id = cohort1Obj.getId();
 
             if (StringUtils.isNotEmpty(cohort2)) {
-                Cohort cohort2Obj = catalogManager.getCohortManager().get(organizationId, study, cohort2, new QueryOptions(), token).first();
+                Cohort cohort2Obj = catalogManager.getCohortManager().get(study, cohort2, new QueryOptions(), token).first();
                 List<String> cohort2Samples = cohort2Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
                 engine.getMetadataManager().registerCohort(studyFqn, cohort2Obj.getId(), cohort2Samples);
                 cohort2Id = cohort2Obj.getId();
@@ -421,7 +421,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 }
             } else {
                 for (String familyId : familiesStr) {
-                    Family family = catalogManager.getFamilyManager().get(organizationId, study, familyId, null, token).first();
+                    Family family = catalogManager.getFamilyManager().get(study, familyId, null, token).first();
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
@@ -1113,7 +1113,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String studySqn = getStudyFqn(study, token);
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             List<File> filesFromCatalog = catalogManager.getFileManager()
-                    .get(organizationId, studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
+                    .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
             return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, token);
         });
     }

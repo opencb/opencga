@@ -199,7 +199,7 @@ public class FileMetadataReaderTest {
         catalogManager.getFileManager().update(organizationId, study.getFqn(), file.getPath(),
                 new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
-        file = catalogManager.getFileManager().get(organizationId, study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
         assertEquals(5, file.getSampleIds().size());
         assertEquals(sampleId, file.getSampleIds().get(4));
     }

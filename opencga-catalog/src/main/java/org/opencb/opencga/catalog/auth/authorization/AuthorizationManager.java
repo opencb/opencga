@@ -88,10 +88,10 @@ public interface AuthorizationManager {
 
     void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException;
 
-    void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
+    void checkStudyPermission(String organizationId, long studyUid, JwtPayload payload, StudyPermissions.Permissions permission)
             throws CatalogException;
 
-    void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission, String message)
+    void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
             throws CatalogException;
 
     void checkCanEditStudy(String organizationId, long studyId, String userId) throws CatalogException;
@@ -112,6 +112,8 @@ public interface AuthorizationManager {
     void checkCanAssignOrSeePermissions(String organizationId, long studyId, String userId) throws CatalogException;
 
     void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
+
+    boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException;
 
     boolean isInstallationAdministrator(String organizationId, String user);
 

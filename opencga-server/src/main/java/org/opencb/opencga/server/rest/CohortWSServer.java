@@ -140,7 +140,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
 
             List<String> cohortList = getIdList(cohortsStr);
-            DataResult<Cohort> cohortQueryResult = cohortManager.get(organizationId, studyStr, cohortList, new Query("deleted", deleted), queryOptions, true, token);
+            DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted), queryOptions, true, token);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

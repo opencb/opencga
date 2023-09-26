@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -125,14 +126,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
+    public void checkStudyPermission(String organizationId, long studyUid, JwtPayload payload, StudyPermissions.Permissions permission)
             throws CatalogException {
-        checkStudyPermission(organizationId, studyId, userId, permission, permission.toString());
+        String userId = payload.getUserId(organizationId);
+        if (isInstallationAdministrator(payload)) {
+            return;
+        } else {
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyUid, userId, permission)) {
+                return;
+            }
+        }
+        throw CatalogAuthorizationException.deny(userId, permission.name(), "Study", studyUid, null);
     }
 
     @Override
-    public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission,
-                                     String message) throws CatalogException {
+    public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
+            throws CatalogException {
         if (isInstallationAdministrator(organizationId, userId)) {
             return;
         } else {
@@ -140,7 +149,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return;
             }
         }
-        throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
+        throw CatalogAuthorizationException.deny(userId, permission.name(), "Study", studyId, null);
     }
 
     @Override
@@ -267,6 +276,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to create/update/delete variable "
                     + "sets");
         }
+    }
+
+    @Override
+    public boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException {
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(payload.getOrganization())) {
+            return false;
+        }
+
+        // Check user exists in ADMIN ORGANIZATION
+        dbAdaptorFactory.getCatalogUserDBAdaptor(payload.getOrganization()).checkId(payload.getUserId());
+        return true;
     }
 
     @Override

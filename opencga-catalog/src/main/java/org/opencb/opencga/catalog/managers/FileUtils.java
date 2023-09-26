@@ -100,7 +100,7 @@ public class FileUtils {
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                                 new FileStatus(FileStatus.MISSING));
                         catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
-                        modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId)
+                        modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId)
                                 .first();
                     }
                 } else if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
@@ -111,7 +111,7 @@ public class FileUtils {
                             new FileStatus(FileStatus.READY));
                     catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(),
                             sessionId);
-                    modifiedFile = catalogManager.getFileManager().get(organizationId, studyStr, file.getPath(), null, sessionId).first();
+                    modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
             }

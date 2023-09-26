@@ -131,7 +131,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
 
         int i = 1;
         for (File inputFile : inputFiles) {
-            inputFile = opencga.getCatalogManager().getFileManager().get(organizationId, studyId, inputFile.getId(), null, sessionId).first();
+            inputFile = opencga.getCatalogManager().getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
             assertEquals(1, inputFile.getRelease());
             assertEquals(i, inputFile.getInternal().getVariant().getIndex().getRelease());
             i++;
@@ -171,7 +171,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
             files.add(create(name));
         }
 
-        File directory = catalogManager.getFileManager().get(organizationId, "" + studyId, "data/vcfs/", null, sessionId).first();
+        File directory = catalogManager.getFileManager().get("" + studyId, "data/vcfs/", null, sessionId).first();
         List<StoragePipelineResult> results = indexFiles(Collections.singletonList(directory), files, new QueryOptions(), outputId);
 
         List<String> fileNames = results.stream().map(StoragePipelineResult::getInput).map(URI::toString).collect(Collectors.toList());

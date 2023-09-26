@@ -98,7 +98,7 @@ public class VariantStatsIndexOperationTool extends OperationTool {
 
     private Path getFilePath(String aggregationMapFile) throws CatalogException {
         return Paths.get(getCatalogManager().getFileManager()
-                .get(organizationId, studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
+                .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
     }
 
 }

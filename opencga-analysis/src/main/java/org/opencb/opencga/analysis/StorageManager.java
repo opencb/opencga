@@ -106,7 +106,7 @@ public abstract class StorageManager {
         if (fileIdStrs.isEmpty()) {
             files = Collections.emptyList();
         } else {
-            DataResult<File> queryResult = catalogManager.getFileManager().get(organizationId, studyIdStr, fileIdStrs, null, sessionId);
+            DataResult<File> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
             files = queryResult.getResults();
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());

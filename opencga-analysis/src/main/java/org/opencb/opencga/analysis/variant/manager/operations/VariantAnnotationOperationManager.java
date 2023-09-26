@@ -110,7 +110,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
                 } else {
                     throw new CatalogException("Unable to locate file '" + loadFileStr + "'. More than one study found: " + studies);
                 }
-                File loadFile = catalogManager.getFileManager().get(organizationId, studyStr, loadFileStr, null, token).first();
+                File loadFile = catalogManager.getFileManager().get(studyStr, loadFileStr, null, token).first();
                 if (loadFile == null) {
                     throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                 }

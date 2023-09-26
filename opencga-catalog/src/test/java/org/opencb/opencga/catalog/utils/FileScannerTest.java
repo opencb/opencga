@@ -160,7 +160,7 @@ public class FileScannerTest {
         FileScanner fileScanner = new FileScanner(catalogManager);
         fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
-        File replacedFile = catalogManager.getFileManager().get(organizationId, study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        File replacedFile = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
         assertEquals(FileStatus.READY, replacedFile.getInternal().getStatus().getId());
         assertEquals(file.getUid(), replacedFile.getUid());
         assertNotEquals(replacedFile.getChecksum(), file.getChecksum());

@@ -297,7 +297,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         logger.info("Checking the parameter {} with value = {} in query {}", ParamConstants.INCLUDE_INTERPRETATION, includeInterpretation,
                 query.toJson());
         if (StringUtils.isNotEmpty(includeInterpretation)) {
-            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(organizationId, studyId,
+            OpenCGAResult<Interpretation> interpretationResult = catalogManager.getInterpretationManager().get(studyId,
                     includeInterpretation, QueryOptions.empty(), token);
             int numResults = interpretationResult.getNumResults();
             logger.info("Checking number of results ({}) found for the interpretation ID {}, it should be 1, otherwise something wrong"
@@ -714,7 +714,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
             throws ToolException, CatalogException {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .get(organizationId, studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
+                .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
 
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
             throw new ToolException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
@@ -746,7 +746,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (CollectionUtils.isNotEmpty(diseasePanelIds)) {
             OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> queryResults;
             try {
-                queryResults = catalogManager.getPanelManager().get(organizationId, studyId, diseasePanelIds, QueryOptions.empty(),
+                queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
                         sessionId);
             } catch (CatalogException e) {
                 throw new ToolException("Error accessing panel manager", e);

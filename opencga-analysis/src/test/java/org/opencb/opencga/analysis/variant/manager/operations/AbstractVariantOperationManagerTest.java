@@ -236,7 +236,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         } finally {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
-        inputFile = catalogManager.getFileManager().get(organizationId, studyId, inputFile.getId(), null, sessionId).first();
+        inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
         assertEquals(VariantIndexStatus.TRANSFORMED, inputFile.getInternal().getVariant().getIndex().getStatus().getId());
         assertNotNull(inputFile.getQualityControl().getVariant().getVariantSetMetrics());
 
@@ -249,7 +249,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
 
         File transformedFile = catalogManager.getFileManager().search(studyId, searchQuery, new QueryOptions(), sessionId).first();
-        inputFile = catalogManager.getFileManager().get(organizationId, studyId, inputFile.getId(), null, sessionId).first();
+        inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
 
         System.out.println("transformedFile = " + transformedFile);
         List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
@@ -344,12 +344,12 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
-            inputFile = catalogManager.getFileManager().get(organizationId, studyId, inputFile.getId(), null, sessionId).first();
+            inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
             assertTrue(inputFile.getInternal().getVariant().getIndex().hasTransform());
             assertNotNull(inputFile.getInternal().getVariant().getIndex().getTransform());
             String transformedFileId = inputFile.getInternal().getVariant().getIndex().getTransform().getFileId();
 
-            File transformedFile = catalogManager.getFileManager().get(organizationId, studyId, transformedFileId, new QueryOptions(), sessionId).first();
+            File transformedFile = catalogManager.getFileManager().get(studyId, transformedFileId, new QueryOptions(), sessionId).first();
 
             List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                     .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
@@ -369,7 +369,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
      */
     protected List<File> copyResults(Path tmpOutdirPath, String study, String catalogPathOutDir, String sessionId)
             throws CatalogException, IOException {
-        File outDir = catalogManager.getFileManager().get(organizationId, study, catalogPathOutDir, new QueryOptions(), sessionId).first();
+        File outDir = catalogManager.getFileManager().get(study, catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
@@ -417,7 +417,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
-            assertEquals(expectedStatus, catalogManager.getFileManager().get(organizationId, studyId, indexedFileId, null, sessionId).first()
+            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first()
                     .getInternal().getVariant().getIndex().getStatus().getId());
             System.out.println("etlResult = " + etlResult);
         }

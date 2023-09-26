@@ -109,7 +109,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 forAllSamples = true;
                 allSamples.addAll(indexedSamples);
             } else {
-                catalogManager.getSampleManager().get(organizationId, study, toolParams.getSample(), new QueryOptions(), token)
+                catalogManager.getSampleManager().get(study, toolParams.getSample(), new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -277,7 +277,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             SampleVariantStats sampleVariantStats = it.next();
                             SampleQualityControl qualityControl = getCatalogManager()
                                     .getSampleManager()
-                                    .get(organizationId, getStudy(), sampleVariantStats.getId(),
+                                    .get(getStudy(), sampleVariantStats.getId(),
                                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTROL.key()), getToken())
                                     .first()
                                     .getQualityControl();

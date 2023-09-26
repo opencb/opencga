@@ -188,7 +188,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         List<File> inputFiles = new ArrayList<>();
         for (String file : files) {
-            File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
+            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 // If is a transformed file, get the related VCF file
@@ -371,7 +371,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         for (File indexedFile : filesToIndex) {
             // Fetch from catalog. {@link #copyResult} may modify the content
-            indexedFile = catalogManager.getFileManager().get(organizationId, study, indexedFile.getId(), null, sessionId).first();
+            indexedFile = catalogManager.getFileManager().get(study, indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StoragePipelineResult storagePipelineResult = map.get(indexedFile.getName());
 
@@ -764,7 +764,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
             throw new CatalogException("Internal error. No vcf file could be found for file " + file.getPath());
         }
-        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(organizationId, study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> vcfDataResult = catalogManager.getFileManager().get(study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (vcfDataResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
             throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
@@ -776,7 +776,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private File getTransformedFromOriginal(String sessionId, File file)
             throws CatalogException {
         String transformedFileId = getTransformedFileIdFromOriginal(file);
-        DataResult<File> queryResult = catalogManager.getFileManager().get(organizationId, studyFqn, transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> queryResult = catalogManager.getFileManager().get(studyFqn, transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (queryResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No transformed file could be found under ");
             throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFileId);

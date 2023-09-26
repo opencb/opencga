@@ -199,7 +199,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         daemon.checkPendingJobs();
 
-        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, jobId, QueryOptions.empty(), token);
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
@@ -229,19 +229,19 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkPendingJobs();
 
         // Job sent by the owner
-        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, jobId, QueryOptions.empty(), token);
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
         // Job sent by user2 (admin from study1 but not from study2)
-        jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, jobId2, QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription()
                 .contains("can only be executed by the project owners or members of " + ParamConstants.ADMINS_GROUP));
 
         // Job sent by user3 (admin from study1 and study2)
-        jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, jobId3, QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
@@ -262,11 +262,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         daemon.checkPendingJobs();
 
-        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, job1, QueryOptions.empty(), token);
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job1, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
 
-        jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, job2, QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
 
@@ -276,7 +276,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         // The job that depended on job1 should be ABORTED because job1 execution "failed"
         daemon.checkPendingJobs();
-        jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, job2, QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
@@ -290,7 +290,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 Collections.singletonList(job1), null, token).first().getId();
         daemon.checkPendingJobs();
 
-        jobOpenCGAResult = catalogManager.getJobManager().get(organizationId, studyFqn, job3, QueryOptions.empty(), token);
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job3, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.QUEUED);
     }
@@ -305,7 +305,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
         assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
 
-        job = catalogManager.getJobManager().get(organizationId, studyFqn2, job.getId(), QueryOptions.empty(), token).first();
+        job = catalogManager.getJobManager().get(studyFqn2, job.getId(), QueryOptions.empty(), token).first();
         assertEquals(1, job.getDependsOn().size());
         assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
         assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
@@ -315,7 +315,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testRunJob() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, testFile1, null, token).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
@@ -345,7 +345,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testCheckLogs() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, testFile1, null, token).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
@@ -360,7 +360,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
-        job = catalogManager.getJobManager().get(organizationId, studyFqn, jobId, null, token).first();
+        job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
 
         daemon.checkJobs();
         checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
@@ -380,7 +380,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testCheckLogsNoPermissions() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, testFile1, null, token).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
@@ -398,7 +398,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 
-        job = catalogManager.getJobManager().get(organizationId, studyFqn, jobId, null, token).first();
+        job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
 
         daemon.checkJobs();
         checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
@@ -415,7 +415,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testRegisterFilesSuccessfully() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
 //        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(organizationId, studyFqn, testFile1, null, token).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
@@ -436,7 +436,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         createAnalysisResult(jobId, "myTest", false);
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
-        job = catalogManager.getJobManager().get(organizationId, studyFqn, job.getId(), QueryOptions.empty(), token).first();
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
         Files.createFile(Paths.get(job.getOutDir().getUri()).resolve("file1.txt"));
         Files.createFile(Paths.get(job.getOutDir().getUri()).resolve("file2.txt"));
         Files.createDirectory(Paths.get(job.getOutDir().getUri()).resolve("A"));
@@ -449,7 +449,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         checkStatus(getJob(jobId), Enums.ExecutionStatus.DONE);
 
-        job = catalogManager.getJobManager().get(organizationId, studyFqn, job.getId(), QueryOptions.empty(), token).first();
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
 
         String outDir = job.getOutDir().getPath();
 
@@ -544,7 +544,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     private Job getJob(String jobId) throws CatalogException {
-        return catalogManager.getJobManager().get(organizationId, studyFqn, jobId, new QueryOptions(), token).first();
+        return catalogManager.getJobManager().get(studyFqn, jobId, new QueryOptions(), token).first();
     }
 
     private void createAnalysisResult(String jobId, String analysisId, boolean error) throws CatalogException, ToolException {

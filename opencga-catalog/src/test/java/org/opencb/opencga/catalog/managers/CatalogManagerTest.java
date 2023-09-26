@@ -1333,7 +1333,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
 
-        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(organizationId, studyFqn, ids, options, token);
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, options, token);
         assertEquals(3, sampleDataResult.getNumResults());
         for (Sample sample : sampleDataResult.getResults()) {
             switch (sample.getId()) {
@@ -1377,9 +1377,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
         QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
 
-        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(organizationId, studyFqn, ids, optionsSample, token);
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
 
-        Cohort cohortResult = catalogManager.getCohortManager().get(organizationId, studyFqn, "MyCohort1", optionsCohort, token).first();
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
 
         assertEquals(2, cohortResult.getSamples().size());
         assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
@@ -1436,9 +1436,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
         QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
 
-        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(organizationId, studyFqn, ids, optionsSample, token);
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
 
-        Cohort cohortResult = catalogManager.getCohortManager().get(organizationId, studyFqn, "MyCohort1", optionsCohort, token).first();
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
 
         assertEquals(1, cohortResult.getSamples().size());
         assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
@@ -1490,9 +1490,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
         QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
 
-        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(organizationId, studyFqn, ids, optionsSample, token);
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
 
-        Cohort cohortResult = catalogManager.getCohortManager().get(organizationId, studyFqn, "MyCohort1", optionsCohort, token).first();
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
 
         assertEquals(2, cohortResult.getSamples().size());
         assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
@@ -1650,7 +1650,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 options, token);
         assertEquals(1, result.getNumUpdated());
 
-        Cohort myModifiedCohort = catalogManager.getCohortManager().get(organizationId, studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        Cohort myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals("myModifiedCohort", myModifiedCohort.getId());
         assertEquals(4, myModifiedCohort.getSamples().size());
         assertEquals(4, myModifiedCohort.getNumSamples());
@@ -1660,7 +1660,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId5.getUid()));
 
         QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.NUM_SAMPLES.key());
-        myModifiedCohort = catalogManager.getCohortManager().get(organizationId, studyFqn, "myModifiedCohort", options1, token).first();
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", options1, token).first();
         assertEquals(4, myModifiedCohort.getNumSamples());
         assertNull(myModifiedCohort.getSamples());
 
@@ -1672,7 +1672,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 options, token);
         assertEquals(1, result.getNumUpdated());
 
-        myModifiedCohort = catalogManager.getCohortManager().get(organizationId, studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(0, myModifiedCohort.getSamples().size());
         assertEquals(0, myModifiedCohort.getNumSamples());
 
@@ -1687,7 +1687,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                                 new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
-        myModifiedCohort = catalogManager.getCohortManager().get(organizationId, studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(2, myModifiedCohort.getSamples().size());
         assertEquals(2, myModifiedCohort.getNumSamples());
 
@@ -1700,7 +1700,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                                 new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
-        myModifiedCohort = catalogManager.getCohortManager().get(organizationId, studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(1, myModifiedCohort.getSamples().size());
         assertEquals(1, myModifiedCohort.getNumSamples());
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));

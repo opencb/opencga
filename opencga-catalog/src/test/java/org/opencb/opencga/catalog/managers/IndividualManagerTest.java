@@ -164,7 +164,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         IndividualUpdateParams updateParams = new IndividualUpdateParams().setPhenotypes(phenotypeList);
 
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, QueryOptions.empty(), token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(3, individual.getPhenotypes().size());
         for (int i = 0; i < individual.getPhenotypes().size(); i++) {
             assertEquals("phenotype" + i, individual.getPhenotypes().get(i).getId());
@@ -177,7 +177,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         updateParams = new IndividualUpdateParams().setPhenotypes(Arrays.asList(
                 new Phenotype("phenotype0", "phenotypeName0", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(1, individual.getPhenotypes().size());
         assertEquals("phenotype1", individual.getPhenotypes().get(0).getId());
 
@@ -187,7 +187,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         updateParams = new IndividualUpdateParams().setPhenotypes(Arrays.asList(
                 new Phenotype("phenotype1", "phenotypeName1", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getPhenotypes().size());
         for (int i = 0; i < individual.getPhenotypes().size(); i++) {
             assertEquals("phenotype" + (i + 1), individual.getPhenotypes().get(i).getId());
@@ -202,7 +202,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         );
         updateParams = new IndividualUpdateParams().setPhenotypes(phenotypeList);
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getPhenotypes().size());
         for (int i = 0; i < individual.getPhenotypes().size(); i++) {
             assertEquals("phenotype" + (i + 2), individual.getPhenotypes().get(i).getId());
@@ -222,7 +222,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         IndividualUpdateParams updateParams = new IndividualUpdateParams().setDisorders(disorderList);
 
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, QueryOptions.empty(), token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(3, individual.getDisorders().size());
         for (int i = 0; i < individual.getDisorders().size(); i++) {
             assertEquals("disorder" + i, individual.getDisorders().get(i).getId());
@@ -236,7 +236,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 new Disorder("disorder0", "disorderName0", "SOURCE", null, "", null), new Disorder("disorder2", "disorder2", "SOURCE",
                         null, "", null)));
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(1, individual.getDisorders().size());
         assertEquals("disorder1", individual.getDisorders().get(0).getId());
 
@@ -247,7 +247,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 new Disorder("disorder1", "disorderName1", "SOURCE", null, "", null), new Disorder("disorder2", "disorderName2", "SOURCE",
                         null, "", null)));
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getDisorders().size());
         for (int i = 0; i < individual.getDisorders().size(); i++) {
             assertEquals("disorder" + (i + 1), individual.getDisorders().get(i).getId());
@@ -262,7 +262,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         );
         updateParams = new IndividualUpdateParams().setDisorders(disorderList);
         catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getDisorders().size());
         for (int i = 0; i < individual.getDisorders().size(); i++) {
             assertEquals("disorder" + (i + 2), individual.getDisorders().get(i).getId());
@@ -299,7 +299,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 options, token);
         assertEquals(1, update.getNumUpdated());
 
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(3, individual.getSamples().size());
         assertEquals(3, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId(), sample3.getId()).contains(s)).count());
@@ -319,7 +319,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         update = catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getSamples().size());
         assertEquals(2, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample3.getId()).contains(s)).count());
@@ -333,7 +333,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         update = catalogManager.getIndividualManager().update(organizationId, studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
-        individual = catalogManager.getIndividualManager().get(organizationId, studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, individual.getSamples().size());
         assertEquals(2, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
@@ -349,7 +349,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual1"),
                 Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()), QueryOptions.empty(), token);
-        List<Sample> samples = catalogManager.getSampleManager().get(organizationId, studyFqn,
+        List<Sample> samples = catalogManager.getSampleManager().get(studyFqn,
                 Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()), QueryOptions.empty(), token).getResults();
         for (Sample sample : samples) {
             assertEquals("individual1", sample.getIndividualId());
@@ -364,7 +364,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual2"),
                 Arrays.asList(sample4.getId(), sample5.getId(), sample6.getId()), QueryOptions.empty(), token);
-        samples = catalogManager.getSampleManager().get(organizationId, studyFqn,
+        samples = catalogManager.getSampleManager().get(studyFqn,
                 Arrays.asList(sample4.getId(), sample5.getId(), sample6.getId()), QueryOptions.empty(), token).getResults();
         for (Sample sample : samples) {
             assertEquals("individual2", sample.getIndividualId());
@@ -373,13 +373,13 @@ public class IndividualManagerTest extends AbstractManagerTest {
         // Update individual id
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "individual1", new IndividualUpdateParams().setId("newId1"),
                 QueryOptions.empty(), token);
-        assertEquals(1, catalogManager.getIndividualManager().get(organizationId, studyFqn, "newId1", QueryOptions.empty(), token).getNumResults());
+        assertEquals(1, catalogManager.getIndividualManager().get(studyFqn, "newId1", QueryOptions.empty(), token).getNumResults());
 
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "individual2", new IndividualUpdateParams().setId("newId2"),
                 QueryOptions.empty(), token);
-        assertEquals(1, catalogManager.getIndividualManager().get(organizationId, studyFqn, "newId2", QueryOptions.empty(), token).getNumResults());
+        assertEquals(1, catalogManager.getIndividualManager().get(studyFqn, "newId2", QueryOptions.empty(), token).getNumResults());
 
-        samples = catalogManager.getSampleManager().get(organizationId, studyFqn,
+        samples = catalogManager.getSampleManager().get(studyFqn,
                 Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId(), sample4.getId(), sample5.getId(), sample6.getId()),
                 QueryOptions.empty(), token).getResults();
         for (Sample sample : samples) {
@@ -425,7 +425,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         // Update child's id
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "child", new IndividualUpdateParams().setId("newId1"),
                 QueryOptions.empty(), token);
-        family = catalogManager.getFamilyManager().get(organizationId, studyFqn, "family", QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
 
         assertTrue(family.getRoles().containsKey("newId1"));
         for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
@@ -489,17 +489,17 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "brother", new IndividualUpdateParams()
                 .setName(RandomStringUtils.random(10)), new QueryOptions(), token);
 
-        Individual individualResult = catalogManager.getIndividualManager().get(organizationId, studyFqn, "brother", QueryOptions.empty(), token).first();
+        Individual individualResult = catalogManager.getIndividualManager().get(studyFqn, "brother", QueryOptions.empty(), token).first();
         assertEquals(3, individualResult.getVersion());
 
-        Family familyResult = catalogManager.getFamilyManager().get(organizationId, studyFqn, "family", QueryOptions.empty(), token).first();
+        Family familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
         assertEquals(2, familyResult.getVersion());
         assertEquals(3, familyResult.getMembers().size());
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(2, familyResult.getMembers().get(1).getVersion());
         assertEquals(3, familyResult.getMembers().get(2).getVersion());
 
-        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical", QueryOptions.empty(),
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(),
                 token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
@@ -508,7 +508,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
@@ -520,17 +520,17 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "father", new IndividualUpdateParams()
                 .setName(RandomStringUtils.random(10)), new QueryOptions(), token);
 
-        individualResult = catalogManager.getIndividualManager().get(organizationId, studyFqn, "father", QueryOptions.empty(), token).first();
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), token).first();
         assertEquals(3, individualResult.getVersion());
 
-        familyResult = catalogManager.getFamilyManager().get(organizationId, studyFqn, "family", QueryOptions.empty(), token).first();
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
         assertEquals(3, familyResult.getVersion());
         assertEquals(3, familyResult.getMembers().size());
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(3, familyResult.getMembers().get(1).getVersion());
         assertEquals(3, familyResult.getMembers().get(2).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -538,7 +538,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -549,24 +549,24 @@ public class IndividualManagerTest extends AbstractManagerTest {
         // LOCK CLINICAL ANALYSIS
         catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), token);
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertTrue(clinicalResult.isLocked());
 
         // Update proband
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "proband", new IndividualUpdateParams()
                 .setName(RandomStringUtils.random(10)), new QueryOptions(), token);
 
-        individualResult = catalogManager.getIndividualManager().get(organizationId, studyFqn, "proband", QueryOptions.empty(), token).first();
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
         assertEquals(3, individualResult.getVersion());
 
-        familyResult = catalogManager.getFamilyManager().get(organizationId, studyFqn, "family", QueryOptions.empty(), token).first();
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
         assertEquals(4, familyResult.getVersion());
         assertEquals(3, familyResult.getMembers().size());
         assertEquals(3, familyResult.getMembers().get(0).getVersion());
         assertEquals(3, familyResult.getMembers().get(1).getVersion());
         assertEquals(3, familyResult.getMembers().get(2).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -574,7 +574,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(3, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(4, clinicalResult.getFamily().getVersion());
@@ -586,17 +586,17 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().update(organizationId, studyFqn, "father", new IndividualUpdateParams()
                 .setName(RandomStringUtils.random(10)), new QueryOptions(), token);
 
-        individualResult = catalogManager.getIndividualManager().get(organizationId, studyFqn, "father", QueryOptions.empty(), token).first();
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), token).first();
         assertEquals(4, individualResult.getVersion());
 
-        familyResult = catalogManager.getFamilyManager().get(organizationId, studyFqn, "family", QueryOptions.empty(), token).first();
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
         assertEquals(5, familyResult.getVersion());
         assertEquals(3, familyResult.getMembers().size());
         assertEquals(3, familyResult.getMembers().get(0).getVersion());
         assertEquals(4, familyResult.getMembers().get(1).getVersion());
         assertEquals(3, familyResult.getMembers().get(2).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -604,7 +604,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
         assertEquals(3, clinicalResult.getProband().getVersion());
         assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(5, clinicalResult.getFamily().getVersion());
@@ -625,7 +625,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
 
-        Individual individual = individualManager.get(organizationId, studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+        Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
         assertEquals(1, individual.getQualityControl().getComments().size());
         assertEquals("pfurio", individual.getQualityControl().getComments().get(0).getAuthor());
@@ -647,28 +647,28 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 new IndividualUpdateParams().setDateOfBirth(""), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
 
-        Individual individual = individualManager.get(organizationId, studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+        Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
         assertEquals("", individual.getDateOfBirth());
 
         update = individualManager.update(organizationId, studyFqn, individualDataResult.first().getId(),
                 new IndividualUpdateParams().setDateOfBirth("19870214"), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
-        individual = individualManager.get(organizationId, studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+        individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
         assertEquals("19870214", individual.getDateOfBirth());
 
         update = individualManager.update(organizationId, studyFqn, individualDataResult.first().getId(),
                 new IndividualUpdateParams().setAttributes(Collections.singletonMap("key", "value")), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
-        individual = individualManager.get(organizationId, studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+        individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
         assertEquals("value", individual.getAttributes().get("key"));
 
         update = individualManager.update(organizationId, studyFqn, individualDataResult.first().getId(),
                 new IndividualUpdateParams().setAttributes(Collections.singletonMap("key2", "value2")), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
-        individual = individualManager.get(organizationId, studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+        individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
         assertEquals("value", individual.getAttributes().get("key")); // Keep "key"
         assertEquals("value2", individual.getAttributes().get("key2")); // add new "key2"
@@ -692,7 +692,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                         .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         assertEquals(1, individualDataResult.getNumUpdated());
 
-        Individual individual = individualManager.get(organizationId, studyFqn, "child", QueryOptions.empty(), token).first();
+        Individual individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
 
         assertEquals("mother", individual.getMother().getId());
         assertEquals(1, individual.getMother().getVersion());
@@ -713,7 +713,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                         .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         assertEquals(1, individualDataResult.getNumUpdated());
 
-        Individual individual = individualManager.get(organizationId, studyFqn, "child", QueryOptions.empty(), token).first();
+        Individual individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
 
         assertEquals("mother", individual.getMother().getId());
         assertEquals(1, individual.getMother().getVersion());
@@ -723,7 +723,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         individualManager.update(organizationId, studyFqn, "child", new IndividualUpdateParams().setFather(new IndividualReferenceParam("", ""))
                 .setMother(new IndividualReferenceParam("", "")), QueryOptions.empty(), token);
-        individual = individualManager.get(organizationId, studyFqn, "child", QueryOptions.empty(), token).first();
+        individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
 
         assertNull(individual.getMother().getId());
         assertNull(individual.getFather().getId());
@@ -795,8 +795,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 new QueryOptions(Constants.FORCE, true), token);
         assertEquals(1, writeResult.getNumDeleted());
 
-        Family family1 = familyManager.get(organizationId, studyFqn, "family1", QueryOptions.empty(), token).first();
-        Family family2 = familyManager.get(organizationId, studyFqn, "family2", QueryOptions.empty(), token).first();
+        Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), token).first();
+        Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), token).first();
 
         assertEquals(1, family1.getMembers().size());
         assertEquals(0, family1.getMembers().stream().filter(i -> i.getId().equals("child")).count());
@@ -906,7 +906,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().create(studyFqn, dummyIndividual1, QueryOptions.empty(), token);
         catalogManager.getIndividualManager().create(studyFqn, dummyIndividual2, QueryOptions.empty(), token);
 
-        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(organizationId, studyFqn,
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(studyFqn,
                 Arrays.asList(dummyIndividual1.getId(), dummyIndividual2.getId()), QueryOptions.empty(), token);
         for (Individual individual : result.getResults()) {
             assertEquals(1, individual.getVersion());
@@ -914,7 +914,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
 
         catalogManager.getIndividualManager().update(organizationId, studyFqn, dummyIndividual1.getId(), new IndividualUpdateParams().setName("name"),
                 QueryOptions.empty(), token);
-        result = catalogManager.getIndividualManager().get(organizationId, studyFqn,
+        result = catalogManager.getIndividualManager().get(studyFqn,
                 Arrays.asList(dummyIndividual1.getId(), dummyIndividual2.getId()), QueryOptions.empty(), token);
         assertEquals(2, result.first().getVersion());
         assertEquals("name", result.first().getName());
@@ -980,7 +980,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(1, individual2.getFamilyIds().size());
         assertEquals(family.getId(), individual2.getFamilyIds().get(0));
 
-        family = catalogManager.getFamilyManager().get(organizationId, studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
         assertTrue(family.getRoles().containsKey(individualId1));
         assertFalse(family.getRoles().containsKey("blabla"));
         assertEquals(2, family.getMembers().size());
@@ -1004,13 +1004,13 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(1, individual1.getFamilyIds().size());
         assertEquals(family.getId(), individual1.getFamilyIds().get(0));
 
-        family = catalogManager.getFamilyManager().get(organizationId, studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, family.getMembers().size());
         assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 3).count());
         assertFalse(family.getRoles().containsKey(individualId1));
         assertTrue(family.getRoles().containsKey("blabla"));
 
-        List<Sample> samples = catalogManager.getSampleManager().get(organizationId, studyFqn, Arrays.asList(sample1.getId(), sample2.getId()),
+        List<Sample> samples = catalogManager.getSampleManager().get(studyFqn, Arrays.asList(sample1.getId(), sample2.getId()),
                 QueryOptions.empty(), token).getResults();
         for (Sample sample : samples) {
             assertEquals("blabla", sample.getIndividualId());
@@ -1055,13 +1055,13 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals("blabla", proband.getId());
         assertEquals(3, proband.getVersion());
 
-        family = catalogManager.getFamilyManager().get(organizationId, studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, family.getVersion());
         assertTrue(family.getRoles().containsKey("blabla"));
         assertEquals(1, family.getMembers().stream().filter(i -> i.getId().equals("blabla")).count());
         assertEquals(1, family.getMembers().stream().filter(i -> i.getId().equals("blabla")).filter(i -> i.getVersion() == 3).count());
 
-        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(organizationId, studyFqn,
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(studyFqn,
                 Arrays.asList(case1.getId(), case2.getId(), case3.getId()), QueryOptions.empty(), token);
         case1 = result.getResults().get(0);
         case2 = result.getResults().get(1);

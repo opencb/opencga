@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -88,7 +87,7 @@ public abstract class AuthenticationManager {
      */
     public String getUserId(String token) throws CatalogAuthenticationException {
         if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
-            return ParamConstants.ANONYMOUS_USER_ID;
+            throw new CatalogAuthenticationException("Token is null or empty.");
         }
 
         return jwtManager.getUser(token);

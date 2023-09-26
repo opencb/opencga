@@ -366,7 +366,7 @@ public class MigrationManager {
         boolean anyError = false;
         for (JobReferenceParam jobR : migrationRun.getJobs()) {
             Job job = catalogManager.getJobManager()
-                    .get(organizationId, jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token)
+                    .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token)
                     .first();
             String jobStatus = job.getInternal().getStatus().getId();
             if (jobStatus.equals(Enums.ExecutionStatus.ERROR)

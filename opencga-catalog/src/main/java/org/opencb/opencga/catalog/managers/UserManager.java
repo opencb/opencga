@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -70,6 +71,7 @@ public class UserManager extends AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
+    private final AuthenticationFactory authenticationFactory;
     private final Map<String, AuthenticationManager> authenticationManagerMap;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -82,6 +84,7 @@ public class UserManager extends AbstractManager {
         String secretKey = configuration.getAdmin().getSecretKey();
         long expiration = configuration.getAuthentication().getExpiration();
 
+        authenticationFactory = new AuthenticationFactory(Collections.emptyList());
         authenticationManagerMap = new LinkedHashMap<>();
         if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
             for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
@@ -267,8 +270,8 @@ public class UserManager extends AbstractManager {
         }
         String authOrigin = userResult.first().getAccount().getAuthentication().getId();
 
-        // TODO: Call AuthenticationFactory validateToken
-        return null;
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        return jwtPayload;
     }
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
@@ -1467,10 +1470,6 @@ public class UserManager extends AbstractManager {
         }
         // We make this call again to get the original exception
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getPayload(token);
-    }
-
-    public void validateToken(String organizationId, String token) {
-        authorizationManager.
     }
 
     /**

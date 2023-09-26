@@ -687,7 +687,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
         File outDir;
         try {
-            outDir = fileManager.get(organizationId, study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+            outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         } catch (CatalogException e) {
             // Directory not found. Will try to create using user's token
             boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);

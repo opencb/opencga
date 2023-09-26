@@ -101,7 +101,7 @@ public class IndividualQcUtils {
         }
 
         try {
-            OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(organizationId, study, familyId, QueryOptions.empty(), token);
+            OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, familyId, QueryOptions.empty(), token);
 
             // Check family result
             if (familyResult.getResults().size() == 0) {
@@ -147,7 +147,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().get(organizationId, studyId, familyId, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -184,7 +184,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Individual> individualResult;
         try {
-            individualResult = catalogManager.getIndividualManager().get(organizationId, studyId, individualId, QueryOptions.empty(),
+            individualResult = catalogManager.getIndividualManager().get(studyId, individualId, QueryOptions.empty(),
                     token);
         } catch (CatalogException e) {
             throw new ToolException(e);
@@ -274,7 +274,7 @@ public class IndividualQcUtils {
             throws ToolException {
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().get(organizationId, studyId, sampleId, QueryOptions.empty(), token);
+            sampleResult = catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
@@ -296,7 +296,7 @@ public class IndividualQcUtils {
 
         OpenCGAResult<Family> familyResult;
         try {
-            familyResult = catalogManager.getFamilyManager().get(organizationId, studyId, familyId, QueryOptions.empty(), token);
+            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

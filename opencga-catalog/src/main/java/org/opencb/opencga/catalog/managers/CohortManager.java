@@ -33,14 +33,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -154,7 +152,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkObj(cohortParams, "CohortCreateParams");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
@@ -288,7 +289,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public OpenCGAResult<Cohort> generate(String studyStr, Query sampleQuery, Cohort cohort, QueryOptions options, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
@@ -326,7 +330,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<Cohort> create(String studyStr, Cohort cohort, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
         authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
 
@@ -421,7 +428,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
      * @throws CatalogException if there is any kind of error (permissions or invalid ids).
      */
     public OpenCGAResult<Sample> getSamples(String studyStr, String cohortStr, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
         OpenCGAResult<Cohort> cohortDataResult = internalGet(organizationId, study.getUid(), cohortStr,
                 new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()), userId);
@@ -442,7 +452,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(organizationId, sessionId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         // Fix query if it contains any annotation
@@ -460,7 +473,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
@@ -493,7 +509,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
@@ -548,7 +567,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<Cohort> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
@@ -587,7 +609,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             throw new CatalogException("Missing list of cohort ids");
         }
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
@@ -661,7 +686,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
 
@@ -787,12 +815,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public OpenCGAResult<Cohort> update(String studyStr, String cohortId, CohortUpdateParams updateParams, QueryOptions options,
                                         String token) throws CatalogException {
-        return update(organizationId, studyStr, cohortId, updateParams, false, options, token);
+        return update(studyStr, cohortId, updateParams, false, options, token);
     }
 
     public OpenCGAResult<Cohort> update(String studyStr, String cohortId, CohortUpdateParams updateParams,
                                         boolean allowModifyCohortAll, QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -867,7 +898,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<Cohort> update(String studyStr, List<String> cohortIds, CohortUpdateParams updateParams,
                                         boolean allowModifyCohortAll, boolean ignoreException, QueryOptions options, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -947,7 +981,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                         boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1119,7 +1156,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
 
-        String userId = userManager.getUserId(organizationId, sessionId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         // Fix query if it contains any annotation
@@ -1135,7 +1175,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     public void setStatus(String studyStr, String cohortId, String status, String message, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         CohortStatus cohortStatus = new CohortStatus(status, message);
@@ -1180,7 +1223,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
 
-        String userId = userManager.getUserId(organizationId, sessionId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
         authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.VIEW_COHORTS);
 
@@ -1208,8 +1254,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public OpenCGAResult<AclEntryList<CohortPermissions>> getAcls(String studyId, List<String> cohortList, List<String> members,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        String user = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(studyId, user, organizationId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
@@ -1223,7 +1272,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         try {
             auditManager.initAuditBatch(operationId);
-            InternalGetDataResult<Cohort> queryResult = internalGet(organizationId, study.getUid(), cohortList, INCLUDE_COHORT_IDS, user,
+            InternalGetDataResult<Cohort> queryResult = internalGet(organizationId, study.getUid(), cohortList, INCLUDE_COHORT_IDS, userId,
                     ignoreException);
 
             if (queryResult.getMissing() != null) {
@@ -1233,10 +1282,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             List<Long> cohortUids = queryResult.getResults().stream().map(Cohort::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
-                cohortAcls = authorizationManager.getAcl(organizationId, study.getUid(), cohortUids, members, Enums.Resource.COHORT, CohortPermissions.class, user
-                );
+                cohortAcls = authorizationManager.getAcl(organizationId, study.getUid(), cohortUids, members, Enums.Resource.COHORT,
+                        CohortPermissions.class, userId);
             } else {
-                cohortAcls = authorizationManager.getAcl(organizationId, study.getUid(), cohortUids, Enums.Resource.COHORT, CohortPermissions.class, user);
+                cohortAcls = authorizationManager.getAcl(organizationId, study.getUid(), cohortUids, Enums.Resource.COHORT,
+                        CohortPermissions.class, userId);
             }
 
             // Include non-existing cohorts to the result list
@@ -1247,14 +1297,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 if (!missingMap.containsKey(cohortId)) {
                     Cohort cohort = queryResult.getResults().get(counter);
                     resultList.add(cohortAcls.getResults().get(counter));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
+                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS),
                             new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg()));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "", study.getId(),
+                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "", study.getId(),
                             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(cohortId).getErrorMsg())), new ObjectMap());
                 }
@@ -1266,7 +1316,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String cohortId : cohortList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "",
+                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1288,7 +1338,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public OpenCGAResult<AclEntryList<CohortPermissions>> updateAcl(String studyId, List<String> cohortStrList, String memberList,
                                                                     AclParams aclParams, ParamUtils.AclAction action, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyId, StudyManager.INCLUDE_STUDY_UID, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1386,7 +1439,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
         Study study = catalogManager.getStudyManager().resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId, organizationId);

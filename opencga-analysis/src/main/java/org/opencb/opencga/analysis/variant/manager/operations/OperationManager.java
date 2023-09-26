@@ -106,7 +106,7 @@ public abstract class OperationManager {
     }
 
     protected Path getFileSystemPath(String studyFqn, String fileId, String token) throws CatalogException {
-        File file = catalogManager.getFileManager().get(organizationId, studyFqn, fileId,
+        File file = catalogManager.getFileManager().get(studyFqn, fileId,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key()), token).first();
         return Paths.get(file.getUri()).toAbsolutePath();
     }

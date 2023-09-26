@@ -190,12 +190,12 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end,
             @ApiParam(value = "Reference genome.") @QueryParam("referenceGenome") String referenceGenome) {
         try {
-            File file = catalogManager.getFileManager().get(organizationId, studyStr, fileIdStr, FileManager.EXCLUDE_FILE_ATTRIBUTES, token).first();
+            File file = catalogManager.getFileManager().get(studyStr, fileIdStr, FileManager.EXCLUDE_FILE_ATTRIBUTES, token).first();
             java.nio.file.Path referencePath = null;
 
             if (file.getFormat() == File.Format.CRAM) {
                 if (org.apache.commons.lang3.StringUtils.isNotEmpty(referenceGenome)) {
-                    referencePath = Paths.get(catalogManager.getFileManager().get(organizationId, studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, token).first().getUri().getPath());
+                    referencePath = Paths.get(catalogManager.getFileManager().get(studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, token).first().getUri().getPath());
                 } else if (ListUtils.isNotEmpty(file.getRelatedFiles())) {
                     for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
                         if (relatedFile.getRelation() == FileRelatedFile.Relation.REFERENCE_GENOME) {

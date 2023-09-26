@@ -248,7 +248,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         assertEquals(j, migrationRun.getJobs().get(0));
 
         // Update job with ERROR. Migration gets updated to ERROR.
-        Job job = catalogManager.getJobManager().get(organizationId, j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
         Enums.ExecutionStatus status = new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Failed");
         catalogManager.getJobManager().update(organizationId, job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
@@ -265,7 +265,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getJobs().get(0);
-        job = catalogManager.getJobManager().get(organizationId, j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
         status = new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Done");
         catalogManager.getJobManager().update(organizationId, job.getStudy().getId(), job.getId(),
                 new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);

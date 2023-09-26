@@ -155,7 +155,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             study = catalogManager.getStudyManager().get(organizationId, study, null, token).first().getFqn();
 
             if (CollectionUtils.isNotEmpty(toolParams.getSamples())) {
-                catalogManager.getSampleManager().get(organizationId, study, toolParams.getSamples(), new QueryOptions(), token)
+                catalogManager.getSampleManager().get(study, toolParams.getSamples(), new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -171,7 +171,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
             if (StringUtils.isNotEmpty(toolParams.getCohort())) {
                 catalogManager.getCohortManager()
-                        .get(organizationId, study, toolParams.getCohort(), new QueryOptions(QueryOptions.INCLUDE,
+                        .get(study, toolParams.getCohort(), new QueryOptions(QueryOptions.INCLUDE,
                                 CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()), token)
                         .getResults()
                         .stream()
@@ -231,7 +231,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                     }
 
                     Cohort cohort = catalogManager.getCohortManager()
-                            .get(organizationId, study, toolParams.getCohort(),
+                            .get(study, toolParams.getCohort(),
                                     new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token)
                             .first();
                     if (cohort.getAnnotationSets().stream().anyMatch(a -> a.getId().equals(VARIABLE_SET_ID))) {

@@ -82,7 +82,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            DataResult<Sample> sampleQueryResult = sampleManager.get(organizationId, studyStr, sampleList, query, queryOptions, true, token);
+            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, true, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -121,7 +121,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
             @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
-            File pedigreeFile = catalogManager.getFileManager().get(organizationId, studyStr, fileStr, null, token).first();
+            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileStr, null, token).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(organizationId, pedigreeFile, variableSet, token);
             return createOkResponse(sampleQueryResult);

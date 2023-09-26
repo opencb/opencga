@@ -160,7 +160,7 @@ public class CatalogStorageMetadataSynchronizer {
             // Files updated. Reload files from catalog
             for (int i = 0; i < files.size(); i++) {
                 File file = files.get(i);
-                files.set(i, catalogManager.getFileManager().get(organizationId, study, file.getId(), fileQueryOptions, sessionId).first());
+                files.set(i, catalogManager.getFileManager().get(study, file.getId(), fileQueryOptions, sessionId).first());
             }
         }
         return modified;
@@ -298,7 +298,7 @@ public class CatalogStorageMetadataSynchronizer {
                     .map(id -> metadataManager.getSampleName(study.getId(), id))
                     .collect(Collectors.toSet());
             Cohort defaultCohort = catalogManager.getCohortManager()
-                    .get(organizationId, study.getName(), defaultCohortName, COHORT_QUERY_OPTIONS, sessionId).first();
+                    .get(study.getName(), defaultCohortName, COHORT_QUERY_OPTIONS, sessionId).first();
             List<String> cohortFromCatalog = defaultCohort
                     .getSamples()
                     .stream()
@@ -517,7 +517,7 @@ public class CatalogStorageMetadataSynchronizer {
 
             for (Integer virtualFile : virtualFiles) {
                 File file = catalogManager.getFileManager()
-                        .get(organizationId, study.getName(), filePathMap.get(virtualFile), INDEXED_FILES_QUERY_OPTIONS, token).first();
+                        .get(study.getName(), filePathMap.get(virtualFile), INDEXED_FILES_QUERY_OPTIONS, token).first();
                 boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getName());
                 boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getName());
                 if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token)) {
@@ -779,7 +779,7 @@ public class CatalogStorageMetadataSynchronizer {
         if (!storageSamples.equals(catalogSamples) && !FileUtils.isPartial(file)) {
             logger.warn("File samples does not match between catalog and storage for file '{}'. "
                     + "Update catalog variant file metadata", file.getPath());
-            file = catalogManager.getFileManager().get(organizationId, study.getName(), file.getId(), new QueryOptions(), token).first();
+            file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), token).first();
             new FileMetadataReader(catalogManager).updateMetadataInformation(organizationId, study.getName(), file, token);
         }
         return modified;

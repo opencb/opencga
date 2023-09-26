@@ -104,7 +104,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
         // Check sample
         study = catalogManager.getStudyManager().get(organizationId, study, QueryOptions.empty(), token).first().getFqn();
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, study, signatureParams.getSample(),
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
                 QueryOptions.empty(), token);
         if (sampleResult.getNumResults() != 1) {
             throw new ToolException("Unable to compute mutational signature analysis. Sample '" + signatureParams.getSample()
@@ -231,7 +231,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         // Get sample quality control again in case it was updated during the mutational signature analysis
         OpenCGAResult<Sample> sampleResult;
         try {
-            sampleResult = catalogManager.getSampleManager().get(organizationId, study, signatureParams.getSample(),
+            sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
                     QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("After mutational signature analysis, it could not get sample from OpenCGA catalog", e);

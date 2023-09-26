@@ -853,7 +853,7 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void getTriosFromFamily() throws Exception {
 
-        Family f1 = catalog.getFamilyManager().get(organizationId, "s1", "f1", null, sessionId).first();
+        Family f1 = catalog.getFamilyManager().get("s1", "f1", null, sessionId).first();
         VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         StudyMetadata s1 = metadataManager.createStudy("s1");
         List<Integer> sampleIds = metadataManager.registerSamples(s1.getId(), Arrays.asList(

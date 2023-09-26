@@ -193,7 +193,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    public OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();

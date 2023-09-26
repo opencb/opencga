@@ -260,7 +260,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 addAttribute("dynamicCohort", true);
             } else {
                 for (String cohortName : cohorts) {
-                    Cohort cohort = catalogManager.getCohortManager().get(organizationId, studyFqn, cohortName, new QueryOptions(), token).first();
+                    Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortName, new QueryOptions(), token).first();
                     cohortsMap.put(cohortName, cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
                 }
             }
@@ -325,7 +325,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
             return Paths.get(aggregationMapFile).toAbsolutePath();
         } else {
             return Paths.get(getCatalogManager().getFileManager()
-                    .get(organizationId, studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
+                    .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
         }
     }
 

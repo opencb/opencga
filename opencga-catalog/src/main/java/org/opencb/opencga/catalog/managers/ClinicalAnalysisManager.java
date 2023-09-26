@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -45,6 +46,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -208,7 +210,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         fixQueryObject(organizationId, study, query, userId, sessionId);
@@ -226,7 +231,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis,
                                                   Boolean skipCreateDefaultInterpretation, QueryOptions options, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -242,7 +250,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
             ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
-            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_CLINICAL_ANALYSIS);
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId,
+                    StudyPermissions.Permissions.WRITE_CLINICAL_ANALYSIS);
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
@@ -325,7 +334,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     throw new CatalogException("Missing family id");
                 }
 
-                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(organizationId, study.getFqn(),
+                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(),
                         clinicalAnalysis.getFamily().getId(), new QueryOptions(), token);
                 if (familyDataResult.getNumResults() == 0) {
                     throw new CatalogException("Family " + clinicalAnalysis.getFamily().getId() + " not found");
@@ -866,7 +875,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // List of members relevant for the clinical analysis
         List<Individual> selectedMembers = family.getMembers();
 
-        OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(organizationId, study.getFqn(), family.getId(),
+        OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(), family.getId(),
                 new QueryOptions(), token);
         if (familyDataResult.getNumResults() == 0) {
             throw new CatalogException("Family " + family.getId() + " not found");
@@ -925,7 +934,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         List<Sample> samples = member.getSamples();
 
         if (member.getUid() <= 0) {
-            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(organizationId, study.getFqn(),
+            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
                     member.getId(), new QueryOptions(), sessionId);
             if (individualDataResult.getNumResults() == 0) {
                 throw new CatalogException("Member " + member.getId() + " not found");
@@ -936,7 +945,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             finalMember = member;
             if (ListUtils.isNotEmpty(samples) && StringUtils.isEmpty(samples.get(0).getUuid())) {
                 // We don't have the full sample information...
-                OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(organizationId, study.getFqn(),
+                OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
                         finalMember.getId(), new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
                         sessionId);
                 if (individualDataResult.getNumResults() == 0) {
@@ -976,7 +985,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalAnalysisUpdateParams updateParams,
                                                   boolean ignoreException, QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1037,7 +1049,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalAnalysisUpdateParams updateParams,
                                                   QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1109,7 +1124,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalAnalysisUpdateParams updateParams,
                                                   boolean ignoreException, QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1508,7 +1526,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         fixQueryObject(organizationId, study, query, userId, token);
@@ -1521,7 +1542,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1709,7 +1733,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     public OpenCGAResult<ClinicalAnalysis> count(String studyId, Query query, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
@@ -1746,7 +1773,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Missing list of Clinical Analysis ids");
         }
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1858,7 +1888,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         OpenCGAResult result = OpenCGAResult.empty();
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
@@ -1945,7 +1978,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Empty fields parameter.");
         }
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         fixQueryObject(organizationId, study, query, userId, sessionId);
@@ -1966,8 +2002,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> getAcls(String studyId, List<String> clinicalList, List<String> members,
                                                                             boolean ignoreException, String token) throws CatalogException {
-        String user = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(studyId, user, organizationId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyId, userId, organizationId);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
@@ -1982,7 +2021,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         try {
             auditManager.initAuditBatch(operationId);
             InternalGetDataResult<ClinicalAnalysis> queryResult = internalGet(organizationId, study.getUid(), clinicalList,
-                    INCLUDE_CLINICAL_IDS, user, ignoreException);
+                    INCLUDE_CLINICAL_IDS, userId, ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -1991,11 +2030,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             List<Long> clinicalUids = queryResult.getResults().stream().map(ClinicalAnalysis::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
-                clinicalAcls = authorizationManager.getAcl(organizationId, study.getUid(), clinicalUids, members, Enums.Resource.CLINICAL_ANALYSIS, ClinicalAnalysisPermissions.class, user
-                );
+                clinicalAcls = authorizationManager.getAcl(organizationId, study.getUid(), clinicalUids, members,
+                        Enums.Resource.CLINICAL_ANALYSIS, ClinicalAnalysisPermissions.class, userId);
             } else {
-                clinicalAcls = authorizationManager.getAcl(organizationId, study.getUid(), clinicalUids, Enums.Resource.CLINICAL_ANALYSIS, ClinicalAnalysisPermissions.class, user
-                );
+                clinicalAcls = authorizationManager.getAcl(organizationId, study.getUid(), clinicalUids, Enums.Resource.CLINICAL_ANALYSIS,
+                        ClinicalAnalysisPermissions.class, userId);
             }
 
             // Include non-existing samples to the result list
@@ -2006,14 +2045,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 if (!missingMap.containsKey(clinicalId)) {
                     ClinicalAnalysis clinical = queryResult.getResults().get(counter);
                     resultList.add(clinicalAcls.getResults().get(counter));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
+                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
                             clinical.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, clinicalId, missingMap.get(clinicalId).getErrorMsg()));
-                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
+                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(clinicalId).getErrorMsg())), new ObjectMap());
                 }
@@ -2025,7 +2064,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String caseId : clinicalList) {
-                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, caseId, "",
+                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, caseId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -2047,8 +2086,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> updateAcl(
             String studyStr, List<String> clinicalList, String memberIds, AclParams clinicalAclParams,
             ParamUtils.AclAction action, boolean propagate, String token) throws CatalogException {
-        String user = userManager.getUserId(organizationId, token);
-        Study study = studyManager.resolveId(studyStr, user, organizationId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -2078,9 +2120,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             OpenCGAResult<ClinicalAnalysis> queryResult = internalGet(organizationId, study.getUid(), clinicalList, INCLUDE_CATALOG_DATA,
-                    user, false);
+                    userId, false);
 
-            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), user);
+            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
             // Validate that the members are actually valid members
             List<String> members;
@@ -2184,7 +2226,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 queryResults.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             for (ClinicalAnalysis clinicalAnalysis : queryResult.getResults()) {
-                auditManager.audit(operationUuid, user, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
                         clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -2193,7 +2235,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } catch (CatalogException e) {
             if (clinicalList != null) {
                 for (String clinicalId : clinicalList) {
-                    auditManager.audit(operationUuid, user, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
+                    auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
@@ -2206,7 +2248,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public OpenCGAResult configureStudy(String studyStr, ClinicalAnalysisStudyConfiguration clinicalConfiguration, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()

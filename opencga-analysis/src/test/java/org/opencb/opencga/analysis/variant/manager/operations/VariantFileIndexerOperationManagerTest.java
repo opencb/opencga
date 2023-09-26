@@ -124,7 +124,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
     }
 
     private VariantSetStats getVariantSetMetrics(String fileId) throws CatalogException {
-        return catalogManager.getFileManager().get(organizationId, studyId, fileId, null, sessionId).first().getQualityControl().getVariant().getVariantSetMetrics();
+        return catalogManager.getFileManager().get(studyId, fileId, null, sessionId).first().getQualityControl().getVariant().getVariantSetMetrics();
     }
 
     @Test
@@ -153,7 +153,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
-            assertEquals(VariantIndexStatus.NONE, catalogManager.getFileManager().get(organizationId, studyId, getFile(0).getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
+            assertEquals(VariantIndexStatus.NONE, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
             assertNull(getVariantSetMetrics(getFile(0).getId()));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");

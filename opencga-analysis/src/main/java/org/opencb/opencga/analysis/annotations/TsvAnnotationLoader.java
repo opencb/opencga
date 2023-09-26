@@ -73,7 +73,7 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
     protected void check() throws Exception {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
 
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(organizationId, study, path, FileManager.INCLUDE_FILE_URI_PATH, token);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(study, path, FileManager.INCLUDE_FILE_URI_PATH, token);
         if (fileResult.getNumResults() == 0) {
             throw new ToolException("File '" + path + "' not found");
         }

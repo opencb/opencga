@@ -74,7 +74,7 @@ public class ExomiserInterpretationAnalysisTest  {
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
 
         OpenCGAResult<ClinicalAnalysis> caResult = clinicalTest.catalogManager.getClinicalAnalysisManager()
-                .get(organizationId, clinicalTest.studyFqn, clinicalTest.CA_ID2, QueryOptions.empty(), clinicalTest.token);
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID2, QueryOptions.empty(), clinicalTest.token);
         ClinicalAnalysis clinicalAnalysis = caResult.getResults().get(0);
         assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
 
@@ -88,7 +88,7 @@ public class ExomiserInterpretationAnalysisTest  {
 
         // Refresh clinical analysis
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
-                .get(organizationId, clinicalTest.studyFqn, clinicalTest.CA_ID2, QueryOptions.empty(), clinicalTest.token).first();
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID2, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
         assertEquals(22, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
     }
@@ -101,7 +101,7 @@ public class ExomiserInterpretationAnalysisTest  {
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_family"));
 
         ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
-                .get(organizationId, clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
 
         ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
@@ -114,7 +114,7 @@ public class ExomiserInterpretationAnalysisTest  {
 
         // Refresh clinical analysis
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
-                .get(organizationId, clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
         assertEquals(2, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
         System.out.println("results at out dir = " + outDir.toAbsolutePath());

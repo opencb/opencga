@@ -386,7 +386,7 @@ public class JobManager extends ResourceManager<Job> {
                     for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
                         try {
                             // Validate the user has access to the file
-                            File file = catalogManager.getFileManager().get(organizationId, study, fileStr,
+                            File file = catalogManager.getFileManager().get(study, fileStr,
                                     FileManager.INCLUDE_FILE_URI_PATH, token).first();
                             inputFiles.add(file);
                         } catch (CatalogException e) {
@@ -403,7 +403,7 @@ public class JobManager extends ResourceManager<Job> {
                             // catalog
                             try {
                                 // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(organizationId, study, (String) subEntry.getValue(),
+                                File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
                                         FileManager.INCLUDE_FILE_URI_PATH, token).first();
                                 inputFiles.add(file);
                             } catch (CatalogException e) {
@@ -420,7 +420,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority, String jobId, String jobDescription,
                                     List<String> jobDependsOn, List<String> jobTags, String token) throws CatalogException {
-        Job job = get(organizationId, studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
+        Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
         if (jobRetry.isForce()
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
@@ -638,7 +638,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Job> get(String organizationId, long jobId, QueryOptions options, String sessionId) throws CatalogException {
-        return get(organizationId, null, String.valueOf(jobId), options, sessionId);
+        return get(null, String.valueOf(jobId), options, sessionId);
     }
 
 //    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)

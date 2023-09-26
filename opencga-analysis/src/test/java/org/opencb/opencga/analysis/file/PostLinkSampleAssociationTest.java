@@ -74,7 +74,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         postLinkSampleAssociation.start();
         System.out.println(link);
 
-        File file = fileManager.get(organizationId, studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -108,7 +108,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
 
-        OpenCGAResult<File> virtualResult = fileManager.get(organizationId, studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
+        OpenCGAResult<File> virtualResult = fileManager.get(studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.READY, link.first().getInternal().getStatus().getId());
@@ -136,7 +136,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         postLinkSampleAssociation.start();
         System.out.println(link);
 
-        File file = fileManager.get(organizationId, studyFqn, virtualResult.first().getId(), QueryOptions.empty(), token).first();
+        File file = fileManager.get(studyFqn, virtualResult.first().getId(), QueryOptions.empty(), token).first();
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -170,7 +170,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         String vcfFile = opencga.getResourceUri("biofiles/variant-test-file.vcf.gz").toString();
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, token);
 
-        OpenCGAResult<File> virtualResult = fileManager.get(organizationId, studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
+        OpenCGAResult<File> virtualResult = fileManager.get(studyFqn, "virtual_file.vcf", QueryOptions.empty(), token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.READY, link.first().getInternal().getStatus().getId());
@@ -198,7 +198,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         postLinkSampleAssociation.start();
         System.out.println(link);
 
-        File file = fileManager.get(organizationId, studyFqn, virtualResult.first().getId(), QueryOptions.empty(), token).first();
+        File file = fileManager.get(studyFqn, virtualResult.first().getId(), QueryOptions.empty(), token).first();
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
@@ -253,7 +253,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         postLinkSampleAssociation.start();
         System.out.println(link);
 
-        File file = fileManager.get(organizationId, studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));

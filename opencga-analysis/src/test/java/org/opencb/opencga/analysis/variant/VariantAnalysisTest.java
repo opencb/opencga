@@ -485,7 +485,7 @@ public class VariantAnalysisTest {
                 samples = file.getSampleIds();
             }
             for (String sample : samples) {
-                Sample sampleObj = catalogManager.getSampleManager().get(organizationId, STUDY, sample, QueryOptions.empty(), token).first();
+                Sample sampleObj = catalogManager.getSampleManager().get(STUDY, sample, QueryOptions.empty(), token).first();
                 List<SampleQcVariantStats> variantStats = sampleObj.getQualityControl().getVariant().getVariantStats();
                 assertEquals(expectedStats, variantStats.size());
                 assertThat(variantStats.stream().map(SampleQcVariantStats::getId).collect(Collectors.toSet()), hasItem(indexId));
@@ -520,7 +520,7 @@ public class VariantAnalysisTest {
                 outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
-        Cohort cohort = catalogManager.getCohortManager().get(organizationId, STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
+        Cohort cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
         assertEquals(1, cohort.getAnnotationSets().size());
         AnnotationSet annotationSet = cohort.getAnnotationSets().get(0);
         assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getId());
@@ -545,7 +545,7 @@ public class VariantAnalysisTest {
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
 
-        cohort = catalogManager.getCohortManager().get(organizationId, STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
+        cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
         assertEquals(1, cohort.getAnnotationSets().size());
         annotationSet = cohort.getAnnotationSets().get(0);
         assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getId());
@@ -788,7 +788,7 @@ public class VariantAnalysisTest {
         System.out.println(new String(bytes));
         assertTrue(signatureFile.exists());
 
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
         Sample sample = sampleResult.first();
         List<Signature> signatures = sample.getQualityControl().getVariant().getSignatures();
         for (Signature sig : signatures) {
@@ -848,7 +848,7 @@ public class VariantAnalysisTest {
         System.out.println(new String(bytes));
         assertTrue(signatureFile.exists());
 
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
         Sample sample = sampleResult.first();
         List<Signature> signatures = sample.getQualityControl().getVariant().getSignatures();
         for (Signature signature : signatures) {
@@ -869,7 +869,7 @@ public class VariantAnalysisTest {
         catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
         catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
         String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
-        File file = catalogManager.getFileManager().get(organizationId, CANCER_STUDY, filename, null, token).first();
+        File file = catalogManager.getFileManager().get(CANCER_STUDY, filename, null, token).first();
         String signatureFileId = file.getId();
 
         uri = getResourceUri("mutational-signature-sv.json");
@@ -959,7 +959,7 @@ public class VariantAnalysisTest {
         catalogManager.getFileManager().createFolder(CANCER_STUDY, "signature", true, "", new QueryOptions(), token);
         catalogManager.getFileManager().link(CANCER_STUDY, uri, "signature", new ObjectMap(), token);
         String filename = Paths.get(uri.toURL().getFile()).toFile().getName();
-        File file = catalogManager.getFileManager().get(organizationId, CANCER_STUDY, filename, null, token).first();
+        File file = catalogManager.getFileManager().get(CANCER_STUDY, filename, null, token).first();
         String signatureFileId = file.getId();
 
         params = new MutationalSignatureAnalysisParams();
@@ -1002,7 +1002,7 @@ public class VariantAnalysisTest {
         System.out.println(new String(bytes));
         assertTrue(hrDetectFile.exists());
 
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, QueryOptions.empty(), token);
         Sample sample = sampleResult.first();
         List<HRDetect> hrDetects = sample.getQualityControl().getVariant().getHrDetects();
         for (HRDetect hrDetect : hrDetects) {

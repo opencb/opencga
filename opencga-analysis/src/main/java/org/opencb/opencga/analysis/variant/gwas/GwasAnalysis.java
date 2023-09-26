@@ -377,7 +377,7 @@ public class GwasAnalysis extends OpenCgaTool {
                         });
             } else if (validCohort) {
                 samples = catalogManager.getCohortManager()
-                        .get(organizationId, study, cohort, new QueryOptions(), token)
+                        .get(study, cohort, new QueryOptions(), token)
                         .first()
                         .getSamples()
                         .stream()

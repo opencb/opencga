@@ -145,7 +145,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         assertEquals(loadedSamples, allSampleIds);
 
         for (String file : fileIds) {
-            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(organizationId, studyId, file, null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
+            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
         }
 
     }

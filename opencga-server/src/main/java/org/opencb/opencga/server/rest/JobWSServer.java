@@ -124,7 +124,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             List<String> idList = getIdList(jobIds);
-            return createOkResponse(catalogManager.getJobManager().get(organizationId, studyStr, idList, new Query("deleted", deleted), queryOptions,
+            return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
                     true, token));
         } catch (Exception e) {
             return createErrorResponse(e);

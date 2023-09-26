@@ -126,7 +126,7 @@ public class RgaManager implements AutoCloseable {
 
     // Data load
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
-        File file = catalogManager.getFileManager().get(organizationId, studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+        File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         Path filePath = Paths.get(file.getUri());
         index(studyStr, filePath, token);
     }

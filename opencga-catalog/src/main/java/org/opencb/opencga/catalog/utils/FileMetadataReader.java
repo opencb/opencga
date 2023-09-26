@@ -132,7 +132,7 @@ public class FileMetadataReader {
                                     Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                                             ParamUtils.BasicUpdateAction.SET.toString())), token);
                 }
-                return catalogManager.getFileManager().get(organizationId, studyId, file.getUuid(), QueryOptions.empty(), token).first();
+                return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
         } catch (JsonProcessingException e) {
             throw new CatalogException("Unexpected error converting FileUpdateParams object: " + e.getMessage(), e);

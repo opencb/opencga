@@ -27,10 +27,12 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
@@ -88,17 +90,18 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Fetch the R object.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param entryStr       Entry id to be fetched.
-     * @param options        QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param token          token
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param entryStr Entry id to be fetched.
+     * @param options  QueryOptions object, like "include", "exclude", "limit" and "skip".
+     * @param token    token
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<R> get(String organizationId, String studyStr, String entryStr, QueryOptions options, String token)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+    public OpenCGAResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
         return internalGet(organizationId, study.getUid(), entryStr, options, userId);
     }
@@ -106,34 +109,34 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Fetch all the R objects matching the query.
      *
-     * @param organizationId Organization id.
-     * @param studyStr       Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param entryList      Comma separated list of entries to be fetched.
-     * @param options        QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param token          token
+     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param entryList Comma separated list of entries to be fetched.
+     * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
+     * @param token     token
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<R> get(String organizationId, String studyStr, List<String> entryList, QueryOptions options, String token)
+    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
+        return get(studyStr, entryList, new Query(), options, false, token);
+    }
+
+    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
-        return get(organizationId, studyStr, entryList, new Query(), options, false, token);
+        return get(studyStr, entryList, new Query(), options, ignoreException, token);
     }
 
-    public OpenCGAResult<R> get(String organizationId, String studyStr, List<String> entryList, QueryOptions options,
-                                boolean ignoreException, String token) throws CatalogException {
-        return get(organizationId, studyStr, entryList, new Query(), options, ignoreException, token);
-    }
-
-    public OpenCGAResult<R> get(String organizationId, String studyId, List<String> entryList, Query query, QueryOptions options,
-                                boolean ignoreException, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+    public OpenCGAResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean ignoreException,
+                                String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
 
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("studyId", studyId)
                 .append("entryList", entryList)
                 .append("query", new Query(query))

@@ -74,7 +74,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            DataResult<Family> familyQueryResult = familyManager.get(organizationId, studyStr, familyList, query, queryOptions, true, token);
+            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, true, token);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

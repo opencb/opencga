@@ -72,6 +72,10 @@ public class CatalogAuthorizationException extends CatalogException {
                 + " cannot " + description);
     }
 
+    public static CatalogAuthorizationException deny(Throwable cause) {
+        return new CatalogAuthorizationException("Permission denied.", cause);
+    }
+
     public static CatalogAuthorizationException denyAny(String userId, String permission, String resource) {
         return new CatalogAuthorizationException("Permission denied. "
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")

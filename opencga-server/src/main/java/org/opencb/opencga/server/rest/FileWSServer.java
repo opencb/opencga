@@ -123,7 +123,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove("files");
 
             List<String> idList = getIdList(fileStr.replaceAll(":", "/"));
-            DataResult<File> fileQueryResult = fileManager.get(organizationId, studyStr, idList, new Query("deleted", deleted), queryOptions, true, token);
+            DataResult<File> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, true, token);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -846,7 +846,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            File file = fileManager.get(organizationId, studyStr, fileIdStr, null, token).first();
+            File file = fileManager.get(studyStr, fileIdStr, null, token).first();
 
             List<File> files;
             FileUtils catalogFileUtils = new FileUtils(catalogManager);

@@ -83,7 +83,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
 
             // Update quality control for the catalog sample
             if (StringUtils.isNotEmpty(genomePlotParams.getSample())) {
-                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(organizationId, getStudy(), genomePlotParams.getSample(),
+                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), genomePlotParams.getSample(),
                         QueryOptions.empty(), getToken());
                 Sample sample = sampleResult.first();
                 if (sample != null) {

@@ -50,7 +50,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
 
         OpenCGAResult<File> fileResult;
         try {
-            fileResult = catalogManager.getFileManager().get(organizationId, getStudy(), inputFile, QueryOptions.empty(), token);
+            fileResult = catalogManager.getFileManager().get(getStudy(), inputFile, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error accessing file '" + inputFile + "' of the study " + study + "'", e);
         }
@@ -96,7 +96,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             Path outputCatalogPath = Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
             OpenCGAResult<File> fileResult;
             try {
-                fileResult = catalogManager.getFileManager().get(organizationId, getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
+                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
                 if (fileResult.getNumResults() <= 0) {
                     isLinked = false;
                 }

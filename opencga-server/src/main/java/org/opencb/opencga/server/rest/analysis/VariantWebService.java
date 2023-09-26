@@ -749,7 +749,7 @@ public class VariantWebService extends AnalysisWebService {
             ParamUtils.checkParameter(cohort, "cohort");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
             OpenCGAResult<Cohort> result = catalogManager.getCohortManager()
-                    .get(organizationId, studyStr, getIdList(cohort), new QueryOptions(), token);
+                    .get(studyStr, getIdList(cohort), new QueryOptions(), token);
 
             List<VariantSetStats> stats = new ArrayList<>(result.getNumResults());
             for (Cohort c : result.getResults()) {

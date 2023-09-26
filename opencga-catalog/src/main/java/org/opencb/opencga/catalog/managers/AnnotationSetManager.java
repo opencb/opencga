@@ -254,7 +254,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
                                         authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
-                                                StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
+                                                StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                                         confidentialPermissionsChecked = true;
                                     }
                                 }

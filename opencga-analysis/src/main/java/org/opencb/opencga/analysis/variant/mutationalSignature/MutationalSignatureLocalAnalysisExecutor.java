@@ -541,7 +541,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             CatalogManager catalogManager = getVariantStorageManager().getCatalogManager();
             // Check sample
             String study = catalogManager.getStudyManager().get(organizationId, getStudy(), QueryOptions.empty(), getToken()).first().getFqn();
-            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, study, getSample(), QueryOptions.empty(),
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, getSample(), QueryOptions.empty(),
                     getToken());
             if (sampleResult.getNumResults() != 1) {
                 throw new ToolException("Unable to compute mutational signature analysis. Sample '" + getSample() + "' not found");

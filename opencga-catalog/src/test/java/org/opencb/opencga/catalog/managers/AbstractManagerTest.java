@@ -144,7 +144,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest1k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("name", "fileTest1k");
@@ -162,7 +162,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest05k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "valuable");
         attributes.put("name", "fileTest05k");
@@ -179,7 +179,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File test01k = catalogManager.getFileManager().get(organizationId, studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
+        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "other");
         attributes.put("name", "test01k");

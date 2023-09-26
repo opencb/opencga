@@ -537,7 +537,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     private File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(organizationId, studyIdStr, fileIdStr, QueryOptions.empty(), sessionId);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr, QueryOptions.empty(), sessionId);
         if (fileResult.getNumResults() == 0) {
             throw new CatalogException("File " + fileIdStr + " not found");
         }

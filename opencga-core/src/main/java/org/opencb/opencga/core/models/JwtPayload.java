@@ -84,6 +84,14 @@ public class JwtPayload {
         return userId;
     }
 
+    public String getUserId(String organization) {
+        if (StringUtils.isNotEmpty(organization) && StringUtils.isNotEmpty(this.organization) && !organization.equals(this.organization)) {
+            // User wants to access data from a different organization. Therefore, we need to return an fqn
+            return this.organization + ":" + this.userId;
+        }
+        return this.userId;
+    }
+
     public String getOrganization() {
         return organization;
     }

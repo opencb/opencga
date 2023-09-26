@@ -299,7 +299,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
 
     private Sample checkSample(String sampleId) throws ToolException, CatalogException {
         study = catalogManager.getStudyManager().get(organizationId, study, QueryOptions.empty(), token).first().getFqn();
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(organizationId, study, sampleId, QueryOptions.empty(), token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleId, QueryOptions.empty(), token);
         if (sampleResult.getNumResults() != 1) {
             throw new ToolException("Unable to compute HRDetect analysis. Sample '" + hrdetectParams.getSampleId() + "' not found");
         }
