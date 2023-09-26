@@ -1315,9 +1315,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID)
-                .append(QueryOptions.LIMIT, 1)
-                .append(QueryOptions.COUNT, true));
+        VariantQueryResult<Variant> result = get(VariantQueryUtils.copy(query),
+                new QueryOptions(QueryOptions.INCLUDE, VariantField.ID)
+                        .append(QueryOptions.LIMIT, 1)
+                        .append(QueryOptions.COUNT, true));
         return new DataResult<>(
                 result.getTime(),
                 result.getEvents(),
