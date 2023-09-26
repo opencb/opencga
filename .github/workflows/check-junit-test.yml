@@ -64,4 +64,5 @@ jobs:
       report_context: development
       mvn_opts: ${{ inputs.mvn_opts }}
       ref: ${{ inputs.ref }}
+      sonar: false
     secrets: inherit

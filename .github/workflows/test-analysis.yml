@@ -17,6 +17,10 @@ on:
         type: string
         required: false
         default: ""
+      sonar:
+        type: boolean
+        required: false
+        default: true
     secrets:
       SONAR_TOKEN:
         required: true
@@ -34,6 +38,7 @@ jobs:
   analysis:
     name: Execute Sonar Analysis
     runs-on: ubuntu-22.04
+    if: "${{ inputs.sonar }}"
     steps:
       - uses: actions/checkout@v3
         with:
