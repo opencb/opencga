@@ -28,7 +28,7 @@ public class RestApi {
     private List<RestCategory> categories;
 
     public RestApi() {
-        this(GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId(), new ArrayList<>());
+        this(GitRepositoryState.getInstance().getBuildVersion(), GitRepositoryState.getInstance().getCommitId(), new ArrayList<>());
     }
 
     public RestApi(String version, String commit, List<RestCategory> categories) {

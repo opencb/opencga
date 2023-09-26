@@ -48,8 +48,8 @@ public class StorageAdminMain {
         String parsedCommand = adminCliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
             if (adminCliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
-                System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                System.out.println("Version " + GitRepositoryState.getInstance().getBuildVersion());
+                System.out.println("Git version: " + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
                 return 0;
             } else if (adminCliOptionsParser.getGeneralOptions().help) {
                 adminCliOptionsParser.printUsage();

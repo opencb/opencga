@@ -51,7 +51,7 @@ public abstract class MRExecutor {
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
         String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
         if (jar == null) {
-            jar = "opencga-storage-hadoop-core-" + GitRepositoryState.get().getBuildVersion() + "-jar-with-dependencies.jar";
+            jar = "opencga-storage-hadoop-core-" + GitRepositoryState.getInstance().getBuildVersion() + "-jar-with-dependencies.jar";
 //            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {
