@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       profiles: ${{ steps.getter.outputs.profiles }}
+      profilesJson: ${{ steps.getter.outputs.profilesJson }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -55,7 +56,7 @@ jobs:
   test:
     strategy:
       matrix:
-        profile: ${{ fromJSON(needs.get_profiles.outputs.profiles) }}
+        profile: ${{ fromJSON(needs.get_profiles.outputs.profilesJson) }}
     needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
