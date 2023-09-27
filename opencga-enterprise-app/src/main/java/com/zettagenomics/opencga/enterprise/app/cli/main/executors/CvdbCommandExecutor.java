@@ -18,6 +18,8 @@ import org.opencb.commons.utils.PrintUtils;
 
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvdbCommandOptions;
 
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 
 
@@ -53,6 +55,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "case-index-run":
+                queryResponse = runCaseIndex();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -63,6 +68,44 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<Job> runCaseIndex() throws Exception {
+        logger.debug("Executing runCaseIndex in Cvdb command line");
+
+        CvdbCommandOptions.RunCaseIndexCommandOptions commandOptions = cvdbCommandOptions.runCaseIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        CvdbIndexTaskParams cvdbIndexTaskParams = null;
+        if (commandOptions.jsonDataModel) {
+            cvdbIndexTaskParams = new CvdbIndexTaskParams();
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cvdbIndexTaskParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            cvdbIndexTaskParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CvdbIndexTaskParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "projectId",commandOptions.projectId, true);
+            putNestedIfNotNull(beanParams, "overwrite",commandOptions.overwrite, true);
+
+            cvdbIndexTaskParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), CvdbIndexTaskParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().runCaseIndex(cvdbIndexTaskParams, queryParams);
     }
 
     private RestResponse<Sample> info() throws Exception {

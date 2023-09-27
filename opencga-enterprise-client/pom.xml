@@ -23,6 +23,10 @@
             <artifactId>opencga-enterprise-server</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-cvdb</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
