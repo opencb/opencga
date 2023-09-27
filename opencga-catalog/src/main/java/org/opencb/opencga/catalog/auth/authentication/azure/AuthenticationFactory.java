@@ -1,9 +1,7 @@
 package org.opencb.opencga.catalog.auth.authentication.azure;
 
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
@@ -33,18 +31,11 @@ public class AuthenticationFactory {
         getOrganizationAuthenticationManager(organizationId, authOriginId).getUserId(token);
     }
 
-    public AuthenticationResponse authenticate(String organizationId, String userId, String password) throws CatalogException {
-        List<AuthenticationManager> authenticationManagerList = getOrganizationAuthenticationManagers(organizationId);
-        for (AuthenticationManager authenticationManager : authenticationManagerList) {
-            authenticationManager.authenticate(userId, password);
-        }
-    }
-
-    public AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password) throws CatalogException {
-        List<AuthenticationManager> authenticationManagerList = getOrganizationAuthenticationManagers(organizationId);
-        for (AuthenticationManager authenticationManager : authenticationManagerList) {
-            authenticationManager.authenticate(userId, password);
-        }
+    public AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password)
+            throws CatalogException {
+        AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
+                authenticationOriginId);
+        return organizationAuthenticationManager.authenticate(userId, password);
     }
 
     private Map<String, AuthenticationManager> getOrganizationAuthenticationManagers(String organizationId) throws CatalogException {

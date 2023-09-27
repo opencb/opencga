@@ -135,7 +135,7 @@ public class CatalogUtils {
     public Project getProjectFromQuery(Query query, String sessionId, QueryOptions options) throws CatalogException {
         if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
             String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
-            return catalogManager.getProjectManager().get(organizationId, project, options, sessionId).first();
+            return catalogManager.getProjectManager().get(project, options, sessionId).first();
         } else {
             String studyFqn = getAnyStudy(query, sessionId);
             String project = catalogManager.getStudyManager().getProjectFqn(studyFqn);

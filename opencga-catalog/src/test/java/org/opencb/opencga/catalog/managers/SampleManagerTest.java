@@ -96,11 +96,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().update(organizationId, studyFqn, "testSample", new SampleUpdateParams().setDescription(descriptions.get(1)),
                 new QueryOptions(), token);
 
-        catalogManager.getProjectManager().incrementRelease(organizationId, projectId, token);
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
         // We create something to have a gap in the release
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("dummy"), null, token);
 
-        catalogManager.getProjectManager().incrementRelease(organizationId, projectId, token);
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
         catalogManager.getSampleManager().update(organizationId, studyFqn, "testSample", new SampleUpdateParams().setDescription(descriptions.get(2)),
                 new QueryOptions(), token);
 
@@ -244,11 +244,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().update(organizationId, studyFqn, sampleId, new SampleUpdateParams().setDescription(descriptions.get(1)),
                 new QueryOptions(), token);
 
-        catalogManager.getProjectManager().incrementRelease(organizationId, projectId, token);
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
         // We create something to have a gap in the release
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("du--m---m..y"), null, token);
 
-        catalogManager.getProjectManager().incrementRelease(organizationId, projectId, token);
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
         catalogManager.getSampleManager().update(organizationId, studyFqn, sampleId, new SampleUpdateParams().setDescription(descriptions.get(2)),
                 new QueryOptions(), token);
 
@@ -2149,7 +2149,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         String id = "myUniqueId";
         for (String studyId : Arrays.asList("st1", "st2")) {
             System.out.println("Study " + studyId);
-            catalogManager.getStudyManager().create(organizationId, project1, new Study().setId(studyId), QueryOptions.empty(), token);
+            catalogManager.getStudyManager().create(project1, new Study().setId(studyId), QueryOptions.empty(), token);
 
             catalogManager.getSampleManager().create(studyId, new Sample().setId(id), QueryOptions.empty(), token);
             catalogManager.getIndividualManager().create(studyId, new Individual().setId(id), QueryOptions.empty(), token);

@@ -145,7 +145,7 @@ public class VariantCatalogQueryUtilsTest {
         createSample("sample2", "individual2");
         catalog.getCohortManager().create("s1", new Cohort().setId("c1").setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().incrementRelease(organizationId, "p1", sessionId);
+        catalog.getProjectManager().incrementRelease("p1", sessionId);
         file3 = createFile("data/file3.vcf");
         file4 = createFile("data/file4.vcf");
         file5 = createFile("data/file5.vcf", false);
@@ -236,7 +236,7 @@ public class VariantCatalogQueryUtilsTest {
                         .setBioformat(File.Bioformat.VARIANT),
                 true, sessionId).first();
         if (indexed) {
-            int release = catalog.getProjectManager().get(organizationId, "p1", null, sessionId).first().getCurrentRelease();
+            int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileInternalVariantIndex(organizationId, file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);

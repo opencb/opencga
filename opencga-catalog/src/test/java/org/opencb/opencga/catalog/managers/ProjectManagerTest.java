@@ -113,7 +113,7 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(organizationId, project3, null, sessionIdUser3);
+        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
         assertEquals(1, projectDataResult.getNumResults());
     }
 
@@ -121,7 +121,7 @@ public class ProjectManagerTest extends GenericTest {
     public void getOtherUsersProject() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("cannot view");
-        catalogManager.getProjectManager().get(organizationId, project1, null, sessionIdUser3);
+        catalogManager.getProjectManager().get(project1, null, sessionIdUser3);
     }
 
     @Test
@@ -252,9 +252,9 @@ public class ProjectManagerTest extends GenericTest {
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
-        OpenCGAResult<Project> update = catalogManager.getProjectManager().update(organizationId, pr.getId(), objectMap, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, update.getNumResults());
-        OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().get(organizationId, pr.getId(), null, sessionIdUser);
+        OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
 
         assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
         assertEquals("common", queryResult.first().getOrganism().getCommonName());
@@ -265,7 +265,7 @@ public class ProjectManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Cannot update organism");
-        catalogManager.getProjectManager().update(organizationId, pr.getId(), objectMap, null, sessionIdUser);
+        catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
     }
 
     @Test
@@ -325,17 +325,17 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals(ParamConstants.CELLBASE_VERSION, pr.getCellbase().getVersion());
 
         CellBaseConfiguration cb = new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3");
-        OpenCGAResult<Project> update = catalogManager.getProjectManager().setCellbaseConfiguration(organizationId, pr.getId(),
+        OpenCGAResult<Project> update = catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),
                 new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), false, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
-        Project project = catalogManager.getProjectManager().get(organizationId, pr.getId(), QueryOptions.empty(), sessionIdUser).first();
+        Project project = catalogManager.getProjectManager().get(pr.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(pr.getCellbase());
         assertEquals(cb.getUrl(), project.getCellbase().getUrl());
         assertEquals(cb.getVersion(), project.getCellbase().getVersion());
 
         thrown.expectMessage("Unable to access cellbase url");
-        catalogManager.getProjectManager().setCellbaseConfiguration(organizationId, pr.getId(),
+        catalogManager.getProjectManager().setCellbaseConfiguration(pr.getId(),
                 new CellBaseConfiguration("https://ws.opencb.org/cellbase", "v3"), true, sessionIdUser);
     }
 }

@@ -1435,8 +1435,8 @@ public class FamilyManagerTest extends GenericTest {
         }
 
         // unlock case3
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(false),
-                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case3.getId(),
+                new ClinicalAnalysisUpdateParams().setLocked(false), QueryOptions.empty(), sessionIdUser);
 
         try {
             catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(family.getId()), QueryOptions.empty(), sessionIdUser);
@@ -1466,6 +1466,6 @@ public class FamilyManagerTest extends GenericTest {
                 new IndividualReferenceParam(child.getId(), child.getUuid()),
                 new IndividualReferenceParam(father.getId(), child.getUuid())
         ));
-        catalogManager.getFamilyManager().update(organizationId, STUDY, family.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, family.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 }

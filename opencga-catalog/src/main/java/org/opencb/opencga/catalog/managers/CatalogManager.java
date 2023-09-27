@@ -241,7 +241,7 @@ public class CatalogManager implements AutoCloseable {
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
         projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null,
                 token);
-        studyManager.create(ADMIN_ORGANIZATION, ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
+        studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
                 QueryOptions.empty(), token);
 
         // Skip old available migrations

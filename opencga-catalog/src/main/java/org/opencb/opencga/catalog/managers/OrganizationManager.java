@@ -112,7 +112,8 @@ public class OrganizationManager extends AbstractManager {
 //    }
 
     public OpenCGAResult<Organization> get(String organizationId, QueryOptions options, String token) throws CatalogException {
-        String userId = this.catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -190,7 +191,8 @@ public class OrganizationManager extends AbstractManager {
 
     public OpenCGAResult<Organization> update(String organizationId, OrganizationUpdateParams updateParams, QueryOptions options,
                                               String token) throws CatalogException {
-        JwtPayload payload = catalogManager.getUserManager().getTokenPayload(token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
 
         ObjectMap updateMap;
         try {
@@ -220,7 +222,7 @@ public class OrganizationManager extends AbstractManager {
                     .update(organizationId, updateMap, options);
             result.append(updateResult);
 
-            auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "",
+            auditManager.auditUpdate(userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, organizationId, e.getMessage());
@@ -228,7 +230,7 @@ public class OrganizationManager extends AbstractManager {
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update organization {}: {}", organizationId, e.getMessage());
-            auditManager.auditUpdate(payload.getUserId(), Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
+            auditManager.auditUpdate(userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

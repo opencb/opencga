@@ -542,9 +542,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readProject() throws CatalogException {
-        DataResult<Project> project = catalogManager.getProjectManager().get(organizationId, p1, null, ownerSessionId);
+        DataResult<Project> project = catalogManager.getProjectManager().get(p1, null, ownerSessionId);
         assertEquals(1, project.getNumResults());
-        project = catalogManager.getProjectManager().get(organizationId, p1, null, memberSessionId);
+        project = catalogManager.getProjectManager().get(p1, null, memberSessionId);
         assertEquals(1, project.getNumResults());
     }
 
@@ -553,7 +553,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,
                 new GroupUpdateParams(Arrays.asList(externalUser, ParamConstants.ANONYMOUS_USER_ID)), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getProjectManager().get(organizationId, p1, null, externalSessionId);
+        catalogManager.getProjectManager().get(p1, null, externalSessionId);
     }
 
     /*--------------------------*/

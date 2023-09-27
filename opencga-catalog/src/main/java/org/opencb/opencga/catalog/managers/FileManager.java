@@ -318,7 +318,8 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         for (File transformedFile : transformedFiles) {
-            authorizationManager.checkFilePermission(organizationId, study.getUid(), transformedFile.getUid(), userId, FilePermissions.WRITE);
+            authorizationManager.checkFilePermission(organizationId, study.getUid(), transformedFile.getUid(), userId,
+                    FilePermissions.WRITE);
             String variantPathName = getMainVariantFile(transformedFile.getPath());
             if (variantPathName == null) {
                 // Skip the file.
@@ -515,7 +516,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         String userId = userManager.getUserId(organizationId, token);
-        authorizationManager.checkFilePermission(organizationId, fileDataResult.first().getStudyUid(), fileId, userId, FilePermissions.VIEW);
+        authorizationManager.checkFilePermission(organizationId, fileDataResult.first().getStudyUid(), fileId, userId,
+                FilePermissions.VIEW);
 
         return getParents(organizationId, fileDataResult.first().getStudyUid(), fileDataResult.first().getPath(), true, options);
     }
@@ -818,7 +820,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         boolean external = isExternal(study, file.getPath(), uri);
         file.setExternal(external);
-        file.setRelease(studyManager.getCurrentRelease(organizationId, study));
+        file.setRelease(studyManager.getCurrentRelease(study));
 
         validateNewAnnotationSets(study.getVariableSets(), file.getAnnotationSets());
 
@@ -869,8 +871,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 Enums.Resource.FILE, FilePermissions.class);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(organizationId, Collections.singletonList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
-                    Enums.Resource.FILE);
+            authorizationManager.replicateAcls(organizationId, Collections.singletonList(queryResult.first().getUid()),
+                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
         }
 
         matchUpVariantFiles(study.getFqn(), queryResult.getResults(), token);
@@ -1212,7 +1214,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
 
                 File parentFolder = getParents(organizationId, study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-                authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId,
+                        FilePermissions.WRITE);
             } else {
                 // It will be moved to an external folder. Only admins can move to that directory
                 if (!authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId)) {
@@ -3433,7 +3436,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
-                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(organizationId, study),
+                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), null, new Status(), FileInternal.init(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -3442,8 +3445,8 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> queryResult = getFile(organizationId, study.getUid(), folder.getUuid(), QueryOptions.empty());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(organizationId, Collections.singletonList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
-                    Enums.Resource.FILE);
+            authorizationManager.replicateAcls(organizationId, Collections.singletonList(queryResult.first().getUid()),
+                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
         }
     }
 
@@ -3641,7 +3644,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File folder = new File(Paths.get(dir).getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir, destinyPath, null, creationDate, modificationDate,
                                 params.getDescription(), true, 0, new Software(), new FileExperiment(),
-                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(organizationId, study),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
                                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toStatus() : new Status(),
                                 FileInternal.init(), Collections.emptyMap());
@@ -3700,7 +3703,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File subfile = new File(Paths.get(fileUri).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                 File.Bioformat.NONE, fileUri, destinyPath, null, creationDate, modificationDate,
                                 params.getDescription(), true, size, new Software(), new FileExperiment(),
-                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(organizationId, study),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
                                 Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toStatus() : new Status(), internal,
                                 new HashMap<>());
@@ -3775,8 +3778,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         // Propagate ACLs
                         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(organizationId, Collections.singletonList(subfile.getUid()), allFileAcls.getResults().get(0),
-                                    Enums.Resource.FILE);
+                            authorizationManager.replicateAcls(organizationId, Collections.singletonList(subfile.getUid()),
+                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
                         }
 
                         if (isTransformedFile(subfile.getName())) {
@@ -3843,14 +3846,15 @@ public class FileManager extends AnnotationSetManager<File> {
         File parentFile = internalGet(organizationId, study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         OpenCGAResult<AclEntryList<FilePermissions>> allFileAcls =
-                authorizationManager.getAcls(organizationId, study.getUid(), parentFile.getUid(), Enums.Resource.FILE, FilePermissions.class);
+                authorizationManager.getAcls(organizationId, study.getUid(), parentFile.getUid(), Enums.Resource.FILE,
+                        FilePermissions.class);
 
         File.Type type = filePath.endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
 
         File subfile = new File(Paths.get(filePath).getFileName().toString(), type, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), jobId, studyManager.getCurrentRelease(organizationId, study), Collections.emptyList(),
+                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(),
                 Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new Status(), FileInternal.init(),
                 Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));

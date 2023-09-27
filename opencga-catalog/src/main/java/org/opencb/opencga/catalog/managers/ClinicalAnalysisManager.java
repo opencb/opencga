@@ -528,7 +528,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(clinicalAnalysis.getModificationDate(),
                     ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
-            clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(organizationId, study));
+            clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
             clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
                     ArrayList::new));
@@ -2220,8 +2220,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
-            queryResults = authorizationManager.getAcls(organizationId, study.getUid(), clinicalUidList, members, Enums.Resource.CLINICAL_ANALYSIS,
-                    ClinicalAnalysisPermissions.class);
+            queryResults = authorizationManager.getAcls(organizationId, study.getUid(), clinicalUidList, members,
+                    Enums.Resource.CLINICAL_ANALYSIS, ClinicalAnalysisPermissions.class);
             for (int i = 0; i < queryResults.getResults().size(); i++) {
                 queryResults.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }

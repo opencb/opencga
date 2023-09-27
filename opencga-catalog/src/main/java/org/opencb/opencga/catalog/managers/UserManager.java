@@ -1453,26 +1453,6 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Get the token payload.
-     *
-     * @param token Token
-     * @return The token payload.
-     * @throws CatalogException when the token has expired.
-     */
-    public JwtPayload getTokenPayload(String token) throws CatalogException {
-        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
-            AuthenticationManager authenticationManager = entry.getValue();
-            try {
-                return authenticationManager.getPayload(token);
-            } catch (Exception e) {
-                logger.debug("Could not get payload from token using authentication manager '{}'. {}", entry.getKey(), e.getMessage(), e);
-            }
-        }
-        // We make this call again to get the original exception
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getPayload(token);
-    }
-
-    /**
      * Get the userId from the sessionId.
      *
      * @param organizationId Organization id.
@@ -1495,16 +1475,4 @@ public class UserManager extends AbstractManager {
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
     }
 
-    public Date getExpirationDate(String token) {
-        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
-            AuthenticationManager authenticationManager = entry.getValue();
-            try {
-                return authenticationManager.getExpirationDate(token);
-            } catch (Exception e) {
-                logger.debug("Could not get expiration date from token using {} authentication manager. {}", entry.getKey(),
-                        e.getMessage(), e);
-            }
-        }
-        return null;
-    }
 }

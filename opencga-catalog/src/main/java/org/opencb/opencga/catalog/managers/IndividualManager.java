@@ -236,7 +236,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getModificationDate(),
                 IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         individual.setModificationDate(TimeUtils.getTime());
-        individual.setRelease(studyManager.getCurrentRelease(organizationId, study));
+        individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
         individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
 
@@ -327,7 +327,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_INDIVIDUALS);
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId,
+                    StudyPermissions.Permissions.WRITE_INDIVIDUALS);
             validateNewIndividual(organizationId, study, individual, sampleIds, userId, true);
 
             // Create the individual

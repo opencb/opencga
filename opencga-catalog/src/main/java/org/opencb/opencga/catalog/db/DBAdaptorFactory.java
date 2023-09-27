@@ -36,6 +36,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
     /**
      * Says if the catalog database is ready to be used. If false, needs to be initialized.
      * @return boolean
+     * @throws CatalogDBException CatalogDBException.
      */
     boolean isCatalogDBReady() throws CatalogDBException;
 

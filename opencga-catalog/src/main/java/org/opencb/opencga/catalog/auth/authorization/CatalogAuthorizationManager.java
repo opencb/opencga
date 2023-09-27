@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -25,8 +24,7 @@ import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
@@ -39,6 +37,7 @@ import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Group;
@@ -76,29 +75,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    void checkCanAccessOrganization(CatalogFqn catalogFqn, JwtPayload jwtPayload) throws CatalogException {
-        ParamUtils.checkParameter(jwtPayload.getOrganization(), "JWT organization");
-        if (StringUtils.isEmpty(catalogFqn.getOrganizationId())) {
-            catalogFqn.setOrganizationId(jwtPayload.getOrganization());
-        } else if (!catalogFqn.getOrganizationId().equals(jwtPayload.getOrganization())) {
-            // If the user is trying to access data from a different organization, we need to check that the user is an administrator,
-            // otherwise, the user should not be able to access it.
-            try {
-                checkIsInstallationAdministrator(jwtPayload.getOrganization(), jwtPayload.getUserId());
-            } catch (CatalogException e) {
-                logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", jwtPayload.getUserId(),
-                        jwtPayload.getOrganization(), catalogFqn.getOrganizationId());
-                throw new CatalogAuthorizationException("Cannot access data from a different organization.");
-            }
-        }
-    }
-
-    @Override
     public void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(organizationId, userId)) {
-            return;
-        }
-        if (isOrganizationOwnerOrAdmin()) {
+        if (isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
         throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
@@ -106,10 +84,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(organizationId, userId)) {
-            return;
-        }
-        if (isOrganizationOwnerOrAdmin()) {
+        if (isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
 
@@ -310,6 +285,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (!isOwnerOrAdmin(organizationId, studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to perform this action");
         }
+    }
+
+    @Override
+    public boolean isOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogDBException {
+        OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
+        Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        if (organization.getOwner().equals(userId) || organization.getAdmins().contains(userId)) {
+            return true;
+        }
+        return false;
     }
 
     @Override

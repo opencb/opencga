@@ -259,7 +259,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
             family.setStatus(ParamUtils.defaultObject(family.getStatus(), Status::new));
             family.setQualityControl(ParamUtils.defaultObject(family.getQualityControl(), FamilyQualityControl::new));
-            family.setRelease(catalogManager.getStudyManager().getCurrentRelease(organizationId, study));
+            family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             family.setVersion(1);
             family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
@@ -1442,7 +1442,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (family.getMembers() != null && !family.getMembers().isEmpty()) {
             List<Individual> memberList = new ArrayList<>();
             // Check the user can create new individuals
-            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_INDIVIDUALS);
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId,
+                    StudyPermissions.Permissions.WRITE_INDIVIDUALS);
 
             // Validate the individuals can be created and are valid
             for (Individual individual : family.getMembers()) {

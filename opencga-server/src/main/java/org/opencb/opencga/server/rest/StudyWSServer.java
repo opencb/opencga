@@ -77,7 +77,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = ParamConstants.STUDY_PARAM, required = true) StudyCreateParams study) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().create(organizationId, project, study != null ? study.toStudy() : new Study(),
+            return createOkResponse(catalogManager.getStudyManager().create(project, study != null ? study.toStudy() : new Study(),
                     queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

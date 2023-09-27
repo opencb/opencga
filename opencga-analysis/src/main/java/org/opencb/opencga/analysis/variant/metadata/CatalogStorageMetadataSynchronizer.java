@@ -113,7 +113,7 @@ public class CatalogStorageMetadataSynchronizer {
 
     public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
             throws CatalogException, StorageEngineException {
-        final Project p = catalog.getProjectManager().get(organizationId, project,
+        final Project p = catalog.getProjectManager().get(project,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                 ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key(),
                                 ProjectDBAdaptor.QueryParams.CELLBASE.key())),

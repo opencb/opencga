@@ -162,7 +162,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
         Project project = catalogManager
                 .getProjectManager()
-                .get(organizationId, projectFqn,
+                .get(projectFqn,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key(), CELLBASE.key())),
                         token).first();
         release = project.getCurrentRelease();

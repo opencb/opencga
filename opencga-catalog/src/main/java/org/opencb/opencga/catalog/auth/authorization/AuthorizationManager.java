@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -82,7 +83,12 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
-    void checkCanAccessOrganization(CatalogFqn catalogFqn, JwtPayload jwtPayload) throws CatalogException;
+    default void checkIsOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogAuthorizationException {
+        if (!isOrganizationOwnerOrAdmin(organization, userId)) {
+            throw new CatalogAuthorizationException("Permission denied: Only the owner or admins of the organization can perform this "
+                    + "action.");
+        }
+    }
 
     void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException;
 
@@ -120,6 +126,8 @@ public interface AuthorizationManager {
     void checkIsInstallationAdministrator(String organizationId, String user) throws CatalogException;
 
     void checkIsOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
+
+    boolean isOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogDBException;
 
     boolean isOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
 

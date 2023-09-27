@@ -395,16 +395,18 @@ public class StudyManager extends AbstractManager {
                 .setInternal(internal)
                 .setStatus(status)
                 .setAttributes(attributes);
-        return create(organizationId, projectStr, study, options, token);
+        return create(projectStr, study, options, token);
     }
 
-    public OpenCGAResult<Study> create(String organizationId, String projectStr, Study study, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Study> create(String projectStr, Study study, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkObj(study, "study");
         ParamUtils.checkIdentifier(study.getId(), "id");
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Project project = catalogManager.getProjectManager().resolveId(projectStr, userId, organizationId);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Project project = catalogManager.getProjectManager().resolveId(catalogFqn, null, tokenPayload).first();
 
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
@@ -540,13 +542,18 @@ public class StudyManager extends AbstractManager {
     public int getCurrentRelease(String organizationId, Study study, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
-        return getCurrentRelease(organizationId, study);
+        return getCurrentRelease(study);
     }
 
-    int getCurrentRelease(String organizationId, Study study) throws CatalogException {
+    int getCurrentRelease(Study study) throws CatalogException {
         String[] split = StringUtils.split(study.getFqn(), ":");
-        String userId = StringUtils.split(split[0], "@")[0];
-        return catalogManager.getProjectManager().resolveId(split[0], userId, organizationId).getCurrentRelease();
+        String[] split2 = StringUtils.split(split[0], "@");
+        String organization = split2[0];
+        String projectId = split2[1];
+
+        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        return getProjectDBAdaptor(organization).get(query, options).first().getCurrentRelease();
     }
 
     MyResourceId getVariableSetId(String organizationId, String variableStr, @Nullable String studyStr, String sessionId)
@@ -1439,7 +1446,7 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        variableSet.setRelease(getCurrentRelease(organizationId, study));
+        variableSet.setRelease(getCurrentRelease(study));
         AnnotationUtils.checkVariableSet(variableSet);
 
         OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).createVariableSet(study.getUid(), variableSet);
@@ -1792,8 +1799,8 @@ public class StudyManager extends AbstractManager {
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
-            OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(organizationId, studyUidList,
-                    members);
+            OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(organizationId,
+                    studyUidList, members);
 
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),

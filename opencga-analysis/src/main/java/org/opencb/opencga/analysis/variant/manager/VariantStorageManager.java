@@ -485,7 +485,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             dataStore.getOptions().putAll(params);
             catalogManager.getProjectManager()
-                    .setDatastoreVariant(organizationId, projectStr, dataStore, token);
+                    .setDatastoreVariant(projectStr, dataStore, token);
             return dataStore.getOptions();
         });
     }
@@ -609,7 +609,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setCellbaseConfiguration(organizationId, project, validatedCellbaseConfiguration, false, token);
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, validatedCellbaseConfiguration, false, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
@@ -1018,7 +1018,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(organizationId, project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
+                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
                 .first().getCellbase();
         if (cellbase != null) {
             // To ensure that we use the project API key before using the storage API key
@@ -1680,7 +1680,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         DataStore dataStore = null;
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key()));
-        Project project = catalogManager.getProjectManager().get(organizationId, projectStr, queryOptions, token).first();
+        Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
         if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
             dataStore = project.getInternal().getDatastores().getDataStore(bioformat);
         }

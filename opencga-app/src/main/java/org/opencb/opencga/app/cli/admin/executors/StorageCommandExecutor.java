@@ -198,7 +198,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 }
                 logger.info("New DBName: " + newDataStore.getDbName());
 
-                catalogManager.getProjectManager().setDatastoreVariant(organizationId, project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(organizationId, project.getUuid(), defaultDataStore, token);
+                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), defaultDataStore, token);
             }
         }
     }

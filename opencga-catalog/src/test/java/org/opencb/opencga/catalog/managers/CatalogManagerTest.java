@@ -67,7 +67,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createStudyFailMoreThanOneProject() throws CatalogException {
-        catalogManager.getProjectManager().incrementRelease(organizationId, project1, token);
+        catalogManager.getProjectManager().incrementRelease(project1, token);
         catalogManager.getProjectManager().create(organizationId, "1000G2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), token);
 
@@ -456,8 +456,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         attributes.put("object", new ObjectMap("id", 1234));
         options.put("attributes", attributes);
 
-        catalogManager.getProjectManager().update(organizationId, projectId, options, null, token);
-        DataResult<Project> result = catalogManager.getProjectManager().get(organizationId, projectId, null, token);
+        catalogManager.getProjectManager().update(projectId, options, null, token);
+        DataResult<Project> result = catalogManager.getProjectManager().get(projectId, null, token);
         Project project = result.first();
         System.out.println(result);
 
@@ -469,17 +469,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         options = new ObjectMap();
         options.put(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), "20180101120000");
-        catalogManager.getProjectManager().update(organizationId, projectId, options, null, token);
-        project = catalogManager.getProjectManager().get(organizationId, projectId, null, token).first();
+        catalogManager.getProjectManager().update(projectId, options, null, token);
+        project = catalogManager.getProjectManager().get(projectId, null, token).first();
         assertEquals("20180101120000", project.getCreationDate());
 
         options = new ObjectMap();
         options.put(ProjectDBAdaptor.QueryParams.ID.key(), "newProjectId");
-        catalogManager.getProjectManager().update(organizationId, projectId, options, null, token);
+        catalogManager.getProjectManager().update(projectId, options, null, token);
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getProjectManager().update(organizationId, projectId, options, null, token);
+        catalogManager.getProjectManager().update(projectId, options, null, token);
     }
 
     @Test
@@ -489,7 +489,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     .setId("project_" + i)
                     .setOrganism(new ProjectOrganism("hsapiens", "grch38")), QueryOptions.empty(), token);
             for (int j = 0; j < 2; j++) {
-                catalogManager.getStudyManager().create(organizationId, "project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
+                catalogManager.getStudyManager().create("project_" + i, new Study().setId("study_" + i + "_" + j), QueryOptions.empty(),
                         token);
             }
         }
@@ -538,7 +538,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().search(organizationId, query, null, token).first().getId();
-        Study study_1 = catalogManager.getStudyManager().create(organizationId, projectId, new Study().setId("study_1").setCreationDate("20150101120000")
+        Study study_1 = catalogManager.getStudyManager().create(projectId, new Study().setId("study_1").setCreationDate("20150101120000")
                 , null, token).first();
         assertEquals("20150101120000", study_1.getCreationDate());
 
@@ -914,9 +914,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String project2 = catalogManager.getProjectManager().create(organizationId, "testCreateJobAndReuse_project2", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, token).first().getId();
 
-        String study1 = catalogManager.getStudyManager().create(organizationId, project1, new Study()
+        String study1 = catalogManager.getStudyManager().create(project1, new Study()
                 .setId("studyWithDuplicatedID"), INCLUDE_RESULT, token).first().getUuid();
-        String study2 = catalogManager.getStudyManager().create(organizationId, project2, new Study()
+        String study2 = catalogManager.getStudyManager().create(project2, new Study()
                 .setId("studyWithDuplicatedID"), INCLUDE_RESULT, token).first().getUuid();
 
 //        catalogManager.getConfiguration().getAnalysis().getExecution().getOptions()

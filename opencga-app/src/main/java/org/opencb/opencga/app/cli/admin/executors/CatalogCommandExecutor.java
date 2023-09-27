@@ -93,10 +93,10 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
-            catalogManager.getProjectManager().exportReleases(organizationId, commandOptions.project, commandOptions.release, commandOptions.outputDir,
+            catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir,
                     token);
         } else if (StringUtils.isNotEmpty(commandOptions.study) && StringUtils.isNotEmpty(commandOptions.inputFile)) {
-            catalogManager.getProjectManager().exportByFileNames(organizationId, commandOptions.study, Paths.get(commandOptions.outputDir).toFile(),
+            catalogManager.getProjectManager().exportByFileNames(commandOptions.study, Paths.get(commandOptions.outputDir).toFile(),
                     Paths.get(commandOptions.inputFile).toFile(), token);
         }
     }

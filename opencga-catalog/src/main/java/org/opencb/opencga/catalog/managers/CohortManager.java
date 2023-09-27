@@ -391,7 +391,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
-        cohort.setRelease(studyManager.getCurrentRelease(organizationId, study));
+        cohort.setRelease(studyManager.getCurrentRelease(study));
         cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
         cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), Status::new));
@@ -1297,9 +1297,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 if (!missingMap.containsKey(cohortId)) {
                     Cohort cohort = queryResult.getResults().get(counter);
                     resultList.add(cohortAcls.getResults().get(counter));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS),
-                            new ObjectMap());
+                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(),
+                            cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
@@ -1445,7 +1445,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = tokenPayload.getUserId(organizationId);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
         Study study = catalogManager.getStudyManager().resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId, organizationId);
+                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId,
+                organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)

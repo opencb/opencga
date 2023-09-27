@@ -68,7 +68,7 @@ public abstract class OperationTool extends OpenCgaTool {
 
     protected final String getProjectFqn() throws CatalogException {
         try {
-            return catalogManager.getProjectManager().get(organizationId, params.getString(ParamConstants.PROJECT_PARAM),
+            return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
                     new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
         } catch (CatalogException e) {
             try {

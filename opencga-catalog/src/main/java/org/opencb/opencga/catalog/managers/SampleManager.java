@@ -215,7 +215,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
 
         sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
-        sample.setRelease(studyManager.getCurrentRelease(organizationId, study));
+        sample.setRelease(studyManager.getCurrentRelease(study));
         sample.setVersion(1);
 
         validateNewAnnotationSets(study.getVariableSets(), sample.getAnnotationSets());

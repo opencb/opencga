@@ -50,7 +50,7 @@ public class TemplateManagerTest {
 
         String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
-        catalogManager.getStudyManager().create(organizationId, "project", new Study().setId("study"), QueryOptions.empty(), token);
+        catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
         URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
         catalogManagerResource.getResourceUri("templates/families.members.txt");
@@ -81,7 +81,7 @@ public class TemplateManagerTest {
 
         String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
-        catalogManager.getStudyManager().create(organizationId, "project", new Study().setId("study"), QueryOptions.empty(), token);
+        catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
         URI resource = catalogManagerResource.getResourceUri("templates_yaml/manifest.yml");
         catalogManagerResource.getResourceUri("templates_yaml/families.members.txt");

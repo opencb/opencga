@@ -5,7 +5,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CatalogFqn {
+public final class CatalogFqn {
 
     private String organizationId;
     private String projectId;
@@ -28,7 +28,7 @@ public class CatalogFqn {
         this.providedId = id;
     }
 
-    public static CatalogFqn getFqnFromProject(String projectStr, JwtPayload payload) {
+    public static CatalogFqn extractFqnFromProject(String projectStr, JwtPayload payload) {
         if (UuidUtils.isOpenCgaUuid(projectStr)) {
             return new CatalogFqn(payload.getOrganization(), projectStr).setProjectUuid(projectStr);
         }
