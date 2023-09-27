@@ -24,7 +24,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
 WORKDIR /opt/opencga/signature.tools.lib
 
 RUN git fetch origin --tags && \
-    git checkout tags/v2.4.1 && \
+    git checkout tags/v2.4.2 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
