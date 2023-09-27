@@ -22,14 +22,16 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretati
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalInterpretationSearch;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantEvidenceSearch;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
+import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -39,6 +41,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.rga.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -50,9 +53,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -81,10 +83,14 @@ public class CvdbSolrEngine {
             CLINICAL_VARIANTS_COLLECTION_SUFFIX,
             CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
 
-    public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+    public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-"
+            + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+    public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-"
+            + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+    public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-"
+            + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+    public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-"
+            + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
 
     public static final List<String> COLLECTION_CONFIGSETS = Arrays.asList(CLINICAL_ANALYSIS_CONFIGSET,
             INTERPRETATION_CONFIGSET,
@@ -123,7 +129,13 @@ public class CvdbSolrEngine {
         return "opencga_" + projectId + suffix;
     }
 
-    public void index(String projectId, CatalogManager catalogManager, String sessionIdUser) throws CatalogException, CvdbException {
+    public CvdbIndexResult index(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
+            throws CatalogException, CvdbException {
+
+        int numIndexed = 0;
+        Map<String, String> failures = new HashMap<>();
+        StopWatch stopWatch = StopWatch.createStarted();
+
         OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(projectId, new Query(), QueryOptions.empty(),
                 sessionIdUser);
         List<String> studyIds = studyResults.getResults().stream().map(s -> s.getId()).collect(Collectors.toList());
@@ -131,103 +143,133 @@ public class CvdbSolrEngine {
             OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(studyId, new Query(),
                     QueryOptions.empty(), sessionIdUser);
             for (ClinicalAnalysis clinicalAnalysis : caResults.getResults()) {
-                index(clinicalAnalysis, projectId);
-            }
-        }
-    }
-
-
-    public void index(ClinicalAnalysis clinicalAnalysis, String projectId) throws CvdbException {
-        SolrClient solrClient = solrManager.getSolrClient();
-
-        try {
-            // Index
-            index(clinicalAnalysis, projectId, solrClient);
-
-            // Commit
-            solrClient.commit(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
-        } catch (SolrServerException | IOException e) {
-            rollback(solrClient, e);
-        }
-    }
-
-    public void index(List<ClinicalAnalysis> clinicalAnalysisList, String projectId) throws CvdbException {
-        SolrClient solrClient = solrManager.getSolrClient();
-
-        try {
-            // Index
-            for (ClinicalAnalysis clinicalAnalysis : clinicalAnalysisList) {
-                index(clinicalAnalysis, projectId, solrClient);
-            }
-
-            // Commit
-            solrClient.commit(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
-        } catch (SolrServerException | IOException e) {
-            rollback(solrClient, e);
-        }
-    }
-
-    public void index(List<ClinicalVariant> clinicalVariants, boolean primary, String projectId) throws CvdbException {
-        SolrClient solrClient = solrManager.getSolrClient();
-
-        try {
-            UpdateResponse updateResponse;
-
-            // Clinical variants
-            List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(clinicalVariants, primary, WITHOUT_ID, WITHOUT_ID);
-            updateResponse = solrClient.addBeans(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvsList);
-            if (updateResponse.getStatus() != 0) {
-                rollback(solrClient, updateResponse.getStatus());
-            }
-
-            // Clinical variant evidences
-            for (ClinicalVariant clinicalVariant : clinicalVariants) {
-                if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
-                    index(clinicalVariant.getEvidences(), clinicalVariant.getId(), WITHOUT_ID, WITHOUT_ID, projectId, solrClient);
+                try {
+                    if (index(clinicalAnalysis, projectId, overwrite)) {
+                        numIndexed++;
+                    } else {
+                        String key = clinicalAnalysis.getId() + "(" + projectId + ":" + studyId + ")";
+                        failures.put(key, "Skipping index (overwrite is set to false)");
+                    }
+                } catch (Exception e) {
+                    String key = clinicalAnalysis.getId() + "(" + projectId + ":" + studyId + ")";
+                    failures.put(key, e.getMessage());
                 }
             }
-
-            // Commit
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
-        } catch (SolrServerException | IOException e) {
-            rollback(solrClient, e);
         }
+        stopWatch.stop();
+
+        return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
+
+    public boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite) throws CvdbException {
+        SolrClient solrClient = solrManager.getSolrClient();
+
+        try {
+            // Index
+            if (index(clinicalAnalysis, projectId, overwrite, solrClient)) {
+                // Commit
+                solrClient.commit(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
+                solrClient.commit(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
+                solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
+                solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                return true;
+            }
+        } catch (SolrServerException | IOException e) {
+            logger.warn("Clinical analysis {}: {}", clinicalAnalysis.getInterpretation(), e.getMessage());
+            rollback(solrClient, e);
+            return false;
+        }
+        return false;
+    }
+
+    //    private void index(List<ClinicalAnalysis> clinicalAnalysisList, String projectId) throws CvdbException {
+//        SolrClient solrClient = solrManager.getSolrClient();
+//
+//        // Index
+//        for (ClinicalAnalysis clinicalAnalysis : clinicalAnalysisList) {
+//            index(clinicalAnalysis, projectId, solrClient);
+//        }
+//    }
+
+//    public void index(List<ClinicalVariant> clinicalVariants, boolean primary, String projectId) throws CvdbException {
+//        SolrClient solrClient = solrManager.getSolrClient();
+//
+//        try {
+//            UpdateResponse updateResponse;
+//
+//            // Clinical variants
+//            List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(clinicalVariants, primary, WITHOUT_ID, WITHOUT_ID);
+//            updateResponse = solrClient.addBeans(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvsList);
+//            if (updateResponse.getStatus() != 0) {
+//                rollback(solrClient, updateResponse.getStatus());
+//            }
+//
+//            // Clinical variant evidences
+//            for (ClinicalVariant clinicalVariant : clinicalVariants) {
+//                if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+//                    index(clinicalVariant.getEvidences(), clinicalVariant.getId(), WITHOUT_ID, WITHOUT_ID, projectId, solrClient);
+//                }
+//            }
+//
+//            // Commit
+//            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
+//            solrClient.commit(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+//        } catch (SolrServerException | IOException e) {
+//            rollback(solrClient, e);
+//        }
+//    }
 
     //----------------------------------------------------------------------
     // P R I V A T E      M E T H O D S
     //----------------------------------------------------------------------
 
-    private void index(ClinicalAnalysis clinicalAnalysis, String projectId, SolrClient solrClient) throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite, SolrClient solrClient)
+            throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
             // Clinical analysis
             ClinicalAnalysisSearch clinicalAnalysisSearch = caConverter.toClinicalAnalysisSearch(clinicalAnalysis);
-            updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), clinicalAnalysisSearch);
-            if (updateResponse.getStatus() != 0) {
-                rollback(solrClient, updateResponse.getStatus());
-            }
 
-            // Interpretations
-            if (clinicalAnalysis.getInterpretation() != null) {
-                index(clinicalAnalysis.getInterpretation(), true, projectId, solrClient);
-            }
-            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                    index(secondaryInterpretation, false, projectId, solrClient);
+            boolean exists;
+            if (overwrite) {
+                exists = false;
+            } else {
+                try {
+                    exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+                            solrClient);
+                } catch (SolrServerException | IOException e) {
+                    logger.warn("Could not index clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
+                    return false;
                 }
             }
+
+            if (!exists) {
+                    // Index
+                    updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), clinicalAnalysisSearch);
+                    if (updateResponse.getStatus() != 0) {
+                        rollback(solrClient, updateResponse.getStatus());
+                    }
+
+                    // Interpretations
+                    if (clinicalAnalysis.getInterpretation() != null) {
+                        index(clinicalAnalysis.getInterpretation(), true, projectId, solrClient);
+                    }
+                    if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                        for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                            index(secondaryInterpretation, false, projectId, solrClient);
+                        }
+                    }
+                } else {
+                    logger.warn("Skipping clinical analysis {}, it was already indexed", clinicalAnalysis.getId());
+                    return false;
+                }
         } catch (SolrServerException | IOException e) {
             rollback(solrClient, e);
+            return false;
         }
+
+        return true;
     }
 
 //    private void index(Interpretation interpretation, boolean primary, String projectId) throws CvdbException {
@@ -641,6 +683,16 @@ public class CvdbSolrEngine {
         } catch (SolrException e) {
             throw new CvdbException("Creating Solr collections for project " + projectId, e);
         }
+    }
+
+    private boolean clinicalAnalysisExists(String clinicalAnalysisId, String collectionName, SolrClient solrClient)
+            throws SolrServerException, IOException {
+        // Build and execute the Solr query
+        SolrQuery solrQuery = new SolrQuery("id:" + clinicalAnalysisId);
+        solrQuery.setFields("id");
+        QueryResponse response = solrClient.query(collectionName, solrQuery);
+
+        return (response.getResults().getNumFound() == 1);
     }
 
     //----------------------------------------------------------------------

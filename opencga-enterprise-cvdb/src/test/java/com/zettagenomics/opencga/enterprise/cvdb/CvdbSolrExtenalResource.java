@@ -43,10 +43,14 @@ public class CvdbSolrExtenalResource extends ExternalResource {
         super.before();
 
 //        Path rootDir = getTmpRootDir();
-        String caConfigSet = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-        String ciConfigSet = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-        String cvConfigSet = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
-        String cveConfigSet = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String caConfigSet = "opencga-ca-configset-"
+                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+        String ciConfigSet = "opencga-ci-configset-"
+                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+        String cvConfigSet = "opencga-cv-configset-"
+                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
+        String cveConfigSet = "opencga-cve-configset-"
+                + GitRepositoryState.load("com/zettagenomics/opencga/enterprise/git-enterprise.properties").getBuildVersion();
         copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
@@ -186,7 +190,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     }
 
     public static URI getResourceUri(String resourceName, String targetName, Path rootDir) throws IOException {
-        Path resourcePath = rootDir.resolve(targetName);
+        Path resourcePath = rootDir.resolve(targetName).toAbsolutePath();
         if (!resourcePath.getParent().toFile().exists()) {
             Files.createDirectories(resourcePath.getParent());
         }

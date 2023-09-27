@@ -58,7 +58,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/index/run")
+    @Path("/cases/index/run")
     @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
     public Response load(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,

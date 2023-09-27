@@ -4,6 +4,7 @@ import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,6 +29,9 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
     public final static String ID = "index";
     public static final String DESCRIPTION = "Index clinical analyses into CVDB";
 
+    public static final String NUM_INDEXED_ATTR = "Num. clinical analyses indexed";
+    public static final String NUM_NOT_INDEXED_ATTR = "Num. clinical analyses not indexed";
+
     private Project project;
     private CvdbSolrEngine cvdbEngine;
 
@@ -39,11 +43,11 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         super.check();
 
         // Check project
-        String projectStr = params.getProject();
-        if (StringUtils.isEmpty(projectStr)) {
-            throw new ToolException("Missing project when indexing clinical analyses.");
+        String projectId = params.getProjectId();
+        if (StringUtils.isEmpty(projectId)) {
+            throw new ToolException("Missing project ID.");
         }
-        project = catalogManager.getProjectManager().get(projectStr, QueryOptions.empty(), token).first();
+        project = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), token).first();
 
         // Get enterprise configuration to set the CVDB engine
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
@@ -61,7 +65,19 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            cvdbEngine.index(project.getId(),getCatalogManager(), token);
+            CvdbIndexResult result = cvdbEngine.index(project.getId(), getCatalogManager(), params.isOverwrite(), token);
+
+            // Add results as attributes
+            addAttribute(NUM_INDEXED_ATTR, result.getNumIndexed());
+            addAttribute(NUM_NOT_INDEXED_ATTR, result.getFailures().size());
+            addAttribute("Loading time (in sec.)", result.getTime());
+
+            // Add warnings with the not indexed clinical analyses
+            if (result.getFailures().size() > 0) {
+                for (Map.Entry<String, String> entry : result.getFailures().entrySet()) {
+                    addWarning("Clinical analysis " + entry.getKey() + " could not be indexed: " + entry.getValue());
+                }
+            }
         });
     }
 }

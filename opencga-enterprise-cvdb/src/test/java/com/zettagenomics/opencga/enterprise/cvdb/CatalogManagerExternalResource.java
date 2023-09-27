@@ -51,9 +51,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngineIndexTest.INCLUDE_RESULT;
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
-
 /**
  * Created on 05/05/16
  *
@@ -137,7 +134,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public ObjectMapper generateNewObjectMapper() {
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+        ObjectMapper jsonObjectMapper = JacksonUtils.getDefaultObjectMapper();
 //        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 //        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         return jsonObjectMapper;
@@ -235,7 +232,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
             // Create family
             if (clinicalAnalysis.getFamily() != null) {
-                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), INCLUDE_RESULT, sessionIdUser);
+                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), CvdbSolrEngineIndexTest.INCLUDE_RESULT,
+                        sessionIdUser);
             }
 
             // Create clinical analysis
@@ -245,7 +243,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
                     secondaryInterpretation.setId(null);
                 }
             }
-            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, CvdbSolrEngineIndexTest.INCLUDE_RESULT,
+                    sessionIdUser);
         }
     }
 
