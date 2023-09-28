@@ -17,8 +17,9 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
+    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
     ## signature.tools.lib installation \
-    R -e 'install.packages(c("devtools", "getopt"), repos="https://www.stats.bris.ac.uk/R/")' && \
+    R -e 'install.packages(c("devtools", "getopt"), repos=c("http://cran.rstudio.com/", "https://www.stats.bris.ac.uk/R/"))' && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
 
 WORKDIR /opt/opencga/signature.tools.lib
