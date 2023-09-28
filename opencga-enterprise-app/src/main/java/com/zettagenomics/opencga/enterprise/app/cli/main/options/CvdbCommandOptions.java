@@ -34,6 +34,7 @@ public class CvdbCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public RunCaseIndexCommandOptions runCaseIndexCommandOptions;
+        public QueryCaseCommandOptions queryCaseCommandOptions;
         public InfoCommandOptions infoCommandOptions;
 
 
@@ -42,6 +43,7 @@ public class CvdbCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.runCaseIndexCommandOptions = new RunCaseIndexCommandOptions();
+        this.queryCaseCommandOptions = new QueryCaseCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
     
     }
@@ -78,6 +80,20 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
         public boolean overwrite = false;
+    
+    }
+
+    @Parameters(commandNames = {"case-query"}, commandDescription ="Filter and fetch clinical analysis from CVDB")
+    public class QueryCaseCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
+        public String projectId; 
+    
+        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
+        public String variantId; 
     
     }
 

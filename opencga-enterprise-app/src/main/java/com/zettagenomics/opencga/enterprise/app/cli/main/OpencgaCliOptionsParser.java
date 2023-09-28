@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-09-27 OpenCB
+* Copyright 2015-2023-09-28 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -388,6 +388,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("cvdb", cvdbCommandOptions);
         JCommander cvdbSubCommands = jCommander.getCommands().get("cvdb");
         cvdbSubCommands.addCommand("case-index-run", cvdbCommandOptions.runCaseIndexCommandOptions);
+        cvdbSubCommands.addCommand("case-query", cvdbCommandOptions.queryCaseCommandOptions);
         cvdbSubCommands.addCommand("info", cvdbCommandOptions.infoCommandOptions);
     }
     
