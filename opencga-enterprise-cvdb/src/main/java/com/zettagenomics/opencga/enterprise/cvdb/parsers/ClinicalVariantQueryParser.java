@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.zettagenomics.opencga.enterprise.cvdb;
+package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -23,11 +23,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 
-public class ClinicalQueryParser {
+public class ClinicalVariantQueryParser {
 
     private SolrQueryParser solrQueryParser;
 
-    public ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
+    public ClinicalVariantQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 

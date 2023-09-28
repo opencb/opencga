@@ -16,34 +16,34 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalAnalysisIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.analysis.rga.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
@@ -57,19 +57,21 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_QUERY_PARAM;
+import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
+
 /**
  * Created by jtarraga on 11/11/17.
  */
 public class CvdbSolrEngine {
 
     private SolrManager solrManager;
+    private VariantStorageMetadataManager variantStorageMetadataManager;
 
     private ClinicalAnalysisConverter caConverter;
     private ClinicalInterpretationConverter ciConverter;
     private ClinicalVariantConverter cvConverter;
     private ClinicalVariantEvidenceConverter cveConverter;
-
-    private ClinicalQueryParser queryParser;
 
     private Logger logger;
 
@@ -104,10 +106,10 @@ public class CvdbSolrEngine {
     }
 
     public CvdbSolrEngine(CvdbConfiguration cvdbConfig, VariantStorageMetadataManager variantStorageMetadataManager) {
-        solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
+        this.solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
 
-        this.queryParser = new ClinicalQueryParser(variantStorageMetadataManager);
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
 
         init();
     }
@@ -219,9 +221,53 @@ public class CvdbSolrEngine {
 //        }
 //    }
 
+    public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        List<ClinicalAnalysis> results = new ArrayList<>(queryOptions.getInt(LIMIT));
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        ClinicalAnalysisIterator iterator = iterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+    }
+
+    public ClinicalAnalysisIterator iterator(Query query, QueryOptions queryOptions) throws CvdbException, IOException {
+        // Check
+        check(query, queryOptions);
+
+        // Parse query
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_QUERY_PARAM), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+            return new ClinicalAnalysisIterator(solrManager.getSolrClient(), collection, solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
     //----------------------------------------------------------------------
     // P R I V A T E      M E T H O D S
     //----------------------------------------------------------------------
+
+    private void check(Query query, QueryOptions queryOptions) throws CvdbException {
+        if (!query.containsKey(PROJECT_QUERY_PARAM) || StringUtils.isEmpty(query.getString(PROJECT_QUERY_PARAM))) {
+            throw new CvdbException("Missing project ID");
+        }
+
+        if (queryOptions.containsKey(LIMIT)) {
+            int limit = queryOptions.getInt(LIMIT);
+            if (limit < 1 || limit > ParamConstants.DEFAULT_LIMIT) {
+                throw new CvdbException("Invalid limit value: " + limit);
+            }
+        }
+    }
 
     private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite, SolrClient solrClient)
             throws CvdbException {

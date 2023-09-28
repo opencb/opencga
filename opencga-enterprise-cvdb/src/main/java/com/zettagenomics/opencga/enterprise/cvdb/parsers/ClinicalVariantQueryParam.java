@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.zettagenomics.opencga.enterprise.cvdb;
+package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import org.opencb.commons.datastore.core.QueryParam;
 
