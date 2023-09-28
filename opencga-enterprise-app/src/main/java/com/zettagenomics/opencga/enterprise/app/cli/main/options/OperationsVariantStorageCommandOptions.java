@@ -128,6 +128,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--data-release"}, description = "CellBase data release version to be used. If empty, will use the active one", required = false, arity = 1)
         public String dataRelease;
     
+        @Parameter(names = {"--api-key"}, description = "API key to access to the licensed/restricted data sources (COSMIC, HGMD,...) and to manage quota.", required = false, arity = 1)
+        public String apiKey;
+    
     }
 
     @Parameters(commandNames = {"variant-aggregate"}, commandDescription ="Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.")

@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-03-30 OpenCB
+* Copyright 2015-2023-09-28 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.*;
 import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 
@@ -32,7 +31,7 @@ import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 */
 
 
-public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
+public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
 
     private final AnalysisVariantCommandOptions analysisVariantCommandOptions;
     private final ProjectsCommandOptions projectsCommandOptions;
@@ -54,7 +53,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-    public OpencgaCliOptionsParser() {
+    public EnterpriseCliOptionsParser() {
 
         jCommander.setExpandAtSign(false);
 
@@ -189,6 +188,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
+        adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -281,7 +281,8 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("model", metaCommandOptions.modelCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
-        metaSubCommands.addCommand("sso", metaCommandOptions.ssoCommandOptions);
+        metaSubCommands.addCommand("sso-login", metaCommandOptions.loginSsoCommandOptions);
+        metaSubCommands.addCommand("sso-logout", metaCommandOptions.logoutSsoCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
         studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);

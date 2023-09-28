@@ -44,7 +44,7 @@ public class OpencgaEnterpriseMain {
     public static void main(String[] args) {
 
         if (args.length == 0) {
-            CliOptionsParser parser = new OpencgaCliOptionsParser();
+            CliOptionsParser parser = new EnterpriseCliOptionsParser();
             parser.printUsage();
             System.exit(0);
         }
@@ -128,7 +128,7 @@ public class OpencgaEnterpriseMain {
             }
             Shell.printShellHeaderMessage();
             // Create a shell executor instance
-            shell = new Shell(options);
+            shell = new Shell(options, new EnterpriseOpenCgaCompleterImpl(), new EnterpriseCommandProcessor());
             logger.debug("Shell created ");
             // Launch execute command to begin the execution
             shell.execute();
@@ -160,7 +160,7 @@ public class OpencgaEnterpriseMain {
         }
         logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
-        args = CommandLineUtils.processShortCuts(args);
+        args = CommandLineUtils.processShortCuts(args, new EnterpriseCliOptionsParser());
         if (args != null) {
             logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
         } else {

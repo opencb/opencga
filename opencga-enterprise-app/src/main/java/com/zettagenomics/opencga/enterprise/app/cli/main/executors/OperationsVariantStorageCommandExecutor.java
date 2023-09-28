@@ -197,6 +197,7 @@ public class OperationsVariantStorageCommandExecutor extends com.zettagenomics.o
             putNestedIfNotEmpty(beanParams, "url",commandOptions.url, true);
             putNestedIfNotEmpty(beanParams, "version",commandOptions.version, true);
             putNestedIfNotEmpty(beanParams, "dataRelease",commandOptions.dataRelease, true);
+            putNestedIfNotEmpty(beanParams, "apiKey",commandOptions.apiKey, true);
 
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

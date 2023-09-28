@@ -350,13 +350,13 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list individual UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list individual names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list individual names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--family-ids"}, description = "Comma separated list of family ids the individuals may belong to.", required = false, arity = 1)
@@ -374,22 +374,22 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--sex"}, description = "Individual sex", required = false, arity = 1)
         public String sex; 
     
-        @Parameter(names = {"--ethnicity"}, description = "Individual ethnicity", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String ethnicity; 
     
         @Parameter(names = {"--date-of-birth"}, description = "Individual date of birth", required = false, arity = 1)
         public String dateOfBirth; 
     
-        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names", required = false, arity = 1)
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorders; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names", required = false, arity = 1)
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationName; 
     
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationSubpopulation; 
     
         @Parameter(names = {"--karyotypic-sex"}, description = "Individual karyotypic sex", required = false, arity = 1)
@@ -457,13 +457,13 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list individual UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list individual names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list individual names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--father"}, description = "Father ID, name or UUID", required = false, arity = 1)
@@ -484,19 +484,19 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--date-of-birth"}, description = "Individual date of birth", required = false, arity = 1)
         public String dateOfBirth; 
     
-        @Parameter(names = {"--ethnicity"}, description = "Individual ethnicity", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String ethnicity; 
     
-        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names", required = false, arity = 1)
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorders; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names", required = false, arity = 1)
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationName; 
     
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationSubpopulation; 
     
         @Parameter(names = {"--karyotypic-sex"}, description = "Individual karyotypic sex", required = false, arity = 1)
