@@ -242,11 +242,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.setResults(queryResult.getResults());
             }
 
-            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -483,7 +483,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw e;
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return result;
     }
@@ -673,8 +673,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             iterator = getInterpretationDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_FINDING_IDS,
                     userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -692,7 +692,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 }
                 OpenCGAResult writeResult = update(organizationId, study, interpretation, updateParams, clinicalAuditList, as, options,
                         userId);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -703,12 +703,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }
@@ -775,7 +775,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             OpenCGAResult writeResult = update(organizationId, study, interpretation, updateParams, clinicalAuditList, as, options, userId);
             result.append(writeResult);
 
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                     interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
@@ -786,8 +786,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("{}", e1.getMessage(), e);
-            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e1.getError()));
+            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretationId,
+                    interpretationUuid, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e1.getError()));
             throw e1;
         }
 
@@ -879,7 +880,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         userId);
                 result.append(writeResult);
 
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -888,11 +889,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretationId,
+                        interpretationUuid, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }
@@ -1164,14 +1166,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             OpenCGAResult<Interpretation> revert = getInterpretationDBAdaptor(organizationId).revert(interpretation.getUid(), version,
                     clinicalAuditList);
 
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretation.getId(),
+            auditManager.audit(organizationId, userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretation.getId(),
                     interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return revert;
         } catch (CatalogDBException e) {
             logger.error("Could not revert interpretation {}", interpretationId, e);
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
+            auditManager.audit(organizationId, userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
                     interpretationUuid, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             CatalogException exception = new CatalogException("Could not revert interpretation '" + interpretationId + "'");
@@ -1179,7 +1181,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throw exception;
         } catch (CatalogException e) {
             logger.error("Could not revert interpretation {}: {}", interpretationId, e.getMessage(), e);
-            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
+            auditManager.audit(organizationId, userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
                     interpretationUuid, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw new CatalogException("Could not revert interpretation '" + interpretationId + "': " + e.getMessage());
@@ -1259,12 +1261,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<?> result = getInterpretationDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
 
-            auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException e) {
-            auditManager.auditDistinct(userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.INTERPRETATION, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1382,7 +1384,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        auditManager.finishAuditBatch(operationId);
+        auditManager.finishAuditBatch(organizationId, operationId);
 
         return endResult(result, ignoreException);
     }

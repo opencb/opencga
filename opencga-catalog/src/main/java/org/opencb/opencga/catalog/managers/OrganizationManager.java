@@ -124,11 +124,11 @@ public class OrganizationManager extends AbstractManager {
         try {
             queryResult = getOrganizationDBAdaptor(organizationId).get(options);
         } catch (CatalogException e) {
-            auditManager.auditInfo(userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
+            auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
-        auditManager.auditInfo(userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
+        auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         return queryResult;
     }
@@ -165,7 +165,8 @@ public class OrganizationManager extends AbstractManager {
                 queryResult.setResults(result.getResults());
             }
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.ORGANIZATION, organizationCreateParams.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,
+                    organizationCreateParams.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -173,8 +174,8 @@ public class OrganizationManager extends AbstractManager {
         try {
             catalogIOManager.createOrganization(organization.getId().toLowerCase());
         } catch (CatalogIOException e) {
-            auditManager.auditCreate(userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
                 catalogDBAdaptorFactory.deleteOrganization(organization);
             } catch (Exception e1) {
@@ -183,8 +184,8 @@ public class OrganizationManager extends AbstractManager {
             }
             throw e;
         }
-        auditManager.auditCreate(userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "", auditParams,
-                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION, organization.getId(),
+                organization.getUuid(), "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return queryResult;
     }
@@ -222,15 +223,15 @@ public class OrganizationManager extends AbstractManager {
                     .update(organizationId, updateMap, options);
             result.append(updateResult);
 
-            auditManager.auditUpdate(userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, organizationId, e.getMessage());
             result.getEvents().add(event);
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update organization {}: {}", organizationId, e.getMessage());
-            auditManager.auditUpdate(userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

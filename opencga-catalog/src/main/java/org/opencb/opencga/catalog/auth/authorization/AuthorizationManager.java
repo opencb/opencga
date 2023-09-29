@@ -83,7 +83,8 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
-    default void checkIsOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogAuthorizationException {
+    default void checkIsOrganizationOwnerOrAdmin(String organization, String userId)
+            throws CatalogAuthorizationException, CatalogDBException {
         if (!isOrganizationOwnerOrAdmin(organization, userId)) {
             throw new CatalogAuthorizationException("Permission denied: Only the owner or admins of the organization can perform this "
                     + "action.");

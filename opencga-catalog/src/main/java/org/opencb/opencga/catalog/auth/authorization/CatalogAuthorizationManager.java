@@ -20,14 +20,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
@@ -65,13 +63,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final Logger logger;
 
     private final DBAdaptorFactory dbAdaptorFactory;
-    private final AuthorizationDBAdaptor aclDBAdaptor;
+    private final AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory;
 
-    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
+    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.dbAdaptorFactory = dbFactory;
-        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
+        this.authorizationDBAdaptorFactory = authorizationDBAdaptorFactory;
     }
 
     @Override
@@ -448,7 +446,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String organizationId, long studyId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(organizationId, studyId, userId);
-        return aclDBAdaptor.get(organizationId, studyId, null, null, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(studyId, null, null, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
     }
 
     @Override
@@ -456,7 +455,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                                                  String userId) throws CatalogException {
         checkCanSeePermissions(organizationId, studyUid, members, userId);
         Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
-        return aclDBAdaptor.get(organizationId, studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
     }
 
     @Override
@@ -465,8 +465,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> result = OpenCGAResult.empty();
         for (Long studyUid : studyUids) {
             Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
-            result.append(aclDBAdaptor.get(organizationId, studyUid, members, userGroups, Enums.Resource.STUDY,
-                    StudyPermissions.Permissions.class));
+            result.append(authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                    .get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class));
         }
         return result;
     }
@@ -477,7 +477,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                                      String userId) throws CatalogException {
         checkCanSeePermissions(organizationId, studyUid, members, userId);
         Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
-        return aclDBAdaptor.get(organizationId, resourceUids, members, userGroups, resource, clazz);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, members, userGroups, resource, clazz);
     }
 
     @Override
@@ -485,13 +486,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                                      Enums.Resource resource, Class<T> clazz, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(organizationId, studyUid, userId);
-        return aclDBAdaptor.get(organizationId, resourceUids, null, null, resource, clazz);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, null, null, resource, clazz);
     }
 
     @Override
     public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, List<Long> resourceUids,
                                                                       Enums.Resource resource, Class<T> clazz) throws CatalogException {
-        return aclDBAdaptor.get(organizationId, resourceUids, null, null, resource, clazz);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, null, null, resource, clazz);
     }
 
     @Override
@@ -499,7 +502,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                                       List<String> members, Enums.Resource resource, Class<T> clazz)
             throws CatalogException {
         Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
-        return aclDBAdaptor.get(organizationId, resourceUids, members, userGroups, resource, clazz);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, members, userGroups, resource, clazz);
     }
 
     private void checkCanSeePermissions(String organizationId, long studyId, List<String> members, String userId) throws CatalogException {
@@ -537,7 +541,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void resetPermissionsFromAllEntities(String organizationId, long studyId, List<String> members) throws CatalogException {
-        aclDBAdaptor.resetMembersFromAllEntries(organizationId, studyId, members);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .resetMembersFromAllEntries(studyId, members);
     }
 
     private void checkAskingOwnPermissions(String organizationId, long studyId, String member, String userId) throws CatalogException {
@@ -563,13 +568,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void setStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        aclDBAdaptor.setToMembers(organizationId, studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .setToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
     }
 
     @Override
     public void addStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        aclDBAdaptor.addToMembers(organizationId, studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .addToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
     }
 
     @Override
@@ -582,20 +589,21 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void setAcls(String organizationId, long studyUid, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException {
         setImplicitPermissions(aclParams);
-        aclDBAdaptor.setToMembers(organizationId, studyUid, members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .setToMembers(studyUid, members, aclParams);
     }
 
     @Override
     public void addAcls(String organizationId, long studyId, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException {
         setImplicitPermissions(aclParams);
-        aclDBAdaptor.addToMembers(organizationId, studyId, members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).addToMembers(studyId, members, aclParams);
     }
 
     @Override
     public void removeAcls(String organizationId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
         setDependentPermissions(aclParams);
-        aclDBAdaptor.removeFromMembers(organizationId, members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).removeFromMembers(members, aclParams);
     }
 
     private void setDependentPermissions(List<CatalogAclParams> aclParams) throws CatalogAuthorizationException {
@@ -946,7 +954,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (CollectionUtils.isEmpty(aclEntryList.getAcl())) {
             return;
         }
-        aclDBAdaptor.setAcls(organizationId, uids, aclEntryList, resource);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).setAcls(uids, aclEntryList, resource);
     }
 
     @Override
@@ -962,7 +970,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // 2. We can apply the permission rules
-        aclDBAdaptor.applyPermissionRules(organizationId, studyId, permissionRule, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .applyPermissionRules(studyId, permissionRule, entry);
     }
 
     @Override
@@ -971,7 +980,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRuleAndRemovePermissions(organizationId, study, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRuleAndRemovePermissions(study, permissionRuleId, entry);
     }
 
     @Override
@@ -980,7 +990,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRuleAndRestorePermissions(organizationId, study, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRuleAndRestorePermissions(study, permissionRuleId, entry);
     }
 
     @Override
@@ -989,7 +1000,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRule(organizationId, studyId, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRule(studyId, permissionRuleId, entry);
     }
 
     /*

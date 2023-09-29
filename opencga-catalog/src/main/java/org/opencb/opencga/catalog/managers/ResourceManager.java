@@ -188,7 +188,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             }
             throw e;
         } finally {
-            auditManager.finishAuditBatch(operationUuid);
+            auditManager.finishAuditBatch(organizationId, operationUuid);
         }
     }
 

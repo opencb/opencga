@@ -124,7 +124,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String organizationId, String userId, String password)
+            throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
         List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
@@ -205,17 +206,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
+    public void changePassword(String organizationId, String userId, String oldPassword, String newPassword) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to change the password.");
     }
 
     @Override
-    public OpenCGAResult resetPassword(String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to reset the password.");
     }
 
     @Override
-    public void newPassword(String userId, String newPassword) throws CatalogException {
+    public void newPassword(String organizationId, String userId, String newPassword) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to renew the password.");
     }
 

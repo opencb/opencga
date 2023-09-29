@@ -44,13 +44,13 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     public static final String INTERNAL = "internal";
     private final Email emailConfig;
 
-    private final UserDBAdaptor userDBAdaptor;
+    private final DBAdaptorFactory dbAdaptorFactory;
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Email emailConfig, String secretKeyString, long expiration) {
         super(expiration);
 
         this.emailConfig = emailConfig;
-        this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
+        this.dbAdaptorFactory = dbAdaptorFactory;
 
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
@@ -59,9 +59,10 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String organizationId, String userId, String password)
+            throws CatalogAuthenticationException {
         try {
-            userDBAdaptor.authenticate(userId, password);
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).authenticate(userId, password);
             return new AuthenticationResponse(createToken(userId));
         } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not validate '" + userId + "' password\n" + e.getMessage(), e);
@@ -94,13 +95,13 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        userDBAdaptor.changePassword(userId, oldPassword, newPassword);
+    public void changePassword(String organizationId, String userId, String oldPassword, String newPassword) throws CatalogException {
+        dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).changePassword(userId, oldPassword, newPassword);
     }
 
     @Override
-    public void newPassword(String userId, String newPassword) throws CatalogException {
-        userDBAdaptor.changePassword(userId, "", newPassword);
+    public void newPassword(String organizationId, String userId, String newPassword) throws CatalogException {
+        dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).changePassword(userId, "", newPassword);
     }
 
     @Override
@@ -119,13 +120,14 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public OpenCGAResult resetPassword(String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         OpenCGAResult result = null;
         String newPassword = RandomStringUtils.randomAlphanumeric(12);
 
         OpenCGAResult<User> user =
-                userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()));
+                dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId)
+                        .get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()));
 
         if (user == null || user.getNumResults() != 1) {
             throw new CatalogException("Could not retrieve the user e-mail.");
@@ -139,7 +141,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         String mailPort = this.emailConfig.getPort();
         try {
             MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
-            result = userDBAdaptor.resetPassword(userId, email, newPassword);
+            result = dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).resetPassword(userId, email, newPassword);
         } catch (Exception e) {
             throw new CatalogException("Email could not be sent.", e);
         }

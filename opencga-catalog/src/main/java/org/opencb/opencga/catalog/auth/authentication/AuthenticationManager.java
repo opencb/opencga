@@ -60,13 +60,15 @@ public abstract class AuthenticationManager {
     /**
      * Authenticate the user against the Authentication server.
      *
-     * @param userId       User to authenticate
+     * @param organizationId Organization id.
+     * @param userId         User to authenticate
      * @param password       Password.
      * @return AuthenticationResponse object.
      * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
-     * for any other reason.
+     *                                        for any other reason.
      */
-    public abstract AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException;
+    public abstract AuthenticationResponse authenticate(String organizationId, String userId, String password)
+            throws CatalogAuthenticationException;
 
     /**
      * Authenticate the user against the Authentication server.
@@ -102,32 +104,36 @@ public abstract class AuthenticationManager {
     /**
      * Change users password. Could throw "UnsupportedOperationException" depending if the implementation supports password changes.
      *
-     * @param userId      UserId
-     * @param oldPassword Old password
-     * @param newPassword New password
+     * @param organizationId Organization id.
+     * @param userId         UserId
+     * @param oldPassword    Old password
+     * @param newPassword    New password
      * @throws CatalogException CatalogException
      */
-    public abstract void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
+    public abstract void changePassword(String organizationId, String userId, String oldPassword, String newPassword)
+            throws CatalogException;
 
     /**
      * Reset the user password. Sets an automatically generated password and sends an email to the user.
      * Throws "UnsupportedOperationException" is the implementation does not support this operation.
      *
-     * @param userId UserId
+     * @param organizationId Organization id.
+     * @param userId         UserId
      * @return OpenCGAResult OpenCGAResult
      * @throws CatalogException CatalogException
      */
-    public abstract OpenCGAResult resetPassword(String userId) throws CatalogException;
+    public abstract OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException;
 
     /**
      * Set a password to a user without a password.
      * Throws "UnsupportedOperationException" is the implementation does not support this operation.
      *
-     * @param userId      UserId without password
-     * @param newPassword New password
+     * @param organizationId Organization id.
+     * @param userId         UserId without password
+     * @param newPassword    New password
      * @throws CatalogException CatalogException
      */
-    public abstract void newPassword(String userId, String newPassword) throws CatalogException;
+    public abstract void newPassword(String organizationId, String userId, String newPassword) throws CatalogException;
 
     /**
      * Create a token for the user with default expiration time.

@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -172,20 +173,23 @@ public abstract class MigrationTool {
         void accept(Document document);
     }
 
-    protected final void migrateCollection(String collection, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
-        migrateCollection(collection, collection, query, projection, migrateFunc);
+    protected final void migrateCollection(String organizationId, String collection, Bson query, Bson projection,
+                                           MigrateCollectionFunc migrateFunc) throws CatalogDBException {
+        migrateCollection(organizationId, collection, collection, query, projection, migrateFunc);
     }
 
-    protected final void migrateCollection(List<String> collections, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
+    protected final void migrateCollection(String organizationId, List<String> collections, Bson query, Bson projection,
+                                           MigrateCollectionFunc migrateFunc) throws CatalogDBException {
         for (String collection : collections) {
             privateLogger.info("Starting migration in {}", collection);
-            migrateCollection(collection, collection, query, projection, migrateFunc);
+            migrateCollection(organizationId, collection, collection, query, projection, migrateFunc);
         }
     }
 
-    protected final void migrateCollection(String inputCollection, String outputCollection, Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
-        migrateCollection(getMongoCollection(inputCollection), getMongoCollection(outputCollection), query, projection, migrateFunc);
+    protected final void migrateCollection(String organizationId, String inputCollection, String outputCollection, Bson query,
+                                           Bson projection, MigrateCollectionFunc migrateFunc) throws CatalogDBException {
+        migrateCollection(getMongoCollection(organizationId, inputCollection),
+                getMongoCollection(organizationId, outputCollection), query, projection, migrateFunc);
     }
 
     protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
@@ -225,24 +229,25 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void createIndex(String collection, Document index) {
-        createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+    protected final void createIndex(String organizationId, String collection, Document index) throws CatalogDBException {
+        createIndex(getMongoCollection(organizationId, collection), index, new IndexOptions().background(true));
     }
 
-    protected final void createIndex(List<String> collections, Document index) {
-        createIndexes(collections, Collections.singletonList(index));
+    protected final void createIndex(String organizationId, List<String> collections, Document index) throws CatalogDBException {
+        createIndexes(organizationId, collections, Collections.singletonList(index));
     }
 
-    protected final void createIndexes(List<String> collections, List<Document> indexes) {
+    protected final void createIndexes(String organizationId, List<String> collections, List<Document> indexes) throws CatalogDBException {
         for (String collection : collections) {
             for (Document index : indexes) {
-                createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+                createIndex(getMongoCollection(organizationId, collection), index, new IndexOptions().background(true));
             }
         }
     }
 
-    protected final void createIndex(String collection, Document index, IndexOptions options) {
-        createIndex(getMongoCollection(collection), index, options);
+    protected final void createIndex(String organizationId, String collection, Document index, IndexOptions options)
+            throws CatalogDBException {
+        createIndex(getMongoCollection(organizationId, collection), index, options);
     }
 
     protected final void createIndex(MongoCollection<Document> collection, Document index) {
@@ -253,14 +258,14 @@ public abstract class MigrationTool {
         collection.createIndex(index, options);
     }
 
-    protected final void dropIndex(String collection, Document index) {
-        dropIndex(getMongoCollection(collection), index);
+    protected final void dropIndex(String organizationId, String collection, Document index) throws CatalogDBException {
+        dropIndex(getMongoCollection(organizationId, collection), index);
     }
 
-    protected final void dropIndex(List<String> collections, Document index) {
+    protected final void dropIndex(String organizationId, List<String> collections, Document index) {
         for (String collection : collections) {
             try {
-                getMongoCollection(collection).dropIndex(index);
+                getMongoCollection(organizationId, collection).dropIndex(index);
             } catch (Exception e) {
                 logger.warn("Could not drop index: {}", e.getMessage());
             }
@@ -275,8 +280,9 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
-        MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
+    protected final void queryMongo(String organizationId, String inputCollectionStr, Bson query, Bson projection,
+                                    QueryCollectionFunc queryCollectionFunc) throws CatalogDBException {
+        MongoCollection<Document> inputCollection = getMongoCollection(organizationId, inputCollectionStr);
 
         try (MongoCursor<Document> it = inputCollection
                 .find(query)
@@ -291,8 +297,8 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final MongoCollection<Document> getMongoCollection(String collectionName) {
-        return dbAdaptorFactory.getMongoDataStore().getDb().getCollection(collectionName);
+    protected final MongoCollection<Document> getMongoCollection(String organizationId, String collectionName) throws CatalogDBException {
+        return dbAdaptorFactory.getMongoDataStore(organizationId).getDb().getCollection(collectionName);
     }
 
     protected <T> Document convertToDocument(T value) {

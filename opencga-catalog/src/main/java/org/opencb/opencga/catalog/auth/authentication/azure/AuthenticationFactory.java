@@ -35,7 +35,7 @@ public class AuthenticationFactory {
             throws CatalogException {
         AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
                 authenticationOriginId);
-        return organizationAuthenticationManager.authenticate(userId, password);
+        return organizationAuthenticationManager.authenticate(organizationId, userId, password);
     }
 
     private Map<String, AuthenticationManager> getOrganizationAuthenticationManagers(String organizationId) throws CatalogException {

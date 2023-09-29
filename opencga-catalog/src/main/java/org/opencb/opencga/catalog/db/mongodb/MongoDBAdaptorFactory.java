@@ -18,15 +18,16 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -152,7 +153,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION.toLowerCase(), adminFactory);
 
         // Read organizations present in the installation
-        OpenCGAResult<Organization> result = adminFactory.getCatalogOrganizationDBAdaptor().get(new Query(), QueryOptions.empty());
+        OpenCGAResult<Organization> result = adminFactory.getCatalogOrganizationDBAdaptor().get(QueryOptions.empty());
         if (result.getNumResults() == 1) {
             // TODO: Read organizations present in the installation
             List<String> organizationIds = Collections.emptyList();
@@ -167,11 +168,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private OrganizationMongoDBAdaptorFactory configureOrganizationMongoDBAdaptorFactory(String organizationId, Configuration configuration)
             throws CatalogDBException {
-        String organizationDB = getCatalogOrganizationDatabase(configuration.getDatabasePrefix(), organizationId);
+        String organizationDB = getCatalogDatabase(configuration.getDatabasePrefix(), organizationId);
         return new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationDB, configuration);
     }
 
-    private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
+    public OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organization, true);
     }
 
@@ -180,9 +181,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organization.toLowerCase());
         if (orgFactory == null) {
             if (!organization.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
-                orgFactory = organizationDBAdaptorMap.get(ParamConstants.ADMIN_ORGANIZATION.toLowerCase());
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIG.key());
-                OpenCGAResult<Organization> result = orgFactory.getCatalogOrganizationDBAdaptor().get(new Query(), options);
+                orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
+                QueryOptions options = new QueryOptions();
+//                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIG.key());
+                OpenCGAResult<Organization> result = orgFactory.getCatalogOrganizationDBAdaptor().get(options);
                 if (result.getNumResults() == 1) {
                     // TODO: look for the organization. Will assume it is not present meanwhile
                     boolean present = false;
@@ -216,7 +218,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (getOrganizationMongoDBAdaptorFactory(organization.getId(), false) != null) {
             throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
         }

@@ -19,7 +19,9 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -57,6 +59,7 @@ public class CatalogManager implements AutoCloseable {
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
 
     private DBAdaptorFactory catalogDBAdaptorFactory;
+    private AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory;
     private IOManagerFactory ioManagerFactory;
     private CatalogIOManager catalogIOManager;
 
@@ -86,6 +89,8 @@ public class CatalogManager implements AutoCloseable {
         this.configuration = configuration;
         logger.debug("CatalogManager configureDBAdaptorFactory");
         catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
+                configuration);
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
@@ -93,12 +98,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public String getCatalogDatabase() {
-        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix());
+        return null;
+//        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix());
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
-        authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
+        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
@@ -151,11 +157,11 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organizationId).updateJWTParameters(params);
     }
 
-    public boolean getDatabaseStatus() {
+    public boolean getDatabaseStatus() throws CatalogDBException {
         return catalogDBAdaptorFactory.getDatabaseStatus();
     }
 
-    public boolean getCatalogDatabaseStatus() {
+    public boolean getCatalogDatabaseStatus() throws CatalogDBException {
         if (existsCatalogDB()) {
             return catalogDBAdaptorFactory.getDatabaseStatus();
         } else {
@@ -167,8 +173,9 @@ public class CatalogManager implements AutoCloseable {
      * Checks if the database exists.
      *
      * @return true if the database exists.
+     * @throws CatalogDBException CatalogDBException
      */
-    public boolean existsCatalogDB() {
+    public boolean existsCatalogDB() throws CatalogDBException {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 

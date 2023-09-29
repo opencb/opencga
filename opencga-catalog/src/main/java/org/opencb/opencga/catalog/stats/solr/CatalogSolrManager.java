@@ -209,16 +209,17 @@ public class CatalogSolrManager implements AutoCloseable {
     /**
      * Return faceted data from a Solr core/collection according to a given query.
      *
-     * @param study        Study
-     * @param collection   Collection name
-     * @param query        Query
-     * @param queryOptions Query options (contains the facet and facetRange options)
-     * @param userId       User performing the facet query.
+     * @param organizationId Organization id.
+     * @param study          Study
+     * @param collection     Collection name
+     * @param query          Query
+     * @param queryOptions   Query options (contains the facet and facetRange options)
+     * @param userId         User performing the facet query.
      * @return Facet results
      * @throws CatalogException CatalogException
      */
-    public DataResult<FacetField> facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
-            throws CatalogException {
+    public DataResult<FacetField> facetedQuery(String organizationId, Study study, String collection, Query query,
+                                               QueryOptions queryOptions, String userId) throws CatalogException {
         Query queryCopy = query == null ? new Query() : new Query(query);
         QueryOptions queryOptionsCopy = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 

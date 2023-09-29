@@ -68,11 +68,11 @@ public class AdminManager extends AbstractManager {
             }
 
             OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
-            auditManager.auditSearch(userId, Enums.Resource.USER, "", "", auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return userDataResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, Enums.Resource.USER, "", "", auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -122,12 +122,12 @@ public class AdminManager extends AbstractManager {
 
             OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).updateUserFromGroups(userId, studyUids, groupIds, action);
 
-            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -164,12 +164,12 @@ public class AdminManager extends AbstractManager {
             OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroupIds,
                     authenticationOriginId);
 
-            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

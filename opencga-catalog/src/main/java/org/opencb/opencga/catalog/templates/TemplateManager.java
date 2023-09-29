@@ -141,10 +141,10 @@ public class TemplateManager {
         String templateVersion = manifest.getConfiguration().getVersion();
         checkVersion(versionShort, templateVersion);
 
+        String organizationId = manifest.getConfiguration().getOrganizationId();
         // Study should already exist
-        Study study = getStudy(manifest.getConfiguration().getOrganizationId(), manifest.getConfiguration().getProjectId(),
-                manifest.getStudy().getId());
-        String userId = catalogManager.getUserManager().getUserId(manifest.getConfiguration().getOrganizationId(), token);
+        Study study = getStudy(organizationId, manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
+        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
 //        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.

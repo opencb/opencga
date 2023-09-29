@@ -19,8 +19,10 @@ package org.opencb.opencga.catalog.db;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -56,10 +58,12 @@ public interface DBAdaptorFactory extends AutoCloseable {
      */
     void initialiseMetaCollection(Admin admin) throws CatalogException;
 
-    default String getCatalogDatabase(String prefix) {
+    default String getCatalogDatabase(String prefix, String organization) {
+        if (StringUtils.isEmpty(organization)) {
+            throw new IllegalArgumentException("Missing organization");
+        }
         String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
-        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
-        return dbPrefix + "catalog";
+        return dbPrefix + "_" + organization + "_catalog";
     }
 
     boolean getDatabaseStatus() throws CatalogDBException;
@@ -81,7 +85,8 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
 
-    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     void deleteOrganization(Organization organization) throws CatalogDBException;
 

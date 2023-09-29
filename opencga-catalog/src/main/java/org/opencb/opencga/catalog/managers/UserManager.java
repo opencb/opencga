@@ -147,11 +147,11 @@ public class UserManager extends AbstractManager {
 
             getUserDBAdaptor(organizationId).checkId(userId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
+            authenticationManagerMap.get(authOrigin).changePassword(organizationId, userId, oldPassword, newPassword);
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -200,7 +200,7 @@ public class UserManager extends AbstractManager {
             userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
             if (!OPENCGA.equals(userId)) {
                 String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
-                auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
                 throw new CatalogException(errorMsg);
             }
@@ -219,7 +219,7 @@ public class UserManager extends AbstractManager {
             catalogIOManager.createUser(organizationId, user.getId());
             getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
 
-            auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
@@ -229,7 +229,7 @@ public class UserManager extends AbstractManager {
                 catalogIOManager.deleteUser(organizationId, user.getId());
             }
 
-            auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
@@ -412,8 +412,8 @@ public class UserManager extends AbstractManager {
                             .setSyncedFrom(groupSync);
                     catalogManager.getStudyManager().createGroup(organizationId, study, group, token);
                     logger.info("Group '{}' created and synchronised with external group", internalGroup);
-                    auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, group.getId(),
-                            "", study, "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER,
+                            group.getId(), "", study, "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 } catch (CatalogException e) {
                     logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
                     throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + study + "': "
@@ -421,7 +421,7 @@ public class UserManager extends AbstractManager {
                 }
             }
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, "", "", "", "",
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, "", "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -469,8 +469,8 @@ public class UserManager extends AbstractManager {
                 List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
                 for (User user : parsedUserList) {
                     create(organizationId, user, null, token);
-                    auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, user.getId(), "", "",
-                            "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, user.getId(), "",
+                            "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User '{}' successfully created", user.getId());
                 }
             } else {
@@ -480,8 +480,8 @@ public class UserManager extends AbstractManager {
                             .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
                             .setEmail("mail@mail.co.uk");
                     create(organizationId, application, null, token);
-                    auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, application.getId(), "",
-                            "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, application.getId(),
+                            "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User (application) '{}' successfully created", application.getId());
                 }
             }
@@ -510,7 +510,7 @@ public class UserManager extends AbstractManager {
                 }
             }
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, "", "", "", "", auditParams,
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, "", "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -690,7 +690,7 @@ public class UserManager extends AbstractManager {
             }
             throw e;
         } finally {
-            auditManager.finishAuditBatch(operationUuid);
+            auditManager.finishAuditBatch(organizationId, operationUuid);
         }
     }
 
@@ -721,7 +721,7 @@ public class UserManager extends AbstractManager {
                 checkEmail(parameters.getString("email"));
             }
             OpenCGAResult<User> updateResult = getUserDBAdaptor(organizationId).update(userId, parameters);
-            auditManager.auditUpdate(loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
+            auditManager.auditUpdate(organizationId, loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
@@ -732,7 +732,7 @@ public class UserManager extends AbstractManager {
 
             return updateResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
+            auditManager.auditUpdate(organizationId, loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -820,13 +820,13 @@ public class UserManager extends AbstractManager {
             String authenticatedUserId = getUserId(organizationId, token);
             authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
+            OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(organizationId, userId);
 
-            auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
+            auditManager.auditUser(organizationId, userId, Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return writeResult;
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
+            auditManager.auditUser(organizationId, userId, Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -851,9 +851,9 @@ public class UserManager extends AbstractManager {
                         + "' could not be found.");
             }
             try {
-                response = authenticationManagerMap.get(authId).authenticate(username, password);
+                response = authenticationManagerMap.get(authId).authenticate(organizationId, username, password);
             } catch (CatalogAuthenticationException e) {
-                auditManager.auditUser(username, Enums.Action.LOGIN, username,
+                auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
                 throw e;
             }
@@ -862,7 +862,7 @@ public class UserManager extends AbstractManager {
             for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
                 AuthenticationManager authenticationManager = entry.getValue();
                 try {
-                    response = authenticationManager.authenticate(username, password);
+                    response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
                     break;
                 } catch (CatalogAuthenticationException e) {
@@ -872,12 +872,13 @@ public class UserManager extends AbstractManager {
         }
 
         if (response == null) {
-            auditManager.auditUser(username, Enums.Action.LOGIN, username,
+            auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         String userId = authenticationManagerMap.get(authId).getUserId(response.getToken());
         if (!INTERNAL_AUTHORIZATION.equals(authId)) {
             // External authorization
@@ -933,12 +934,13 @@ public class UserManager extends AbstractManager {
         }
 
         if (response == null && exception != null) {
-            auditManager.auditUser(userId, Enums.Action.REFRESH_TOKEN, userId,
+            auditManager.auditUser(organizationId, userId, Enums.Action.REFRESH_TOKEN, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, exception.getError()));
             throw exception;
         }
 
-        auditManager.auditUser(userId, Enums.Action.REFRESH_TOKEN, userId, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        auditManager.auditUser(organizationId, userId, Enums.Action.REFRESH_TOKEN, userId,
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         return response;
     }
 
@@ -1049,11 +1051,11 @@ public class UserManager extends AbstractManager {
 
             UserFilter filter = new UserFilter(id, description, resource, query, queryOptions);
             OpenCGAResult result = getUserDBAdaptor(organizationId).addFilter(userId, filter);
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1100,11 +1102,11 @@ public class UserManager extends AbstractManager {
             if (filter == null) {
                 throw new CatalogException("Internal error: The filter " + name + " could not be found.");
             }
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1142,11 +1144,11 @@ public class UserManager extends AbstractManager {
             }
 
             OpenCGAResult result = getUserDBAdaptor(organizationId).deleteFilter(userId, name);
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1178,7 +1180,7 @@ public class UserManager extends AbstractManager {
             getUserDBAdaptor(organizationId).checkId(userId);
 
             UserFilter filter = getFilter(organizationId, userId, name);
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (filter == null) {
@@ -1187,7 +1189,7 @@ public class UserManager extends AbstractManager {
                 return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(filter), 1);
             }
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1224,12 +1226,12 @@ public class UserManager extends AbstractManager {
             }
 
             List<UserFilter> filters = userDataResult.first().getFilters();
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(0, Collections.emptyList(), filters.size(), filters, filters.size());
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1266,12 +1268,12 @@ public class UserManager extends AbstractManager {
             getUserDBAdaptor(organizationId).checkId(userId);
 
             OpenCGAResult result = getUserDBAdaptor(organizationId).setConfig(userId, name, config);
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(config), 1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1319,11 +1321,11 @@ public class UserManager extends AbstractManager {
             }
 
             OpenCGAResult result = getUserDBAdaptor(organizationId).deleteConfig(userId, name);
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(configs.get(name)), 1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1369,13 +1371,13 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
             }
 
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult(userDataResult.getTime(), userDataResult.getEvents(), 1, Collections.singletonList(configs.get(name)),
                     1);
         } catch (CatalogException e) {
-            auditManager.auditUser(userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
+            auditManager.auditUser(organizationId, userId, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

@@ -120,6 +120,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final AuditMongoDBAdaptor auditDBAdaptor;
     private final MetaMongoDBAdaptor metaDBAdaptor;
     private final MigrationMongoDBAdaptor migrationDBAdaptor;
+    private final AuthorizationMongoDBAdaptor authorizationMongoDBAdaptor;
 
     private final MongoDBCollection metaCollection;
     private final Map<String, MongoDBCollection> mongoDBCollectionMap;
@@ -194,6 +195,7 @@ public class OrganizationMongoDBAdaptorFactory {
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, configuration);
+        authorizationMongoDBAdaptor = new AuthorizationMongoDBAdaptor(this, configuration);
 
         mongoDBCollectionMap = new HashMap<>();
         mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
@@ -353,6 +355,10 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public InterpretationMongoDBAdaptor getInterpretationDBAdaptor() {
         return interpretationDBAdaptor;
+    }
+
+    public AuthorizationMongoDBAdaptor getAuthorizationDBAdaptor() {
+        return authorizationMongoDBAdaptor;
     }
 
     public MongoDataStore getMongoDataStore() {

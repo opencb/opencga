@@ -1251,7 +1251,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
+            catalogManager.getAuditManager().audit(organizationId, userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
                     "", "", "", "",
                     params,
                     status,
@@ -1324,7 +1324,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
+            catalogManager.getAuditManager().audit(organizationId, userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
                     status, auditAttributes);
         }
     }
