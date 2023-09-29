@@ -30,4 +30,8 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Push in Docker Hub
-        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base
+        run: |
+          set -e
+          chmod +x ./.github/workflows/scripts/opencga_enterprise_docker_tag.sh
+          tag=$(./.github/workflows/scripts/opencga_enterprise_docker_tag.sh)
+          python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images base --tag "$tag"
