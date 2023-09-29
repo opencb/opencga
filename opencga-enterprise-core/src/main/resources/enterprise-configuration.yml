@@ -16,4 +16,6 @@ cvdb:
   database:
     hosts:
       - ${ENTERPRISE.CVDB.DATABASE.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+    mode: ${ENTERPRISE.CVDB.DATABASE.MODE}
     timeout: ${ENTERPRISE.CVDB.DATABASE.TIMEOUT}
+
