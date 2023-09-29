@@ -2786,7 +2786,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         try {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
-                    new QueryOptions(ParamConstants.FORCE, true), token);
+                    new QueryOptions(ParamConstants.FORCE, false), token);
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("in use in 3 cases"));
         }

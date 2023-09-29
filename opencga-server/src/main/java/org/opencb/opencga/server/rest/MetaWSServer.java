@@ -17,8 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -26,6 +24,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
+import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -44,13 +43,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -59,15 +52,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @Produces("application/json")
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {
-
-    private static final AtomicReference<String> healthCheckErrorMessage = new AtomicReference<>();
-    private static final AtomicReference<LocalTime> lastAccess = new AtomicReference<>(LocalTime.now());
-    private static final Map<String, String> healthCheckResults = new ConcurrentHashMap<>();
-    private final String OKAY = "OK";
-    private final String NOT_OKAY = "KO";
-    private final String SOLR = "Solr";
-    private final String VARIANT_STORAGE = "VariantStorage";
-    private final String CATALOG_MONGO_DB = "CatalogMongoDB";
 
     public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -80,9 +64,9 @@ public class MetaWSServer extends OpenCGAWSServer {
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "OpenCGA (OpenCB)");
-        info.put("Version", GitRepositoryState.get().getBuildVersion());
-        info.put("Git branch", GitRepositoryState.get().getBranch());
-        info.put("Git commit", GitRepositoryState.get().getCommitId());
+        info.put("Version", GitRepositoryState.getInstance().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.getInstance().getBranch());
+        info.put("Git commit", GitRepositoryState.getInstance().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
         OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
@@ -111,116 +95,16 @@ public class MetaWSServer extends OpenCGAWSServer {
     @Path("/status")
     @ApiOperation(httpMethod = "GET", value = "Database status.", response = Map.class)
     public Response status() {
+        OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> queryResult = healthCheckMonitor.getStatus();
+        OpenCGAHealthCheckMonitor.HealthCheckStatus status = queryResult.first();
 
-        OpenCGAResult<Map<String, String>> queryResult = new OpenCGAResult<>();
-        StopWatch stopWatch = StopWatch.createStarted();
-
-        if (shouldUpdateStatus()) {
-            logger.debug("Update HealthCheck cache status");
-            updateHealthCheck();
-        } else {
-            logger.debug("HealthCheck results from cache at " + lastAccess.get().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.INFO, "HealthCheck results from cache at "
-                    + lastAccess.get().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
-        }
-
-        queryResult.setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
-        queryResult.setResults(Collections.singletonList(healthCheckResults));
-
-        if (isHealthy()) {
-            logger.debug("HealthCheck : " + healthCheckResults.toString());
+        if (status.isHealthy()) {
+            logger.debug("HealthCheck : " + status);
             return createOkResponse(queryResult);
         } else {
-            logger.error("HealthCheck : " + healthCheckResults.toString());
-            return createErrorResponse(healthCheckErrorMessage.get(), queryResult);
+            logger.error("HealthCheck : " + status);
+            return createErrorResponse(status.getErrorMessage(), queryResult);
         }
-    }
-
-    private boolean shouldUpdateStatus() {
-        if (!isHealthy()) {
-            // Always update if not healthy
-            return true;
-        }
-        // If healthy, only update every "healthCheck.interval" seconds
-        long elapsedTime = Duration.between(lastAccess.get(), LocalTime.now()).getSeconds();
-        return elapsedTime > configuration.getHealthCheck().getInterval();
-    }
-
-    private synchronized void updateHealthCheck() {
-        if (!shouldUpdateStatus()) {
-            // Skip update!
-            return;
-        }
-        StringBuilder errorMsg = new StringBuilder();
-
-        Map<String, String> newHealthCheckResults = new HashMap<>();
-        newHealthCheckResults.put(CATALOG_MONGO_DB, "");
-        newHealthCheckResults.put(VARIANT_STORAGE, "");
-        newHealthCheckResults.put(SOLR, "");
-
-        StopWatch totalTime = StopWatch.createStarted();
-        StopWatch catalogMongoDBTime = StopWatch.createStarted();
-        try {
-            if (catalogManager.getCatalogDatabaseStatus()) {
-                newHealthCheckResults.put(CATALOG_MONGO_DB, OKAY);
-            } else {
-                newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
-            }
-        } catch (Exception e) {
-            newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
-            errorMsg.append(e.getMessage());
-        }
-        catalogMongoDBTime.stop();
-
-        StopWatch storageTime = StopWatch.createStarted();
-        try {
-            storageEngineFactory.getVariantStorageEngine(null, configuration.getDatabasePrefix() + "_test_connection", "test_connection")
-                    .testConnection();
-            newHealthCheckResults.put("VariantStorageId", storageEngineFactory.getVariantStorageEngine().getStorageEngineId());
-            newHealthCheckResults.put(VARIANT_STORAGE, OKAY);
-        } catch (Exception e) {
-            newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
-            errorMsg.append(e.getMessage());
-//            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()
-//            ).append(", ");
-        }
-        storageTime.stop();
-
-        StopWatch solrEngineTime = StopWatch.createStarted();
-        if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
-            try {
-                if (variantManager.isSolrAvailable()) {
-                    newHealthCheckResults.put(SOLR, OKAY);
-                } else {
-                    errorMsg.append(", unable to connect with solr, ");
-                    newHealthCheckResults.put(SOLR, NOT_OKAY);
-                }
-            } catch (Exception e) {
-                newHealthCheckResults.put(SOLR, NOT_OKAY);
-                errorMsg.append(e.getMessage());
-            }
-        } else {
-            newHealthCheckResults.put(SOLR, "solr not active in storage-configuration!");
-        }
-        solrEngineTime.stop();
-
-        if (totalTime.getTime(TimeUnit.SECONDS) > 5) {
-            logger.warn("Slow OpenCGA status: Updated time: {}. Catalog: {} , Storage: {} , Solr: {}",
-                    totalTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
-                    catalogMongoDBTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
-                    storageTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
-                    solrEngineTime.getTime(TimeUnit.MILLISECONDS) / 1000.0
-            );
-        }
-
-        if (errorMsg.length() == 0) {
-            healthCheckErrorMessage.set(null);
-        } else {
-            healthCheckErrorMessage.set(errorMsg.toString());
-        }
-
-        healthCheckResults.putAll(newHealthCheckResults);
-        lastAccess.set(LocalTime.now());
     }
 
     @GET
@@ -269,9 +153,5 @@ public class MetaWSServer extends OpenCGAWSServer {
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
-    }
-
-    private boolean isHealthy() {
-        return healthCheckResults.isEmpty() ? false : !healthCheckResults.values().stream().anyMatch(x -> x.equals(NOT_OKAY));
     }
 }

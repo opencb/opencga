@@ -66,7 +66,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
-        String configSet = "opencga-variant-configset-" + GitRepositoryState.get().getBuildVersion();
+        String configSet = "opencga-variant-configset-" + GitRepositoryState.getInstance().getBuildVersion();
 
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml", rootDir);

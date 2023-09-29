@@ -50,8 +50,8 @@ public class RgaSolrExtenalResource extends ExternalResource {
         Path rootDir = Paths.get("target/test-data", "junit-rga-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
-        String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion();
-        String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.get().getBuildVersion();
+        String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.getInstance().getBuildVersion();
         copyConfigSetConfiguration(mainConfigSet, "managed-schema", rootDir);
         copyConfigSetConfiguration(auxConfigSet, "aux-managed-schema", rootDir);
 

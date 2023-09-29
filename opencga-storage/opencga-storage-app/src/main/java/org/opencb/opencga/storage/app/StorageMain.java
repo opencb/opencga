@@ -48,9 +48,9 @@ public class StorageMain {
         String parsedCommand = cliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
             if (cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
-                System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-//                System.out.println(GitRepositoryState.get());
+                System.out.println("Version " + GitRepositoryState.getInstance().getBuildVersion());
+                System.out.println("Git version: " + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
+//                System.out.println(GitRepositoryState.getInstance());
                 return 0;
             } else if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();

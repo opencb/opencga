@@ -35,8 +35,8 @@ public class CompleteStatusDataModelUtils {
 
         completeStatus(internal);
         Document status = internal.get("status", Document.class);
-        status.put("version", GitRepositoryState.get().getBuildVersion());
-        status.put("commit", GitRepositoryState.get().getCommitId());
+        status.put("version", GitRepositoryState.getInstance().getBuildVersion());
+        status.put("commit", GitRepositoryState.getInstance().getCommitId());
 
         String id = status.getString("id");
         if (StringUtils.isEmpty(id)) {

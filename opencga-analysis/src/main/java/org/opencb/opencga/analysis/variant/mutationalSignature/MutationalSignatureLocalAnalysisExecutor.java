@@ -64,10 +64,11 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
         implements StorageToolExecutor {
 
-    public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.get().getBuildVersion();
-
     private static final String SVCLASS = "SVCLASS";
     private static final String EXT_SVTYPE = "EXT_SVTYPE";
+
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
+            + GitRepositoryState.getInstance().getBuildVersion();
 
     private Path opencgaHome;
 
@@ -591,7 +592,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
                 .append(" --catalogues=/data/input/").append(cataloguesFile.getName())
-                .append(" --outdir=/data/output");
+                .append(" --outdir=/data/output")
+                .append(" --commonsigtier=T2");
+
         if (StringUtils.isNotEmpty(getFitMethod())) {
             scriptParams.append(" --fitmethod=").append(getFitMethod());
         }

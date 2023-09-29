@@ -248,11 +248,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 return false;
             }
 
-            List<String> sampleDataKeys = VariantQueryUtils.getIncludeSampleData(inputQuery);
-            if (sampleDataKeys == null) {
-                // Undefined, get default sampleDataKeys
-                sampleDataKeys = HBaseToVariantConverter.getFixedFormat(study.getStudyMetadata());
-            }
+            List<String> sampleDataKeys = getSampleDataKeys(inputQuery, study);
 
             if (sampleDataKeys.size() != 1) {
                 // One and only one sampledatakey
@@ -490,8 +486,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             for (Integer fileId : fileIds) {
                 filesFromSample.add(metadataManager.getFileName(studyId, fileId));
             }
-            List<String> includeSampleData = VariantQueryUtils.getIncludeSampleData(parsedQuery.getInputQuery());
-            gtIdx = includeSampleData.indexOf("GT");
+
+            List<String> sampleDataKeys = getSampleDataKeys(parsedQuery.getInputQuery(), parsedQuery.getProjection().getStudy(studyId));
+            gtIdx = sampleDataKeys.indexOf("GT");
         }
 
         @Override
@@ -656,5 +653,14 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 merge.accept(fileEntry, newFileEntry);
             }
         }
+    }
+
+    private List<String> getSampleDataKeys(Query parsedQuery, VariantQueryProjection.StudyVariantQueryProjection parsedQuery1) {
+        List<String> sampleDataKeys = VariantQueryUtils.getIncludeSampleData(parsedQuery);
+        if (sampleDataKeys == null) {
+            // Undefined, get default sampleDataKeys
+            sampleDataKeys = HBaseToVariantConverter.getFixedFormat(parsedQuery1.getStudyMetadata());
+        }
+        return sampleDataKeys;
     }
 }
