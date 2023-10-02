@@ -862,6 +862,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotNull(beanParams, "forceReload",commandOptions.forceReload, true);
             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
