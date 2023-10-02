@@ -34,14 +34,28 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
     protected void run() throws Exception {
         MigrationRun migrationRun = getMigrationRun();
 
+        // Map study studyFqn -> job
         Map<String, Job> jobs = new HashMap<>();
         for (JobReferenceParam jobReference : migrationRun.getJobs()) {
             Job job = catalogManager.getJobManager().get(jobReference.getStudyId(), jobReference.getId(), new QueryOptions(), token)
                     .first();
-            logger.info("Registering job {} for study {} to migrate", job.getId(), job.getStudy().getId());
+            logger.info("Reading already executed job '{}' for study '{}' with status '{}'",
+                    job.getId(),
+                    job.getStudy().getId(),
+                    job.getInternal().getStatus().getId());
             jobs.put(job.getStudy().getId(), job);
         }
-        for (String study : getStudies()) {
+
+        Set<String> studies = new LinkedHashSet<>(getStudies());
+        logger.info("Study IDs (num. total = {}) to initialize pedigree graphs: {}", studies.size(), StringUtils.join(studies, ", "));
+
+        // Ensure that studies with already executed jobs are included in the migration run
+        getMigrationRun().getJobs().forEach(j -> studies.add(j.getStudyId()));
+
+        logger.info("Study IDs (num. total = {}) after adding studies from migration jobs: {}", studies.size(),
+                StringUtils.join(studies, ", "));
+
+        for (String study : studies) {
             Job job = jobs.get(study);
             if (job != null) {
                 String status = job.getInternal().getStatus().getId();
@@ -61,8 +75,9 @@ public class CalculatePedigreeGraphMigration extends MigrationTool {
             logger.info("Adding new job to migrate/initialize pedigree graph for study {}", study);
             ObjectMap params = new ObjectMap()
                     .append(ParamConstants.STUDY_PARAM, study);
-            getMigrationRun().addJob(catalogManager.getJobManager().submit(study, PedigreeGraphInitAnalysis.ID, Enums.Priority.MEDIUM,
-                    params, null, null, null, new ArrayList<>(), token).first());
+            Job newJob = catalogManager.getJobManager().submit(study, PedigreeGraphInitAnalysis.ID, Enums.Priority.MEDIUM,
+                    params, null, null, null, new ArrayList<>(), token).first();
+            getMigrationRun().addJob(newJob);
         }
     }
 
