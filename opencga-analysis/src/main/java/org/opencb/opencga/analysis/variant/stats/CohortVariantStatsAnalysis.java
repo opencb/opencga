@@ -152,7 +152,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         try {
-            study = catalogManager.getStudyManager().get(organizationId, study, null, token).first().getFqn();
+            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
 
             if (CollectionUtils.isNotEmpty(toolParams.getSamples())) {
                 catalogManager.getSampleManager().get(study, toolParams.getSamples(), new QueryOptions(), token)
@@ -224,10 +224,10 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                     VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
 
                     try {
-                        catalogManager.getStudyManager().getVariableSet(organizationId, study, VARIABLE_SET_ID, new QueryOptions(), token);
+                        catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
                     } catch (CatalogException e) {
                         // Assume variable set not found. Try to create
-                        catalogManager.getStudyManager().createDefaultVariableSets(organizationId, study, token);
+                        catalogManager.getStudyManager().createDefaultVariableSets(study, token);
                     }
 
                     Cohort cohort = catalogManager.getCohortManager()

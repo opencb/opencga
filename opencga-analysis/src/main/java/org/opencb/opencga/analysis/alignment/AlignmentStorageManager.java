@@ -583,7 +583,7 @@ public class AlignmentStorageManager extends StorageManager {
     private Path getWorkspace(long studyId, String sessionId) throws CatalogException, IOException {
         // Obtain the study uri
         QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-        OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(organizationId, String.valueOf((Long) studyId), studyOptions, sessionId);
+        OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), studyOptions, sessionId);
         if (studyResult .getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");

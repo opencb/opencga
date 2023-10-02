@@ -116,7 +116,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         }
         StudyUpdateParams updateParams = new StudyUpdateParams()
                 .setAttributes(attributes);
-        catalogManager.getStudyManager().update(organizationId, studyId, updateParams, null, sessionId);
+        catalogManager.getStudyManager().update(studyId, updateParams, null, sessionId);
 
         File file1 = opencga.createFile(studyId, fileName, sessionId);
 
@@ -351,7 +351,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         calculateAggregatedStats(new VariantStatsIndexParams().setAggregated(Aggregation.BASIC));
 
-        Study study = catalogManager.getStudyManager().get(organizationId, studyId, null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         String agg = study.getAttributes().get(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG).toString();
         assertNotNull(agg);

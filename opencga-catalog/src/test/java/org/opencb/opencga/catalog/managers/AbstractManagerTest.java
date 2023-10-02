@@ -60,6 +60,7 @@ public class AbstractManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String organizationId = "test";
     protected String opencgaToken;
     protected String token;
     protected String sessionIdUser2;
@@ -103,9 +104,9 @@ public class AbstractManagerTest extends GenericTest {
 
         catalogManager.getOrganizationManager().update("test_org", new OrganizationUpdateParams().setOwner("user").setAdmins(Arrays.asList("user2", "user3")), null, opencgaToken);
 
-        token = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, token).first().getId();
@@ -114,15 +115,15 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getProjectManager().create(organizationId, "p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(organizationId, project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(organizationId, project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(organizationId, project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
@@ -133,7 +134,7 @@ public class AbstractManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.getFileManager().update(organizationId, studyFqn, testFolder.getPath(),
+        catalogManager.getFileManager().update(studyFqn, testFolder.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
 
         testFile1 = testFolder.getPath() + "test_1K.txt.gz";
@@ -150,7 +151,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.getFileManager().update(organizationId, studyFqn, fileTest1k.getPath(),
+        catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
 
         testFile2 = testFolder.getPath() + "test_0.5K.txt";
@@ -168,7 +169,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.getFileManager().update(organizationId, studyFqn, fileTest05k.getPath(),
+        catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
 
         DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
@@ -185,7 +186,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.getFileManager().update(organizationId, studyFqn, test01k.getPath(),
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
 
         List<Variable> variables = new ArrayList<>();
@@ -203,7 +204,7 @@ public class AbstractManagerTest extends GenericTest {
                 new Variable("EXTRA", "", "", Variable.VariableType.STRING, "", false, false, Collections.emptyList(), null, 5, "", "", null,
                         Collections.<String, Object>emptyMap())
         ));
-        VariableSet vs = catalogManager.getStudyManager().createVariableSet(organizationId, studyFqn, "vs", "vs", true, false, "", null, variables,
+        VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
                 null, token).first();
 
         Sample sample = new Sample().setId("s_1");
@@ -250,7 +251,7 @@ public class AbstractManagerTest extends GenericTest {
         sample.setAnnotationSets(Collections.emptyList());
         s_9 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
-        catalogManager.getFileManager().update(organizationId, studyFqn, test01k.getPath(), new FileUpdateParams()
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
                 .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), INCLUDE_RESULT, token);
     }
 

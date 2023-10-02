@@ -95,7 +95,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create(organizationId, "p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionId).first().getId();
-        Study study = catalogManager.getStudyManager().create(organizationId, projectId, "s1", null, "s1", "Study " + "1", null, null,
+        Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", "Study " + "1", null, null,
                 null, null, INCLUDE_RESULT, sessionId).first();
         studyId = study.getFqn();
         catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
@@ -120,7 +120,7 @@ public class CatalogStorageMetadataSynchronizerTest {
     @Before
     public void setUp() throws Exception {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        Study study = catalogManager.getStudyManager().get(organizationId, studyId, null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         StudyMetadata studyMetadata = metadataManager.createStudy(study.getFqn());
         for (File file : files) {

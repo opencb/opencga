@@ -116,7 +116,7 @@ public class InternalMainTest {
     }
 
     private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(organizationId, projectId, studyName, studyName, studyName, "Study 1", null,
+        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, "Study 1", null,
                         null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE), null, sessionId)
                 .first();
         studyId = study.getId();

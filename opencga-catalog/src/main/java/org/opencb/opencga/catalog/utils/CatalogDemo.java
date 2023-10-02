@@ -97,7 +97,7 @@ public final class CatalogDemo {
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
                 String id = "study" + i;
-                studiesTmp.add(catalogManager.getStudyManager().create(organizationId, projectId, id, id, name, "Description of " + id,
+                studiesTmp.add(catalogManager.getStudyManager().create(projectId, id, id, name, "Description of " + id,
                         null, null, null, null, null, userSession.getValue()).first().getFqn());
             }
             studies.put(userSession.getKey(), studiesTmp);
@@ -110,18 +110,18 @@ public final class CatalogDemo {
         String sessionId = userSessions.get("user5");
 
         // user5 will be in the @admins group
-        catalogManager.getStudyManager().updateGroup(organizationId, studyId, "@admins", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyId, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user5")), userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
-        catalogManager.getStudyManager().createGroup(organizationId, studyId, new Group("analyst",
+        catalogManager.getStudyManager().createGroup(studyId, new Group("analyst",
                         Arrays.asList("user2", "user3", "user4")), sessionId);
         //        // @members will have the role "analyst"
         StudyAclParams aclParams1 = new StudyAclParams("", "analyst");
-        catalogManager.getStudyManager().updateAcl(organizationId, Arrays.asList(studyId), "@analyst", aclParams1, ParamUtils.AclAction.ADD,
+        catalogManager.getStudyManager().updateAcl(studyId, "@analyst", aclParams1, ParamUtils.AclAction.ADD,
                 sessionId);
         //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
         StudyAclParams aclParams = new StudyAclParams("", "locked");
-        catalogManager.getStudyManager().updateAcl(organizationId, Arrays.asList(studyId), "*", aclParams, ParamUtils.AclAction.ADD,
+        catalogManager.getStudyManager().updateAcl(studyId, "*", aclParams, ParamUtils.AclAction.ADD,
                 sessionId);
     }
 

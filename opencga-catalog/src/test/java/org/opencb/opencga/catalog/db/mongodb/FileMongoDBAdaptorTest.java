@@ -328,11 +328,11 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testAddSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
 
@@ -349,7 +349,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(2, fileDataResult.first().getSampleIds().size());
         assertTrue(Arrays.asList(sample1.getId(), sample2.getId()).containsAll(fileDataResult.first().getSampleIds()));
 
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
@@ -364,15 +364,15 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testRemoveSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         List<File> files = catalogFileDBAdaptor.get(new Query()

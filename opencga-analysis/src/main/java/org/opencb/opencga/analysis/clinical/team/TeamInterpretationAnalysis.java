@@ -61,7 +61,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
             throw new ToolException("Missing study");
         }
         try {
-            catalogManager.getStudyManager().get(organizationId, studyId, null, token).first().getFqn();
+            catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

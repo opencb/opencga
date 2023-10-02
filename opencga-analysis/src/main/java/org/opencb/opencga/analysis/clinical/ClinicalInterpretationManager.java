@@ -545,7 +545,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
-        OpenCGAResult<Study> studyQueryResult = catalogManager.getStudyManager().get(organizationId, studyId,
+        OpenCGAResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
             throw new ToolException("Study " + studyId + " not found");
@@ -948,7 +948,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void checkInterpretationPermissions(String study, long interpretationId, String token)
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
-        String studyId = catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
+        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
@@ -967,7 +967,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().get(organizationId, studies, StudyManager.INCLUDE_STUDY_IDS, false, userId)
+            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, userId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

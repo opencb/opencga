@@ -93,6 +93,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String organizationId = "zetta";
     private String opencgaToken;
     protected String sessionIdUser;
     private FamilyManager familyManager;
@@ -110,14 +111,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
                 opencgaToken);
 
         String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -251,11 +252,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         result = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false, INCLUDE_RESULT, sessionIdUser);
         assertEquals("", result.first().getStatus().getId());
 
-        result = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(null)), INCLUDE_RESULT, sessionIdUser);
         assertEquals("", result.first().getStatus().getId());
 
-        result = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("")), INCLUDE_RESULT, sessionIdUser);
         assertEquals("", result.first().getStatus().getId());
     }
@@ -268,9 +269,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyEnvironment(false, true).first();
         createDummyEnvironment(false, true).first();
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, case1.getId(), new ClinicalAnalysisUpdateParams().setLocked(true), QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(), new ClinicalAnalysisUpdateParams().setLocked(true), QueryOptions.empty(), sessionIdUser);
         // Update proband's sample
-        catalogManager.getSampleManager().update(organizationId, STUDY, case1.getProband().getSamples().get(0).getId(),
+        catalogManager.getSampleManager().update(STUDY, case1.getProband().getSamples().get(0).getId(),
                 new SampleUpdateParams().setDescription("new description"), QueryOptions.empty(), sessionIdUser);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(), new QueryOptions(),
@@ -319,7 +320,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         Collections.singletonList("other"), Collections.emptyList());
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams().setQualityControl(qualityControlUpdateParam);
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), updateParams, null, sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, null, sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), null, sessionIdUser).first();
 
         assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.HIGH, ca.getQualityControl().getSummary());
@@ -345,7 +346,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertTrue(StringUtils.isEmpty(clinical.first().getStatus().getId()));
         assertFalse(clinical.first().isLocked());
 
-        clinical = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, sessionIdUser);
         assertEquals("CLOSED", clinical.first().getStatus().getId());
         assertTrue(clinical.first().isLocked());
@@ -393,7 +394,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         String dueDate = TimeUtils.getTime();
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDueDate(dueDate);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, result.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, result.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
         search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(0, search.getNumResults());
 
@@ -495,7 +496,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(),
@@ -524,7 +525,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, clinical.getNumResults());
@@ -551,7 +552,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -570,7 +571,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -583,7 +584,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         try {
-            catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+            catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                     .setComments(commentParamList), options, sessionIdUser);
             fail("It should fail because the comment has no date");
         } catch (CatalogException e) {
@@ -597,7 +598,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("date");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
     }
 
@@ -623,7 +624,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setAttributes(attributes);
-        clinical = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), updateParams, INCLUDE_RESULT, sessionIdUser).first();
+        clinical = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, INCLUDE_RESULT, sessionIdUser).first();
         assertFalse(clinical.getAttributes().isEmpty());
         assertEquals(2, clinical.getAttributes().size());
         assertEquals(attributes.get("a"), clinical.getAttributes().get("a"));
@@ -1281,7 +1282,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setDescription("My description")
                 .setPriority(new PriorityParam("URGENT"));
 
-        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(),
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1293,7 +1294,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updateCustomStatusTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, STUDY, QueryOptions.empty(), sessionIdUser).first();
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
         ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
@@ -1302,7 +1303,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setStatus(new StatusParam(status.getId()));
-        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(),
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1315,7 +1316,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updateCustomPriorityTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, STUDY, QueryOptions.empty(), sessionIdUser).first();
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
         ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
@@ -1324,7 +1325,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setPriority(new PriorityParam(priority.getId()));
-        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(),
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1338,7 +1339,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updateCustomFlagTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, STUDY, QueryOptions.empty(), sessionIdUser).first();
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
         ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
@@ -1353,13 +1354,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag1.getId()),
                         new FlagValueParam(flag2.getId())));
-        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(),
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, options, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
         updateParams = new ClinicalAnalysisUpdateParams()
                 .setFlags(Arrays.asList(new FlagValueParam(flag2.getId()), new FlagValueParam(flag3.getId())));
-        update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, options,
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options,
                 sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1390,7 +1391,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         updateParams = new ClinicalAnalysisUpdateParams()
                 .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag2.getId())));
-        update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, options,
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options,
                 sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1411,7 +1412,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         updateParams = new ClinicalAnalysisUpdateParams()
                 .setFlags(Collections.singletonList(new FlagValueParam(flag1.getId())));
-        update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, options,
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options,
                 sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1425,7 +1426,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updateCustomConsentTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, STUDY, QueryOptions.empty(), sessionIdUser).first();
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
         ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
@@ -1439,7 +1440,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setConsent(new ClinicalConsentAnnotationParam(Collections.singletonList(
                         new ClinicalConsentAnnotationParam.ClinicalConsentParam(consents.get(1).getId(), ClinicalConsentParam.Value.YES))));
-        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(),
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
@@ -1462,7 +1463,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void updateInterpretationCustomStatusTest() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, STUDY, QueryOptions.empty(), sessionIdUser).first();
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
         InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
@@ -2291,7 +2292,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
             assertEquals(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION, result.getStatus().getId());
         }
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, search.first().getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, search.first().getId(),
                 new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(ClinicalAnalysisStatus.REJECTED)), QueryOptions.empty(),
                 sessionIdUser);
         search = catalogManager.getClinicalAnalysisManager().search(STUDY,
@@ -2427,7 +2428,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void deleteLockedClinicalAnalysis() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         try {
@@ -2452,7 +2453,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDisorder(new DisorderReferenceParam("dis1"));
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
                 sessionIdUser);
 
         createDummyEnvironment(false, false);
@@ -2473,7 +2474,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDisorder(new DisorderReferenceParam("dis1"));
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
                 sessionIdUser);
         OpenCGAResult<ClinicalAnalysis> result1 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
                 new QueryOptions(), sessionIdUser);
@@ -2485,7 +2486,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setDisorder(new DisorderReferenceParam("non_existing"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("proband disorders");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
                 sessionIdUser);
     }
 
@@ -2605,7 +2606,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         // Create without a panel and update the panel
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser).first();
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(new PanelReferenceParam(panel.getId()))),
                 QueryOptions.empty(), sessionIdUser);
 
@@ -2646,7 +2647,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinicalAnalysis.setFamily(dummyFamily.first());
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getFamilyManager().update(organizationId, STUDY, dummyFamily.first().getId(), new FamilyUpdateParams()
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily.first().getId(), new FamilyUpdateParams()
                 .setId("familyId"), QueryOptions.empty(), sessionIdUser);
 
         QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;
@@ -2697,7 +2698,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         // Update to force a version increment and therefore, an update over the case
-        catalogManager.getSampleManager().update(organizationId, STUDY, sample.getId(), new SampleUpdateParams().setDescription("descr"),
+        catalogManager.getSampleManager().update(STUDY, sample.getId(), new SampleUpdateParams().setDescription("descr"),
                 QueryOptions.empty(), sessionIdUser);
 
         QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;
@@ -2884,7 +2885,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Map<String, Object> actionMap = new HashMap<>();
         actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
                 options, sessionIdUser);
         result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -2896,7 +2897,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new HashMap<>();
         actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Arrays.asList(
                                 new PanelReferenceParam(panels.get(0).getId()),
                                 new PanelReferenceParam(panels.get(2).getId()))
@@ -2910,7 +2911,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new HashMap<>();
         actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Arrays.asList(
                                 new PanelReferenceParam(panels.get(3).getId()),
                                 new PanelReferenceParam(panels.get(4).getId()))
@@ -3030,7 +3031,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
         try {
-            catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+            catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                             .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList()))
                             .setPanelLock(true),
                     updateOptions, sessionIdUser);
@@ -3039,10 +3040,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
             assertTrue(e.getMessage().contains("not allowed"));
         }
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
                 updateOptions, sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanelLock(true),
                 updateOptions, sessionIdUser);
         result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -3050,7 +3051,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, result.first().getPanels().size());
         assertTrue(result.first().isPanelLock());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(0).getId())))
                         .setPanelLock(false),
                 updateOptions, sessionIdUser);
@@ -3059,12 +3060,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanelLock(true),
                 updateOptions, sessionIdUser);
         thrown.expect(CatalogException.class);
         thrown.expectMessage("panelLock");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
                 updateOptions, sessionIdUser);
     }
@@ -3091,7 +3092,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not allowed");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList()))
                         .setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
@@ -3117,7 +3118,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
                 QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -3126,7 +3127,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("any of the case panels");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
     }
@@ -3151,7 +3152,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
                 QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -3167,7 +3168,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, clinicalAnalysis.getPanels().size());
         assertEquals(1, clinicalAnalysis.getInterpretation().getPanels().size());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -3196,7 +3197,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(0).getId()))),
                 QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -3213,7 +3214,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not defined by the case");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
     }
@@ -3244,14 +3245,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, interpretation.getPanels().size());
 
         // Set panelLock to true
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalAnalysis.isPanelLock());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("panelLock");
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
                 QueryOptions.empty(), sessionIdUser);
     }
@@ -3282,13 +3283,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, interpretation.getPanels().size());
 
         // Set panelLock to true
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalAnalysis.isPanelLock());
 
         // Set panelLock to false
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setPanelLock(false), QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertFalse(clinicalAnalysis.isPanelLock());
@@ -3306,7 +3307,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("panels");
         // Set panelLock to true
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalAnalysis.isPanelLock());
@@ -3390,7 +3391,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Register and associate files to sample "sample"
         List<File> files = registerDummyFiles();
         for (File file : files) {
-            catalogManager.getFileManager().update(organizationId, STUDY, file.getPath(),
+            catalogManager.getFileManager().update(STUDY, file.getPath(),
                     new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
         }
 
@@ -3418,7 +3419,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Register and associate files to sample "sample"
         List<File> files = registerDummyFiles();
         for (File file : files) {
-            catalogManager.getFileManager().update(organizationId, STUDY, file.getPath(),
+            catalogManager.getFileManager().update(STUDY, file.getPath(),
                     new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
         }
         List<FileReferenceParam> fileRefs = files.stream().map(f -> new FileReferenceParam(f.getPath())).collect(Collectors.toList());
@@ -3435,7 +3436,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Remove first and last file
         ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.REMOVE);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setFiles(Arrays.asList(fileRefs.get(0), fileRefs.get(3))), options, sessionIdUser);
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(),
                 sessionIdUser).first();
@@ -3446,7 +3447,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Add first file again
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.ADD);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setFiles(Collections.singletonList(fileRefs.get(0))), options, sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertEquals(3, ca.getFiles().size());
@@ -3456,7 +3457,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Set file 3 and 4
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams().setFiles(Arrays.asList(fileRefs.get(2), fileRefs.get(3))), options, sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, ca.getFiles().size());

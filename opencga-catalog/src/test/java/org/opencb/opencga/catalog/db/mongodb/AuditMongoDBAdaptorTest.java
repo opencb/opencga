@@ -22,14 +22,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -42,6 +41,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 public class AuditMongoDBAdaptorTest {
 
     private AuditDBAdaptor auditDbAdaptor;
+    private final String organizationId = "test";
 
     @Before
     public void beforeClass() throws Exception {
@@ -51,13 +51,6 @@ public class AuditMongoDBAdaptorTest {
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
                 configuration.getCatalog().getDatabase().getHosts().get(0).split(":")[0], 27017);
 
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .build();
-
-//        String database = catalogConfiguration.getDatabase().getDatabase();
         String database;
         if(StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
             if (!configuration.getDatabasePrefix().endsWith("_")) {
@@ -77,7 +70,7 @@ public class AuditMongoDBAdaptorTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        auditDbAdaptor = new MongoDBAdaptorFactory(configuration).getCatalogAuditDbAdaptor();
+        auditDbAdaptor = new MongoDBAdaptorFactory(configuration).getCatalogAuditDbAdaptor(organizationId);
     }
 
     @Test

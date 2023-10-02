@@ -70,6 +70,7 @@ import static org.junit.Assert.assertTrue;
 public class MongoDBAdaptorTest extends GenericTest {
 
     public MongoDBAdaptorFactory catalogDBAdaptor;
+    protected String organizationId = "test";
 
     static User user1;
     static User user2;
@@ -127,21 +128,21 @@ public class MongoDBAdaptorTest extends GenericTest {
                 .setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH))
         );
         catalogDBAdaptor = new MongoDBAdaptorFactory(configuration);
-        catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
-        catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
-        catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
-        catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
-        catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
-        catalogPanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
+        catalogUserDBAdaptor = (UserMongoDBAdaptor) catalogDBAdaptor.getCatalogUserDBAdaptor(organizationId);
+        catalogStudyDBAdaptor = (StudyMongoDBAdaptor) catalogDBAdaptor.getCatalogStudyDBAdaptor(organizationId);
+        catalogProjectDBAdaptor = (ProjectMongoDBAdaptor) catalogDBAdaptor.getCatalogProjectDbAdaptor(organizationId);
+        catalogFileDBAdaptor = (FileMongoDBAdaptor) catalogDBAdaptor.getCatalogFileDBAdaptor(organizationId);
+        catalogJobDBAdaptor = (JobMongoDBAdaptor) catalogDBAdaptor.getCatalogJobDBAdaptor(organizationId);
+        catalogIndividualDBAdaptor = (IndividualMongoDBAdaptor) catalogDBAdaptor.getCatalogIndividualDBAdaptor(organizationId);
+        catalogPanelDBAdaptor = (PanelMongoDBAdaptor) catalogDBAdaptor.getCatalogPanelDBAdaptor(organizationId);
         initDefaultCatalogDB();
     }
 
-    Sample getSample(long studyUid, String sampleId) throws CatalogDBException {
+    Sample getSample(long studyUid, String sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
-        return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
+        return catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).get(query, QueryOptions.empty()).first();
     }
 
     Individual getIndividual(long studyUid, String individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -170,7 +171,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
         catalogDBAdaptor.createAllCollections(configuration);
         catalogDBAdaptor.initialiseMetaCollection(configuration.getAdmin());
-        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
+        catalogDBAdaptor.createIndexes(organizationId);
 //        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**

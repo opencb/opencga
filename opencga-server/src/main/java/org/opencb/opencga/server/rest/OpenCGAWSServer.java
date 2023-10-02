@@ -888,7 +888,7 @@ public class OpenCGAWSServer {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
             // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
             List<String> studies = catalogManager.getStudyManager()
-                    .search(organizationId, project, new Query(), options, token)
+                    .search(project, new Query(), options, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

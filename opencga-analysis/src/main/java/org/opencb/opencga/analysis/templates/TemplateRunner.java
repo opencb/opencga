@@ -38,7 +38,7 @@ public class TemplateRunner extends OperationTool {
         templateManager = new TemplateManager(catalogManager, templateParams.isResume(), templateParams.isOverwrite(), token);
 
         String studyFqn = getStudyFqn();
-        Study study = catalogManager.getStudyManager().get(organizationId, studyFqn,
+        Study study = catalogManager.getStudyManager().get(studyFqn,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), token).first();
 
         // We obtain the basic studyPath where we will upload the file temporarily

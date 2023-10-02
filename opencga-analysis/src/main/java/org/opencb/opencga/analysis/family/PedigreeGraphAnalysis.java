@@ -53,7 +53,7 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check family
-        study = catalogManager.getStudyManager().get(organizationId, study, QueryOptions.empty(), token).first().getFqn();
+        study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
         OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, pedigreeParams.getFamilyId(),
                 QueryOptions.empty(), token);
         if (familyResult.getNumResults() != 1) {

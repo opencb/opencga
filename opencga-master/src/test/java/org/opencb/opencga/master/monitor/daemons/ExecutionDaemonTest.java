@@ -143,7 +143,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testWebhookNotification() throws Exception {
-        catalogManager.getStudyManager().update(organizationId, studyFqn, new StudyUpdateParams()
+        catalogManager.getStudyManager().update(studyFqn, new StudyUpdateParams()
                 .setNotification(new StudyNotification(new URL("https://ptsv2.com/t/dgogf-1581523512/post"))), null, token);
 
         HashMap<String, Object> params = new HashMap<>();
@@ -209,13 +209,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testProjectScopeTask() throws Exception {
         // User 2 to admins group in study1 but not in study2
-        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user2")), token);
 
         // User 3 to admins group in both study1 and study2
-        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
-        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn2, "@admins", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn2, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
 
         HashMap<String, Object> params = new HashMap<>();

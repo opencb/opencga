@@ -80,7 +80,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Check permissions
         try {
-            long studyUid = catalogManager.getStudyManager().get(organizationId, getStudy(), QueryOptions.empty(), token).first().getUid();
+            long studyUid = catalogManager.getStudyManager().get(getStudy(), QueryOptions.empty(), token).first().getUid();
             String userId = catalogManager.getUserManager().getUserId(organizationId, token);
             catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, studyUid, userId, WRITE_SAMPLES);
         } catch (CatalogException e) {

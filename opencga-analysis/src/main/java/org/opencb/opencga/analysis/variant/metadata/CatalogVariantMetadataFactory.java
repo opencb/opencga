@@ -117,7 +117,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
 
         // Just add file description
-        Study study = catalogManager.getStudyManager().get(organizationId, studyId, options, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, options, sessionId).first();
         studyMetadata.setDescription(study.getDescription());
     }
 

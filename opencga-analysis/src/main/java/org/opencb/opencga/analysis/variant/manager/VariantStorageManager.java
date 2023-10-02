@@ -493,7 +493,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, params, token, engine -> {
             Study study = catalogManager.getStudyManager()
-                    .get(organizationId, studyStr,
+                    .get(studyStr,
                             new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
                             token)
                     .first();
@@ -508,7 +508,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             options.putAll(params);
             catalogManager.getStudyManager()
-                    .setVariantEngineConfigurationOptions(organizationId, studyStr, options, token);
+                    .setVariantEngineConfigurationOptions(studyStr, options, token);
 //            String studyFqn = getStudyFqn(studyStr, token);
 //            engine.getConfigurationManager().configureStudy(studyFqn, params);
             return options;
@@ -536,7 +536,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
-                    .setVariantEngineConfigurationSampleIndex(organizationId, studyStr, sampleIndexConfiguration, token);
+                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
             if (skipRebuild) {
                 return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
             } else {
@@ -966,7 +966,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws StorageEngineException, CatalogException {
 //        String projectFqn = catalogManager.getStudyManager().getProjectFqn(getStudyFqn(study, token));
         Study study = catalogManager.getStudyManager()
-                .get(organizationId, studyStr, new QueryOptions(INCLUDE, Arrays.asList(
+                .get(studyStr, new QueryOptions(INCLUDE, Arrays.asList(
                         StudyDBAdaptor.QueryParams.FQN.key(),
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token)
                 .first();
@@ -1473,7 +1473,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
-        long studyUid = catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
+        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
@@ -1615,7 +1615,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(organizationId, study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
     private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {
@@ -1635,7 +1635,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
-                    .get(organizationId, studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
+                    .get(studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)
@@ -1664,7 +1664,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String token)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(organizationId, studyStr, new QueryOptions(), token).first();
+        Study study = catalogManager.getStudyManager().get(studyStr, new QueryOptions(), token).first();
         return getDataStore(catalogManager, study, bioformat, token);
     }
 

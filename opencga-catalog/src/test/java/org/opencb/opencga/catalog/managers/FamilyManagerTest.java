@@ -78,6 +78,7 @@ public class FamilyManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String organizationId = "zetta";
     private FamilyManager familyManager;
     private String opencgaToken;
     protected String sessionIdUser;
@@ -96,11 +97,11 @@ public class FamilyManagerTest extends GenericTest {
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -231,7 +232,7 @@ public class FamilyManagerTest extends GenericTest {
         OpenCGAResult<?> result = catalogManager.getFamilyManager().get(STUDY, family.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, clinicalAnalysis.getId(),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
                 new ClinicalAnalysisUpdateParams()
                         .setLocked(false),
                 QueryOptions.empty(), sessionIdUser);
@@ -263,7 +264,7 @@ public class FamilyManagerTest extends GenericTest {
                         new IndividualReferenceParam().setId("child1")
                 ));
 
-        familyManager.update(organizationId, STUDY, familyDataResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, familyDataResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
         Family family = familyManager.get(STUDY, familyDataResult.first().getId(), QueryOptions.empty(), sessionIdUser).first();
         assertEquals(4, family.getMembers().size());
         assertTrue(Arrays.asList("john", "father", "mother", "child1")
@@ -454,20 +455,20 @@ public class FamilyManagerTest extends GenericTest {
         IndividualUpdateParams updateParams = new IndividualUpdateParams()
                 .setFather(new IndividualReferenceParam().setId(paternalGrandfather.getId()))
                 .setMother(new IndividualReferenceParam().setId(paternalGrandmother.getId()));
-        catalogManager.getIndividualManager().update(organizationId, STUDY, father.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, father.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
         updateParams = new IndividualUpdateParams()
                 .setFather(new IndividualReferenceParam().setId(maternalGrandfather.getId()))
                 .setMother(new IndividualReferenceParam().setId(maternalGrandmother.getId()));
-        catalogManager.getIndividualManager().update(organizationId, STUDY, mother.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, mother.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
         updateParams = new IndividualUpdateParams()
                 .setFather(new IndividualReferenceParam().setId(father.getId()))
                 .setMother(new IndividualReferenceParam().setId(mother.getId()));
-        catalogManager.getIndividualManager().update(organizationId, STUDY, proband.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getIndividualManager().update(organizationId, STUDY, brother.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getIndividualManager().update(organizationId, STUDY, sister.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getIndividualManager().update(organizationId, STUDY, sibling.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, proband.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, brother.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, sister.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, sibling.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
 //        catalogManager.getFamilyManager().update(STUDY, family.first().getId(), null,
 //        new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true), sessionIdUser);
@@ -623,7 +624,7 @@ public class FamilyManagerTest extends GenericTest {
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, opencgaToken);
-        String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 
         try {
             familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
@@ -685,7 +686,7 @@ public class FamilyManagerTest extends GenericTest {
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, opencgaToken);
-        String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 
         try {
             familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
@@ -779,7 +780,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         // Update family not used in Clinical Analysis
-        catalogManager.getFamilyManager().update(organizationId, STUDY, "family", new FamilyUpdateParams()
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams()
                         .setDescription(RandomStringUtils.randomAlphanumeric(10)),
                 new QueryOptions(), sessionIdUser);
 
@@ -803,13 +804,13 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
 
         // LOCK CLINICAL ANALYSIS
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalResult.isLocked());
 
         // Update family with version increment
-        catalogManager.getFamilyManager().update(organizationId, STUDY, "family", new FamilyUpdateParams().setName("bl"), new QueryOptions(),
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams().setName("bl"), new QueryOptions(),
                 sessionIdUser);
 
         familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
@@ -957,13 +958,13 @@ public class FamilyManagerTest extends GenericTest {
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, INCLUDE_RESULT, sessionIdUser);
 
         if (createMissingMembers) {
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample1"))),
                     QueryOptions.empty(), sessionIdUser);
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample2"))),
                     QueryOptions.empty(), sessionIdUser);
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relMother.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample3"))),
                     QueryOptions.empty(), sessionIdUser);
         }
@@ -979,7 +980,7 @@ public class FamilyManagerTest extends GenericTest {
         List<Disorder> disorderList = Arrays.asList(new Disorder().setId("disorder"));
         IndividualUpdateParams params = new IndividualUpdateParams().setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         DataResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
         assertEquals(3, child1.first().getVersion());
@@ -992,7 +993,7 @@ public class FamilyManagerTest extends GenericTest {
         Map<String, Object> actionMap = new HashMap<>();
         actionMap.put(IndividualDBAdaptor.QueryParams.DISORDERS.key(), ParamUtils.BasicUpdateAction.SET);
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
-        catalogManager.getIndividualManager().update(organizationId, STUDY, "child1", params, queryOptions, sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, queryOptions, sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, child1.first().getDisorders().size());
 
@@ -1003,7 +1004,7 @@ public class FamilyManagerTest extends GenericTest {
         disorderList = Arrays.asList(new Disorder().setId("disorder"));
         params.setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
         assertEquals(5, child1.first().getVersion());
@@ -1028,8 +1029,8 @@ public class FamilyManagerTest extends GenericTest {
         IndividualUpdateParams params2 = new IndividualUpdateParams().setDisorders(disorderList2);
 
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, "child1", params1, new QueryOptions(), sessionIdUser);
-        catalogManager.getIndividualManager().update(organizationId, STUDY, "child2", params2, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params1, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child2", params2, new QueryOptions(), sessionIdUser);
 
         OpenCGAResult<?> distinct = catalogManager.getFamilyManager().distinct(organizationId, STUDY, "disorders.name", new Query(), sessionIdUser);
 
@@ -1228,7 +1229,7 @@ public class FamilyManagerTest extends GenericTest {
                 new IndividualReferenceParam().setId("child3"),
                 new IndividualReferenceParam().setId("father")));
 
-        Family family = familyManager.update(organizationId, STUDY, originalFamily.first().getId(), updateParams,
+        Family family = familyManager.update(STUDY, originalFamily.first().getId(), updateParams,
                 new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionIdUser).first();
         assertEquals(2, family.getMembers().size());
         assertEquals(2, family.getRoles().size());
@@ -1243,7 +1244,7 @@ public class FamilyManagerTest extends GenericTest {
         FamilyUpdateParams updateParams = null;
         QueryOptions options = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
 
-        assertEquals(1, familyManager.update(organizationId, STUDY, originalFamily.first().getId(), updateParams, options, sessionIdUser).getNumUpdated());
+        assertEquals(1, familyManager.update(STUDY, originalFamily.first().getId(), updateParams, options, sessionIdUser).getNumUpdated());
     }
 
     @Test
@@ -1255,7 +1256,7 @@ public class FamilyManagerTest extends GenericTest {
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
 
-        DataResult<Family> updatedFamily = familyManager.update(organizationId, STUDY, originalFamily.first().getId(),
+        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, updatedFamily.getNumUpdated());
 
@@ -1297,9 +1298,9 @@ public class FamilyManagerTest extends GenericTest {
             }
         }
 
-        catalogManager.getFamilyManager().update(organizationId, STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name"),
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name"),
                 QueryOptions.empty(), sessionIdUser);
-        catalogManager.getFamilyManager().update(organizationId, STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name22"),
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name22"),
                 QueryOptions.empty(), sessionIdUser);
         result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()),
                 QueryOptions.empty(), sessionIdUser);
@@ -1343,7 +1344,7 @@ public class FamilyManagerTest extends GenericTest {
         }
 
         // Update family id
-        catalogManager.getFamilyManager().update(organizationId, STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setId("newId"), QueryOptions.empty(),
+        catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setId("newId"), QueryOptions.empty(),
                 sessionIdUser);
         result = catalogManager.getIndividualManager().get(STUDY, members, QueryOptions.empty(), sessionIdUser);
         for (Individual member : result.getResults()) {
@@ -1383,11 +1384,11 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, case1, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().create(STUDY, case2, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().create(STUDY, case3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // Update family id
-        catalogManager.getFamilyManager().update(organizationId, STUDY, family.getId(), new FamilyUpdateParams().setId("newId"), QueryOptions.empty(),
+        catalogManager.getFamilyManager().update(STUDY, family.getId(), new FamilyUpdateParams().setId("newId"), QueryOptions.empty(),
                 sessionIdUser);
 
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(STUDY,
@@ -1424,7 +1425,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, case1, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().create(STUDY, case2, QueryOptions.empty(), sessionIdUser);
         catalogManager.getClinicalAnalysisManager().create(STUDY, case3, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // Delete family

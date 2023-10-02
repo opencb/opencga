@@ -44,6 +44,7 @@ public class InterpretationManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String organizationId = "zetta";
     private String opencgaToken;
     protected String sessionIdUser;
     private FamilyManager familyManager;
@@ -61,14 +62,14 @@ public class InterpretationManagerTest extends GenericTest {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
                 opencgaToken);
 
         String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -239,7 +240,7 @@ public class InterpretationManagerTest extends GenericTest {
         assertTrue(interpretation2.isLocked());
 
         // Lock case
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertTrue(ca.isLocked());
@@ -258,7 +259,7 @@ public class InterpretationManagerTest extends GenericTest {
         }
 
         // Unlock case
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(false),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(false),
                 QueryOptions.empty(), sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertFalse(ca.isLocked());
@@ -282,11 +283,11 @@ public class InterpretationManagerTest extends GenericTest {
         // Add panels to the case and set panelLock to true
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setPanels(panelReferenceParamList);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
         updateParams = new ClinicalAnalysisUpdateParams()
                 .setPanelLock(true);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
 
         // Create interpretation with just panel1
         InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams()

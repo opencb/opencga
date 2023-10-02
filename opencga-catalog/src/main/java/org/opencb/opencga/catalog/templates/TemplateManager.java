@@ -176,7 +176,7 @@ public class TemplateManager {
 
     private Study getStudy(String organizationId, String projectId, String studyId) throws CatalogException {
         OpenCGAResult<Study> studyOpenCGAResult =
-                catalogManager.getStudyManager().get(organizationId, projectId + ":" + studyId, QueryOptions.empty(), token);
+                catalogManager.getStudyManager().get(projectId + ":" + studyId, QueryOptions.empty(), token);
         return studyOpenCGAResult.first();
     }
 
@@ -207,7 +207,7 @@ public class TemplateManager {
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
             try {
-                catalogManager.getStudyManager().update(organizationId, fqn, studyUpdateParams, QueryOptions.empty(), token);
+                catalogManager.getStudyManager().update(fqn, studyUpdateParams, QueryOptions.empty(), token);
             } catch (CatalogException e) {
                 logger.warn(e.getMessage());
             }
@@ -225,14 +225,14 @@ public class TemplateManager {
                 if (existingGroups.contains(group.getId())) {
                     if (overwrite) {
                         logger.info("Updating users from group '{}'", group.getId());
-                        catalogManager.getStudyManager().updateGroup(organizationId, fqn, group.getId(), ParamUtils.BasicUpdateAction.ADD,
+                        catalogManager.getStudyManager().updateGroup(fqn, group.getId(), ParamUtils.BasicUpdateAction.ADD,
                                 new GroupUpdateParams(group.getUsers()), token);
                     } else {
                         logger.info("Group '{}' already exists", group.getId());
                     }
                 } else {
                     logger.info("Adding group '{}'", group.getId());
-                    catalogManager.getStudyManager().createGroup(organizationId, fqn, group.getId(), group.getUsers(), token);
+                    catalogManager.getStudyManager().createGroup(fqn, group.getId(), group.getUsers(), token);
                 }
             }
         }
@@ -246,7 +246,7 @@ public class TemplateManager {
                     logger.info("VariableSet '{}' already exists", variableSetCreateParams.getId());
                 } else {
                     logger.info("Adding VariableSet '{}'", variableSetCreateParams.getId());
-                    catalogManager.getStudyManager().createVariableSet(organizationId, fqn, variableSetCreateParams.toVariableSet(), token);
+                    catalogManager.getStudyManager().createVariableSet(fqn, variableSetCreateParams.toVariableSet(), token);
                 }
             }
         }
@@ -254,7 +254,7 @@ public class TemplateManager {
             // Set permissions
             for (AclEntry<StudyPermissions.Permissions> studyAclEntry : tmplStudy.getAcl().getAcl()) {
                 logger.info("Setting permissions for '{}'", studyAclEntry.getMember());
-                catalogManager.getStudyManager().updateAcl(organizationId, fqn, studyAclEntry.getMember(),
+                catalogManager.getStudyManager().updateAcl(fqn, studyAclEntry.getMember(),
                         new StudyAclParams(StringUtils.join(studyAclEntry.getPermissions(), ","), ""), ParamUtils.AclAction.SET, token);
             }
         }

@@ -54,6 +54,7 @@ public class AbstractSolrManagerTest extends GenericTest {
     public SolrExternalResource solrExternalResource = new SolrExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String organizationId = "test";
     protected CatalogSolrManager catalogSolrManager;
 
     protected String sessionIdOwner;
@@ -90,26 +91,26 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
         catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
-        sessionIdOwner = catalogManager.getUserManager().login("owner", TestParamConstants.PASSWORD).getToken();
-        sessionIdAdmin = catalogManager.getUserManager().login("admin1", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
+        sessionIdOwner = catalogManager.getUserManager().login(organizationId, "owner", TestParamConstants.PASSWORD).getToken();
+        sessionIdAdmin = catalogManager.getUserManager().login(organizationId, "admin1", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user1", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
 
         Project project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdOwner).first();
-        studyFqn = catalogManager.getStudyManager().create(organizationId, project.getFqn(), "phase1", null, "Phase 1", "Done", null,
+        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
                 null, null, null, INCLUDE_RESULT, sessionIdOwner).first().getFqn();
 
-        catalogManager.getStudyManager().updateGroup(organizationId, studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
-        catalogManager.getStudyManager().createGroup(organizationId, studyFqn, "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
-        catalogManager.getStudyManager().createGroup(organizationId, studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
 
-        catalogManager.getStudyManager().updateAcl(organizationId, Collections.singletonList(studyFqn), "@study_allow",
+        catalogManager.getStudyManager().updateAcl(studyFqn, "@study_allow",
                 new StudyAclParams(null, "view_only"), ParamUtils.AclAction.ADD, sessionIdAdmin);
 
-        study = catalogManager.getStudyManager().get(organizationId, "phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+        study = catalogManager.getStudyManager().get("phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 
         // Samples
         Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), INCLUDE_RESULT,

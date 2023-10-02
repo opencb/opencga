@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -62,8 +61,9 @@ public class AuthorizationMongoDBAdaptorTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    private final String organizationId = "test";
     private AuthorizationDBAdaptor aclDBAdaptor;
-    private DBAdaptorFactory dbAdaptorFactory;
+    private MongoDBAdaptorFactory dbAdaptorFactory;
     private User user1;
     private User user2;
     private User user3;
@@ -85,10 +85,11 @@ public class AuthorizationMongoDBAdaptorTest {
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
         dbAdaptorFactory = dbAdaptorTest.catalogDBAdaptor;
-        aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory, dbAdaptorTest.getConfiguration());
+        OrganizationMongoDBAdaptorFactory orgFactory = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(organizationId);
+        aclDBAdaptor = new AuthorizationMongoDBAdaptor(orgFactory, dbAdaptorTest.getConfiguration());
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
+        dbAdaptorFactory.getCatalogSampleDBAdaptor(organizationId).insert(studyId, new Sample("s1", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
                 null, null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
                 Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
@@ -103,7 +104,7 @@ public class AuthorizationMongoDBAdaptorTest {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
-        return dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
+        return dbAdaptorFactory.getCatalogSampleDBAdaptor(organizationId).get(query, QueryOptions.empty()).first();
     }
 
     @Test
@@ -284,7 +285,7 @@ public class AuthorizationMongoDBAdaptorTest {
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
+        dbAdaptorFactory.getCatalogSampleDBAdaptor(organizationId).insert(studyId, new Sample("s2", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
                 null, null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
                 Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
@@ -292,7 +293,7 @@ public class AuthorizationMongoDBAdaptorTest {
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
                 Arrays.asList(SamplePermissions.VIEW.name()));
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Enums.Entity.SAMPLES, pr);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).createPermissionRule(studyId, Enums.Entity.SAMPLES, pr);
 
         // Apply the permission rule
         aclDBAdaptor.applyPermissionRules(studyId, pr, Enums.Entity.SAMPLES);

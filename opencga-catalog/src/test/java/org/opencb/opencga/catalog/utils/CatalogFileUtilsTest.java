@@ -60,6 +60,7 @@ public class CatalogFileUtilsTest {
     private String userSessionId;
     //    private String adminSessionId;
     private CatalogManager catalogManager;
+    private String organizationId = "test";
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -81,11 +82,11 @@ public class CatalogFileUtilsTest {
 
         //Create USER
         catalogManager.getUserManager().create(organizationId, "user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        userSessionId = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        userSessionId = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create(organizationId, "proj", "proj", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(organizationId, projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
+        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
                 userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();

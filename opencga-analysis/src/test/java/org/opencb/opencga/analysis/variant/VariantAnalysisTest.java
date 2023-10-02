@@ -266,7 +266,7 @@ public class VariantAnalysisTest {
 
         String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
-        catalogManager.getStudyManager().create(organizationId, projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {
@@ -279,7 +279,7 @@ public class VariantAnalysisTest {
 
         // Cancer
         List<Sample> samples = new ArrayList<>();
-        catalogManager.getStudyManager().create(organizationId, projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
         Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
         samples.add(sample);
 //        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);

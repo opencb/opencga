@@ -121,7 +121,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
         }
 
         try {
-            studyId = catalogManager.getStudyManager().get(organizationId, studyId, null, token).first().getFqn();
+            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

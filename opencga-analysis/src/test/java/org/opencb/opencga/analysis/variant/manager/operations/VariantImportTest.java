@@ -62,7 +62,7 @@ public class VariantImportTest extends AbstractVariantOperationManagerTest {
 
         indexFile(getSmallFile(), new QueryOptions(VariantStorageOptions.STATS_CALCULATE.key(), true), outputId);
 
-        catalogManager.getStudyManager().createVariableSet(organizationId, studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
+        catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, null, 0, null, null, null, null),
                 new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, null, 0, null, null, null, null)),

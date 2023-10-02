@@ -2033,6 +2033,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
      *                  will be > 0 to increment the size field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
+    @Override
     public void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.UID.key(), studyId);
         Bson update = Updates.inc(QueryParams.SIZE.key(), size);

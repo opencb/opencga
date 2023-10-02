@@ -103,7 +103,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check sample
-        study = catalogManager.getStudyManager().get(organizationId, study, QueryOptions.empty(), token).first().getFqn();
+        study = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first().getFqn();
         OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, signatureParams.getSample(),
                 QueryOptions.empty(), token);
         if (sampleResult.getNumResults() != 1) {

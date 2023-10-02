@@ -63,6 +63,7 @@ public class PanelManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected final String organizationId = "test";
     protected String sessionIdUser;
 
     private PanelManager panelManager;
@@ -81,11 +82,11 @@ public class PanelManagerTest extends GenericTest {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(organizationId, projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @Test
@@ -146,7 +147,7 @@ public class PanelManagerTest extends GenericTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        DataResult<Panel> updateResult = panelManager.update(organizationId, studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
         assertEquals(1, updateResult.getNumUpdated());
 
         Panel updatedPanel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
@@ -199,7 +200,7 @@ public class PanelManagerTest extends GenericTest {
         PanelUpdateParams updateParams = new PanelUpdateParams()
                 .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
                 .setDisorders(Collections.singletonList(new OntologyTerm().setId("ontologyTerm")));
-        DataResult<Panel> updateResult = panelManager.update(organizationId, studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
         assertEquals(1, updateResult.getNumUpdated());
 
         OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
@@ -274,7 +275,7 @@ public class PanelManagerTest extends GenericTest {
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getInterpretationManager().create(studyFqn, case2.getId(), interpretation5,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLock(true),
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, case2.getId(), new ClinicalAnalysisUpdateParams().setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // case 3
@@ -282,7 +283,7 @@ public class PanelManagerTest extends GenericTest {
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getInterpretationManager().create(studyFqn, case3.getId(), interpretation7,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // case 4
@@ -290,11 +291,11 @@ public class PanelManagerTest extends GenericTest {
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
         catalogManager.getInterpretationManager().create(studyFqn, case4.getId(), interpretation9,
                 ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), sessionIdUser);
-        catalogManager.getClinicalAnalysisManager().update(organizationId, studyFqn, case4.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, case4.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
         // Update panel1 ...
-        panelManager.update(organizationId, studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), sessionIdUser);
+        panelManager.update(studyFqn, panel1.getId(), new PanelUpdateParams().setName("name"), QueryOptions.empty(), sessionIdUser);
         OpenCGAResult<Panel> resultPanel = panelManager.get(studyFqn, panel1.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, resultPanel.first().getVersion());
         assertEquals("name", resultPanel.first().getName());

@@ -121,7 +121,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
             query.remove(ParamConstants.PROJECT_PARAM);
 
-            DataResult<Study> queryResult = catalogManager.getStudyManager().search(organizationId, projectStr, query, queryOptions, token);
+            DataResult<Study> queryResult = catalogManager.getStudyManager().search(projectStr, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -144,7 +144,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(organizationId, studyStr, updateParams, queryOptions, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -165,7 +165,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     required = true) @PathParam(ParamConstants.STUDIES_PARAM) String studies) {
         try {
             List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.get(organizationId, idList, queryOptions, true, token));
+            return createOkResponse(studyManager.get(idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -195,7 +195,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(organizationId, studyStr, groupId, token));
+            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, groupId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -215,9 +215,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
             OpenCGAResult<Group> group;
             if (action == ParamUtils.AddRemoveAction.ADD) {
-                group = catalogManager.getStudyManager().createGroup(organizationId, studyStr, params.getId(), params.getUsers(), token);
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getUsers(), token);
             } else {
-                group = catalogManager.getStudyManager().deleteGroup(organizationId, studyStr, params.getId(), token);
+                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.getId(), token);
             }
             return createOkResponse(group);
         } catch (Exception e) {
@@ -239,7 +239,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 action = ParamUtils.BasicUpdateAction.ADD;
             }
 
-            return createOkResponse(catalogManager.getStudyManager().updateGroup(organizationId, studyStr, groupId, action, updateParams, token));
+            return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, action, updateParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -254,7 +254,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
-            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(organizationId, studyStr, entity, token));
+            return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -279,7 +279,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 action = Enums.PermissionRuleAction.ADD;
             }
             if (action == Enums.PermissionRuleAction.ADD) {
-                return createOkResponse(catalogManager.getStudyManager().createPermissionRule(organizationId, studyStr, entity, params, token));
+                return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entity, params, token));
             } else {
                 PermissionRule.DeleteAction deleteAction;
                 switch (action) {
@@ -294,7 +294,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                         deleteAction = PermissionRule.DeleteAction.REMOVE;
                         break;
                 }
-                catalogManager.getStudyManager().markDeletedPermissionRule(organizationId, studyStr, entity, params.getId(), deleteAction, token);
+                catalogManager.getStudyManager().markDeletedPermissionRule(studyStr, entity, params.getId(), deleteAction, token);
                 return createOkResponse(DataResult.empty());
             }
         } catch (Exception e) {
@@ -313,7 +313,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
         return run(() -> {
             List<String> idList = getIdList(studiesStr);
-            return studyManager.getAcls(organizationId, idList, member, silent, token);
+            return studyManager.getAcls(idList, member, silent, token);
         });
     }
 
@@ -328,8 +328,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
             StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getTemplate());
-            List<String> idList = getIdList(params.getStudy(), false);
-            return createOkResponse(studyManager.updateAcl(organizationId, idList, memberId, aclParams, action, token));
+            return createOkResponse(studyManager.updateAcl(params.getStudy(), memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -347,7 +346,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             DataResult<VariableSet> queryResult;
             if (StringUtils.isEmpty(variableSetId)) {
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(organizationId, studyStr, options, token);
+                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr, options, token);
 
                 if (studyQueryResult.getNumResults() == 1) {
                     queryResult = new DataResult<>(studyQueryResult.getTime(), studyQueryResult.getEvents(),
@@ -357,7 +356,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     queryResult = DataResult.empty();
                 }
             } else {
-                queryResult = catalogManager.getStudyManager().getVariableSet(organizationId, studyStr, variableSetId, queryOptions, token);
+                queryResult = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, queryOptions, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -391,7 +390,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             List<String> idList = getIdList(studies);
             Map<String, Object> result = new HashMap<>();
             for (String study : idList) {
-                result.put(study, catalogManager.getStudyManager().facet(organizationId, study, fileFields, sampleFields, individualFields, cohortFields,
+                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
                         familyFields, jobFields, defaultStats, token));
             }
             return createOkResponse(result);
@@ -423,12 +422,12 @@ public class StudyWSServer extends OpenCGAWSServer {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(organizationId, studyStr, params.getId(), params.getName(),
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(),
                         params.getUnique(),
                         params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
             } else {
                 boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
-                queryResult = catalogManager.getStudyManager().deleteVariableSet(organizationId, studyStr, params.getId(), force, token);
+                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -465,9 +464,9 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             DataResult<VariableSet> queryResult;
             if (action == ParamUtils.AddRemoveAction.ADD) {
-                queryResult = catalogManager.getStudyManager().addFieldToVariableSet(organizationId, studyStr, variableSetId, variable, token);
+                queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variableSetId, variable, token);
             } else {
-                queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(organizationId, studyStr, variableSetId, variable.getId(),
+                queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variableSetId, variable.getId(),
                         token);
             }
             return createOkResponse(queryResult);
@@ -520,7 +519,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
-            return createOkResponse(studyManager.uploadTemplate(organizationId, studyStr, fileMetaData.getFileName(), fileInputStream, token));
+            return createOkResponse(studyManager.uploadTemplate(studyStr, fileMetaData.getFileName(), fileInputStream, token));
         } catch (Exception e) {
             return createErrorResponse("Upload template file", e.getMessage());
         }
@@ -533,7 +532,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Template id") @PathParam("templateId") String templateId) {
         try {
-            return createOkResponse(studyManager.deleteTemplate(organizationId, studyStr, templateId, token));
+            return createOkResponse(studyManager.deleteTemplate(studyStr, templateId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

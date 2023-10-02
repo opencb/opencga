@@ -204,7 +204,7 @@ public class GwasAnalysis extends OpenCgaTool {
         }
 
         try {
-            study = catalogManager.getStudyManager().get(organizationId, study, null, token).first().getFqn();
+            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

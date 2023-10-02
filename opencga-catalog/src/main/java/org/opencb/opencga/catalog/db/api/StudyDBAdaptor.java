@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -432,6 +433,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
     OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
+
+    void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

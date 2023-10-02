@@ -133,8 +133,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
-            for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
-                dbAdaptorFactory.getMongoDataStore().getCollection(collection).remove(new Document(), QueryOptions.empty());
+            for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+                for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
+                    dbAdaptorFactory.getMongoDataStore(organizationId).getCollection(collection).remove(new Document(), QueryOptions.empty());
+                }
             }
         }
 

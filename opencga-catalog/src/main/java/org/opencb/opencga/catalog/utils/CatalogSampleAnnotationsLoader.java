@@ -77,7 +77,7 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getStudyManager().getVariableSet(organizationId, study.getFqn(), variableSetId, null, sessionId)
+            variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), variableSetId, null, sessionId)
                     .first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
@@ -107,7 +107,7 @@ public class CatalogSampleAnnotationsLoader {
             List<Variable> variableList = new ArrayList<>();
             variableList.addAll(variableSet.getVariables());
             String name = pedFile.getName();
-            variableSet = catalogManager.getStudyManager().createVariableSet(organizationId, study.getFqn(), name, name, true, false,
+            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), name, name, true, false,
                     "Auto-generated VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
                     variableList, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId).getResults().get(0);
             variableSetId = variableSet.getId();

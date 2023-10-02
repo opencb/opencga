@@ -59,6 +59,7 @@ public class FileMetadataReaderTest {
     public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     private CatalogManager catalogManager;
+    protected String organizationId = "zetta";
     private String sessionIdUser;
     private Project project;
     private Study study;
@@ -78,10 +79,10 @@ public class FileMetadataReaderTest {
         String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(organizationId, project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
@@ -196,7 +197,7 @@ public class FileMetadataReaderTest {
         //Add a sampleId
         String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
                 .first().getId();
-        catalogManager.getFileManager().update(organizationId, study.getFqn(), file.getPath(),
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
                 new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();

@@ -65,6 +65,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     public CatalogManager catalogManager;
+    protected String organizationId;
     public String token;
     public String studyFqn;
     public Family family;
@@ -83,12 +84,12 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
 
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 new QueryOptions(), token);
 
-        Study study = catalogManager.getStudyManager().create(organizationId, "1000G", "phase1", null, "Phase 1", "Done", null, null,
+        Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null,
                 null, null, null, token).first();
         studyFqn = study.getFqn();
 

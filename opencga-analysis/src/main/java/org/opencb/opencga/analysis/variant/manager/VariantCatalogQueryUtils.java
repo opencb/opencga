@@ -1534,12 +1534,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                List<Study> studies = catalogManager.getStudyManager().get(organizationId, values, StudyManager.INCLUDE_STUDY_IDS, false, sessionId)
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_IDS, false, sessionId)
                         .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {
                 List<String> validatedValues = new ArrayList<>(values.size());
-                DataResult<Study> queryResult = catalogManager.getStudyManager().get(organizationId, values, RELEASE_OPTIONS, false, sessionId);
+                DataResult<Study> queryResult = catalogManager.getStudyManager().get(values, RELEASE_OPTIONS, false, sessionId);
                 for (Study study : queryResult.getResults()) {
                     validatedValues.add(study.getFqn());
                     checkRelease(release, study.getRelease(), param, study.getFqn());
@@ -1657,7 +1657,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         }
                         Cohort cohort = catalogManager.getCohortManager().get(study, value, CohortManager.INCLUDE_COHORT_IDS, sessionId)
                                 .first();
-                        String fqn = catalogManager.getStudyManager().get(organizationId, study,
+                        String fqn = catalogManager.getStudyManager().get(study,
                                 new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId).first().getFqn();
                         if (fqn.equals(defaultStudyStr)) {
                             validated.add(cohort.getId());

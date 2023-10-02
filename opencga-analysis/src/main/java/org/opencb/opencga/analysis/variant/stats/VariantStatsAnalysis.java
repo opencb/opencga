@@ -393,7 +393,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
     public static Aggregation getAggregation(CatalogManager catalogManager, String studyId, Aggregation argsAggregation, String token)
             throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudyManager().get(organizationId, studyId, include, token).first();
+        Study study = catalogManager.getStudyManager().get(studyId, include, token).first();
         Object studyAggregationObj = study.getAttributes().get(STATS_AGGREGATION_CATALOG);
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
@@ -414,7 +414,7 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 Map<String, Object> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG, argsAggregation);
                 StudyUpdateParams updateParams = new StudyUpdateParams()
                         .setAttributes(attributes);
-                catalogManager.getStudyManager().update(organizationId, studyId, updateParams, null, token);
+                catalogManager.getStudyManager().update(studyId, updateParams, null, token);
             }
         } else {
             if (studyAggregation == null) {

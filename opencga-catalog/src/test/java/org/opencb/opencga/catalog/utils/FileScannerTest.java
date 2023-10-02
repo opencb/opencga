@@ -63,6 +63,7 @@ public class FileScannerTest {
     public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     private CatalogManager catalogManager;
+    private String organizationId = "test";
     private String sessionIdUser;
     private File folder;
     private Study study;
@@ -78,10 +79,10 @@ public class FileScannerTest {
         String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(organizationId, project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
                 true, null, QueryOptions.empty(), sessionIdUser).first();
 

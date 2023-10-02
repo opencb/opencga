@@ -529,7 +529,7 @@ public class ProjectManager extends AbstractManager {
 
         Map<String, Object> result = new HashMap<>();
         for (Study study : studyDataResult.getResults()) {
-            result.put(study.getId(), catalogManager.getStudyManager().facet(organizationId, study.getFqn(), fileFields, sampleFields,
+            result.put(study.getId(), catalogManager.getStudyManager().facet(study.getFqn(), fileFields, sampleFields,
                     individualFields, cohortFields, familyFields, jobFields, defaultStats, token));
         }
 
@@ -732,7 +732,7 @@ public class ProjectManager extends AbstractManager {
         ObjectMapper objectMapper = new ObjectMapper();
 
         // We obtain the owner of the study
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(organizationId, studyStr,
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyStr,
                 new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
                                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key())), token);

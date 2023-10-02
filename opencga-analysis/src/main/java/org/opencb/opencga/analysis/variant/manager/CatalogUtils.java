@@ -105,7 +105,7 @@ public class CatalogUtils {
         if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
             String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
             return catalogManager.getStudyManager()
-                    .search(organizationId, project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
+                    .search(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)
@@ -120,13 +120,13 @@ public class CatalogUtils {
                         Collections.singleton(VariantField.STUDIES));
             } else {
                 // Get all studies from user.
-                return catalogManager.getStudyManager().search(organizationId, new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId).getResults()
+                return catalogManager.getStudyManager().search(null, new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId).getResults()
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
             }
         }
-        return catalogManager.getStudyManager().get(organizationId, studies, StudyManager.INCLUDE_STUDY_IDS, false, sessionId).getResults()
+        return catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, sessionId).getResults()
                 .stream()
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
@@ -139,7 +139,7 @@ public class CatalogUtils {
         } else {
             String studyFqn = getAnyStudy(query, sessionId);
             String project = catalogManager.getStudyManager().getProjectFqn(studyFqn);
-            return catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
+            return catalogManager.getProjectManager().search(project, new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
                     .first();
         }
     }

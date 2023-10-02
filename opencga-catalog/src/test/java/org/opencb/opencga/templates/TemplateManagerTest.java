@@ -24,6 +24,8 @@ import java.nio.file.Paths;
 @Category(MediumTests.class)
 public class TemplateManagerTest {
 
+    private String organizationId = "test";
+
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
@@ -48,7 +50,7 @@ public class TemplateManagerTest {
         catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
         catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
-        String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
@@ -79,7 +81,7 @@ public class TemplateManagerTest {
         catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
         catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, adminToken);
 
-        String token = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user1", TestParamConstants.PASSWORD).getToken();
         catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), token);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 

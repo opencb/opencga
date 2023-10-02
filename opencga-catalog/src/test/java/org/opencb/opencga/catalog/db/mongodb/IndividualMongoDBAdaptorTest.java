@@ -204,11 +204,11 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testAvoidDuplicatedSamples() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample1").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyId, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyId, "sample1");
         new InternalStatus();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample2").setInternal(SampleInternal.init()),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor(organizationId).insert(studyId, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyId, "sample2");
 

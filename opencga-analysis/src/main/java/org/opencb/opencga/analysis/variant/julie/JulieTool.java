@@ -59,7 +59,7 @@ public class JulieTool extends OpenCgaTool {
                 String study = value.substring(0, idx);
                 String cohort = value.substring(idx + 1);
                 String studyFqn = getCatalogManager().getStudyManager()
-                        .get(organizationId, study, new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), getToken())
+                        .get(study, new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), getToken())
                         .first()
                         .getFqn();
                 cohorts.computeIfAbsent(studyFqn, key -> new LinkedList<>()).add(cohort);

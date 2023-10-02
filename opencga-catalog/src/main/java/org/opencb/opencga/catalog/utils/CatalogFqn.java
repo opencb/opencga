@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.JwtPayload;
 
 import java.util.regex.Matcher;
@@ -29,6 +30,10 @@ public final class CatalogFqn {
     }
 
     public static CatalogFqn extractFqnFromProject(String projectStr, JwtPayload payload) {
+        if (StringUtils.isEmpty(projectStr)) {
+            return new CatalogFqn(payload.getOrganization(), projectStr);
+        }
+
         if (UuidUtils.isOpenCgaUuid(projectStr)) {
             return new CatalogFqn(payload.getOrganization(), projectStr).setProjectUuid(projectStr);
         }
@@ -43,6 +48,10 @@ public final class CatalogFqn {
     }
 
     public static CatalogFqn extractFqnFromStudy(String studyStr, JwtPayload payload) {
+        if (StringUtils.isEmpty(studyStr)) {
+            return new CatalogFqn(payload.getOrganization(), studyStr);
+        }
+
         if (UuidUtils.isOpenCgaUuid(studyStr)) {
             return new CatalogFqn(payload.getOrganization(), studyStr).setStudyUuid(studyStr);
         }

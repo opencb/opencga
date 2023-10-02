@@ -79,7 +79,7 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
         }
         filePath = Paths.get(fileResult.first().getUri());
 
-        OpenCGAResult<VariableSet> variableSetResult = catalogManager.getStudyManager().getVariableSet(organizationId, study, variableSetId,
+        OpenCGAResult<VariableSet> variableSetResult = catalogManager.getStudyManager().getVariableSet(study, variableSetId,
                 QueryOptions.empty(), token);
         if (variableSetResult.getNumResults() == 0) {
             throw new ToolException("Variable set '" + variableSetId + "' not found");

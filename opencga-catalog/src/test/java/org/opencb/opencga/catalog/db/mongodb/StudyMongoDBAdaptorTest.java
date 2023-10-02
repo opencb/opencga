@@ -54,9 +54,9 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void updateDiskUsage() throws Exception {
-        catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(null, 5, 100);
+        catalogDBAdaptor.getCatalogStudyDBAdaptor(organizationId).updateDiskUsage(null, 5, 100);
         assertEquals(2100, catalogStudyDBAdaptor.get(5, null).getResults().get(0).getSize());
-        catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(null, 5, -200);
+        catalogDBAdaptor.getCatalogStudyDBAdaptor(organizationId).updateDiskUsage(null, 5, -200);
         assertEquals(1900, catalogStudyDBAdaptor.get(5, null).getResults().get(0).getSize());
     }
 
