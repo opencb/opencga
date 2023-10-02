@@ -39,7 +39,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
     @Before
     public void setUp() throws Exception {
-        localOut = newOutputUri(getClass().getSimpleName());
+        localOut = newOutputUri();
     }
 
     @After

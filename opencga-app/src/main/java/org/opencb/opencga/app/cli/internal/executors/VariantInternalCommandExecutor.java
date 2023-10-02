@@ -380,6 +380,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.family,
                 cliOptions.genericVariantIndexOptions.somatic,
                 cliOptions.genericVariantIndexOptions.load,
+                cliOptions.genericVariantIndexOptions.forceReload,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
                 cliOptions.genericVariantIndexOptions.loadMultiFileData,
                 cliOptions.genericVariantIndexOptions.loadSampleIndex,

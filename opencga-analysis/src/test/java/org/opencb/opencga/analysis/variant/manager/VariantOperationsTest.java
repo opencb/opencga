@@ -38,6 +38,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.IndexStatus;
@@ -55,6 +56,7 @@ import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeP
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -73,6 +75,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
@@ -282,6 +285,29 @@ public class VariantOperationsTest {
             }
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
+
+    }
+
+    @Test
+    public void testVariantFileReload() throws Exception {
+
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class, STUDY,
+                    new VariantIndexParams()
+                            .setForceReload(false)
+                            .setFile(file.getId()),
+                    Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+            fail("Should have thrown an exception");
+        } catch (ToolException e) {
+            assertEquals(StorageEngineException.class, e.getCause().getClass());
+            assertEquals("We can only INDEX VCF files not transformed, the status is READY", e.getCause().getMessage());
+        }
+
+        toolRunner.execute(VariantIndexOperationTool.class, STUDY,
+                new VariantIndexParams()
+                        .setForceReload(true)
+                        .setFile(file.getId()),
+                Paths.get(opencga.createTmpOutdir()), "index_reload", token);
 
     }
 
