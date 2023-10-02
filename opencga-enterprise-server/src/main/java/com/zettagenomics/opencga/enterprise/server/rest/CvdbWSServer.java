@@ -2,11 +2,14 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalAnalysisIterator;
+import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
-import org.opencb.commons.datastore.core.Query;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -19,10 +22,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID_DESCR;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 @Path("/{apiVersion}/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
@@ -71,7 +80,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @POST
     @Path("/case/index/run")
     @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
-    public Response load(
+    public Response indexProjectClinicalAnalyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -87,10 +96,36 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/case/index")
+    @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = CvdbIndexResult.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = CLINICAL_ANALYSIS_PARAM_NAME, value = CLINICAL_ANALYSIS_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = INDEX_OVERWRITE_PARAM_NAME, value = INDEX_OVERWRITE_PARAM_DESCRIPTION, dataType = "boolean", paramType = "query")
+    })
+    public Response indexClinicalAnalsyses() {
+        if (!query.containsKey(STUDY_PARAM) || StringUtils.isEmpty(query.getString(STUDY_PARAM))) {
+            return createErrorResponse("Invalid parameter", "Missing study ID");
+        }
+        if (!query.containsKey(CLINICAL_ANALYSIS_PARAM_NAME) || StringUtils.isEmpty(query.getString(CLINICAL_ANALYSIS_PARAM_NAME))) {
+            return createErrorResponse("Invalid parameter", "Missing clinical analysis ID");
+        }
+
+        return run(() -> {
+            StopWatch stopWatch = StopWatch.createStarted();
+            List<String> clinicalAnalysisIds = Arrays.asList(StringUtils.split(query.getString(CLINICAL_ANALYSIS_PARAM_NAME), ','));
+            CvdbIndexResult indexResult = cvdbEngine.index(clinicalAnalysisIds, query.getString(STUDY_PARAM), catalogManager,
+                    (boolean) query.getOrDefault(INDEX_OVERWRITE_PARAM_NAME, false), token);
+            int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+            return new DataResult<>(dbTime, null, 1, Collections.singletonList(indexResult), 1);
+        });
+    }
+
+    @GET
     @Path("/case/query")
     @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = ClinicalAnalysis.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_QUERY_PARAM, value = PROJECT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
 //            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -106,7 +141,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
 //            @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
 
             // Variant filters
-            @ApiImplicitParam(name = "variantId", value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),

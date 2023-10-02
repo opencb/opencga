@@ -3,9 +3,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,7 +33,6 @@ import java.util.zip.GZIPInputStream;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.VARIANT_QUERY_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 import static org.junit.Assert.fail;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
@@ -104,7 +101,7 @@ public class CvdbSolrEngineQueryTest {
         String variantId = "X:54751204:C:T";
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_QUERY_PARAM, projectId);
+        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, variantId);
 
         QueryOptions queryOptions = new QueryOptions();
@@ -130,7 +127,7 @@ public class CvdbSolrEngineQueryTest {
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_QUERY_PARAM, projectId);
+        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();

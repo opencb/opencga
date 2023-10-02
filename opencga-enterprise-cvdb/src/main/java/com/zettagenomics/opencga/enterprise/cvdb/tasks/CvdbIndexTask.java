@@ -27,7 +27,7 @@ import java.util.Map;
 @Tool(id = CvdbIndexTask.ID, resource = Enums.Resource.CLINICAL, description = CvdbIndexTask.DESCRIPTION)
 public class CvdbIndexTask extends OpenCgaToolScopeStudy {
     public final static String ID = "index";
-    public static final String DESCRIPTION = "Index clinical analyses into CVDB";
+    public static final String DESCRIPTION = "Index all clinical analyses of a OpenCGA project into CVDB";
 
     public static final String NUM_INDEXED_ATTR = "Num. clinical analyses indexed";
     public static final String NUM_NOT_INDEXED_ATTR = "Num. clinical analyses not indexed";

@@ -36,8 +36,8 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
     private static final String ACCEPTS_ALL_NONE = "Accepts '" + ALL + "' and '" + NONE + "'.";
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
-    public static final String PROJECT_ID_DESCR = ParamConstants.PROJECT_QUERY_DESCRIPTION;
-    public static final ClinicalAnalysisQueryParam PROJECT_ID = new ClinicalAnalysisQueryParam(ParamConstants.PROJECT_QUERY_PARAM,
+    public static final String PROJECT_ID_DESCR = ParamConstants.PROJECT_PARAM_DESCRIPTION;
+    public static final ClinicalAnalysisQueryParam PROJECT_ID = new ClinicalAnalysisQueryParam(ParamConstants.PROJECT_PARAM_NAME,
             STRING, PROJECT_ID_DESCR);
 
     // ---------- Clinical analysis (aka CA)

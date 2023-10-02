@@ -195,7 +195,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
             Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
-            InputStream stream = CvdbSolrEngineResource.class.getClassLoader().getResourceAsStream(resourceName);
+            InputStream stream = CvdbSolrExtenalResource.class.getClassLoader().getResourceAsStream(resourceName);
             Assert.assertNotNull(resourceName, stream);
             Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
         }

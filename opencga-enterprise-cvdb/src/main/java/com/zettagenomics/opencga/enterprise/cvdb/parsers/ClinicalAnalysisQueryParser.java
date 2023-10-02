@@ -36,7 +36,7 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
     @Override
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
-        String projectId = query.getString(ParamConstants.PROJECT_QUERY_PARAM);
+        String projectId = query.getString(ParamConstants.PROJECT_PARAM_NAME);
 
         SolrQuery solrQuery = new SolrQuery("*:*");
 
