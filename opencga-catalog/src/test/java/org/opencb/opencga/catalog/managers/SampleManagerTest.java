@@ -2777,7 +2777,9 @@ public class SampleManagerTest extends AbstractManagerTest {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("in use in 3 cases"));
+            if (!e.getMessage().contains("in use in 3 cases")) {
+                fail("Expected CatalogException with message containing 'in use in 3 cases. - Actual error msg: " + e.getMessage());
+            }
         }
 
         // unlock case3
@@ -2788,7 +2790,9 @@ public class SampleManagerTest extends AbstractManagerTest {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, false), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("in use in 3 cases"));
+            if (!e.getMessage().contains("associated with individual")) {
+                fail("Expected CatalogException with message containing 'associated with individual'. - Actual error msg: " + e.getMessage());
+            }
         }
     }
 
