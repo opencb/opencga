@@ -76,10 +76,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -397,7 +394,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public DataResult<List<String>> familyIndexUpdate(String study,
+    public DataResult<Trio> familyIndexUpdate(String study,
                                                       ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
@@ -405,11 +402,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public DataResult<List<String>> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
+    public DataResult<Trio> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
                                                 ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
-            List<List<String>> trios = new LinkedList<>();
+            List<Trio> trios = new LinkedList<>();
             List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
@@ -425,9 +422,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
-            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(Collection::stream)
+                    .flatMap(t->t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
@@ -439,7 +436,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return synchronizer;
     }
 
-    public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<Trio> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
@@ -447,17 +444,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 thisSamples = getIndexedSamples(study, token);
             }
 
-            List<List<String>> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
-
-            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            List<Trio> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
+            DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(Collection::stream)
+                    .flatMap(t -> t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
     }
 
-    public List<List<String>> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
+    public List<Trio> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study, token);
         return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);

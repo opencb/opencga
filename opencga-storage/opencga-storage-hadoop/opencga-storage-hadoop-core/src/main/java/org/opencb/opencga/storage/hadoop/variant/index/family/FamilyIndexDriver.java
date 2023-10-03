@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -98,28 +99,28 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         if (StringUtils.isNotEmpty(triosStr)) {
             String[] trios = triosStr.split(";");
             List<Integer> trioList = new ArrayList<>(3);
-            for (String trio : trios) {
-                for (String sample : trio.split(",")) {
-                    Integer sampleId;
-                    if (sample.equals("-")) {
-                        sampleId = MISSING_SAMPLE;
-                    } else {
-                        sampleId = metadataManager.getSampleId(getStudyId(), sample);
-                        if (sampleId == null) {
-                            throw new IllegalArgumentException("Sample '" + sample + "' not found.");
-                        }
-                    }
-                    trioList.add(sampleId);
+            for (String trioString : trios) {
+                Trio trio = new Trio(Arrays.asList(trioString.split(",")));
+
+                if (trio.getFather() == null) {
+                    trioList.add(MISSING_SAMPLE);
+                } else {
+                    trioList.add(metadataManager.getSampleIdOrFail(getStudyId(), trio.getFather()));
                 }
-                if (trioList.size() != 3) {
-                    throw new IllegalArgumentException("Found trio with " + trioList.size() + " members, instead of 3: " + trioList);
+                if (trio.getMother() == null) {
+                    trioList.add(MISSING_SAMPLE);
+                } else {
+                    trioList.add(metadataManager.getSampleIdOrFail(getStudyId(), trio.getMother()));
                 }
-                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), trioList.get(2));
+                int childId = metadataManager.getSampleIdOrFail(getStudyId(), trio.getChild());
+                trioList.add(childId);
+
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), childId);
                 if (!overwrite && sampleMetadata.getFamilyIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY) {
                     LOGGER.info("Skip sample " + sampleMetadata.getName() + ". Already precomputed!");
                 } else {
                     sampleIds.addAll(trioList);
-                    LOGGER.info("Trio: " + trio + " -> " + trioList);
+                    LOGGER.info("Trio: " + trioString + " -> " + trioList);
                 }
                 trioList.clear();
             }
