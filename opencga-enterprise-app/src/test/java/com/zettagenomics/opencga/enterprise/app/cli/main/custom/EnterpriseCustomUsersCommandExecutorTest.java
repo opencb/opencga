@@ -3,6 +3,8 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.config.HostConfig;
@@ -32,7 +34,8 @@ public class EnterpriseCustomUsersCommandExecutorTest {
         } else {
             System.out.println("About error");
         }
-        RestResponse<AuthenticationResponse> login = executor.login();
+        CustomUsersCommandOptions.LoginCommandOptions c = new CustomUsersCommandOptions(new GeneralCliOptions.CommonCommandOptions(), null).loginCommandOptions;
+        RestResponse<AuthenticationResponse> login = executor.login(c);
         System.out.println(login.firstResult());
 
         about = openCGAClient.getEnterpriseMetaClient().about();
