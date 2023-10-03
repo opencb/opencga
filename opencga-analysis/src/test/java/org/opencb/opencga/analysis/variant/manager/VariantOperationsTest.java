@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -49,6 +50,8 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -58,6 +61,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -75,6 +79,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
@@ -290,7 +295,6 @@ public class VariantOperationsTest {
 
     @Test
     public void testVariantFileReload() throws Exception {
-
         try {
             toolRunner.execute(VariantIndexOperationTool.class, STUDY,
                     new VariantIndexParams()
@@ -484,6 +488,28 @@ public class VariantOperationsTest {
         variantStorageManager.iterator(new Query(VariantQueryParam.STUDY.key(), STUDY), new QueryOptions(), token).forEachRemaining(variant -> {
             assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
         });
+    }
+
+    @Test
+    public void testCellbaseConfigure() throws Exception {
+        String project = "Project_test_cellbase_configure";
+        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
+
+        CellBaseUtils cellBaseUtils = variantStorageManager.getVariantStorageEngineByProject(project, null, token).getCellBaseUtils();
+        assertEquals(ParamConstants.CELLBASE_URL, cellBaseUtils.getURL());
+        assertEquals(ParamConstants.CELLBASE_VERSION, cellBaseUtils.getVersion());
+        assertEquals("hsapiens", cellBaseUtils.getSpecies());
+        assertEquals("GRCh38", cellBaseUtils.getAssembly());
+
+        String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
+        String newCellbaseVersion = "v5.2";
+
+        assertNotEquals(newCellbase, cellBaseUtils.getURL());
+        assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+//        assertTrue(family.getPedigreeGraph() != null);
     }
 
     public void checkExecutionResult(ExecutionResult er) {

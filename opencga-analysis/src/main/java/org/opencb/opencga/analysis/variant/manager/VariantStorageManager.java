@@ -63,6 +63,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
@@ -1011,11 +1012,21 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return variantStorageEngine;
     }
 
-    private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
+    private void setCellbaseConfiguration(VariantStorageEngine engine, String projectId, String token)
             throws CatalogException {
-        CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
-                .first().getCellbase();
+        Project project = catalogManager.getProjectManager()
+                .get(projectId, new QueryOptions(INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key(),
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key())), token)
+                .first();
+        CellBaseConfiguration cellbase = project.getCellbase();
+        ProjectOrganism organism = project.getOrganism();
+        if (organism == null) {
+            throw new CatalogException("Missing organism in project '" + project.getFqn()+ "'");
+        } else {
+            engine.getOptions().put(VariantStorageOptions.SPECIES.key(), organism.getScientificName());
+            engine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), organism.getAssembly());
+        }
         if (cellbase != null) {
             if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
                 cellbase.setToken(storageConfiguration.getCellbase().getToken());
