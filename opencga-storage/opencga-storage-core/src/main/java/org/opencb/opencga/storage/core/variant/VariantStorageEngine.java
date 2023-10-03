@@ -582,45 +582,52 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * The Family Index is used alongside with the SampleIndex to speed up queries involving children and parents.
      *
      * @param study   Study
-     * @param trios List of trios "father, mother, child".
-     *              Missing parents in trios are specified with "-",
-     *              If a family has two children, two trios should be defined.
+     * @param trios Trios to index. If a family has two children, two trios should be defined.
      * @param options Other options
      * @throws StorageEngineException in an error occurs
      * @return List of trios used to index. Empty if there was nothing to do.
      */
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
-    public DataResult<List<String>> familyIndexUpdate(String study, ObjectMap options) throws StorageEngineException {
+    /**
+     * Update the family index.
+     * The Family Index is used alongside with the SampleIndex to speed up queries involving children and parents.
+     *
+     * @param study   Study
+     * @param options Other options
+     * @throws StorageEngineException in an error occurs
+     * @return List of trios used to index. Empty if there was nothing to do.
+     */
+    public DataResult<Trio> familyIndexUpdate(String study, ObjectMap options) throws StorageEngineException {
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(study);
         int studyId = studyMetadata.getId();
         int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion();
-        List<List<String>> trios = new LinkedList<>();
+        List<Trio> trios = new LinkedList<>();
         for (SampleMetadata sampleMetadata : getMetadataManager().sampleMetadataIterable(studyId)) {
             if (sampleMetadata.isFamilyIndexDefined()) {
                 if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
                     // This sample's family index needs to be updated
                     String father;
                     if (sampleMetadata.getFather() == null) {
-                        father = "-";
+                        father = null;
                     } else {
                         father = getMetadataManager().getSampleName(studyId, sampleMetadata.getFather());
                     }
                     String mother;
                     if (sampleMetadata.getMother() == null) {
-                        mother = "-";
+                        mother = null;
                     } else {
                         mother = getMetadataManager().getSampleName(studyId, sampleMetadata.getMother());
                     }
-                    trios.add(Arrays.asList(father, mother, sampleMetadata.getName()));
+                    trios.add(new Trio(father, mother, sampleMetadata.getName()));
                 }
             }
         }
         if (trios.isEmpty()) {
             logger.info("Nothing to do!");
-            return new DataResult<List<String>>().setEvents(Collections.singletonList(new Event(Event.Type.INFO, "Nothing to do")));
+            return new DataResult<Trio>().setEvents(Collections.singletonList(new Event(Event.Type.INFO, "Nothing to do")));
         } else {
             return familyIndex(study, trios, options);
         }
