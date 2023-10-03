@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.alignment;
 
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -95,6 +96,7 @@ public class AlignmentAnalysisTest {
     private CatalogManager catalogManager;
     private VariantStorageManager variantStorageManager;
 
+    @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
 

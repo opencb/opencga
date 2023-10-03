@@ -52,9 +52,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.StoragePipeline;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
@@ -172,6 +172,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
                 return existingStudyMetadata;
             });
+            if (options.getBoolean(FORCE.key())) {
+                Integer fileId = getMetadataManager().getFileId(studyMetadata.getId(), fileName, true);
+                if (fileId != null) {
+                    // File is indexed. Mark as non indexed.
+                    getMetadataManager().updateFileMetadata(studyMetadata.getId(), fileId, fileMetadata -> {
+                        fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                    });
+                    logger.info("File '{}' already loaded. Force reload!", fileName);
+                }
+            }
             if (VariantStorageEngine.SplitData.isPartial(options)
                     && !options.getString(LOAD_VIRTUAL_FILE.key(), "").isEmpty()) {
                 setFileId(smm.registerPartialFile(studyMetadata.getId(), input.getPath()));

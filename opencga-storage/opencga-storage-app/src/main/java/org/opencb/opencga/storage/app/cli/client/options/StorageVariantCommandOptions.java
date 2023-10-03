@@ -94,6 +94,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load;
 
+        @Parameter(names = {"--force-reload"}, description = "If the file is already loaded, force a file reload")
+        public boolean forceReload;
+
         @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
         public String merge;
 

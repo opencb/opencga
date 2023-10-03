@@ -456,6 +456,7 @@
          client.property(ClientProperties.READ_TIMEOUT, DEFAULT_UPLOAD_TIMEOUT);
          path.register(MultiPartFeature.class);
          path.property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.CHUNKED);
+
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
          FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
          // Add the rest of the parameters to the form
