@@ -10,7 +10,7 @@ import java.util.Map;
 
 @Migration(id = "mark_unknown_largest_variant_length" ,
         description = "Mark as unknown largest variant length",
-        version = "2.8.4",
+        version = "2.8.6",
         domain = Migration.MigrationDomain.STORAGE,
         language = Migration.MigrationLanguage.JAVA,
         patch = 1,
