@@ -513,6 +513,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         metadataManager.setStatus(getStudyId(), taskId, Status.READY);
 
         boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        int updatedSamples = 0;
         for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
             // Worth to check first to avoid too many updates in scenarios like 1000G
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
@@ -536,6 +537,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             }
 
             if (updateSampleIndexStatus || updateLargestVariantLength) {
+                updatedSamples++;
                 metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
                     if (updateSampleIndexStatus) {
                         s.setSampleIndexStatus(Status.READY, sampleIndexVersion);
@@ -547,6 +549,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 });
             }
         }
+        getLoadStats().put("updatedSampleMetadata", updatedSamples);
+        logger.info("Updated status of {} samples", updatedSamples);
 
         boolean loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue();
         if (loadArchive) {

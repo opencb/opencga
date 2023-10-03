@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -137,23 +138,25 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
 
         int studyId = variantStorageEngine.getMetadataManager().createStudy(STUDY_NAME).getId();
-        int sampleId = variantStorageEngine.getMetadataManager().registerSamples(studyId, Collections.singletonList("NA19660")).get(0);
+        int sampleIdMock = variantStorageEngine.getMetadataManager().registerSamples(studyId, Collections.singletonList("NA19660")).get(0);
         // Mark one random sample as having unknown largest variant size
         // Ensure that the largest variant size is not updated
-        variantStorageEngine.getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+        variantStorageEngine.getMetadataManager().updateSampleMetadata(studyId, sampleIdMock, sampleMetadata -> {
             sampleMetadata.getAttributes().put(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH, true);
         });
 
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
+        StoragePipelineResult result = variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
+                outputUri, true, true, true).get(0);
 
+        // All samples expected to be updated
+        assertEquals(4, result.getLoadStats().getInt("updatedSampleMetadata"));
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
-            if (sampleId == sampleMetadata.getId()) {
+            if (sampleIdMock == sampleMetadata.getId()) {
                 assertFalse(sample, sampleMetadata.getAttributes().containsKey(SampleIndexSchema.LARGEST_VARIANT_LENGTH));
                 assertTrue(sample, sampleMetadata.getAttributes().getBoolean(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH));
             } else {
@@ -173,8 +176,11 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
+        result = variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")),
+                outputUri, true, true, true).get(0);
+
+        // No sample expected to be updated
+        assertEquals(0, result.getLoadStats().getInt("updatedSampleMetadata"));
 
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
@@ -192,15 +198,17 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         // Revert the unknown largest variant size
         // Ensure that the largest variant size is now updated
-        variantStorageEngine.getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+        variantStorageEngine.getMetadataManager().updateSampleMetadata(studyId, sampleIdMock, sampleMetadata -> {
             sampleMetadata.getAttributes().put(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH, false);
         });
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_VIRTUAL_FILE.key(), "virtual-variant-test-file.vcf");
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
-                outputUri);
+        result = variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
+                outputUri).get(0);
+        // One sample (sampleIdMock) expected to be updated
+        assertEquals(1, result.getLoadStats().getInt("updatedSampleMetadata"));
 
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
