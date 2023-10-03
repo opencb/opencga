@@ -478,6 +478,9 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--update-roles"}, description = "Update the member roles within the family", required = false, help = true, arity = 0)
         public boolean updateRoles = false; 
     
+        @Parameter(names = {"--update-pedigree-graph"}, description = "Update the family pedigree graph", required = false, help = true, arity = 0)
+        public boolean updatePedigreeGraph = false; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
