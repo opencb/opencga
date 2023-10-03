@@ -18,6 +18,7 @@ package org.opencb.opencga.server.generator.writers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.Command;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
@@ -186,8 +187,6 @@ public abstract class ParentClientRestApiWriter {
     }
 
     protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-
-        String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         return getMethodName(subpath);
     }
@@ -295,5 +294,62 @@ public abstract class ParentClientRestApiWriter {
                 || "QueryOptions".equals(bodyRestParameter.getType())
                 || "java.util.Map<java.lang.String,java.lang.String>".equals(bodyRestParameter.getGenericType())
                 || "java.util.Map<java.lang.String,java.lang.Object>".equals(bodyRestParameter.getGenericType());
+    }
+
+    protected String getExecutorVarName(RestCategory restCategory) {
+        return "custom" + getAsClassName(restCategory.getName()) + "CommandExecutor";
+    }
+
+    protected String getExecutorClassName(RestCategory restCategory, CategoryConfig categoryConfig, String commandName) {
+        String executorClassName;
+        Command command = categoryConfig.getCommandOrFail(commandName);
+        if (StringUtils.isNotEmpty(command.getExecutorExtendedClassName())) {
+            executorClassName = command.getExecutorExtendedClassName();
+        } else {
+            executorClassName = "Custom" + getAsClassName(restCategory.getName()) + "CommandExecutor";
+        }
+        return executorClassName;
+    }
+
+    protected String getCommandOptionsClassName(RestCategory restCategory, CategoryConfig categoryConfig, String commandName) {
+        String commandOptionsClassName;
+        if (categoryConfig.isExtendedOptionCommand(commandName)) {
+            commandOptionsClassName = "Custom" + getAsClassName(restCategory.getName()) + "CommandOptions";
+        } else {
+            commandOptionsClassName = getAsClassName(restCategory.getName()) + "CommandOptions";
+        }
+        return commandOptionsClassName;
+    }
+
+    protected String getCommandOptionsClassName(RestCategory restCategory) {
+        return getAsClassName(restCategory.getName()) + "CommandOptions";
+    }
+
+    protected String getSubCommandOptionsClassName(CategoryConfig categoryConfig, String commandName) {
+//        String methodName = getJavaMethodName(categoryConfig, commandName);
+        String methodName = getAsCamelCase(commandName);
+        String subCommandOptionsClassName = getAsClassName(methodName + "CommandOptions");
+        return subCommandOptionsClassName;
+    }
+
+    protected String getCommandOptionsVarName(RestCategory restCategory) {
+        return getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions";
+    }
+
+    protected String getSubCommandOptionsVarName(CategoryConfig categoryConfig, String commandName) {
+//        String methodName = getJavaMethodName(categoryConfig, commandName);
+        String methodName = getAsCamelCase(commandName);
+        return methodName + "CommandOptions";
+    }
+
+    protected String getJavaMethodName(CategoryConfig config, String commandName) {
+        Command command = config.getCommand(commandName);
+        String commandMethod;
+        if (command != null && StringUtils.isNotEmpty(command.getRename())) {
+            commandMethod = command.getRename();
+        } else {
+            commandMethod = getAsCamelCase(commandName);
+        }
+        return commandMethod;
     }
 }
