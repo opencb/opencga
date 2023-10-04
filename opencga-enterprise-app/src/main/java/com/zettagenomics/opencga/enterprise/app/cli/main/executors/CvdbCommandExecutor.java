@@ -84,8 +84,12 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         CvdbCommandOptions.IndexCaseCommandOptions commandOptions = cvdbCommandOptions.indexCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
         queryParams.putIfNotNull("overwrite", commandOptions.overwrite);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
 
         return enterpriseOpenCGAClient.getEnterpriseCvdbClient().indexCase(queryParams);
     }

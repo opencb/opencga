@@ -56,6 +56,9 @@ public class CvdbCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
         @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical analysis ID (or list of clinical analysis IDs separated by commas)", required = false, arity = 1)
         public String clinicalAnalysisId; 
     

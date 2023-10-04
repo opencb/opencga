@@ -98,23 +98,21 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @GET
     @Path("/case/index")
     @ApiOperation(value = CLINICAL_ANALYSES_INDEX_DESCRIPTION, response = CvdbIndexResult.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = CLINICAL_ANALYSIS_PARAM_NAME, value = CLINICAL_ANALYSIS_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = INDEX_OVERWRITE_PARAM_NAME, value = INDEX_OVERWRITE_PARAM_DESCRIPTION, dataType = "boolean", paramType = "query")
-    })
-    public Response indexClinicalAnalsyses() {
-        if (!query.containsKey(STUDY_PARAM) || StringUtils.isEmpty(query.getString(STUDY_PARAM))) {
+    public Response indexClinicalAnalsyses(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = CLINICAL_ANALYSIS_PARAM_DESCRIPTION) @QueryParam(CLINICAL_ANALYSIS_PARAM_NAME) String caseIdStr,
+            @ApiParam(value = INDEX_OVERWRITE_PARAM_DESCRIPTION) @QueryParam(INDEX_OVERWRITE_PARAM_NAME) boolean overwrite) {
+        if (StringUtils.isEmpty(studyStr)) {
             return createErrorResponse("Invalid parameter", "Missing study ID");
         }
-        if (!query.containsKey(CLINICAL_ANALYSIS_PARAM_NAME) || StringUtils.isEmpty(query.getString(CLINICAL_ANALYSIS_PARAM_NAME))) {
+        if (StringUtils.isEmpty(caseIdStr)) {
             return createErrorResponse("Invalid parameter", "Missing clinical analysis ID");
         }
 
         return run(() -> {
             StopWatch stopWatch = StopWatch.createStarted();
-            List<String> clinicalAnalysisIds = Arrays.asList(StringUtils.split(query.getString(CLINICAL_ANALYSIS_PARAM_NAME), ','));
-            CvdbIndexResult indexResult = cvdbEngine.index(clinicalAnalysisIds, query.getString(STUDY_PARAM), catalogManager,
-                    (boolean) query.getOrDefault(INDEX_OVERWRITE_PARAM_NAME, false), token);
+            List<String> clinicalAnalysisIds = Arrays.asList(StringUtils.split(caseIdStr, ','));
+            CvdbIndexResult indexResult = cvdbEngine.index(clinicalAnalysisIds, studyStr, catalogManager, overwrite, token);
             int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
             return new DataResult<>(dbTime, null, 1, Collections.singletonList(indexResult), 1);
