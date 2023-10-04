@@ -11,12 +11,12 @@ on:
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
-    needs: build
     with:
       maven_opts: -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   delete-docker:
     uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.8.x
+    needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
     secrets: inherit
