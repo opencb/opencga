@@ -182,7 +182,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     logger.info("File '{}' already loaded. Force reload!", fileName);
                 }
             }
-            if (VariantStorageEngine.SplitData.isPartial(options)
+            if (VariantStorageEngine.SplitData.isPartialSplit(options)
                     && !options.getString(LOAD_VIRTUAL_FILE.key(), "").isEmpty()) {
                 setFileId(smm.registerPartialFile(studyMetadata.getId(), input.getPath()));
             } else {
@@ -559,7 +559,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         final int fileId;
         String virtualFile = options.getString(LOAD_VIRTUAL_FILE.key());
 
-        if (VariantStorageEngine.SplitData.isPartial(options)) {
+        if (VariantStorageEngine.SplitData.isPartialSplit(options)) {
             if (StringUtils.isEmpty(virtualFile)) {
                 fileId = getMetadataManager().registerFile(studyId, fileMetadata);
 //                throw new StorageEngineException("Unable to load file with 'split-data'. Missing virtual file belonging! "
