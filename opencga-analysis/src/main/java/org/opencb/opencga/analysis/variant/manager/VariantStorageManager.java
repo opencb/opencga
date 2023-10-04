@@ -49,6 +49,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -62,6 +63,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
@@ -75,10 +77,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -396,7 +395,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public DataResult<List<String>> familyIndexUpdate(String study,
+    public DataResult<Trio> familyIndexUpdate(String study,
                                                       ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
@@ -404,11 +403,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public DataResult<List<String>> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
+    public DataResult<Trio> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
                                                 ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
-            List<List<String>> trios = new LinkedList<>();
+            List<Trio> trios = new LinkedList<>();
             List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
@@ -424,9 +423,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
-            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(Collection::stream)
+                    .flatMap(t->t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
@@ -438,7 +437,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return synchronizer;
     }
 
-    public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<Trio> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
@@ -446,17 +445,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 thisSamples = getIndexedSamples(study, token);
             }
 
-            List<List<String>> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
-
-            DataResult<List<String>> dataResult = engine.familyIndex(study, trios, params);
+            List<Trio> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
+            DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(Collection::stream)
+                    .flatMap(t -> t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
     }
 
-    public List<List<String>> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
+    public List<Trio> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study, token);
         return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
@@ -564,7 +562,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                                        String annotationSaveId, String token)
             throws CatalogException, StorageEngineException {
         StopWatch stopwatch = StopWatch.createStarted();
-        return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
+        return secureOperationByProject("configureCellbase", project, new ObjectMap()
+                .append("cellbaseConfiguration", cellbaseConfiguration)
+                .append("annotate", annotate)
+                .append("annotationSaveId", annotationSaveId), token, engine -> {
             OpenCGAResult<Job> result = new OpenCGAResult<>();
             result.setResultType(Job.class.getCanonicalName());
             result.setResults(new ArrayList<>());
@@ -1011,11 +1012,21 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return variantStorageEngine;
     }
 
-    private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
+    private void setCellbaseConfiguration(VariantStorageEngine engine, String projectId, String token)
             throws CatalogException {
-        CellBaseConfiguration cellbase = catalogManager.getProjectManager()
-                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.CELLBASE.key()), token)
-                .first().getCellbase();
+        Project project = catalogManager.getProjectManager()
+                .get(projectId, new QueryOptions(INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key(),
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key())), token)
+                .first();
+        CellBaseConfiguration cellbase = project.getCellbase();
+        ProjectOrganism organism = project.getOrganism();
+        if (organism == null) {
+            throw new CatalogException("Missing organism in project '" + project.getFqn()+ "'");
+        } else {
+            engine.getOptions().put(VariantStorageOptions.SPECIES.key(), organism.getScientificName());
+            engine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), organism.getAssembly());
+        }
         if (cellbase != null) {
             if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
                 cellbase.setToken(storageConfiguration.getCellbase().getToken());
@@ -1225,7 +1236,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throw e;
         } catch (Exception e) {
             exception = e;
-            throw new StorageEngineException("Error executing operation " + toolId, e);
+            throw new StorageEngineException("Error executing operation '" + toolId + "' : " + e.getMessage(), e);
         } finally {
             if (result instanceof DataResult) {
                 auditAttributes.append("dbTime", ((DataResult) result).getTime());
@@ -1237,6 +1248,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             if (exception != null) {
                 auditAttributes.append("errorType", exception.getClass());
                 auditAttributes.append("errorMessage", exception.getMessage());
+                auditAttributes.append("errorMessageFull", ExceptionUtils.prettyExceptionMessage(exception, false, true));
+                auditAttributes.append("exceptionStackTrace", ExceptionUtils.prettyExceptionStackTrace(exception));
                 status = new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                         new Error(-1, exception.getClass().getName(), exception.getMessage()));
             } else {

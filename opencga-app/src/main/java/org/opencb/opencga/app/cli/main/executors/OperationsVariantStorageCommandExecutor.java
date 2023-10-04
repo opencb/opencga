@@ -530,6 +530,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotNull(beanParams, "forceReload",commandOptions.forceReload, true);
             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
@@ -600,6 +601,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             putNestedIfNotNull(beanParams, "indexParams.family",commandOptions.indexParamsFamily, true);
             putNestedIfNotNull(beanParams, "indexParams.somatic",commandOptions.indexParamsSomatic, true);
             putNestedIfNotNull(beanParams, "indexParams.load",commandOptions.indexParamsLoad, true);
+            putNestedIfNotNull(beanParams, "indexParams.forceReload",commandOptions.indexParamsForceReload, true);
             putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData",commandOptions.indexParamsLoadSplitData, true);
             putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData",commandOptions.indexParamsLoadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex",commandOptions.indexParamsLoadSampleIndex, true);

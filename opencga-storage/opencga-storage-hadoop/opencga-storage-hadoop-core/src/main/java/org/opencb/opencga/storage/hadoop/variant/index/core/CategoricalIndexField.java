@@ -8,10 +8,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFi
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.MultiValueIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.SingleValueIndexFieldFilter;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +19,7 @@ import java.util.stream.Collectors;
  * Value "0" represents NA.
  */
 public class CategoricalIndexField<T> extends IndexField<T> implements IndexCodec<T> {
-    private final int numBits;
+    private final int bitLength;
     private final IndexCodec<T> codec;
 
     public static CategoricalIndexField<String> create(IndexFieldConfiguration configuration, int bitOffset) {
@@ -43,18 +40,18 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
             numValues = values.length;
             codec = new BasicCodec<>(values, valuesMapping);
         }
-        this.numBits = Math.max(1, IndexUtils.log2(numValues - 1) + 1);
+        this.bitLength = Math.max(1, IndexUtils.log2(numValues - 1) + 1);
     }
 
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {
         super(configuration, bitOffset);
-        this.numBits = IndexUtils.log2(numValues - 1) + 1;
+        this.bitLength = IndexUtils.log2(numValues - 1) + 1;
         this.codec = codec;
     }
 
     @Override
     public int getBitLength() {
-        return numBits;
+        return bitLength;
     }
 
     @Override
@@ -124,6 +121,16 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
         public boolean ambiguous(int code) {
             return ambiguousValues[code];
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("BasicCodec{");
+            sb.append("values=").append(Arrays.toString(values));
+            sb.append(", valuesMappingRev=").append(valuesMappingRev);
+            sb.append(", ambiguousValues=").append(Arrays.toString(ambiguousValues));
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
     private static class BasicCodecWithNa<T> implements IndexCodec<T> {
@@ -178,6 +185,20 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
         public boolean ambiguous(int code) {
             return ambiguousValues[code];
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("BasicCodecWithNa{");
+            sb.append("values=").append(Arrays.toString(values));
+            sb.append(", valuesMappingRev=").append(valuesMappingRev);
+            sb.append(", ambiguousValues=").append(Arrays.toString(ambiguousValues));
+            sb.append('}');
+            return sb.toString();
+        }
+    }
+
+    protected IndexCodec<T> getCodec() {
+        return codec;
     }
 
     @Override
@@ -195,4 +216,14 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
         return codec.ambiguous(code);
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CategoricalIndexField{");
+        sb.append("configuration=").append(getConfiguration());
+        sb.append(", bitOffset=").append(getBitOffset());
+        sb.append(", bitLength=").append(bitLength);
+        sb.append(", codec=").append(codec);
+        sb.append('}');
+        return sb.toString();
+    }
 }

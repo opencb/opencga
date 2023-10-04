@@ -386,6 +386,15 @@ public class SampleIndexConfiguration {
             return customFields;
         }
 
+        public IndexFieldConfiguration getCustomField(IndexFieldConfiguration.Source source, String key) {
+            for (IndexFieldConfiguration s : customFields) {
+                if (s.getKey().equals(key) && s.getSource() == source) {
+                    return s;
+                }
+            }
+            return null;
+        }
+
         public int getFilePositionBits() {
             return filePositionBits;
         }
@@ -704,5 +713,14 @@ public class SampleIndexConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(fileIndexConfiguration, annotationIndexConfiguration);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SampleIndexConfiguration{");
+        sb.append("fileIndexConfiguration=").append(fileIndexConfiguration);
+        sb.append(", annotationIndexConfiguration=").append(annotationIndexConfiguration);
+        sb.append('}');
+        return sb.toString();
     }
 }

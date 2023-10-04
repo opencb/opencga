@@ -90,6 +90,7 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.ANNOTATE.key(), indexParams.isAnnotate());
         params.putIfNotEmpty(VariantStorageOptions.ANNOTATOR.key(), indexParams.getAnnotator());
         params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), indexParams.isOverwriteAnnotations());
+        params.put(VariantStorageOptions.FORCE.key(), indexParams.isForceReload());
         params.put(VariantStorageOptions.RESUME.key(), indexParams.isResume());
         params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexParams.getNormalizationSkip());
         params.putIfNotEmpty(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexParams.getReferenceGenome());

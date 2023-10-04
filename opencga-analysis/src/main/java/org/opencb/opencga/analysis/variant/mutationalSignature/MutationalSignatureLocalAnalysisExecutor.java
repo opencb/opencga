@@ -64,8 +64,11 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
         implements StorageToolExecutor {
 
+    private static final String SVCLASS = "SVCLASS";
+    private static final String EXT_SVTYPE = "EXT_SVTYPE";
+
     public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
-            + GitRepositoryState.get().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
 
     private Path opencgaHome;
 
@@ -80,7 +83,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 && getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_CATALOGUE_SKIP_VALUE)
                 && getSkip().contains(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE)) {
             // Only compute genome context file
-            // TODO: overwrite support !
             File indexFile = checkGenomeContextFile();
             logger.info("Checking genome context file {} for sample {}", indexFile.getAbsolutePath(), getSample());
         }
@@ -97,7 +99,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 // SNV
                 logger.info("Computing catalogue (mutational signature) for SNV variants");
 
-                // TODO: overwrite support !
                 File indexFile = checkGenomeContextFile();
                 logger.info("Mutational signature analysis is using the genome context file {} for sample {}", indexFile.getAbsolutePath(),
                         getSample());
@@ -191,19 +192,18 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
                     try {
                         // Accessing to the context sequence and write it into the context index file
-                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                                variant.getEnd() + 1);
+                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), (long) variant.getStart() - 1,
+                                (long) variant.getEnd() + 1);
                         String sequence = new String(refSeq.getBases());
 
                         // Write context index
                         pw.println(variant.toString() + "\t" + sequence);
                     } catch (Exception e) {
-                        logger.warn("When creating genome context file for mutational signature analysis, ignoring variant "
-                                + variant.toStringSimple() + ". " + e.getMessage());
+                        logger.warn("When creating genome context file for mutational signature analysis, ignoring variant {}: {}",
+                                variant.toStringSimple(), Arrays.toString(e.getStackTrace()));
                     }
                 }
             }
-
         } catch (IOException | CatalogException | ToolException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         }
@@ -211,7 +211,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Integer>> countMap) {
         try {
-            String k, seq;
+            String k;
+            String seq;
 
             String key = variant.getReference() + ">" + variant.getAlternate();
 
@@ -226,16 +227,15 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
             }
         } catch (Exception e) {
-            logger.warn("When counting mutational signature substitutions, ignoring variant " + variant.toStringSimple()
-                    + " with sequence " + sequence + ". " + e.getMessage());
+            logger.warn("When counting mutational signature substitutions, ignoring variant {} with sequence {}: {}",
+                    variant.toStringSimple(), sequence, Arrays.toString(e.getStackTrace()));
         }
     }
 
     public void computeSignatureCatalogueSNV(File indexFile) throws ToolExecutorException {
-        try {
+        try (BufferedReader br = new BufferedReader(new FileReader(indexFile))) {
             // Read context index
             Map<String, String> indexMap = new HashMap<>();
-            BufferedReader br = new BufferedReader(new FileReader(indexFile));
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\t");
@@ -288,9 +288,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     }
 
     public void computeSignatureCatalogueSV() throws ToolExecutorException {
+        Query query;
+        File clusteredFile;
         try {
             // Get variant iterator
-            Query query = new Query();
+            query = new Query();
             if (getQuery() != null) {
                 query.putAll(getQuery());
             }
@@ -301,16 +303,19 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv,studies");
 
-            logger.info("Query: {}", query.toJson());
-            logger.info("Query options: {}", queryOptions.toJson());
+            logger.info("Query: {}", query != null ? query.toJson() : null);
+            logger.info("Query options: {}", queryOptions != null ? queryOptions.toJson() : null);
 
-            File clusteredFile = computeClusteredFile(query, queryOptions);
+            clusteredFile = computeClusteredFile(query, queryOptions);
+        } catch (CatalogException | StorageEngineException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
 
-            BufferedReader br = FileUtils.newBufferedReader(clusteredFile.toPath());
+        Map<String, Integer> countMap = new HashMap<>();
+        try (BufferedReader br = FileUtils.newBufferedReader(clusteredFile.toPath())) {
             // Skip header line
             // chrom1	start1	end1	chrom2	start2	end2	length   type   sample	id	is.clustered
             //   0        1      2        3       4       5        6       7       8     9      10
-            Map<String, Integer> countMap = new HashMap<>();
             // Skip first line
             String line = br.readLine();
             while ((line = br.readLine()) != null) {
@@ -333,35 +338,36 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     countMap.put(key, 1);
                 }
             }
+        } catch (IOException e) {
+            throw new ToolExecutorException(e);
+        }
 
-//            logger.info("Count map size = {}", countMap.size());
-//            for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
-//                logger.info("context = {}, count = {}", entry.getKey(), entry.getValue());
-//            }
-
-            // Build teh genome context counts object for SV
-            List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
-            for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
-                for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
-                    for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
-                            LENGTH_10Mb))) {
-                        String key = clustered + "_" + type + "_" + length;
-                        genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
-                    }
+        // Build teh genome context counts object for SV
+        List<Signature.GenomeContextCount> genomeContextCounts = new LinkedList<>();
+        for (String clustered: new LinkedList<>(Arrays.asList(CLUSTERED, NON_CLUSTERED))) {
+            for (String type: new LinkedList<>(Arrays.asList(TYPE_DEL, TYPE_TDS, TYPE_INV))) {
+                for (String length : new LinkedList<>(Arrays.asList(LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb,
+                        LENGTH_10Mb))) {
+                    String key = clustered + "_" + type + "_" + length;
+                    genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
                 }
-                String key = clustered + "_" + TYPE_TRANS;
-                genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
             }
+            String key = clustered + "_" + TYPE_TRANS;
+            genomeContextCounts.add(new Signature.GenomeContextCount(key, countMap.containsKey(key) ? countMap.get(key) : 0));
+        }
 
-            // Write catalogue file from the genome context counts
-            PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile());
+        // Write catalogue file from the genome context counts
+        try (PrintWriter pw = new PrintWriter(getOutDir().resolve(CATALOGUES_FILENAME_DEFAULT).toFile())) {
             pw.write(query.getString(VariantQueryParam.SAMPLE.key()));
             pw.write("\n");
             for (Signature.GenomeContextCount counts : genomeContextCounts) {
                 pw.write(counts.getContext() + "\t" + counts.getTotal() + "\n");
             }
-            pw.close();
+        } catch (IOException e) {
+            throw new ToolExecutorException(e);
+        }
 
+        try {
             Signature signature = new Signature()
                     .setId(getQueryId())
                     .setDescription(getQueryDescription())
@@ -371,7 +377,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             JacksonUtils.getDefaultObjectMapper().writerFor(Signature.class).writeValue(getOutDir()
                     .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile(), signature);
-        } catch (IOException | CatalogException | StorageEngineException | ToolException e) {
+        } catch (IOException e) {
             throw new ToolExecutorException(e);
         }
     }
@@ -383,25 +389,59 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // $ Rscript sv_clustering.R ./test.bedpe ./out.bedpe
         File inputFile = getOutDir().resolve("in.clustered.bedpe").toFile();
         File outputFile = getOutDir().resolve("out.clustered.bedpe").toFile();
-        try {
-            PrintWriter pw = new PrintWriter(inputFile);
+        try (PrintWriter pw = new PrintWriter(inputFile);) {
+            String mateChrom;
+            int matePosition;
+            String lengthKey;
+            boolean processVariant;
+
+            Map<String, List<Integer>> breakendMap = new HashMap<>();
             pw.println("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tlength\ttype\tsample");
             while (iterator.hasNext()) {
+                processVariant = true;
                 Variant variant = iterator.next();
-                if (variant.getSv() == null || variant.getSv().getBreakend() == null || variant.getSv().getBreakend().getMate() == null) {
-                    continue;
+                if (breakendMap.containsKey(variant.getChromosome())) {
+                    for (Integer position : breakendMap.get(variant.getChromosome())) {
+                        if (Math.abs(variant.getStart() - position) <= 20) {
+                            // Skipping since it is a mate
+                            processVariant = false;
+                            break;
+                        }
+                    }
                 }
-                String typeKey = getTypeKey(variant);
-                String lengthKey = getLengthKey(variant);
-                if (typeKey != null && lengthKey != null) {
-                    BreakendMate mate = variant.getSv().getBreakend().getMate();
-                    pw.println(variant.getChromosome() + "\t" + variant.getStart() + "\t" + variant.getEnd() + "\t"
-                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t"
-                            + lengthKey + "\t" + typeKey + "\t" + getSample());
+                if (processVariant) {
+                    BreakendMate mate = null;
+                    if (variant.getSv() != null && variant.getSv().getBreakend() != null
+                            && variant.getSv().getBreakend().getMate() != null) {
+                        mate = variant.getSv().getBreakend().getMate();
+                        if (!breakendMap.containsKey(mate.getChromosome())) {
+                            breakendMap.put(mate.getChromosome(), new ArrayList<>());
+                        }
+                        breakendMap.get(mate.getChromosome()).add(mate.getPosition());
+                    }
+                    String typeKey = getTypeKey(variant);
+                    if (mate == null) {
+                        mateChrom = "0";
+                        matePosition = 0;
+                        lengthKey = LENGTH_NA;
+                    } else {
+                        mateChrom = mate.getChromosome();
+                        matePosition = mate.getPosition() == null ? 0 : mate.getPosition();
+                        lengthKey = getLengthKey(variant, typeKey);
+                    }
+
+                    if (typeKey != null && lengthKey != null) {
+                        pw.println(variant.getChromosome() + "\t" + variant.getStart() + "\t" + variant.getEnd() + "\t"
+                                + mateChrom + "\t" + matePosition + "\t" + matePosition + "\t"
+                                + lengthKey + "\t" + typeKey + "\t" + getSample());
+                    }
                 }
             }
-            pw.close();
+        } catch (Exception e) {
+            throw new ToolException(e);
+        }
 
+        try {
             // Build command line to run R script via docker image
             // Input binding
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -430,22 +470,17 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         return outputFile;
     }
 
-    private String getClusteredKey(Variant variant) {
-        return NON_CLUSTERED;
-    }
-
     private String getTypeKey(Variant variant) {
         String variantType = variant.getType() != null ? variant.getType().name() : "";
         if (CollectionUtils.isNotEmpty(variant.getStudies()) && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getFiles())) {
             for (FileEntry file : variant.getStudies().get(0).getFiles()) {
-                if (file.getData() != null) {
-                    if (file.getData().containsKey("EXT_SVTYPE")) {
-                        variantType = file.getData().get("EXT_SVTYPE").toUpperCase(Locale.ROOT);
-                        break;
-                    } else if (file.getData().containsKey("SVCLASS")) {
-                        variantType = file.getData().get("SVCLASS").toUpperCase(Locale.ROOT);
-                        break;
+                if (file.getData() != null && (file.getData().containsKey(EXT_SVTYPE) || file.getData().containsKey(SVCLASS))) {
+                    if (file.getData().containsKey(EXT_SVTYPE)) {
+                        variantType = file.getData().get(EXT_SVTYPE).toUpperCase(Locale.ROOT);
+                    } else if (file.getData().containsKey(SVCLASS)) {
+                        variantType = file.getData().get(SVCLASS).toUpperCase(Locale.ROOT);
                     }
+                    break;
                 }
             }
         }
@@ -458,6 +493,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             case "TDS":
             case "DUPLICATION":
             case "TANDEM_DUPLICATION":
+            case "TANDEM-DUPLICATION":
                 return TYPE_TDS;
             case "INV":
             case "INVERSION":
@@ -466,30 +502,33 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             case "TRANS":
             case "TRANSLOCATION":
                 return TYPE_TRANS;
+            default: {
+                logger.warn("Unknown variant type {}, so this variant will be ignored in mutational signature analysis", variantType);
+                return null;
+            }
         }
-        return null;
     }
 
-    private String getLengthKey(Variant variant) {
-        if (variant.getSv() == null || variant.getSv().getBreakend() == null || variant.getSv().getBreakend().getMate() == null) {
+    private String getLengthKey(Variant variant, String type) {
+        if (type == null) {
             return null;
         }
-        BreakendMate mate = variant.getSv().getBreakend().getMate();
-        if (variant.getChromosome().equals(mate.getChromosome())) {
-            int length = Math.abs(mate.getPosition() - variant.getStart());
-            if (length <= 10000) {
-                return LENGTH_1_10Kb;
-            } else if (length <= 100000) {
-                return LENGTH_10Kb_100Kb;
-            } else if (length <= 1000000) {
-                return LENGTH_100Kb_1Mb;
-            } else if (length <= 10000000) {
-                return LENGTH_1Mb_10Mb;
-            }
-            return LENGTH_10Mb;
+        if (type.equals(TYPE_TRANS)) {
+            return LENGTH_NA;
         } else {
-            if (variant.getType() == VariantType.TRANSLOCATION) {
-                return LENGTH_NA;
+            BreakendMate mate = variant.getSv().getBreakend().getMate();
+            if (variant.getChromosome().equals(mate.getChromosome())) {
+                int length = Math.abs(mate.getPosition() - variant.getStart());
+                if (length <= 10000) {
+                    return LENGTH_1_10Kb;
+                } else if (length <= 100000) {
+                    return LENGTH_10Kb_100Kb;
+                } else if (length <= 1000000) {
+                    return LENGTH_100Kb_1Mb;
+                } else if (length <= 10000000) {
+                    return LENGTH_1Mb_10Mb;
+                }
+                return LENGTH_10Mb;
             }
         }
         return null;
@@ -508,12 +547,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 throw new ToolException("Unable to compute mutational signature analysis. Sample '" + getSample() + "' not found");
             }
             Sample sample = sampleResult.first();
-            logger.info("Searching catalogue counts from quality control for sample " + getSample());
+            logger.info("Searching catalogue counts from quality control for sample {}", getSample());
             if (sample.getQualityControl() != null && sample.getQualityControl().getVariant() != null
                     && CollectionUtils.isNotEmpty(sample.getQualityControl().getVariant().getSignatures())) {
-                logger.info("Searching in " + sample.getQualityControl().getVariant().getSignatures().size() + " signatures");
+                logger.info("Searching in {} signatures", sample.getQualityControl().getVariant().getSignatures().size());
                 for (Signature signature : sample.getQualityControl().getVariant().getSignatures()) {
-                    logger.info("Matching ? " + getQueryId() + " vs " + signature.getId());
+                    logger.info("Matching ? {} vs {}", getQueryId(), signature.getId());
                     if (getQueryId().equals(signature.getId())) {
                         // Write catalogue file
                         try (PrintWriter pw = new PrintWriter(cataloguesFile)) {
@@ -521,7 +560,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                             for (Signature.GenomeContextCount count : signature.getCounts()) {
                                 pw.println(count.getContext() + "\t" + count.getTotal());
                             }
-                            pw.close();
                         } catch (Exception e) {
                             throw new ToolException("Error writing catalogue output file: " + cataloguesFile.getName(), e);
                         }
@@ -554,7 +592,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
                 .append(" --catalogues=/data/input/").append(cataloguesFile.getName())
-                .append(" --outdir=/data/output");
+                .append(" --outdir=/data/output")
+                .append(" --commonsigtier=T2");
+
         if (StringUtils.isNotEmpty(getFitMethod())) {
             scriptParams.append(" --fitmethod=").append(getFitMethod());
         }
@@ -587,7 +627,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 scriptParams.append(" --genomev=hg19");
                 break;
             }
-            case "GRCh38": {
+            case "GRCh38":
+            default: {
                 scriptParams.append(" --genomev=hg38");
                 break;
             }
@@ -595,7 +636,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
                 null);
-        logger.info("Docker command line: " + cmdline);
+        logger.info("Docker command line: {}", cmdline);
 
         // Check fitting file before parsing and creating the mutational signature fitting data model
         File signatureCoeffsFile = getOutDir().resolve(SIGNATURE_COEFFS_FILENAME).toFile();

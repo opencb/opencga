@@ -4,7 +4,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Iterate through the variants of a SampleIndexEntry.
@@ -36,9 +38,12 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
             // This object could be reused
             annotationIndexEntry = new AnnotationIndexEntry(annotationIndexEntry);
         }
-        BitBuffer fileIndex = null;
+        List<BitBuffer> filesIndex = new ArrayList<>();
         if (hasFileIndex()) {
-            fileIndex = nextFileIndexEntry();
+            filesIndex.add(nextFileIndexEntry());
+            while (isMultiFileIndex()) {
+                filesIndex.add(nextMultiFileIndexEntry());
+            }
         }
         Byte parentsCode = null;
         if (hasParentsIndex()) {
@@ -46,7 +51,7 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
         }
         String genotype = nextGenotype();
         Variant variant = next();
-        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, parentsCode);
+        return new SampleVariantIndexEntry(variant, filesIndex, genotype, annotationIndexEntry, parentsCode, null);
     }
 
     /**

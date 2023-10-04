@@ -318,10 +318,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Study> getAllStudiesInProject(long projectUid, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        dbAdaptorFactory.getCatalogProjectDbAdaptor().checkId(projectId);
-        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
+        dbAdaptorFactory.getCatalogProjectDbAdaptor().checkId(projectUid);
+        Query query = new Query(QueryParams.PROJECT_UID.key(), projectUid);
         return endQuery(startTime, get(query, options));
     }
 

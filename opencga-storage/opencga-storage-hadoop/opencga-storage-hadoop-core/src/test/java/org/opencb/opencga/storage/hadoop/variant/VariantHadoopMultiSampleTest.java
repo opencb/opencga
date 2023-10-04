@@ -384,7 +384,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        printVariants(studyMetadata, dbAdaptor, newOutputUri(1));
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -406,7 +406,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertNotNull(variantFileMetadata);
         }
 
-        printVariants(studyMetadata, dbAdaptor, newOutputUri(1));
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
     }
 
     @Test
@@ -708,7 +708,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             }
         }
 
-        printVariants(studyMetadata, dbAdaptor, newOutputUri(1));
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);

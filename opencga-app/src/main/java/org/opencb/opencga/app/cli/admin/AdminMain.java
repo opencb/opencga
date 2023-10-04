@@ -30,7 +30,7 @@ import java.io.IOException;
  */
 public class AdminMain {
 
-    public static final String VERSION = GitRepositoryState.get().getBuildVersion();
+    public static final String VERSION = GitRepositoryState.getInstance().getBuildVersion();
 
     public static void main(String[] args) {
 
@@ -71,8 +71,8 @@ public class AdminMain {
         String parsedCommand = cliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
             if (cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
-                System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                System.out.println("Version " + GitRepositoryState.getInstance().getBuildVersion());
+                System.out.println("Git version: " + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
                 System.exit(0);
             } else if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();

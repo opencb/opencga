@@ -76,8 +76,8 @@ public class OptionsParser {
 
     private static Map<String, String> getVersionMap() {
         Map<String, String> versionMap = new HashMap<>();
-        versionMap.put("OpenCGA Test version:", GitRepositoryState.get().getBuildVersion());
-        versionMap.put("Git version:", "" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        versionMap.put("OpenCGA Test version:", GitRepositoryState.getInstance().getBuildVersion());
+        versionMap.put("Git version:", "" + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
         versionMap.put("Program:", "OpenCGA-test (OpenCB)");
         versionMap.put("Description:", "Data generation application for the openCGA platform");
         return versionMap;

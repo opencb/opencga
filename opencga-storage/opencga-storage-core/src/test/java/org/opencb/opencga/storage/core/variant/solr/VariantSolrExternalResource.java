@@ -21,20 +21,22 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * +
@@ -61,18 +63,19 @@ public class VariantSolrExternalResource extends ExternalResource {
     protected void before() throws Throwable {
         super.before();
 
-        Path rootDir = getTmpRootDir();
+        Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
+        Files.createDirectories(rootDir);
 
-        String configSet = "opencga-variant-configset-" + GitRepositoryState.get().getBuildVersion();
+        String configSet = "opencga-variant-configset-" + GitRepositoryState.getInstance().getBuildVersion();
 
         // Copy configuration
-        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
-        getResourceUri("managed-schema", "configsets/" + configSet + "/managed-schema");
-        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
-        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
-        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
-        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
-        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
+        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml", rootDir);
+        getResourceUri("managed-schema", "configsets/" + configSet + "/managed-schema", rootDir);
+        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json", rootDir);
+        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt", rootDir);
+        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt", rootDir);
 
         String solrHome = rootDir.resolve("solr").toString();
 
