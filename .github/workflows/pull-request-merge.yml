@@ -11,13 +11,19 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
-    with:
-      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+    name: Delete docker
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Build opencga
+        uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
+        with:
+          maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      - name: Delete docker
+        uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.8.x
+        with:
+          cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+        secrets: inherit
 
-  delete-docker:
-    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@release-4.8.x
-    needs: build
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
-    secrets: inherit
