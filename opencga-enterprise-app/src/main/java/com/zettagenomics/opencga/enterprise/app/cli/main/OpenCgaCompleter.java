@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-09-28 OpenCB
+* Copyright 2015-2023-10-02 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> cvdbList = asList( "case-index-run","case-query","info")
+    private List<Candidate> cvdbList = asList( "case-index","case-index-run","case-query","info")
             .stream()
             .map(Candidate::new)
             .collect(toList());

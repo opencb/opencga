@@ -33,6 +33,7 @@ public class CvdbCommandOptions {
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
 
+        public IndexCaseCommandOptions indexCaseCommandOptions;
         public RunCaseIndexCommandOptions runCaseIndexCommandOptions;
         public QueryCaseCommandOptions queryCaseCommandOptions;
         public InfoCommandOptions infoCommandOptions;
@@ -42,13 +43,28 @@ public class CvdbCommandOptions {
     
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
+        this.indexCaseCommandOptions = new IndexCaseCommandOptions();
         this.runCaseIndexCommandOptions = new RunCaseIndexCommandOptions();
         this.queryCaseCommandOptions = new QueryCaseCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
     
     }
     
-    @Parameters(commandNames = {"case-index-run"}, commandDescription ="Index clinical analyses into CVDB")
+    @Parameters(commandNames = {"case-index"}, commandDescription ="Index clinical analyses into CVDB")
+    public class IndexCaseCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical analysis ID (or list of clinical analysis IDs separated by commas)", required = false, arity = 1)
+        public String clinicalAnalysisId; 
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite clinical analysis when CVDB indexing", required = false, help = true, arity = 0)
+        public boolean overwrite = false; 
+    
+    }
+
+    @Parameters(commandNames = {"case-index-run"}, commandDescription ="Index all clinical analyses of a OpenCGA project into CVDB")
     public class RunCaseIndexCommandOptions {
     
         @ParametersDelegate

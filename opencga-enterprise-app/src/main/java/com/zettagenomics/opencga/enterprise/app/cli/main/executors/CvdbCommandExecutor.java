@@ -18,6 +18,7 @@ import org.opencb.commons.utils.PrintUtils;
 
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvdbCommandOptions;
 
+import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.job.Job;
@@ -56,6 +57,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "case-index":
+                queryResponse = indexCase();
+                break;
             case "case-index-run":
                 queryResponse = runCaseIndex();
                 break;
@@ -72,6 +76,18 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<CvdbIndexResult> indexCase() throws Exception {
+        logger.debug("Executing indexCase in Cvdb command line");
+
+        CvdbCommandOptions.IndexCaseCommandOptions commandOptions = cvdbCommandOptions.indexCaseCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
+        queryParams.putIfNotNull("overwrite", commandOptions.overwrite);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().indexCase(queryParams);
     }
 
     private RestResponse<Job> runCaseIndex() throws Exception {

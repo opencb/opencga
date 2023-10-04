@@ -97,7 +97,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/case/index")
-    @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = CvdbIndexResult.class)
+    @ApiOperation(value = CLINICAL_ANALYSES_INDEX_DESCRIPTION, response = CvdbIndexResult.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = CLINICAL_ANALYSIS_PARAM_NAME, value = CLINICAL_ANALYSIS_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = INDEX_OVERWRITE_PARAM_NAME, value = INDEX_OVERWRITE_PARAM_DESCRIPTION, dataType = "boolean", paramType = "query")
