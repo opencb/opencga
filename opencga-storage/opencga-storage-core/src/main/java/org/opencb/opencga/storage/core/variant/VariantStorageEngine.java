@@ -140,11 +140,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         REGION,
         MULTI;
 
-        public static boolean isPartial(ObjectMap options) {
-            return isPartial(from(options));
+        public static boolean isPartialSplit(ObjectMap options) {
+            return isPartialSplit(from(options));
         }
 
-        public static boolean isPartial(SplitData splitData) {
+        public static boolean isPartialSplit(SplitData splitData) {
             return splitData == CHROMOSOME || splitData == REGION;
         }
 
@@ -1032,6 +1032,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                         s.setFiles(Collections.emptyList());
                         s.setCohorts(Collections.emptySet());
+                        s.setAttributes(new ObjectMap());
                     });
                 }
 

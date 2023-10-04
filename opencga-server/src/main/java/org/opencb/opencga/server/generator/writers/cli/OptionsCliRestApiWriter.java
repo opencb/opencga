@@ -114,15 +114,16 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             String commandName = getCommandName(restCategory, restEndpoint);
             //    if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
             if (config.isAvailableCommand(commandName)) {
-                sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions "
-                        + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions;\n");
+                String className = getSubCommandOptionsClassName(config, commandName);
+                String varName = getSubCommandOptionsVarName(config, commandName);
+                sb.append("        public " + className + " " + varName + ";\n");
             }
             //   }
         }
 
         sb.append("\n");
         sb.append("\n");
-        sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions(CommonCommandOptions commonCommandOptions, " +
+        sb.append("    public " + getCommandOptionsClassName(restCategory) + "(CommonCommandOptions commonCommandOptions, " +
                 "JCommander jCommander) {\n");
         sb.append("    \n");
         if (config.isOptionExtended()) {
@@ -135,9 +136,9 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             String commandName = getCommandName(restCategory, restEndpoint);
             //  if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
             if (config.isAvailableCommand(commandName)) {
-                sb.append("        this." + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions = " +
-                        "new "
-                        + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions();\n");
+                String varName = getSubCommandOptionsVarName(config, commandName);
+                String className = getSubCommandOptionsClassName(config, commandName);
+                sb.append("        this." + varName + " = " + "new " + className + "();\n");
             }
             //    }
         }
@@ -158,7 +159,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
                 sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
                         restEndpoint.getDescription().replaceAll("\"", "'") + "\")\n");
-                sb.append("    public class " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions " +
+                sb.append("    public class " + getSubCommandOptionsClassName(config, commandName) + " " +
                         "{\n");
                 sb.append("    \n");
                 sb.append("        @ParametersDelegate\n");

@@ -1058,7 +1058,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
