@@ -17,8 +17,11 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Test;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -115,6 +119,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    @ClassRule
+    public static TestClassNameWatcher testClassNameWatcher = new TestClassNameWatcher();
+
+
     @BeforeClass
     public static void _beforeClass() throws Exception {
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
@@ -191,7 +199,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        rootDir = Paths.get("target/test-data", "junit-" + testClassNameWatcher.getTestClassSimpleName() + "-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
         Files.createDirectories(rootDir);
     }
 
@@ -199,21 +207,33 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         VariantStorageBaseTest.rootDir = rootDir;
     }
 
-    public static URI newOutputUri() throws IOException {
-        return newOutputUri(1, outputUri);
-    }
-
-    public static URI newOutputUri(int extraCalls) throws IOException {
-        return newOutputUri(1 + extraCalls, outputUri);
-    }
-
-    public static URI newOutputUri(int extraCalls, URI outputUri) throws IOException {
+    protected static URI newOutputUri() throws IOException {
+        String dirName = null;
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        // stackTrace[0] = "Thread.currentThread"
-        // stackTrace[1] = "newOutputUri"
-        // stackTrace[2] =  caller method
-        String testName = stackTrace[2 + extraCalls].getMethodName();
-        return newOutputUri(testName, outputUri);
+        for (int i = 0; i < stackTrace.length; i++) {
+            StackTraceElement element = stackTrace[i];
+            try {
+                Class<?> aClass = Class.forName(element.getClassName());
+                Method method = aClass.getMethod(element.getMethodName());
+                if (method.isAnnotationPresent(Test.class)
+                        || method.isAnnotationPresent(Before.class)
+                        || method.isAnnotationPresent(BeforeClass.class)
+                        || method.isAnnotationPresent(After.class)
+                        || method.isAnnotationPresent(AfterClass.class)) {
+                    dirName = element.getMethodName();
+                    break;
+                }
+            } catch (ClassNotFoundException | NoSuchMethodException ignore) {
+            }
+        }
+        if (dirName == null) {
+            // stackTrace[0] = "Thread.currentThread"
+            // stackTrace[1] = "newOutputUri"
+            // stackTrace[2] =  caller method
+            dirName = stackTrace[2].getMethodName();
+        }
+
+        return newOutputUri(dirName, outputUri);
     }
 
     protected static URI newOutputUri(String testName) throws IOException {
@@ -433,5 +453,19 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             }
         }
         System.out.println("=========================================");
+    }
+
+    private static class TestClassNameWatcher extends TestWatcher {
+
+        private String testClass;
+
+        @Override
+        protected void starting(Description d) {
+            this.testClass = d.getTestClass().getSimpleName();
+        }
+
+        public String getTestClassSimpleName() {
+            return this.testClass;
+        }
     }
 }

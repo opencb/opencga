@@ -235,7 +235,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
 
     public URI getOutputUri(String fileName) throws IOException {
         if (exportToLocal) {
-            return newOutputUri(1).resolve(fileName);
+            return newOutputUri().resolve(fileName);
         } else {
             return URI.create("hdfs:///" + fileName);
         }

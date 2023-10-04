@@ -60,6 +60,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -868,9 +869,9 @@ public class VariantCatalogQueryUtilsTest {
                     sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
         }
 
-        List<List<String>> trios = queryUtils.getTriosFromFamily("s1", f1, metadataManager, true, sessionId);
+        List<Trio> trios = queryUtils.getTriosFromFamily("s1", f1, metadataManager, true, sessionId);
 //        System.out.println("trios = " + trios);
-        assertEquals(Arrays.asList(Arrays.asList("sample1", "sample2", "sample3"), Arrays.asList("sample1", "sample2", "sample4")), trios);
+        assertEquals(Arrays.asList(new Trio("sample1", "sample2", "sample3"), new Trio("sample1", "sample2", "sample4")), trios);
 
     }
 
