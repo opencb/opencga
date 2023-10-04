@@ -19,5 +19,5 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.8.x
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.ref_name }}
     secrets: inherit
