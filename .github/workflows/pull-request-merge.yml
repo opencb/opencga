@@ -14,7 +14,8 @@ jobs:
     name: Delete docker
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - name: checkout opencga
+        uses: actions/checkout@v3
         with:
           fetch-depth: '0'
       - name: Build opencga
