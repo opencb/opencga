@@ -7,19 +7,9 @@ on:
       - "release-*"
     types:
       - closed
-    secrets:
-      DOCKER_HUB_USER:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
   push:
     branches:
       - TASK-*
-    secrets:
-      DOCKER_HUB_USER:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
 
 jobs:
   build:
