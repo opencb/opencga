@@ -17,6 +17,5 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: "Checkout opencga"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - run: python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.ref_name }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }}
-    secrets: inherit
