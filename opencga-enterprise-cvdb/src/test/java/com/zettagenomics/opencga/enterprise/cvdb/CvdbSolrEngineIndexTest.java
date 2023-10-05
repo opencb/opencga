@@ -20,6 +20,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -65,7 +66,6 @@ public class CvdbSolrEngineIndexTest {
 
         // CVDB
         cvdbEngine = cvdbSolrExternalResource.configure();
-
         if (!cvdbEngine.existCollections(projectId)) {
             cvdbEngine.createCollections(projectId);
         }
@@ -229,11 +229,10 @@ public class CvdbSolrEngineIndexTest {
     public void testIndexClinicalAnalysesFromIds() throws CatalogException, IOException, CvdbException, SolrServerException {
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
 
-
         OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
                 QueryOptions.empty(), sessionIdUser);
 
-        List<String> ids = Arrays.asList(caResults.getResults().get(0).getId(), caResults.getResults().get(1).getId());
+        List<String> ids = caResults.getResults().stream().map(r -> r.getId()).collect(Collectors.toList());
         CvdbIndexResult indexResult = cvdbEngine.index(ids, study.getFqn(), catalogManager, true, sessionIdUser);
         System.out.println(indexResult);
         Assert.assertEquals(2, indexResult.getNumIndexed());
@@ -301,10 +300,7 @@ public class CvdbSolrEngineIndexTest {
                 }
                 catalogManager.getPanelManager().importFromSource(studyId, "panelapp", StringUtils.join(panelIds, ","), sessionIdUser);
             } catch (CatalogException e) {
-                System.out.println("---------------------------------------------------------------------------------");
-                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
-                System.out.println("---------------------------------------------------------------------------------");
-                continue;
+                System.out.println("Error importing panel for clinical analysis file " + caFilename + ": " + e.getMessage());
             }
 
             // Create family
@@ -319,7 +315,13 @@ public class CvdbSolrEngineIndexTest {
                     secondaryInterpretation.setId(null);
                 }
             }
-            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+            try {
+                catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+            } catch (CatalogException e) {
+                System.out.println("---------------------------------------------------------------------------------");
+                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
+                System.out.println("---------------------------------------------------------------------------------");
+            }
         }
     }
 
