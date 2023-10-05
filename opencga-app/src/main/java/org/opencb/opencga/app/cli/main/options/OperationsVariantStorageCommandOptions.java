@@ -452,7 +452,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = false, arity = 1)
         public String file;
     
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
         @Parameter(names = {"--outdir"}, description = "Output directory", required = false, arity = 1)
@@ -586,7 +586,7 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-file"}, description = "List of files to be indexed.", required = false, arity = 1)
         public String indexParamsFile;
     
-        @Parameter(names = {"--index-params-resume"}, description = "Resume a previously failed indexation", required = false, help = true, arity = 0)
+        @Parameter(names = {"--index-params-resume"}, description = "Resume a previously failed index operation", required = false, help = true, arity = 0)
         public boolean indexParamsResume = false;
     
         @Parameter(names = {"--index-params-outdir"}, description = "Output directory", required = false, arity = 1)

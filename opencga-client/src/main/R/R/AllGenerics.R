@@ -5,47 +5,47 @@ setGeneric("userClient", function(OpencgaR, filterId, users, user, endpointName,
 
 # ##############################################################################
 ## ProjectClient
-setGeneric("projectClient", function(OpencgaR, projects, project, endpointName, params=NULL, ...)
+setGeneric("projectClient", function(OpencgaR, project, projects, endpointName, params=NULL, ...)
     standardGeneric("projectClient"))
 
 # ##############################################################################
 ## StudyClient
-setGeneric("studyClient", function(OpencgaR, group, study, members, templateId, variableSet, studies, endpointName, params=NULL, ...)
+setGeneric("studyClient", function(OpencgaR, group, members, templateId, variableSet, studies, study, endpointName, params=NULL, ...)
     standardGeneric("studyClient"))
 
 # ##############################################################################
 ## FileClient
-setGeneric("fileClient", function(OpencgaR, folder, file, files, annotationSet, members, endpointName, params=NULL, ...)
+setGeneric("fileClient", function(OpencgaR, members, files, folder, annotationSet, file, endpointName, params=NULL, ...)
     standardGeneric("fileClient"))
 
 # ##############################################################################
 ## JobClient
-setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, params=NULL, ...)
+setGeneric("jobClient", function(OpencgaR, members, job, jobs, endpointName, params=NULL, ...)
     standardGeneric("jobClient"))
 
 # ##############################################################################
 ## SampleClient
-setGeneric("sampleClient", function(OpencgaR, sample, annotationSet, samples, members, endpointName, params=NULL, ...)
+setGeneric("sampleClient", function(OpencgaR, members, samples, annotationSet, sample, endpointName, params=NULL, ...)
     standardGeneric("sampleClient"))
 
 # ##############################################################################
 ## IndividualClient
-setGeneric("individualClient", function(OpencgaR, annotationSet, individuals, individual, members, endpointName, params=NULL, ...)
+setGeneric("individualClient", function(OpencgaR, members, annotationSet, individual, individuals, endpointName, params=NULL, ...)
     standardGeneric("individualClient"))
 
 # ##############################################################################
 ## FamilyClient
-setGeneric("familyClient", function(OpencgaR, annotationSet, families, family, members, endpointName, params=NULL, ...)
+setGeneric("familyClient", function(OpencgaR, families, members, annotationSet, family, endpointName, params=NULL, ...)
     standardGeneric("familyClient"))
 
 # ##############################################################################
 ## CohortClient
-setGeneric("cohortClient", function(OpencgaR, cohorts, cohort, annotationSet, members, endpointName, params=NULL, ...)
+setGeneric("cohortClient", function(OpencgaR, members, annotationSet, cohorts, cohort, endpointName, params=NULL, ...)
     standardGeneric("cohortClient"))
 
 # ##############################################################################
 ## PanelClient
-setGeneric("panelClient", function(OpencgaR, panels, members, endpointName, params=NULL, ...)
+setGeneric("panelClient", function(OpencgaR, members, panels, endpointName, params=NULL, ...)
     standardGeneric("panelClient"))
 
 # ##############################################################################
@@ -60,7 +60,7 @@ setGeneric("variantClient", function(OpencgaR, endpointName, params=NULL, ...)
 
 # ##############################################################################
 ## ClinicalClient
-setGeneric("clinicalClient", function(OpencgaR, clinicalAnalyses, clinicalAnalysis, interpretation, members, interpretations, endpointName, params=NULL, ...)
+setGeneric("clinicalClient", function(OpencgaR, members, clinicalAnalysis, interpretations, clinicalAnalyses, interpretation, endpointName, params=NULL, ...)
     standardGeneric("clinicalClient"))
 
 # ##############################################################################
