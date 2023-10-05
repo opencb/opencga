@@ -7,13 +7,10 @@ on:
       - "release-*"
     types:
       - closed
-  push:
-    branches:
-      - TASK-*
 
 jobs:
   docker-delete:
-    name: Delete TASK docker image
+    name: Delete TASK Docker image
     runs-on: ubuntu-22.04
     steps:
       - name: "Checkout opencga"
