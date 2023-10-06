@@ -6,6 +6,9 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class ConverterUtils {
 
@@ -62,5 +65,29 @@ public class ConverterUtils {
         ByteArrayInputStream bais = new ByteArrayInputStream(byteData);
 
         return (org.opencb.opencga.core.models.clinical.Interpretation) new ObjectInputStream(bais).readObject();
+    }
+
+    public static String compressToBase64(String data) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOut = new GZIPOutputStream(baos);
+        gzipOut.write(data.getBytes("UTF-8"));
+        gzipOut.close();
+        byte[] compressedBytes = baos.toByteArray();
+        return Base64.getEncoder().encodeToString(compressedBytes);
+    }
+
+    // Método para descomprimir una cadena Base64 a un String
+    public static String decompressFromBase64(String compressedData) throws IOException {
+        byte[] compressedBytes = Base64.getDecoder().decode(compressedData);
+        ByteArrayInputStream bais = new ByteArrayInputStream(compressedBytes);
+        GZIPInputStream gzipIn = new GZIPInputStream(bais);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = gzipIn.read(buffer)) > 0) {
+            baos.write(buffer, 0, len);
+        }
+        gzipIn.close();
+        return new String(baos.toByteArray(), "UTF-8");
     }
 }

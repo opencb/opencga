@@ -16,13 +16,15 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,10 +34,11 @@ public class ClinicalAnalysisConverter extends SearchConverter {
 
     private ObjectReader clinicalAnalysisReader;
 
-//    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
+    private Logger logger;
 
     public ClinicalAnalysisConverter() {
         this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
+        this.logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
     }
 
     public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis) throws CvdbException {
@@ -89,8 +92,11 @@ public class ClinicalAnalysisConverter extends SearchConverter {
             cas.setLocked(ca.isLocked());
 
             try {
-                cas.setJson(mapper.writeValueAsString(ca));
-            } catch (JsonProcessingException e) {
+                String json = mapper.writeValueAsString(ca);
+                logger.info("CA json length = " + json.length());
+                cas.setJson(ConverterUtils.compressToBase64(json));
+                logger.info("CA json b64 gzip length = " + cas.getJson().length());
+            } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical analysis JSON field", e);
             }
 
@@ -103,8 +109,8 @@ public class ClinicalAnalysisConverter extends SearchConverter {
 
     public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch clinicalAnalysisSearch) throws CvdbException {
         try {
-            return clinicalAnalysisReader.readValue(clinicalAnalysisSearch.getJson());
-        } catch (JsonProcessingException e) {
+            return clinicalAnalysisReader.readValue(ConverterUtils.decompressFromBase64(clinicalAnalysisSearch.getJson()));
+        } catch (IOException e) {
             throw new CvdbException("Error when converting to clinical analysis", e);
         }
     }
