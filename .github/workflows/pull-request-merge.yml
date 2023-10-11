@@ -7,12 +7,17 @@ on:
       - "release-*"
     types:
       - closed
+  workflow_dispatch:
 
 jobs:
-  docker-delete:
-    name: Delete TASK Docker image
-    runs-on: ubuntu-22.04
-    steps:
-      - name: "Checkout opencga"
-        uses: actions/checkout@v3
-      - run: python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ github.ref_name }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }}
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+
+  delete-docker:
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+    secrets: inherit

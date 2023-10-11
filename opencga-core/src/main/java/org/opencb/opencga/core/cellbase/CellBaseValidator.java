@@ -4,20 +4,25 @@ import io.jsonwebtoken.JwtException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.api.key.ApiKeyManager;
 import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
-import org.opencb.cellbase.core.token.DataAccessTokenManager;
-import org.opencb.cellbase.core.token.DataAccessTokenSources;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.commons.utils.VersionUtils;
+
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 public class CellBaseValidator {
 
@@ -46,7 +51,7 @@ public class CellBaseValidator {
                 toCellBaseSpeciesName(species),
                 assembly,
                 cellBaseConfiguration.getDataRelease(),
-                cellBaseConfiguration.getToken(),
+                cellBaseConfiguration.getApiKey(),
                 cellBaseConfiguration.toClientConfiguration());
     }
 
@@ -70,13 +75,13 @@ public class CellBaseValidator {
         return cellBaseClient.getDataRelease();
     }
 
-    public String getToken() {
-        return cellBaseClient.getToken();
+    public String getApiKey() {
+        return cellBaseClient.getApiKey();
     }
 
-    public DataAccessTokenSources getTokenSources() {
-        DataAccessTokenManager tokenManager = new DataAccessTokenManager();
-        return tokenManager.decode(cellBaseClient.getToken());
+    public List<String> getApiKeyDataSources() {
+        ApiKeyManager apiKeyManager = new ApiKeyManager();
+        return new ArrayList<>(apiKeyManager.getValidSources(cellBaseClient.getApiKey()));
     }
 
     public String getURL() {
@@ -92,20 +97,36 @@ public class CellBaseValidator {
     }
 
     public CellBaseConfiguration getCellBaseConfiguration() {
-        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getToken());
+        return new CellBaseConfiguration(getURL(), getVersion(), getDataRelease(), getApiKey());
     }
 
-    public String getLatestActiveDataRelease() throws IOException {
+    public String getDefaultDataRelease() throws IOException {
         if (supportsDataRelease()) {
-            Optional<DataRelease> dataRelease = cellBaseClient.getMetaClient().dataReleases()
-                    .allResults()
-                    .stream()
-                    .filter(DataRelease::isActive)
-                    .max(Comparator.comparing(DataRelease::getDate));
-            if (!dataRelease.isPresent()) {
+            List<DataRelease> dataReleases = cellBaseClient.getMetaClient().dataReleases()
+                    .allResults();
+            DataRelease dataRelease = null;
+            if (supportsDataReleaseActiveByDefaultIn()) {
+                // ActiveByDefault versions are stored in form `v<major>.<minor>` , i.e. v5.5 , v5.7, ...
+                String majorMinor = "v" + getVersionFromServerMajorMinor();
+                List<DataRelease> drs = dataReleases
+                        .stream()
+                        .filter(dr -> dr.getActiveByDefaultIn() != null && dr.getActiveByDefaultIn().contains(majorMinor))
+                        .collect(Collectors.toList());
+                if (drs.size() == 1) {
+                    dataRelease = drs.get(0);
+                } else if (drs.size() > 1) {
+                    throw new IllegalArgumentException("More than one default active data releases found on cellbase " + this);
+                }
+            } else {
+                dataRelease = dataReleases
+                        .stream()
+                        .filter(DataRelease::isActive)
+                        .max(Comparator.comparing(DataRelease::getDate)).orElse(null);
+            }
+            if (dataRelease == null) {
                 throw new IllegalArgumentException("No active data releases found on cellbase " + this);
             } else {
-                return String.valueOf(dataRelease.get().getRelease());
+                return String.valueOf(dataRelease.getRelease());
             }
         } else {
             return null;
@@ -150,7 +171,7 @@ public class CellBaseValidator {
             String dataRelease = getDataRelease();
             if (dataRelease == null) {
                 if (autoComplete) {
-                    cellBaseConfiguration.setDataRelease(getLatestActiveDataRelease());
+                    cellBaseConfiguration.setDataRelease(getDefaultDataRelease());
                 } else {
                     throw new IllegalArgumentException("Missing DataRelease for cellbase "
                             + "url: '" + getURL() + "'"
@@ -174,34 +195,36 @@ public class CellBaseValidator {
                 }
             }
         }
-        String token = getToken();
-        if (StringUtils.isEmpty(token)) {
-            cellBaseConfiguration.setToken(null);
+
+        String apiKey = getApiKey();
+        if (StringUtils.isEmpty(apiKey)) {
+            cellBaseConfiguration.setApiKey(null);
         } else {
             // Check it's supported
-            if (!supportsToken(serverVersion)) {
-                throw new IllegalArgumentException("Token not supported for cellbase "
+            if (!supportsApiKey(serverVersion)) {
+                throw new IllegalArgumentException("API key not supported for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion + "'");
             }
 
-            // Check it's an actual token
-            DataAccessTokenManager tokenManager = new DataAccessTokenManager();
+            // Check it's an actual API key
+            ApiKeyManager apiKeyManager = new ApiKeyManager();
             try {
-                tokenManager.decode(token);
+                apiKeyManager.decode(apiKey);
             } catch (JwtException e) {
-                throw new IllegalArgumentException("Malformed token for cellbase "
+                throw new IllegalArgumentException("Malformed API key for cellbase "
+
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion
                         + "', species: '" + getSpecies()
                         + "', assembly: '" + getAssembly() + "'");
             }
 
-            // Check it's a valid token
+            // Check it's a valid API key
             CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
                     .getAnnotationByVariantIds(Collections.singletonList("1:1:N:C"), new QueryOptions(), true);
             if (response.firstResult() == null) {
-                throw new IllegalArgumentException("Invalid token for cellbase "
+                throw new IllegalArgumentException("Invalid API key for cellbase "
                         + "url: '" + getURL() + "'"
                         + ", version: '" + inputVersion
                         + "', species: '" + getSpecies()
@@ -238,12 +261,22 @@ public class CellBaseValidator {
     }
 
     public static boolean supportsDataRelease(String serverVersion) {
-        // Data Release support starts at versio 5.1.0
+        // Data Release support starts at version 5.1.0
         return VersionUtils.isMinVersion("5.1.0", serverVersion);
     }
 
-    public static boolean supportsToken(String serverVersion) {
-        // Tokens support starts at version 5.4.0
+
+    public boolean supportsDataReleaseActiveByDefaultIn() throws IOException {
+        return supportsDataReleaseActiveByDefaultIn(getVersionFromServer());
+    }
+
+    public static boolean supportsDataReleaseActiveByDefaultIn(String serverVersion) {
+        // Data Release Default Active In Version support starts at version 5.5.0 , TASK-4157
+        return VersionUtils.isMinVersion("5.5.0", serverVersion, true);
+    }
+
+    public static boolean supportsApiKey(String serverVersion) {
+        // API keys support starts at version 5.4.0
         return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
@@ -258,10 +291,13 @@ public class CellBaseValidator {
     }
 
     private static String major(String version) {
+//        return String.valueOf(new VersionUtils.Version(version).getMajor());
         return version.split("\\.")[0];
     }
 
     private static String majorMinor(String version) {
+//        VersionUtils.Version v = new VersionUtils.Version(version);
+//        return v.getMajor() + "." + v.getMinor();
         String[] split = version.split("\\.");
         if (split.length > 1) {
             version = split[0] + "." + split[1];
@@ -294,7 +330,7 @@ public class CellBaseValidator {
                 + "species '" + getSpecies() + "', "
                 + "assembly '" + getAssembly() + "', "
                 + "dataRelease '" + getDataRelease() + "', "
-                + "token '" + getToken() + "'";
+                + "apiKey '" + getApiKey() + "'";
 
     }
 }

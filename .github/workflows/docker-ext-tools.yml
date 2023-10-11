@@ -1,4 +1,4 @@
-name: Deploy Docker Tools
+name: Deploy Docker Ext-Tools
 
 on:
   push:
@@ -8,16 +8,13 @@ on:
       - TASK-*
     paths:
       - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
-  workflow_dispatch:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@release-4.8.x
-    with:
-      maven_opts:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
 
   deploy-docker-ext-tools:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@release-4.8.x
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}

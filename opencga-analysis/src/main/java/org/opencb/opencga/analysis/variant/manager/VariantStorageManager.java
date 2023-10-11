@@ -1028,8 +1028,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), organism.getAssembly());
         }
         if (cellbase != null) {
-            if (StringUtils.isEmpty(cellbase.getToken()) || storageConfiguration.getCellbase() != null) {
-                cellbase.setToken(storageConfiguration.getCellbase().getToken());
+            // To ensure that we use the project API key before using the storage API key
+            if (StringUtils.isEmpty(cellbase.getApiKey()) && storageConfiguration.getCellbase() != null) {
+                cellbase.setApiKey(storageConfiguration.getCellbase().getApiKey());
             }
             engine.getConfiguration().setCellbase(cellbase);
             engine.reloadCellbaseConfiguration();

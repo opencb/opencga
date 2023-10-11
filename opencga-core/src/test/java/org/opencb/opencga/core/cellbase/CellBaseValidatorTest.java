@@ -74,43 +74,43 @@ public class CellBaseValidatorTest {
     }
 
     @Test
-    public void testToken() throws IOException {
-        String token = System.getenv("CELLBASE_HGMD_TOKEN");
-        Assume.assumeTrue(StringUtils.isNotEmpty(token));
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
-        Assert.assertNotNull(validated.getToken());
+    public void testApiKey() throws IOException {
+        String apiKey = System.getenv("CELLBASE_HGMD_APIKEY");
+        Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, apiKey), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getApiKey());
     }
 
     @Test
-    public void testTokenNotSupported() throws IOException {
-        String token = System.getenv("CELLBASE_HGMD_TOKEN");
-        Assume.assumeTrue(StringUtils.isNotEmpty(token));
-        thrown.expectMessage("Token not supported");
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
-        Assert.assertNotNull(validated.getToken());
+    public void testApiKeyNotSupported() throws IOException {
+        String apiKey = System.getenv("CELLBASE_HGMD_APIKEY");
+        Assume.assumeTrue(StringUtils.isNotEmpty(apiKey));
+        thrown.expectMessage("API key not supported");
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, apiKey), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getApiKey());
     }
 
     @Test
-    public void testTokenEmpty() throws IOException {
-        String token = "";
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, token), "hsapiens", "grch38", true);
-        Assert.assertNull(validated.getToken());
+    public void testApiKeyEmpty() throws IOException {
+        String apiKey = "";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.1", null, apiKey), "hsapiens", "grch38", true);
+        Assert.assertNull(validated.getApiKey());
     }
 
     @Test
-    public void testMalformedToken() throws IOException {
-        thrown.expectMessage("Malformed token for cellbase");
-        String token = "MALFORMED_TOKEN";
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
-        Assert.assertNotNull(validated.getToken());
+    public void testMalformedApiKey() throws IOException {
+        thrown.expectMessage("Malformed API key for cellbase");
+        String apiKey = "MALFORMED_API_KEY";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, apiKey), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getApiKey());
     }
 
     @Test
-    public void testUnsignedToken() throws IOException {
-        thrown.expectMessage("Invalid token for cellbase");
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2OTMyMTY5MDd9.invalidsignature";
-        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, token), "hsapiens", "grch38", true);
-        Assert.assertNotNull(validated.getToken());
+    public void testUnsignedApiKey() throws IOException {
+        thrown.expectMessage("Invalid API key for cellbase");
+        String apiKey = "eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VzIjp7ImhnbWQiOjkyMjMzNzIwMzY4NTQ3NzU4MDd9LCJ2ZXJzaW9uIjoiMS4wIiwic3ViIjoiWkVUVEEiLCJpYXQiOjE2OTMyMTY5MDd9.invalidsignature";
+        CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, apiKey), "hsapiens", "grch38", true);
+        Assert.assertNotNull(validated.getApiKey());
     }
 
 }
