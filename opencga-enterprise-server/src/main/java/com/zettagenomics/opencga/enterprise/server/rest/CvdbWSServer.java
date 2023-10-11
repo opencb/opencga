@@ -9,12 +9,17 @@ import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParam
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -111,6 +116,16 @@ public class CvdbWSServer extends OpenCGAWSServer {
 
         return run(() -> {
             StopWatch stopWatch = StopWatch.createStarted();
+
+            // Get project ID form study
+            Query projectQuery = new Query();
+            projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr);
+            OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), token);
+            String projectId = projectResult.first().getId();
+            if (!cvdbEngine.existCollections(projectId)) {
+                cvdbEngine.createCollections(projectId);
+            }
+
             List<String> clinicalAnalysisIds = Arrays.asList(StringUtils.split(caseIdStr, ','));
             CvdbIndexResult indexResult = cvdbEngine.index(clinicalAnalysisIds, studyStr, catalogManager, overwrite, token);
             int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);

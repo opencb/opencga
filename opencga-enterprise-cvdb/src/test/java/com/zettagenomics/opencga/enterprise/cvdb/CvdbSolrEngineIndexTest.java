@@ -20,7 +20,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -29,14 +28,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
+import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.getCollectionName;
 
 public class CvdbSolrEngineIndexTest {
 
@@ -241,45 +240,22 @@ public class CvdbSolrEngineIndexTest {
         System.out.println(indexResult);
         Assert.assertEquals(0, indexResult.getNumIndexed());
 
-        //        // CVDB queries
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setRows(100);
-//
-//        // Execute the Solr query
-//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-//        Assert.assertEquals(2, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical analysis #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println();
-//        }
+        // CVDB queries
+        SolrQuery solrQuery = new SolrQuery("*:*");
+        solrQuery.setRows(100);
 
+        // Execute the Solr query
+        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+                solrQuery);
 
-
-
-//        // CVDB index from catalog
-//        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-//
-//        // CVDB queries
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setRows(100);
-//
-//        // Execute the Solr query
-//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-//        Assert.assertEquals(2, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical analysis #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println();
-//        }
+        // Print out the results
+        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
+        Assert.assertEquals(2, response.getResults().getNumFound());
+        for (int i = 0; i < response.getResults().size(); i++) {
+            System.out.println("Clinical analysis #" + i + ":");
+            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
+            System.out.println();
+        }
     }
 
     //-----------------------------------------------------------------------

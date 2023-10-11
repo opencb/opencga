@@ -85,17 +85,11 @@ public class ClinicalVariantConverter extends SearchConverter {
             }
 
             // Clinical variant stored in a JSON string
-            // First, we have to clone and remove the clinical variants to do not store them!
-            ClinicalVariant clone = new ClinicalVariant ();
-            clone.setEvidences(cv.getEvidences());
-
-            cv.setEvidences(null);
             try {
                 cvs.setJson(mapper.writeValueAsString(cv));
             } catch (JsonProcessingException e) {
                 throw new CvdbException("Error when storing clinical variant JSON field", e);
             }
-            cv.setEvidences(clone.getEvidences());
 
             // Add clinical variant search into the list
             cvsList.add(cvs);

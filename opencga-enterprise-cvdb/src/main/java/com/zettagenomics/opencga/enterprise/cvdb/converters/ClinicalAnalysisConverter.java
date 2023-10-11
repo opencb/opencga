@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
+
 public class ClinicalAnalysisConverter extends SearchConverter {
 
     private ObjectReader clinicalAnalysisReader;
@@ -93,13 +95,10 @@ public class ClinicalAnalysisConverter extends SearchConverter {
 
             try {
                 String json = mapper.writeValueAsString(ca);
-                logger.info("CA json length = " + json.length());
                 cas.setJson(ConverterUtils.compressToBase64(json));
-                logger.info("CA json b64 gzip length = " + cas.getJson().length());
             } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical analysis JSON field", e);
             }
-
 
             // Add the new clinical analysis search model to the list
             clinicalAnalysisSearchList.add(cas);
@@ -109,7 +108,7 @@ public class ClinicalAnalysisConverter extends SearchConverter {
 
     public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch clinicalAnalysisSearch) throws CvdbException {
         try {
-            return clinicalAnalysisReader.readValue(ConverterUtils.decompressFromBase64(clinicalAnalysisSearch.getJson()));
+            return clinicalAnalysisReader.readValue(decompressFromBase64(clinicalAnalysisSearch.getJson()));
         } catch (IOException e) {
             throw new CvdbException("Error when converting to clinical analysis", e);
         }

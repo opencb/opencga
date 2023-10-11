@@ -279,8 +279,6 @@ public class CvdbSolrEngine {
 
             // Clinical analysis
             ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis);
-            int length = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysisSearch.class).writeValueAsString(cas).length();
-            logger.info("Clinical analysis search {}: length = {}", cas.getId(), length);
 
             boolean exists;
             if (overwrite) {
@@ -331,9 +329,6 @@ public class CvdbSolrEngine {
 
             // Interpretation
             ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary);
-            int length = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalInterpretationSearch.class).writeValueAsString(cis)
-                    .length();
-            logger.info("Clinical interpretation search {}: length = {}", cis.getId(), length);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), cis);
             if (updateResponse.getStatus() != 0) {
@@ -360,8 +355,6 @@ public class CvdbSolrEngine {
             // Clinical variant search
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, primary, interpretationId,
                     clinicalAnalysisId);
-            int length = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalVariantSearch.class).writeValueAsString(cvs).length();
-            logger.info("Clinical variant search {}: length = {}", cvs.getId(), length);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvs);
             if (updateResponse.getStatus() != 0) {
@@ -384,9 +377,6 @@ public class CvdbSolrEngine {
             // Clinical variants
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
                     interpretationId, clinicalAnalysisId);
-            int length = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalVariantEvidenceSearch.class).writeValueAsString(cves)
-                    .length();
-            logger.info("Clinical variant evidence search {}: length = {}", cves.getId(), length);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), cves);
             if (updateResponse.getStatus() != 0) {

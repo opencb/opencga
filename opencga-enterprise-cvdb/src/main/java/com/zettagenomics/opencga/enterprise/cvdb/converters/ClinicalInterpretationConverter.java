@@ -26,10 +26,13 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
 public class ClinicalInterpretationConverter extends SearchConverter {
 
@@ -114,20 +117,12 @@ public class ClinicalInterpretationConverter extends SearchConverter {
             clinicalInterpretationSearch.setVersion(interpretation.getVersion());
 
             // Interpretation stored in a JSON string
-            // First, we have to clone and remove the clinical variants to do not store them!
-            org.opencb.opencga.core.models.clinical.Interpretation clone = new org.opencb.opencga.core.models.clinical.Interpretation ();
-            clone.setPrimaryFindings(interpretation.getPrimaryFindings());
-            clone.setSecondaryFindings(interpretation.getSecondaryFindings());
-
-            interpretation.setPrimaryFindings(null);
-            interpretation.setSecondaryFindings(null);
             try {
-                clinicalInterpretationSearch.setJson(mapper.writeValueAsString(interpretation));
-            } catch (JsonProcessingException e) {
-                throw new CvdbException("Error when storing interpretation JSON field", e);
+                String json = mapper.writeValueAsString(interpretation);
+                clinicalInterpretationSearch.setJson(ConverterUtils.compressToBase64(json));
+            } catch (IOException e) {
+                throw new CvdbException("Error when storing clinical interpretation JSON field", e);
             }
-            interpretation.setPrimaryFindings(clone.getPrimaryFindings());
-            interpretation.setSecondaryFindings(clone.getSecondaryFindings());
 
             // Add the new interpretation search model to the list
             clinicalInterpretationSearchList.add(clinicalInterpretationSearch);
@@ -138,8 +133,8 @@ public class ClinicalInterpretationConverter extends SearchConverter {
     public org.opencb.opencga.core.models.clinical.Interpretation toInterpretation(
             ClinicalInterpretationSearch clinicalInterpretationSearch) throws CvdbException {
         try {
-            return interpretationReader.readValue(clinicalInterpretationSearch.getJson());
-        } catch (JsonProcessingException e) {
+            return interpretationReader.readValue(decompressFromBase64(clinicalInterpretationSearch.getJson()));
+        } catch (IOException e) {
             throw new CvdbException("Error when converting to interpretation", e);
         }
     }

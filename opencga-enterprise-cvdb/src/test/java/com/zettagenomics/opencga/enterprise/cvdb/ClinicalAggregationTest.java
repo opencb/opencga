@@ -131,7 +131,7 @@ public class ClinicalAggregationTest {
                 }
             }
         }
-        Assert.assertEquals(11, count);
+        Assert.assertEquals(8, count);
     }
 
     @Test
@@ -154,8 +154,8 @@ public class ClinicalAggregationTest {
         for (FacetField.Count facetCount : facetField.getValues()) {
             System.out.println("\tvalue = " + facetCount.getName() + ", count = " + facetCount.getCount());
             switch (facetCount.getName() + ":" + facetCount.getCount()) {
-                case "VACTERL-like_phenotypes-PanelAppId-101:7":
-                case "Periodic_fever_syndromes-PanelAppId-60:3":
+                case "VACTERL-like_phenotypes-PanelAppId-101:5":
+                case "Periodic_fever_syndromes-PanelAppId-60:0":
                 case "Severe_multi-system_atopic_disease_with_high_IgE-PanelAppId-62:3":
                     break;
                 default:

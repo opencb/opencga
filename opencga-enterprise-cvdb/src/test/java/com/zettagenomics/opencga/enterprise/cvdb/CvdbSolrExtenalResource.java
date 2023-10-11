@@ -6,6 +6,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.core.NodeConfig;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -28,8 +29,12 @@ import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 public class CvdbSolrExtenalResource extends ExternalResource {
 
     private SolrClient solrClient;
-    protected boolean embeded = false;
+    protected boolean embeded;
     private String projectId;
+
+    private String solrHost = "http://localhost:8983/solr"; // "localhost:2181"; //"http://localhost:8983/solr";
+    private String solrMode = "core"; //"cloud";
+    private int solrTimeout = 30000;
 
     private static Path rootDir;
 
@@ -65,13 +70,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
                             + "," + getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
                             + "," + getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
         } else {
-            String host = "http://localhost:8983/solr";
-            int timeout = 5000;
-
-            SolrManager solrManager = new SolrManager(host, "core", timeout);
-//            if (!solrManager.existsCore(coreName)) {
-//                solrManager.createCore(coreName, mainConfigSet);
-//            }
+            SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();
         }
     }
@@ -108,7 +107,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
     public CvdbSolrEngine configure() {
         CvdbSolrEngine cvdbEngine = new CvdbSolrEngine();
-        cvdbEngine.setSolrManager(new SolrManager(solrClient, "localhost", "core"));
+        cvdbEngine.setSolrManager(new SolrManager(solrClient, solrHost, solrMode));
         return cvdbEngine;
     }
 
