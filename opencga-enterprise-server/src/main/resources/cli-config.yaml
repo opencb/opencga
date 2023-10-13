@@ -1,4 +1,5 @@
 options:
+  version: Enterprise
   outputDir: opencga-enterprise-app/src/main/java/com/zettagenomics/opencga/enterprise/app/cli/main/
   ignoreTypes:
     - string
