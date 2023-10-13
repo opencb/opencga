@@ -4,31 +4,40 @@ on:
   push:
     tags:
       - '*'
-  workflow_dispatch:
 
 jobs:
-  build:
+  build-hdp:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: -Dopencga.war.name=opencga
-      opencga_maven_opts: -P storage-hadoop,hdp3.1
+      storage_hadoop: hdp3.1
       artifact_name: build-folder
       release: true
 
-  deploy-docker:
+  deploy-hdp-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build
+    needs: build-hdp
     secrets: inherit
+    with:
+      artifact_name: build-folder
+
+  build-emr:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr6.1
+      artifact_name: emr-build-folder
+      release: true
 
   deploy-emr-docker:
-    uses: ./.github/workflows/deploy-emr-docker-hub-enterprise-workflow.yml
-    needs: build
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr
     secrets: inherit
+    with:
+      artifact_name: emr-build-folder
 
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
-    needs: build
+    needs: [ build-hdp, deploy-hdp-docker, deploy-emr-docker ]
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -40,4 +49,8 @@ jobs:
           tag_name: ${{ github.ref }}
           generate_release_notes: true
           files: |
-            opencga-enterprise-client-${{ needs.build.outputs.version }}.tar.gz
+            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
+      - id: echo_result
+        name: Results
+        run: |
+          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
