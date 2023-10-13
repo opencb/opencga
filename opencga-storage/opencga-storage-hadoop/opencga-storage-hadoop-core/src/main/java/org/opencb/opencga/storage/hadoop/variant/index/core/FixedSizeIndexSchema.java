@@ -38,4 +38,12 @@ public abstract class FixedSizeIndexSchema extends IndexSchema {
         return buffer.getBitBuffer(i * indexSizeBits, indexSizeBits);
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("FixedSizeIndexSchema{");
+        sb.append("indexSizeBits=").append(indexSizeBits);
+        sb.append(", fields=").append(fields);
+        sb.append('}');
+        return sb.toString();
+    }
 }

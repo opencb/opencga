@@ -21,7 +21,7 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.VersionUtils;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -255,10 +255,10 @@ public class CellBaseUtilsTest {
     }
 
     @Test
-    public void testAnnotationWithHGMDToken() throws IOException {
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
-        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
-        String hgmdToken = System.getenv("CELLBASE_HGMD_TOKEN");
+    public void testAnnotationWithHGMDApiKey() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.4.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch38"));
+        String hgmdToken = System.getenv("CELLBASE_HGMD_APIKEY");
         Assume.assumeTrue(StringUtils.isNotEmpty(hgmdToken));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, hgmdToken,
@@ -271,14 +271,14 @@ public class CellBaseUtilsTest {
                 .getAnnotationByVariantIds(Collections.singletonList("10:113588287:G:A"), queryOptions);
         VariantAnnotation variantAnnotation = v.firstResult();
         assertEquals(2, variantAnnotation.getTraitAssociation().size());
-        assertEquals("clinvar", variantAnnotation.getTraitAssociation().get(0).getSource().getName());
-        assertEquals("hgmd", variantAnnotation.getTraitAssociation().get(1).getSource().getName());
+        assertTrue(variantAnnotation.getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("clinvar")));
+        assertTrue(variantAnnotation.getTraitAssociation().stream().anyMatch(e -> e.getSource().getName().equals("hgmd")));
     }
 
     @Test
-    public void testAnnotationWithoutHGMDToken() throws IOException {
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.3.0"));
-        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch37"));
+    public void testAnnotationWithoutHGMDAPiKey() throws IOException {
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("5.4.0"));
+        Assume.assumeThat(assembly, CoreMatchers.equalTo("grch38"));
 
         cellBaseClient = new CellBaseClient("hsapiens", assembly, dataRelease, "",
                 new ClientConfiguration().setVersion(version)

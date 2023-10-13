@@ -65,6 +65,10 @@
 
         <!-- Added dependencies -->
         <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
         </dependency>
@@ -177,8 +181,8 @@
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
 
                     <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
-                    <generateGitPropertiesFilename>target/generated-resources/git.properties
-                    </generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>target/generated-resources/org/opencb/opencga/core/git.properties</generateGitPropertiesFilename>
+
                     <gitDescribe>
                         <!-- don't generate the describe property -->
                         <skip>false</skip>

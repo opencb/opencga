@@ -230,7 +230,7 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
-        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getApiKey();
 
         for (String geneName : geneNames) {
 
@@ -451,7 +451,7 @@ public class AlignmentStorageManager extends StorageManager {
         String species = projectQueryResult.first().getOrganism().getScientificName();
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
         String dataRelease = projectQueryResult.first().getCellbase().getDataRelease();
-        String cellbaseToken = projectQueryResult.first().getCellbase().getToken();
+        String cellbaseToken = projectQueryResult.first().getCellbase().getApiKey();
         CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, dataRelease, cellbaseToken,
                 projectQueryResult.first().getCellbase().toClientConfiguration());
         GeneClient geneClient = cellBaseClient.getGeneClient();

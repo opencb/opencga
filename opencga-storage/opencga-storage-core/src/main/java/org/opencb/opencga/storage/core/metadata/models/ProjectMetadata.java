@@ -85,10 +85,6 @@ public class ProjectMetadata {
             sourceVersion = new ArrayList<>();
         }
 
-    /*    public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
-                                         List<ObjectMap> sourceVersion, DataRelease dataRelease) {
-
-        }*/
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
                                          List<ObjectMap> sourceVersion, DataRelease dataRelease, List<String> privateSources) {
             this.id = id;
