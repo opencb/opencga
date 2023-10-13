@@ -24,6 +24,7 @@
     <artifactId>opencga</artifactId>
     <version>2.12.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <name>OpenCGA</name>
     <description>OpenCGA projects implements a big data platform for genomic data analysis</description>
     <url>http://docs.opencb.org/display/opencga/</url>
@@ -63,6 +64,7 @@
         <jetty.version>9.4.17.v20190418</jetty.version>
         <guava.version>19.0</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
+        <snpeff.version>4.3.1</snpeff.version>
         <mongodb-driver.version>4.8.2</mongodb-driver.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-io.version>2.5</commons-io.version>
@@ -85,7 +87,7 @@
         <json-smart.version>2.3</json-smart.version>
         <gson.version>2.8.0</gson.version>
         <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
-        <azure-client-authentication.version>1.5.4</azure-client-authentication.version>
+        <azure-client.version>1.5.4</azure-client.version>
         <httpclient.version>4.5.6</httpclient.version>
         <oauth2-oidc-sdk.version>5.64.4</oauth2-oidc-sdk.version>
         <passay.version>1.6.1</passay.version>
@@ -110,12 +112,11 @@
         <snappy-java.version>1.1.7.6</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
 
-
-
-
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-        <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
+        <opencga-storage-hadoop-deps.id-default>
+            hdp3.1
+        </opencga-storage-hadoop-deps.id-default>
         <opencga-storage-hadoop-deps.artifactId-default>
             opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
         </opencga-storage-hadoop-deps.artifactId-default>
@@ -125,21 +126,17 @@
         <opencga-storage-hadoop-deps.artifactId>
             opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
         </opencga-storage-hadoop-deps.artifactId>
-
         <jorphan.version>5.0</jorphan.version>
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>
-
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
         <surefire.skipDefaultTestExecution>false</surefire.skipDefaultTestExecution>
         <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
         <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
-
         <parquet-hadoop.version>${parquet-common.version}</parquet-hadoop.version>
         <parquet-common.version>1.7.0</parquet-common.version>
         <commons-logging.version>1.1.3</commons-logging.version>
@@ -804,6 +801,11 @@
                 <version>${htsjdk.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.databricks</groupId>
+                <artifactId>SnpEff</artifactId>
+                <version>${snpeff.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.parquet</groupId>
                 <artifactId>parquet-avro</artifactId>
                 <version>${parquet-avro.version}</version>
@@ -868,8 +870,13 @@
             </dependency>
             <dependency>
                 <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-client-runtime</artifactId>
+                <version>${azure-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
                 <artifactId>azure-client-authentication</artifactId>
-                <version>${azure-client-authentication.version}</version>
+                <version>${azure-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -954,8 +961,6 @@
                 <artifactId>grep4j</artifactId>
                 <version>${grep4j.version}</version>
             </dependency>
-
-
             <dependency>
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson</artifactId>
@@ -1162,7 +1167,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -1182,7 +1186,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <id>analyze</id>
