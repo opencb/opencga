@@ -87,7 +87,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public class OpencgaCliOptionsParser extends CustomCliOptionsParser {\n");
+        sb.append("public class "+this.config.getOptions().getVersion()+"CliOptionsParser extends CustomCliOptionsParser {\n");
         sb.append("\n");
         for (RestCategory restCategory : availableCategories.values()) {
             sb.append("    private final " + getAsClassName(restCategory.getName()) + "CommandOptions " + getAsVariableName(restCategory.getName()) +
@@ -96,7 +96,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}\n");
         sb.append("\n");
-        sb.append("    public OpencgaCliOptionsParser() {\n");
+        sb.append("    public "+this.config.getOptions().getVersion()+"CliOptionsParser() {\n");
         sb.append("\n");
         sb.append("        jCommander.setExpandAtSign(false);\n");
 
@@ -165,6 +165,6 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassFileName(String key) {
-        return config.getOptions().getOutputDir() + "/OpencgaCliOptionsParser.java";
+        return config.getOptions().getOutputDir() + "/"+this.config.getOptions().getVersion()+"CliOptionsParser.java";
     }
 }
