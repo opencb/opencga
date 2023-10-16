@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PANEL_ID_QUERY_PARAM;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.VARIANT_QUERY_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
@@ -99,10 +100,12 @@ public class CvdbSolrEngineQueryTest {
 
         // CVDB query
         String variantId = "X:54751204:C:T";
+        String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
 
         Query query = new Query();
         query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, variantId);
+        query.put(PANEL_ID_QUERY_PARAM, panelId);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 10);

@@ -20,23 +20,32 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 
 public class ParamConstants {
 
-
     public static final String CLINICAL_ANALYSES_INDEX_DESCRIPTION = "Index clinical analyses into CVDB";
     public static final String CLINICAL_ANALYSES_QUERY_DESCRIPTION = "Filter and fetch clinical analysis from CVDB";
-
-    public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
-    public static final String PROJECT_PARAM_NAME = "projectId";
-
-    public static final String VARIANT_QUERY_DESCRIPTION = "Variant ID (or list of variant IDs separated by commas),"
-            + " e.g.: 6:31356248:G:C,X:53196017:G:A";
-    public static final String VARIANT_QUERY_PARAM = "variantId";
-
-    public static final String CLINICAL_ANALYSIS_PARAM_DESCRIPTION = "Clinical analysis ID (or list of clinical analysis IDs separated by"
-        + " commas)";
-    public static final String CLINICAL_ANALYSIS_PARAM_NAME = "clinicalAnalysisId";
 
     public static final String INDEX_OVERWRITE_PARAM_NAME = "overwrite";
     public static final String INDEX_OVERWRITE_PARAM_DESCRIPTION = "Overwrite clinical analysis when CVDB indexing";
 
     public static final int DEFAULT_LIMIT = 100;
+
+    public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
+    public static final String PROJECT_PARAM_NAME = "projectId";
+
+    // Clinical analysis
+
+    public static final String CLINICAL_ANALYSIS_PARAM_DESCRIPTION = "Clinical analysis ID (or list of clinical analysis IDs separated by"
+            + " commas)";
+    public static final String CLINICAL_ANALYSIS_PARAM_NAME = "clinicalAnalysisId";
+
+    // Clinical interpretation
+
+    public static final String PANEL_ID_QUERY_DESCRIPTION = "Panel ID or name (or list of panel IDs or names separated by commas),"
+            + " e.g.: VACTERL-like_phenotypes-PanelAppId-101";
+    public static final String PANEL_ID_QUERY_PARAM = "panelId";
+
+    // Clinical variant
+
+    public static final String VARIANT_QUERY_DESCRIPTION = "Variant ID (or list of variant IDs separated by commas),"
+            + " e.g.: 6:31356248:G:C,X:53196017:G:A";
+    public static final String VARIANT_QUERY_PARAM = "variantId";
 }

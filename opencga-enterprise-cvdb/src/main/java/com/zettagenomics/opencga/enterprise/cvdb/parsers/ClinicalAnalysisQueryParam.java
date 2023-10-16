@@ -102,9 +102,9 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
 //    public static final ClinicalAnalysisQueryParam INT_ANALYST_NAME = new ClinicalAnalysisQueryParam("intAnalystName", TEXT_ARRAY,
 //            INT_ANALYST_NAME_DESCR);
 //
-//    public static final String INT_PANEL_NAMES_DESCR = "List of interpretation panel names";
-//    public static final ClinicalAnalysisQueryParam INT_PANEL_NAMES = new ClinicalAnalysisQueryParam("intPanelNames", TEXT_ARRAY,
-//            INT_PANEL_NAMES_DESCR);
+    public static final String CI_PANEL_ID_DESCR = ParamConstants.PANEL_ID_QUERY_DESCRIPTION;
+    public static final ClinicalAnalysisQueryParam CI_PANEL_ID = new ClinicalAnalysisQueryParam(ParamConstants.PANEL_ID_QUERY_PARAM, TEXT_ARRAY,
+            CI_PANEL_ID_DESCR);
 //
 //    public static final String INT_DESCRIPTION_DESCR = "Interpretation description";
 //    public static final ClinicalAnalysisQueryParam INT_DESCRIPTION = new ClinicalAnalysisQueryParam("intDescription", TEXT_ARRAY,
