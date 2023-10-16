@@ -59,7 +59,7 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+    public void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
         Runnable runnable = () -> {
             try {
@@ -119,22 +119,22 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(String jobId) {
+    public String getStatus(String studyId, String jobId) {
         return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
     }
 
     @Override
-    public boolean stop(String jobId) throws Exception {
+    public boolean stop(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(String jobId) throws Exception {
+    public boolean resume(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(String jobId) throws Exception {
+    public boolean kill(String studyId, String jobId) throws Exception {
         return false;
     }
 

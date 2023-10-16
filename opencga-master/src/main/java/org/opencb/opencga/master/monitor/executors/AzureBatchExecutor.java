@@ -90,12 +90,12 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+    public void execute(String studyId, String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
 //        submitAzureTask(job, token);
     }
 
     @Override
-    public String getStatus(String jobId) {
+    public String getStatus(String studyId, String jobId) {
         return null;
 //        try {
 //            CloudTask cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
@@ -118,17 +118,17 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public boolean stop(String jobId) throws Exception {
+    public boolean stop(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(String jobId) throws Exception {
+    public boolean resume(String studyId, String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(String jobId) throws Exception {
+    public boolean kill(String studyId, String jobId) throws Exception {
         return false;
     }
 

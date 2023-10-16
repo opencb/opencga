@@ -580,7 +580,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             String queue = getQueue(tool);
             logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
-            batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
+            batchExecutor.execute(job.getStudy().getId(), job.getId(), queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             return abortJob(job, "Error executing job.", e);
         }
@@ -925,7 +925,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return new Enums.ExecutionStatus(execution.getStatus().getName().name());
         }
 
-        String status = batchExecutor.getStatus(job.getId());
+        String status = batchExecutor.getStatus(job.getStudy().getId(), job.getId());
         if (!StringUtils.isEmpty(status) && !status.equals(Enums.ExecutionStatus.UNKNOWN)) {
             return new Enums.ExecutionStatus(status);
         } else {
