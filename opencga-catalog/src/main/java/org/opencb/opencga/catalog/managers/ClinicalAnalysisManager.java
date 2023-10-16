@@ -56,6 +56,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -63,6 +64,7 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
@@ -643,20 +645,22 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 individualSamples.put(member.getId(), member.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
                 for (Sample sample : member.getSamples()) {
                     try {
-                        catalogManager.getSampleManager().create(study, sample, QueryOptions.empty(), token);
+                        Sample sampleForCreation = SampleCreateParams.of(sample).toSample();
+                        sampleForCreation.setIndividualId(null);
+                        catalogManager.getSampleManager().create(study, sampleForCreation, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
                         if (!e.getMessage().contains("already exists")) {
                             throw e;
                         }
                     }
                 }
-                member.setSamples(null);
             }
         }
 
         // Create family with individuals
         try {
-            catalogManager.getFamilyManager().create(study, clinicalAnalysis.getFamily(), QueryOptions.empty(), token);
+            Family family = FamilyCreateParams.of(clinicalAnalysis.getFamily()).toFamily();
+            catalogManager.getFamilyManager().create(study, family, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             if (!e.getMessage().contains("already exists")) {
                 throw e;
@@ -687,7 +691,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setInterpretation(null);
 
         // Create Clinical Analysis
-        catalogManager.getClinicalAnalysisManager().create(study, clinicalAnalysis, QueryOptions.empty(), token);
+        ClinicalAnalysis caToCreate = ClinicalAnalysisCreateParams.of(clinicalAnalysis).toClinicalAnalysis();
+        caToCreate.setAnalyst(new ClinicalAnalyst());
+        catalogManager.getClinicalAnalysisManager().create(study, caToCreate, QueryOptions.empty(), token);
 
         if (interpretation == null) {
             interpretation = interpretationList.get(0);
@@ -696,12 +702,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         // Add interpretations
         interpretation.setId(null);
+        interpretation.setAnalyst(new ClinicalAnalyst());
         catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), interpretation, PRIMARY, QueryOptions.empty(),
                 token);
 
         for (int i = 0, interpretationListSize = interpretationList.size(); i < interpretationListSize; i++) {
             Interpretation tmpInterpretation = interpretationList.get(i);
             tmpInterpretation.setId(null);
+            tmpInterpretation.setAnalyst(new ClinicalAnalyst());
             catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), tmpInterpretation, SECONDARY,
                     QueryOptions.empty(), token);
         }
