@@ -19,6 +19,7 @@
         <app.dir>${project.basedir}/app</app.dir>
         <opencga.client.dir>opencga-enterprise-client-${project.parent.version}</opencga.client.dir>
 <!--        <dep.jline.version>3.12.1</dep.jline.version>-->
+
     </properties>
 
     <dependencies>
@@ -35,24 +36,96 @@
             <artifactId>opencga-enterprise-server</artifactId>
         </dependency>
 
+        <!-- OpenCB dependencies -->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
+            <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.ga4gh</groupId>
+            <artifactId>ga4gh</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
         </dependency>
 
-        <!--JLINE Terminal dependencies-->
-<!--        <dependency>-->
-<!--            <groupId>org.jline</groupId>-->
-<!--            <artifactId>jline-reader</artifactId>-->
-<!--            <version>${dep.jline.version}</version>-->
-<!--        </dependency>-->
+        <!-- General dependencies -->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+        </dependency>
 
-<!--        <dependency>-->
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--JLINE Terminal dependencies-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.jline</groupId>-->
+        <!--            <artifactId>jline-reader</artifactId>-->
+        <!--            <version>${dep.jline.version}</version>-->
+        <!--        </dependency>-->
+
+        <!--        <dependency>-->
 <!--            <groupId>org.jline</groupId>-->
 <!--            <artifactId>jline-terminal</artifactId>-->
 <!--            <version>${dep.jline.version}</version>-->
