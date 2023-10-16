@@ -39,6 +39,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
@@ -565,6 +566,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(1, job.getOutput().size());
         assertEquals("myemptyvcf.vcf", job.getOutput().get(0).getName());
         assertEquals(File.Format.VCF, job.getOutput().get(0).getFormat());
+        assertEquals(FileStatus.ERROR, job.getOutput().get(0).getInternal().getStatus().getId());
     }
 
     private void checkStatus(Job job, String status) {
