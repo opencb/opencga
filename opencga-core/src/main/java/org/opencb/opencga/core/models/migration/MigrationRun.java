@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.migration;
+package org.opencb.opencga.core.models.migration;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.models.job.Job;

@@ -2,9 +2,7 @@ package org.opencb.opencga.core.models.organizations;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 
-import java.util.List;
 import java.util.Map;
 
 public class OrganizationCreateParams {
@@ -25,8 +23,8 @@ public class OrganizationCreateParams {
     @DataField(id = "modificationDate", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-    @DataField(id = "authenticationOrigins", description = FieldConstants.ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION)
-    private List<AuthenticationOrigin> authenticationOrigins;
+    @DataField(id = "configuration", description = FieldConstants.ORGANIZATION_CONFIGURATION_DESCRIPTION)
+    private OrganizationConfiguration configuration;
 
     @DataField(id = "attributes",  description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
@@ -35,13 +33,13 @@ public class OrganizationCreateParams {
     }
 
     public OrganizationCreateParams(String id, String name, String domain, String creationDate, String modificationDate,
-                                    List<AuthenticationOrigin> authenticationOrigins, Map<String, Object> attributes) {
+                                    OrganizationConfiguration configuration, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.domain = domain;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
-        this.authenticationOrigins = authenticationOrigins;
+        this.configuration = configuration;
         this.attributes = attributes;
     }
 
@@ -53,7 +51,7 @@ public class OrganizationCreateParams {
         sb.append(", domain='").append(domain).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", authenticationOrigins=").append(authenticationOrigins);
+        sb.append(", configuration=").append(configuration);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -61,12 +59,12 @@ public class OrganizationCreateParams {
 
     public static OrganizationCreateParams of(Organization organization) {
         return new OrganizationCreateParams(organization.getId(), organization.getName(), organization.getDomain(),
-                organization.getCreationDate(), organization.getModificationDate(),organization.getAuthenticationOrigins(),
+                organization.getCreationDate(), organization.getModificationDate(), organization.getConfiguration(),
                 organization.getAttributes());
     }
 
     public Organization toOrganization() {
-        return new Organization(id, name, domain, null, null, creationDate, modificationDate, null, authenticationOrigins, attributes);
+        return new Organization(id, name, domain, null, null, creationDate, modificationDate, null, configuration, null, attributes);
     }
 
     public String getId() {
@@ -114,12 +112,12 @@ public class OrganizationCreateParams {
         return this;
     }
 
-    public List<AuthenticationOrigin> getAuthenticationOrigins() {
-        return authenticationOrigins;
+    public OrganizationConfiguration getConfiguration() {
+        return configuration;
     }
 
-    public OrganizationCreateParams setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
-        this.authenticationOrigins = authenticationOrigins;
+    public OrganizationCreateParams setConfiguration(OrganizationConfiguration configuration) {
+        this.configuration = configuration;
         return this;
     }
 

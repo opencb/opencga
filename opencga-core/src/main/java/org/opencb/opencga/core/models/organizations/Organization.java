@@ -3,7 +3,6 @@ package org.opencb.opencga.core.models.organizations;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.project.Project;
 
@@ -43,8 +42,11 @@ public class Organization extends PrivateFields {
     @DataField(id = "projects", description = FieldConstants.ORGANIZATION_PROJECTS_DESCRIPTION)
     private List<Project> projects;
 
-    @DataField(id = "authenticationOrigins", description = FieldConstants.ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION)
-    private List<AuthenticationOrigin> authenticationOrigins;
+    @DataField(id = "configuration", description = FieldConstants.ORGANIZATION_CONFIGURATION_DESCRIPTION)
+    private OrganizationConfiguration configuration;
+
+    @DataField(id = "internal", managed = true, description = FieldConstants.ORGANIZATION_INTERNAL_DESCRIPTION)
+    private OrganizationInternal internal;
 
     @DataField(id = "attributes",  description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
@@ -53,8 +55,8 @@ public class Organization extends PrivateFields {
     }
 
     public Organization(String id, String name, String domain, String owner, List<String> admins, String creationDate,
-                        String modificationDate, List<Project> projects, List<AuthenticationOrigin> authenticationOrigins,
-                        Map<String, Object> attributes) {
+                        String modificationDate, List<Project> projects,  OrganizationConfiguration configuration,
+                        OrganizationInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.domain = domain;
@@ -63,7 +65,8 @@ public class Organization extends PrivateFields {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.projects = projects;
-        this.authenticationOrigins = authenticationOrigins;
+        this.configuration = configuration;
+        this.internal = internal;
         this.attributes = attributes;
     }
 
@@ -79,7 +82,8 @@ public class Organization extends PrivateFields {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", projects=").append(projects);
-        sb.append(", authenticationOrigins=").append(authenticationOrigins);
+        sb.append(", configuration=").append(configuration);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -166,12 +170,21 @@ public class Organization extends PrivateFields {
         return this;
     }
 
-    public List<AuthenticationOrigin> getAuthenticationOrigins() {
-        return authenticationOrigins;
+    public OrganizationConfiguration getConfiguration() {
+        return configuration;
     }
 
-    public Organization setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
-        this.authenticationOrigins = authenticationOrigins;
+    public Organization setConfiguration(OrganizationConfiguration configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
+    public OrganizationInternal getInternal() {
+        return internal;
+    }
+
+    public Organization setInternal(OrganizationInternal internal) {
+        this.internal = internal;
         return this;
     }
 

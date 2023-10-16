@@ -18,6 +18,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;

@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;

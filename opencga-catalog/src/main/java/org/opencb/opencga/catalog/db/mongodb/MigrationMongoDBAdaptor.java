@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.MigrationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;

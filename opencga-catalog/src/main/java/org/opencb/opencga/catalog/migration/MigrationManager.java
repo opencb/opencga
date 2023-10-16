@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
 import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;

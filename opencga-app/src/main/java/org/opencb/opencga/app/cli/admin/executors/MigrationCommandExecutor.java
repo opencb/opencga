@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationManager;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;

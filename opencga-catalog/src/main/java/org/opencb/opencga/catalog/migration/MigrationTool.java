@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

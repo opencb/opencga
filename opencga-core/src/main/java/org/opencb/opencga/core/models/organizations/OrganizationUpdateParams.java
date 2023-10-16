@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 
 import java.util.List;
 import java.util.Map;
@@ -32,8 +31,8 @@ public class OrganizationUpdateParams {
     @DataField(id = "modificationDate", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-    @DataField(id = "authenticationOrigins", description = FieldConstants.ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION)
-    private List<AuthenticationOrigin> authenticationOrigins;
+    @DataField(id = "configuration", description = FieldConstants.ORGANIZATION_CONFIGURATION_DESCRIPTION)
+    private OrganizationConfiguration configuration;
 
     @DataField(id = "attributes",  description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
@@ -42,15 +41,14 @@ public class OrganizationUpdateParams {
     }
 
     public OrganizationUpdateParams(String name, String domain, String owner, List<String> admins, String creationDate,
-                                    String modificationDate, List<AuthenticationOrigin> authenticationOrigins,
-                                    Map<String, Object> attributes) {
+                                    String modificationDate, OrganizationConfiguration configuration, Map<String, Object> attributes) {
         this.name = name;
         this.domain = domain;
         this.owner = owner;
         this.admins = admins;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
-        this.authenticationOrigins = authenticationOrigins;
+        this.configuration = configuration;
         this.attributes = attributes;
     }
 
@@ -68,7 +66,7 @@ public class OrganizationUpdateParams {
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", authenticationOrigins=").append(authenticationOrigins);
+        sb.append(", configuration=").append(configuration);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -128,12 +126,12 @@ public class OrganizationUpdateParams {
         return this;
     }
 
-    public List<AuthenticationOrigin> getAuthenticationOrigins() {
-        return authenticationOrigins;
+    public OrganizationConfiguration getConfiguration() {
+        return configuration;
     }
 
-    public OrganizationUpdateParams setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
-        this.authenticationOrigins = authenticationOrigins;
+    public OrganizationUpdateParams setConfiguration(OrganizationConfiguration configuration) {
+        this.configuration = configuration;
         return this;
     }
 

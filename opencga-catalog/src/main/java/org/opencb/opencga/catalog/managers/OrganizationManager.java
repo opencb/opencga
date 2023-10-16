@@ -21,6 +21,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -251,12 +252,14 @@ public class OrganizationManager extends AbstractManager {
         organization.setAdmins(Collections.emptyList());
         organization.setProjects(Collections.emptyList());
 
-        if (CollectionUtils.isNotEmpty(organization.getAuthenticationOrigins())) {
-            for (AuthenticationOrigin authenticationOrigin : organization.getAuthenticationOrigins()) {
+        if (organization.getConfiguration() != null && organization.getConfiguration().getAuthentication() != null
+                && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthentication().getAuthenticationOrigins())) {
+            for (AuthenticationOrigin authenticationOrigin
+                    : organization.getConfiguration().getAuthentication().getAuthenticationOrigins()) {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
             }
         } else {
-            organization.setAuthenticationOrigins(Collections.emptyList());
+            organization.setConfiguration(new OrganizationConfiguration());
         }
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }
