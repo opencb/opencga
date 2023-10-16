@@ -3712,16 +3712,22 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File.Type type = filePath.endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
 
-        File subfile = new File(Paths.get(filePath).getFileName().toString(), type, File.Format.UNKNOWN,
-                File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyList(),
-                new FileQualityControl(), Collections.emptyMap(), new Status(), FileInternal.init(), Collections.emptyMap());
+        File.Format format = org.opencb.opencga.catalog.managers.FileUtils.detectFormat(fileUri);
+        File.Bioformat bioformat = org.opencb.opencga.catalog.managers.FileUtils.detectBioformat(fileUri);
+        File subfile = new File(Paths.get(filePath).getFileName().toString(), type, format, bioformat, fileUri, filePath, "",
+                TimeUtils.getTime(), TimeUtils.getTime(), "", isExternal(study, filePath, fileUri), size, new Software(),
+                new FileExperiment(), Collections.emptyList(), Collections.emptyList(), jobId, studyManager.getCurrentRelease(study),
+                Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new Status(),
+                FileInternal.init(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 
         // Improve metadata information and extract samples if any
-        new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
+        try {
+            new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
+        } catch (CatalogException e) {
+            logger.warn("Could not extract metadata information from file {}: {}", fileUri, e.getMessage(), e);
+        }
         List<Sample> existingSamples = new LinkedList<>();
         List<Sample> nonExistingSamples = new LinkedList<>();
         validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
