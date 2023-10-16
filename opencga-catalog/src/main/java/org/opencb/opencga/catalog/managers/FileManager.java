@@ -3726,6 +3726,7 @@ public class FileManager extends AnnotationSetManager<File> {
         try {
             new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
         } catch (CatalogException e) {
+            subfile.getInternal().setStatus(new FileStatus(FileStatus.ERROR, "Could not extract metadata information: " + e.getMessage()));
             logger.warn("Could not extract metadata information from file {}: {}", fileUri, e.getMessage(), e);
         }
         List<Sample> existingSamples = new LinkedList<>();
