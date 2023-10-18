@@ -13,17 +13,17 @@ public class JwtPayload {
 
     private String userId;
     private String organization;
-    private String audience;      // Recipients of the JWT token.
+    private String issuer;        // Issuer of the JWT token.
     private Date issuedAt;        // Time when the JWT was issued.
     private Date expirationTime;  // Expiration time of the JWT.
 
     public JwtPayload() {
     }
 
-    public JwtPayload(String userId, String organization, String audience, Date issuedAt, Date expirationTime) {
+    public JwtPayload(String userId, String organization, String issuer, Date issuedAt, Date expirationTime) {
         this.userId = userId;
         this.organization = organization;
-        this.audience = audience;
+        this.issuer = issuer;
         this.issuedAt = issuedAt;
         this.expirationTime = expirationTime;
     }
@@ -53,8 +53,8 @@ public class JwtPayload {
             }
 
             this.userId = claimsMap.getString("sub");
-            this.audience = claimsMap.getString("aud");
-            this.organization = claimsMap.getString("bla");
+            this.organization = claimsMap.getString("aud");
+            this.issuer = claimsMap.getString("iss");
 
             if (claimsMap.containsKey("iat")) {
                 long iat = 1000L * claimsMap.getLong("iat");
@@ -73,7 +73,7 @@ public class JwtPayload {
         final StringBuilder sb = new StringBuilder("JwtPayload{");
         sb.append("userId='").append(userId).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-        sb.append(", audience='").append(audience).append('\'');
+        sb.append(", issuer='").append(issuer).append('\'');
         sb.append(", issuedAt=").append(issuedAt);
         sb.append(", expirationTime=").append(expirationTime);
         sb.append('}');
@@ -96,8 +96,8 @@ public class JwtPayload {
         return organization;
     }
 
-    public String getAudience() {
-        return audience;
+    public String getIssuer() {
+        return issuer;
     }
 
     public Date getIssuedAt() {

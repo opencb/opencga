@@ -168,8 +168,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private OrganizationMongoDBAdaptorFactory configureOrganizationMongoDBAdaptorFactory(String organizationId, Configuration configuration)
             throws CatalogDBException {
-        String organizationDB = getCatalogDatabase(configuration.getDatabasePrefix(), organizationId);
-        return new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationDB, configuration);
+        return new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
     }
 
     public OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
@@ -220,7 +219,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (getOrganizationMongoDBAdaptorFactory(organization.getId(), false) != null) {
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
+        if (orgFactory != null && orgFactory.isCatalogDBReady()) {
             throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
         }
 

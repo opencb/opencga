@@ -24,9 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -70,9 +68,6 @@ public class UserManager extends AbstractManager {
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
-    private final String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
-    private final AuthenticationFactory authenticationFactory;
-    private final Map<String, AuthenticationManager> authenticationManagerMap;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
@@ -81,40 +76,6 @@ public class UserManager extends AbstractManager {
 
         this.catalogIOManager = catalogIOManager;
 
-        String secretKey = configuration.getAdmin().getSecretKey();
-        long expiration = configuration.getAuthentication().getExpiration();
-
-        authenticationFactory = new AuthenticationFactory(Collections.emptyList());
-        authenticationManagerMap = new LinkedHashMap<>();
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authenticationOrigin.getId() != null) {
-                    switch (authenticationOrigin.getType()) {
-                        case LDAP:
-                            authenticationManagerMap.put(authenticationOrigin.getId(),
-                                    new LDAPAuthenticationManager(authenticationOrigin, secretKey, expiration));
-                            break;
-                        case AzureAD:
-                            authenticationManagerMap.put(authenticationOrigin.getId(),
-                                    new AzureADAuthenticationManager(authenticationOrigin));
-                            break;
-                        case OPENCGA:
-                            authenticationManagerMap.put(authenticationOrigin.getId(),
-                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), secretKey,
-                                            expiration));
-                            break;
-                        default:
-                            logger.warn("Unexpected authentication origin type '{}' for id '{}' found in the configuration file. "
-                                    + "Authentication origin will be ignored.", authenticationOrigin.getType(),
-                                    authenticationOrigin.getId());
-                            break;
-                    }
-                }
-            }
-        }
-        // Even if internal authentication is not present in the configuration file, create it
-        authenticationManagerMap.putIfAbsent(INTERNAL_AUTHORIZATION,
-                new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(), secretKey, expiration));
         AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
         if (configuration.getAuthentication().getAuthenticationOrigins() == null) {
             configuration.getAuthentication().setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
@@ -147,7 +108,7 @@ public class UserManager extends AbstractManager {
 
             getUserDBAdaptor(organizationId).checkId(userId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            authenticationManagerMap.get(authOrigin).changePassword(organizationId, userId, oldPassword, newPassword);
+            AuthenticationFactory.changePassword(organizationId, authOrigin, userId, oldPassword, newPassword);
             auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
@@ -192,12 +153,12 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
             }
         } else {
-            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
+            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.INTERNAL, false));
         }
 
         String userId = user.getId();
         if (!OPENCGA.equals(user.getId())) {
-            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            userId = AuthenticationFactory.getUserId(organizationId, CatalogAuthenticationManager.INTERNAL, token);
             if (!OPENCGA.equals(userId)) {
                 String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
                 auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
@@ -270,12 +231,12 @@ public class UserManager extends AbstractManager {
         }
         String authOrigin = userResult.first().getAccount().getAuthentication().getId();
 
-        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        AuthenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
         return jwtPayload;
     }
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
-        if (!OPENCGA.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+        if (!OPENCGA.equals(AuthenticationFactory.getUserId(organizationId, authOrigin, token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
@@ -290,8 +251,8 @@ public class UserManager extends AbstractManager {
 
                 List<User> userList;
                 try {
-                    userList = authenticationManagerMap.get(group.getSyncedFrom().getAuthOrigin())
-                            .getUsersFromRemoteGroup(group.getSyncedFrom().getRemoteGroup());
+                    userList = AuthenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
+                            group.getSyncedFrom().getRemoteGroup());
                 } catch (CatalogException e) {
                     // There was some kind of issue for which we could not retrieve the group information.
                     logger.info("Removing all users from group '{}' belonging to group '{}' in the external authentication origin",
@@ -362,16 +323,12 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!OPENCGA.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            if (!OPENCGA.equals(AuthenticationFactory.getUserId(organizationId, authOrigin, token))) {
                 throw new CatalogAuthorizationException("Only the root user can perform this action");
             }
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
-
-            if (!authenticationManagerMap.containsKey(authOrigin)) {
-                throw new CatalogException("Unknown authentication origin");
-            }
 
             List<User> userList;
             if (sync) {
@@ -381,7 +338,7 @@ public class UserManager extends AbstractManager {
                 logger.info("Fetching users from authentication origin '{}'", authOrigin);
 
                 // Register the users
-                userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
+                userList = AuthenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
                 for (User user : userList) {
                     try {
                         create(organizationId, user, null, token);
@@ -460,13 +417,9 @@ public class UserManager extends AbstractManager {
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkObj(idList, "ids");
 
-            if (!authenticationManagerMap.containsKey(authOrigin)) {
-                throw new CatalogException("Unknown authentication origin");
-            }
-
             if (!isApplication) {
                 logger.info("Fetching user information from authentication origin '{}'", authOrigin);
-                List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
+                List<User> parsedUserList = AuthenticationFactory.getRemoteUserInformation(organizationId, authOrigin, idList);
                 for (User user : parsedUserList) {
                     create(organizationId, user, null, token);
                     auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, user.getId(), "",
@@ -820,7 +773,7 @@ public class UserManager extends AbstractManager {
             String authenticatedUserId = getUserId(organizationId, token);
             authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(organizationId, userId);
+            OpenCGAResult writeResult = AuthenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
             auditManager.auditUser(organizationId, userId, Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -846,12 +799,8 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_ACCOUNT);
         if (userOpenCGAResult.getNumResults() == 1) {
             authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
-            if (!authenticationManagerMap.containsKey(authId)) {
-                throw new CatalogException("Could not authenticate user '" + username + "'. The authentication origin '" + authId
-                        + "' could not be found.");
-            }
             try {
-                response = authenticationManagerMap.get(authId).authenticate(organizationId, username, password);
+                response = AuthenticationFactory.authenticate(organizationId, authId, username, password);
             } catch (CatalogAuthenticationException e) {
                 auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -859,7 +808,8 @@ public class UserManager extends AbstractManager {
             }
         } else {
             // We attempt to login the user with the different authentication managers
-            for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+            for (Map.Entry<String, AuthenticationManager> entry
+                    : AuthenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
                 AuthenticationManager authenticationManager = entry.getValue();
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
@@ -879,22 +829,23 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = authenticationManagerMap.get(authId).getUserId(response.getToken());
-        if (!INTERNAL_AUTHORIZATION.equals(authId)) {
+        String userId = AuthenticationFactory.getUserId(organizationId, authId, response.getToken());
+        if (!CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
                 // If the user is not registered, an exception will be raised
                 getUserDBAdaptor(organizationId).checkId(userId);
             } catch (CatalogDBException e) {
                 // The user does not exist so we register it
-                User user = authenticationManagerMap.get(authId).getRemoteUserInformation(Collections.singletonList(userId)).get(0);
+                User user = AuthenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
+                        .get(0);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(OPENCGA);
+                String rootToken = AuthenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
                 create(organizationId, user, null, rootToken);
             }
 
             try {
-                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(response.getToken());
+                List<String> remoteGroups = AuthenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 
                 // Resync synced groups of user in OpenCGA
                 getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroups, authId);
@@ -919,7 +870,8 @@ public class UserManager extends AbstractManager {
         CatalogAuthenticationException exception = null;
         String userId = "";
         // We attempt to renew the token with the different authentication managers
-        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+        for (Map.Entry<String, AuthenticationManager> entry
+                : AuthenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
                 response = authenticationManager.refreshToken(token);
@@ -927,7 +879,7 @@ public class UserManager extends AbstractManager {
                 break;
             } catch (CatalogAuthenticationException e) {
                 logger.debug("Could not refresh token with '{}' provider: {}", entry.getKey(), e.getMessage(), e);
-                if (INTERNAL_AUTHORIZATION.equals(entry.getKey())) {
+                if (CatalogAuthenticationManager.INTERNAL.equals(entry.getKey())) {
                     exception = e;
                 }
             }
@@ -965,8 +917,8 @@ public class UserManager extends AbstractManager {
         }
         AuthenticationManager authManager = getAuthenticationManagerForUser(organizationId, userId);
         return expiration != null
-                ? authManager.createToken(userId, attributes, expiration)
-                : authManager.createToken(userId, attributes);
+                ? authManager.createToken(organizationId, userId, attributes, expiration)
+                : authManager.createToken(organizationId, userId, attributes);
     }
 
     /**
@@ -985,18 +937,14 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
         }
         AuthenticationManager authManager = getAuthenticationManagerForUser(organizationId, userId);
-        return authManager.createNonExpiringToken(userId, attributes);
+        return authManager.createNonExpiringToken(organizationId, userId, attributes);
     }
 
     private AuthenticationManager getAuthenticationManagerForUser(String organizationId, String user) throws CatalogException {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(user, INCLUDE_ACCOUNT);
         if (userOpenCGAResult.getNumResults() == 1) {
             String authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
-            if (!authenticationManagerMap.containsKey(authId)) {
-                throw new CatalogException("Could not authenticate user '" + user + "'. The authentication origin '" + authId
-                        + "' could not be found.");
-            }
-            return authenticationManagerMap.get(authId);
+            return AuthenticationFactory.getOrganizationAuthenticationManager(organizationId, authId);
         } else {
             throw new CatalogException("User '" + user + "' not found.");
         }
@@ -1463,7 +1411,8 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
     public String getUserId(String organizationId, String token) throws CatalogException {
-        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+        for (Map.Entry<String, AuthenticationManager> entry
+                : AuthenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
                 String userId = authenticationManager.getUserId(token);
@@ -1474,7 +1423,7 @@ public class UserManager extends AbstractManager {
             }
         }
         // We make this call again to get the original exception
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+        return AuthenticationFactory.getUserId(organizationId, CatalogAuthenticationManager.INTERNAL, token);
     }
 
 }

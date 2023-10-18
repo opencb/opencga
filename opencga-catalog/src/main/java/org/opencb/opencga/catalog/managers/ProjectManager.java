@@ -28,10 +28,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.config.Configuration;
@@ -140,10 +137,8 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    private OpenCGAResult<Project> getProject(String organizationId, String userId, String projectUuid, QueryOptions options)
-            throws CatalogDBException {
+    private OpenCGAResult<Project> getProject(String organizationId, String projectUuid, QueryOptions options) throws CatalogDBException {
         Query query = new Query()
-                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         return getProjectDBAdaptor(organizationId).get(query, options);
@@ -198,10 +193,10 @@ public class ProjectManager extends AbstractManager {
             authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
             project = projectCreateParams.toProject();
-            validateProjectForCreation(project);
+            validateProjectForCreation(organizationId, project);
 
             queryResult = getProjectDBAdaptor(organizationId).insert(project, options);
-            OpenCGAResult<Project> result = getProject(organizationId, organizationId, project.getUuid(), options);
+            OpenCGAResult<Project> result = getProject(organizationId, project.getUuid(), options);
             project = result.first();
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created project
@@ -232,7 +227,7 @@ public class ProjectManager extends AbstractManager {
         return queryResult;
     }
 
-    private void validateProjectForCreation(Project project) throws CatalogParameterException {
+    private void validateProjectForCreation(String organizationId, Project project) throws CatalogParameterException {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
@@ -243,6 +238,7 @@ public class ProjectManager extends AbstractManager {
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
+        project.setFqn(FqnUtils.buildFqn(organizationId, project.getId()));
 
         if (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
                 || StringUtils.isEmpty(project.getOrganism().getScientificName())) {

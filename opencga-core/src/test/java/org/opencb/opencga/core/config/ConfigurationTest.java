@@ -20,9 +20,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.io.*;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -53,8 +52,7 @@ public class ConfigurationTest {
         ))));
 
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
-                "localhost", Collections.emptyMap()));
+        authenticationOriginList.add(new AuthenticationOrigin());
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("ou", "People");
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),

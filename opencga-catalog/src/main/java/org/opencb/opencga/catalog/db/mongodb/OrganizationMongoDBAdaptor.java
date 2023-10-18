@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -39,6 +40,8 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     private final MongoDBCollection organizationCollection;
     private final OrganizationConverter organizationConverter;
+
+    private final String ID_COUNTER = "_idCounter";
 
     public OrganizationMongoDBAdaptor(MongoDBCollection organizationCollection, Configuration configuration,
                                       OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -81,13 +84,16 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
         Document organizationObject = organizationConverter.convertToStorageType(organization);
 
+        // Counter private parameter
+        organizationObject.put(ID_COUNTER, 0L);
+
         // Versioning private parameters
         organizationObject.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(organization.getCreationDate())
                 ? TimeUtils.toDate(organization.getCreationDate()) : TimeUtils.getDate());
         organizationObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(organization.getModificationDate())
                 ? TimeUtils.toDate(organization.getModificationDate()) : TimeUtils.getDate());
 
-        logger.debug("Inserting organization '{}' ({})...", organization.getId(), organization.getUid());
+        logger.debug("Inserting organization '{}'...", organization.getId());
         organizationCollection.insert(clientSession, organizationObject, null);
         logger.debug("Organization '{}' successfully inserted", organization.getId());
 
@@ -269,6 +275,39 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
+    }
+
+    public List<String> getOwnerAndAdmins(ClientSession clientSession) throws CatalogDBException {
+        Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        List<String> members = new ArrayList<>(organization.getAdmins().size() + 1);
+        if (StringUtils.isNotEmpty(organization.getOwner())) {
+            members.add(organization.getOwner());
+        } else {
+            logger.warn("No owner found for organization {}", organization.getId());
+        }
+        members.addAll(organization.getAdmins());
+        return members;
+    }
+
+    public boolean isOwnerOrAdmin(ClientSession clientSession, String userId) throws CatalogDBException {
+        return getOwnerAndAdmins(clientSession).contains(userId);
+    }
+
+    public long getNewAutoIncrementId() {
+        return getNewAutoIncrementId(null, ID_COUNTER); //, metaCollection
+    }
+
+    public long getNewAutoIncrementId(ClientSession clientSession) {
+        return getNewAutoIncrementId(clientSession, ID_COUNTER); //, metaCollection
+    }
+
+    public long getNewAutoIncrementId(ClientSession clientSession, String field) { //, MongoDBCollection metaCollection
+        Bson query = new Document();
+        Document projection = new Document(field, true);
+        Bson inc = Updates.inc(field, 1L);
+        QueryOptions queryOptions = new QueryOptions("returnNew", true);
+        DataResult<Document> result = organizationCollection.findAndUpdate(clientSession, query, projection, null, inc, queryOptions);
+        return result.getResults().get(0).getLong(field);
     }
 
 //    private Bson parseQuery(Query query) throws CatalogDBException {

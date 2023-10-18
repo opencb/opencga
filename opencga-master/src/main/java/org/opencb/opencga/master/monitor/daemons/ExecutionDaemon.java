@@ -602,7 +602,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
                     + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
         } else {
-            if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.USER_PROJECT_SEPARATOR)) {
+            if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.ORGANIZATION_PROJECT_SEPARATOR)) {
                 // If the user is the owner of the project, accept all.
                 return;
             }

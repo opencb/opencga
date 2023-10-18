@@ -3,7 +3,6 @@ package org.opencb.opencga.core.models.organizations;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.Map;
 
 @DataClass(id = "Organization", since = "3.0",
         description = "Organization data model hosts information about the organization managing the data.")
-public class Organization extends PrivateFields {
+public class Organization {
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.GENERIC_UUID_DESCRIPTION)

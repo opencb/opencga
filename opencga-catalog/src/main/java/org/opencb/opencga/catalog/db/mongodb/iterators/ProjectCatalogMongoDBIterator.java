@@ -87,7 +87,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document projectDocument = mongoCursor.next().get("projects", Document.class);
+            Document projectDocument = mongoCursor.next();
 
             projectListBuffer.add(projectDocument);
             counter++;

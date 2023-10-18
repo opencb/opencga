@@ -5,6 +5,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
@@ -15,15 +16,15 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,8 +137,6 @@ public class OrganizationManager extends AbstractManager {
 
     public OpenCGAResult<Organization> create(OrganizationCreateParams organizationCreateParams, QueryOptions options, String token)
             throws CatalogException {
-        String userId = this.catalogManager.getUserManager().getUserId(ParamConstants.ADMIN_ORGANIZATION, token);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationCreateParams", organizationCreateParams)
                 .append("options", options)
@@ -146,9 +145,12 @@ public class OrganizationManager extends AbstractManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Organization> queryResult;
         Organization organization;
+        String userId = null;
         try {
             // The first time we create the ADMIN_ORGANIZATION as there are no users yet, we should not check anything
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
+                userId = this.catalogManager.getUserManager().getUserId(ParamConstants.ADMIN_ORGANIZATION, token);
+
                 //Only the OpenCGA administrator can create an organization
                 authorizationManager.checkIsInstallationAdministrator(ParamConstants.ADMIN_ORGANIZATION, userId);
             }
@@ -165,10 +167,15 @@ public class OrganizationManager extends AbstractManager {
                 // Fetch created organization
                 queryResult.setResults(result.getResults());
             }
+
+            // Add required authentication manager for the new organization
+            AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
         } catch (CatalogException e) {
-            auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,
-                    organizationCreateParams.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
+                auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,
+                        organizationCreateParams.getId(), "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
             throw e;
         }
 
@@ -249,13 +256,14 @@ public class OrganizationManager extends AbstractManager {
                 OrganizationDBAdaptor.QueryParams.CREATION_DATE.key()));
         organization.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(organization.getModificationDate(),
                 OrganizationDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+        organization.setInternal(new OrganizationInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(),
+                GitRepositoryState.getInstance().getBuildVersion(), Collections.emptyList()));
         organization.setAdmins(Collections.emptyList());
         organization.setProjects(Collections.emptyList());
 
-        if (organization.getConfiguration() != null && organization.getConfiguration().getAuthentication() != null
-                && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthentication().getAuthenticationOrigins())) {
-            for (AuthenticationOrigin authenticationOrigin
-                    : organization.getConfiguration().getAuthentication().getAuthenticationOrigins()) {
+        if (organization.getConfiguration() != null
+                && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
+            for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
             }
         } else {

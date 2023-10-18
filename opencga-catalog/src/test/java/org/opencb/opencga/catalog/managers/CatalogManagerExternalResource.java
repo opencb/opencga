@@ -32,6 +32,9 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,7 +58,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
-    private String adminToken;
+//    private String adminToken;
+    protected String organizationId = "test";
+    protected String ownerId = "owner";
+    protected String ownerToken;
 
 
     public CatalogManagerExternalResource() {
@@ -75,24 +81,30 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
+        clearCatalog(configuration);
+//        if (opencgaHome.toFile().exists()) {
+//            deleteFolderTree(opencgaHome.toFile());
+//            Files.createDirectory(opencgaHome);
+//        }
         // Pedigree graph analysis
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
-        clearCatalog(configuration);
-        if (!opencgaHome.toFile().exists()) {
-            deleteFolderTree(opencgaHome.toFile());
-            Files.createDirectory(opencgaHome);
-        }
-        configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
+//        configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true, true);
-        catalogManager.close();
-        // FIXME!! Should not need to create again the catalogManager
-        //  Have to create again the CatalogManager, as it has a random "secretKey" inside
-        catalogManager = new CatalogManager(configuration);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true, true);
+//        catalogManager.close();
+//         FIXME!! Should not need to create again the catalogManager
+//          Have to create again the CatalogManager, as it has a random "secretKey" inside
+//        catalogManager = new CatalogManager(configuration);
+        String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"),
+                QueryOptions.empty(), adminToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId(ownerId).setName(ownerId), TestParamConstants.PASSWORD, adminToken);
+        catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner(ownerId),
+                QueryOptions.empty(), adminToken);
     }
 
     @Override
@@ -102,7 +114,6 @@ public class CatalogManagerExternalResource extends ExternalResource {
             if (catalogManager != null) {
                 catalogManager.close();
             }
-            adminToken = null;
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
@@ -117,7 +128,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public String getAdminToken() {
-        return adminToken;
+        return "";
     }
 
     public Path getOpencgaHome() {

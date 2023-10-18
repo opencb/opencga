@@ -1,10 +1,11 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.client.model.Filters;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -17,18 +18,19 @@ import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 public class OrganizationMongoDBAdaptorFactory {
 
+    public static final String CONFIGURATION_COLLECTION = "configuration";
     public static final String ORGANIZATION_COLLECTION = "organization";
     public static final String USER_COLLECTION = "user";
+    public static final String PROJECT_COLLECTION = "project";
     public static final String STUDY_COLLECTION = "study";
     public static final String FILE_COLLECTION = "file";
     public static final String JOB_COLLECTION = "job";
@@ -47,6 +49,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
     public static final String DELETED_USER_COLLECTION = "user_deleted";
+    public static final String DELETED_PROJECT_COLLECTION = "project_deleted";
     public static final String DELETED_STUDY_COLLECTION = "study_deleted";
     public static final String DELETED_FILE_COLLECTION = "file_deleted";
     public static final String DELETED_JOB_COLLECTION = "job_deleted";
@@ -65,6 +68,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final List<String> COLLECTIONS_LIST = Arrays.asList(
             ORGANIZATION_COLLECTION,
             USER_COLLECTION,
+            PROJECT_COLLECTION,
             STUDY_COLLECTION,
             FILE_COLLECTION,
             JOB_COLLECTION,
@@ -83,6 +87,7 @@ public class OrganizationMongoDBAdaptorFactory {
             INTERPRETATION_ARCHIVE_COLLECTION,
 
             DELETED_USER_COLLECTION,
+            DELETED_PROJECT_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
             DELETED_JOB_COLLECTION,
@@ -106,23 +111,23 @@ public class OrganizationMongoDBAdaptorFactory {
 
     private final OrganizationMongoDBAdaptor organizationDBAdaptor;
     private final UserMongoDBAdaptor userDBAdaptor;
+    private final ProjectMongoDBAdaptor projectDBAdaptor;
     private final StudyMongoDBAdaptor studyDBAdaptor;
     private final IndividualMongoDBAdaptor individualDBAdaptor;
     private final SampleMongoDBAdaptor sampleDBAdaptor;
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final JobMongoDBAdaptor jobDBAdaptor;
-    private final ProjectMongoDBAdaptor projectDBAdaptor;
     private final CohortMongoDBAdaptor cohortDBAdaptor;
     private final FamilyMongoDBAdaptor familyDBAdaptor;
     private final PanelMongoDBAdaptor panelDBAdaptor;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationMongoDBAdaptor interpretationDBAdaptor;
     private final AuditMongoDBAdaptor auditDBAdaptor;
-    private final MetaMongoDBAdaptor metaDBAdaptor;
+//    private final MetaMongoDBAdaptor metaDBAdaptor;
     private final MigrationMongoDBAdaptor migrationDBAdaptor;
     private final AuthorizationMongoDBAdaptor authorizationMongoDBAdaptor;
 
-    private final MongoDBCollection metaCollection;
+    private final MongoDBCollection organizationCollection;
     private final Map<String, MongoDBCollection> mongoDBCollectionMap;
 
     private final Logger logger;
@@ -138,11 +143,11 @@ public class OrganizationMongoDBAdaptorFactory {
             throw new CatalogDBException("Unable to connect to MongoDB '" + database + "'");
         }
 
-        metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
-        MongoDBCollection organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
+        organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
+        MongoDBCollection projectCollection = mongoDataStore.getCollection(PROJECT_COLLECTION);
         MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
         MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
         MongoDBCollection sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
@@ -161,6 +166,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
+        MongoDBCollection deletedProjectCollection = mongoDataStore.getCollection(DELETED_PROJECT_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
         MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
         MongoDBCollection deletedSampleCollection = mongoDataStore.getCollection(DELETED_SAMPLE_COLLECTION);
@@ -181,7 +187,7 @@ public class OrganizationMongoDBAdaptorFactory {
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
                 configuration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, configuration, this);
-        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, configuration, this);
+        projectDBAdaptor = new ProjectMongoDBAdaptor(projectCollection, deletedProjectCollection, configuration, this);
 
         sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection, configuration,
                 this);
@@ -192,13 +198,13 @@ public class OrganizationMongoDBAdaptorFactory {
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, configuration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, configuration, this);
-        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
+//        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, configuration);
         authorizationMongoDBAdaptor = new AuthorizationMongoDBAdaptor(this, configuration);
 
         mongoDBCollectionMap = new HashMap<>();
-        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
+//        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
         mongoDBCollectionMap.put(MIGRATION_COLLECTION, migrationCollection);
 
         mongoDBCollectionMap.put(ORGANIZATION_COLLECTION, organizationCollection);
@@ -236,7 +242,8 @@ public class OrganizationMongoDBAdaptorFactory {
     }
 
     public boolean isCatalogDBReady() {
-        return metaCollection.count(Filters.eq("id", METADATA_OBJECT_ID)).getNumMatches() == 1;
+        return organizationCollection.getIndex().getNumMatches() > 0;
+//        return organizationCollection.count(new Document()).getNumMatches() == 1;
     }
 
 //    public void createAllCollections(Configuration configuration) throws CatalogException {
@@ -252,7 +259,8 @@ public class OrganizationMongoDBAdaptorFactory {
 //    }
 
     public void initialiseMetaCollection(Admin admin) throws CatalogException {
-        metaDBAdaptor.initializeMetaCollection(admin);
+        throw new CatalogException("Initialise meta collection must disappear");
+//        metaDBAdaptor.initializeMetaCollection(admin);
     }
 
     public void createAllCollections() throws CatalogDBException {
@@ -266,8 +274,91 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public void createIndexes() throws CatalogDBException {
         StopWatch stopWatch = StopWatch.createStarted();
-        metaDBAdaptor.createIndexes();
+
+        InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
+        ObjectMapper objectMapper = getDefaultObjectMapper();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
+        // We store all the indexes that are in the file in the indexes object
+        Map<String, List<Map<String, ObjectMap>>> indexes = new HashMap<>();
+        bufferedReader.lines().filter(s -> !s.trim().isEmpty()).forEach(s -> {
+            try {
+                HashMap hashMap = objectMapper.readValue(s, HashMap.class);
+
+                List<String> collections = (List<String>) hashMap.get("collections");
+                for (String collection : collections) {
+                    if (!indexes.containsKey(collection)) {
+                        indexes.put(collection, new ArrayList<>());
+                    }
+                    Map<String, ObjectMap> myIndexes = new HashMap<>();
+                    myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
+                    myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
+                    indexes.get(collection).add(myIndexes);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        try {
+            bufferedReader.close();
+        } catch (IOException e) {
+            logger.error("Error closing the buffer reader", e);
+            throw new UncheckedIOException(e);
+        }
+
+        createIndexes(OrganizationMongoDBAdaptorFactory.USER_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.AUDIT_COLLECTION, indexes);
+
+        // Versioned collections
+        createIndexes(OrganizationMongoDBAdaptorFactory.SAMPLE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INDIVIDUAL_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INDIVIDUAL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FAMILY_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FAMILY_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.PANEL_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
+
         logger.info("Creating all indexes took {} milliseconds", stopWatch.getTime(TimeUnit.MILLISECONDS));
+    }
+
+    private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {
+        MongoDBCollection mongoCollection = mongoDBCollectionMap.get(collection);;
+        List<Map<String, ObjectMap>> indexes = indexCollectionMap.get(collection);
+
+        DataResult<Document> index = mongoCollection.getIndex();
+        // We store the existing indexes
+        Set<String> existingIndexes = index.getResults()
+                .stream()
+                .map(document -> (String) document.get("name"))
+                .collect(Collectors.toSet());
+
+        if (index.getNumResults() != indexes.size() + 1) { // It is + 1 because mongo always create the _id index by default
+            for (Map<String, ObjectMap> userIndex : indexes) {
+                String indexName = "";
+                Document keys = new Document();
+                Iterator fieldsIterator = userIndex.get("fields").entrySet().iterator();
+                while (fieldsIterator.hasNext()) {
+                    Map.Entry pair = (Map.Entry) fieldsIterator.next();
+                    keys.append((String) pair.getKey(), pair.getValue());
+
+                    if (!indexName.isEmpty()) {
+                        indexName += "_";
+                    }
+                    indexName += pair.getKey() + "_" + pair.getValue();
+                }
+
+                if (!existingIndexes.contains(indexName)) {
+                    mongoCollection.createIndex(keys, new ObjectMap(userIndex.get("options")));
+                }
+            }
+        }
     }
 
     public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
@@ -298,7 +389,7 @@ public class OrganizationMongoDBAdaptorFactory {
     }
 
     public MetaMongoDBAdaptor getCatalogMetaDBAdaptor() {
-        return metaDBAdaptor;
+        return null;
     }
 
     public OrganizationMongoDBAdaptor getCatalogOrganizationDBAdaptor() {

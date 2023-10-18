@@ -36,10 +36,14 @@ import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -50,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -87,6 +92,10 @@ public class CatalogManager implements AutoCloseable {
 
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
+        init();
+    }
+
+    private void init() throws CatalogException {
         logger.debug("CatalogManager configureDBAdaptorFactory");
         catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
@@ -98,8 +107,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public String getCatalogDatabase() {
-        return null;
-//        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix());
+        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix(), ADMIN_ORGANIZATION);
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
@@ -179,17 +187,18 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, boolean force) throws CatalogException {
-        installCatalogDB(secretKey, password, email, force, false);
+    public void installCatalogDB(String algorithm, String secretKey, String password, String email, boolean force) throws CatalogException {
+        installCatalogDB(algorithm, secretKey, password, email, force, false);
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, boolean force, boolean test)
+    public void installCatalogDB(String algorithm, String secretKey, String password, String email, boolean force, boolean test)
             throws CatalogException {
         if (existsCatalogDB()) {
             if (force) {
                 // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
                 // results calling first to "catalog delete" and then "catalog install"
                 deleteCatalogDB(password);
+                init();
             } else {
                 // Check admin password ...
                 try {
@@ -205,7 +214,7 @@ public class CatalogManager implements AutoCloseable {
 
         try {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-            privateInstall(secretKey, password, email, test);
+            privateInstall(algorithm, secretKey, password, email, test);
             String token = userManager.loginAsAdmin(password).getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
@@ -218,7 +227,7 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
-    private void privateInstall(String secretKey, String password, String email, boolean test) throws CatalogException {
+    private void privateInstall(String algorithm, String secretKey, String password, String email, boolean test) throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -227,17 +236,27 @@ public class CatalogManager implements AutoCloseable {
         }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
-        JwtUtils.validateJWTKey(configuration.getAdmin().getAlgorithm(), secretKey);
-        configuration.getAdmin().setSecretKey(secretKey);
+        JwtUtils.validateJWTKey(algorithm, secretKey);
 
-        if (!test) {
-            catalogDBAdaptorFactory.createAllCollections(configuration);
-        }
-        catalogDBAdaptorFactory.initialiseMetaCollection(configuration.getAdmin());
+//        if (!test || !catalogDBAdaptorFactory.isCatalogDBReady()) {
+//            catalogDBAdaptorFactory.createAllCollections(configuration);
+//        }
         catalogIOManager.createDefaultOpenCGAFolders();
 
-        organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null, null, null),
-                QueryOptions.empty(), null);
+        if (!test || !catalogDBAdaptorFactory.isCatalogDBReady()) {
+            OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
+                    Collections.singletonList(new AuthenticationOrigin()
+                            .setId("internal")
+                            .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                            .setAlgorithm(algorithm)
+                            .setExpiration(3600L)
+                            .setSecretKey(secretKey)),
+                    new Optimizations());
+            organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null,
+                            organizationConfiguration, null),
+                    QueryOptions.empty(), null);
+        }
+
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
@@ -246,8 +265,8 @@ public class CatalogManager implements AutoCloseable {
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
-        projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project"), null,
-                token);
+        projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project")
+                        .setOrganism(new ProjectOrganism("Homo sapiens", "grch38")), null, token);
         studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
                 QueryOptions.empty(), token);
 

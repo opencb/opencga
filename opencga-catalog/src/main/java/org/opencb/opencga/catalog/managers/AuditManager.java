@@ -102,13 +102,14 @@ public class AuditManager {
     public void auditCreate(String organizationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                             String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-        audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(organizationId, operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
     }
 
     public void auditUpdate(String organizationId, String operationId, String userId, Enums.Resource resource, String resourceId,
                             String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
-                new ObjectMap());
+        audit(organizationId, operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params,
+                status, new ObjectMap());
     }
 
     public void auditUpdate(String organizationId, String userId, Enums.Resource resource, String resourceId, String resourceUuid,
@@ -125,8 +126,8 @@ public class AuditManager {
 
     public void auditDelete(String organizationId, String operationId, String userId, Enums.Resource resource, String resourceId,
                             String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
-                new ObjectMap());
+        audit(organizationId, operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params,
+                status, new ObjectMap());
     }
 
     public void auditUser(String organizationId, String userId, Enums.Action action, String resourceId, AuditRecord.Status status) {
@@ -178,14 +179,15 @@ public class AuditManager {
     public void audit(String organizationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
-        audit(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
-                params, status, attributes);
+        audit(organizationId, UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid,
+                studyId, studyUuid, params, status, attributes);
     }
 
     public void audit(String organizationId, String operationId, String userId, Enums.Action action, Enums.Resource resource,
                       String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params,
                       AuditRecord.Status status) {
-        audit(operationId, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(organizationId, operationId, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
     }
 
     public void audit(String organizationId, String operationId, String userId, Enums.Action action, Enums.Resource resource,

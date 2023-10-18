@@ -114,7 +114,7 @@ public class ParamConstants {
      */
     public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
     public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
-    public static final String USER_PROJECT_SEPARATOR = "@";
+    public static final String ORGANIZATION_PROJECT_SEPARATOR = "@";
     // ---------------------------------------------
     public static final String PROJECT_STUDY_SEPARATOR = ":";
     public static final String OPENCGA_USER_ID = "opencga";
@@ -122,7 +122,7 @@ public class ParamConstants {
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN =
-            OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
+            OPENCGA_USER_ID + ORGANIZATION_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
     public static final String ANONYMOUS_USER_ID = "*";         // Any user, authenticated or not
     public static final String REGISTERED_USERS = "REGISTERED"; // Any authenticated user
     public static final String MEMBERS_GROUP = "@members";

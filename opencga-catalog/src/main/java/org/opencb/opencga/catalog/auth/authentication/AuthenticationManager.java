@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -78,7 +79,14 @@ public abstract class AuthenticationManager {
      * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
      * for any other reason.
      */
-    public abstract AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException;
+    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
+        JwtPayload payload = getPayload(refreshToken);
+        if (!"*".equals(payload.getUserId())) {
+            return new AuthenticationResponse(createToken(payload.getOrganization(), payload.getUserId()));
+        } else {
+            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
+        }
+    }
 
     /**
      * Obtains the userId corresponding to the token.
@@ -93,6 +101,21 @@ public abstract class AuthenticationManager {
         }
 
         return jwtManager.getUser(token);
+    }
+
+    /**
+     * Obtains the userId corresponding to the token.
+     *
+     * @param token token that have been assigned to a user.
+     * @return the user id corresponding to the token given.
+     * @throws CatalogAuthenticationException when the token does not correspond to any user or the token has expired.
+     */
+    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
+        if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
+            throw new CatalogAuthenticationException("Token is null or empty.");
+        }
+
+        return jwtManager.getPayload(token);
     }
 
     public abstract List<User> getUsersFromRemoteGroup(String group) throws CatalogException;
@@ -138,83 +161,58 @@ public abstract class AuthenticationManager {
     /**
      * Create a token for the user with default expiration time.
      *
-     * @param user user.
+     * @param organizationId Organization id.
+     * @param userId         user.
      * @return A token.
      */
-    public String createToken(User user) {
-        return createToken(user, Collections.emptyMap(), expiration);
+    public String createToken(String organizationId, String userId) {
+        return createToken(organizationId, userId, Collections.emptyMap(), expiration);
     }
 
     /**
      * Create a token for the user with default expiration time.
      *
-     * @param userId user.
+     * @param organizationId Organization id.
+     * @param userId         user.
+     * @param expiration     expiration time.
      * @return A token.
      */
-    public String createToken(String userId) {
-        return createToken(userId, Collections.emptyMap(), expiration);
+    public String createToken(String organizationId, String userId, long expiration) {
+        return createToken(organizationId, userId, Collections.emptyMap(), expiration);
     }
 
     /**
      * Create a token for the user with default expiration time.
      *
-     * @param userId user.
-     * @param expiration expiration time.
+     * @param organizationId Organization id.
+     * @param userId         user.
+     * @param claims         claims.
      * @return A token.
      */
-    public String createToken(String userId, long expiration) {
-        return createToken(userId, Collections.emptyMap(), expiration);
-    }
-
-    /**
-     * Create a token for the user with default expiration time.
-     *
-     * @param userId user.
-     * @param claims claims.
-     * @return A token.
-     */
-    public String createToken(String userId, Map<String, Object> claims) {
-        return createToken(userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims) {
+        return createToken(organizationId, userId, claims, expiration);
     }
 
     /**
      * Create a token for the user.
      *
-     * @param userId user.
-     * @param claims claims.
-     * @param expiration Expiration time in seconds.
+     * @param organizationId Organization id.
+     * @param userId         user.
+     * @param claims         claims.
+     * @param expiration     Expiration time in seconds.
      * @return A token.
      */
-    public abstract String createToken(String userId, Map<String, Object> claims, long expiration);
-
-    /**
-     * Create a token for the user.
-     *
-     * @param user user.
-     * @param claims claims.
-     * @param expiration Expiration time in seconds.
-     * @return A token.
-     */
-    public abstract String createToken(User user, Map<String, Object> claims, long expiration);
+    public abstract String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration);
 
     /**
      * Create a token for the user with no expiration time.
      *
-     * @param userId user.
+     * @param organizationId
+     * @param userId         user.
+     * @param claims         claims.
      * @return A token.
      */
-    public String createNonExpiringToken(String userId) {
-        return createNonExpiringToken(userId, Collections.emptyMap());
-    }
-
-    /**
-     * Create a token for the user with no expiration time.
-     *
-     * @param userId user.
-     * @param claims claims.
-     * @return A token.
-     */
-    public abstract String createNonExpiringToken(String userId, Map<String, Object> claims);
+    public abstract String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims);
 
     public Date getExpirationDate(String token) throws CatalogAuthenticationException {
         return jwtManager.getExpiration(token);

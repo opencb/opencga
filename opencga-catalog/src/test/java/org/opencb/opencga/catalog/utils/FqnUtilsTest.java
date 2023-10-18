@@ -12,7 +12,7 @@ public class FqnUtilsTest {
     @Test
     public void testFqnFull() {
         FqnUtils.FQN fqn = new FqnUtils.FQN("user@project:study");
-        assertEquals("user", fqn.getUser());
+        assertEquals("user", fqn.getOrganization());
         assertEquals("project", fqn.getProject());
         assertEquals("user@project", fqn.getProjectFqn());
         assertEquals("study", fqn.getStudy());
@@ -22,7 +22,7 @@ public class FqnUtilsTest {
     @Test
     public void testFqnPartial() {
         FqnUtils.FQN fqn = new FqnUtils.FQN("user@project");
-        assertEquals("user", fqn.getUser());
+        assertEquals("user", fqn.getOrganization());
         assertEquals("project", fqn.getProject());
         assertEquals("user@project", fqn.getProjectFqn());
         assertEquals(null, fqn.getStudy());

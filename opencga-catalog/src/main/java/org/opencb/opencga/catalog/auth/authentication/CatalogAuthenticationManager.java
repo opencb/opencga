@@ -63,19 +63,9 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
             throws CatalogAuthenticationException {
         try {
             dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).authenticate(userId, password);
-            return new AuthenticationResponse(createToken(userId));
+            return new AuthenticationResponse(createToken(organizationId, userId));
         } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not validate '" + userId + "' password\n" + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
-        String userId = getUserId(refreshToken);
-        if (!"*".equals(userId)) {
-            return new AuthenticationResponse(createToken(userId));
-        } else {
-            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
         }
     }
 
@@ -105,18 +95,13 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String createToken(String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
+        return jwtManager.createJWTToken(organizationId, userId, claims, expiration);
     }
 
     @Override
-    public String createToken(User user, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(user, claims, expiration);
-    }
-
-    @Override
-    public String createNonExpiringToken(String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(userId, claims, 0L);
+    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
+        return jwtManager.createJWTToken(organizationId, userId, claims, 0L);
     }
 
     @Override

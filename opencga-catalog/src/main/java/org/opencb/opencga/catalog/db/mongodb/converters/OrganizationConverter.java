@@ -19,13 +19,6 @@ public class OrganizationConverter extends OpenCgaMongoConverter<Organization> {
         getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
-    @Override
-    public Document convertToStorageType(Organization object) {
-        Document document = super.convertToStorageType(object);
-        document.put("uid", document.getInteger("uid").longValue());
-        return document;
-    }
-
     public List<Document> convertAuthenticationOrigins(List<AuthenticationOrigin> authenticationOriginList) throws CatalogDBException {
         if (authenticationOriginList == null || authenticationOriginList.isEmpty()) {
             return Collections.emptyList();
