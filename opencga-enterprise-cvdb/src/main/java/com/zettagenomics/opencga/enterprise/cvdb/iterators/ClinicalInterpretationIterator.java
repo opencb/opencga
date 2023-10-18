@@ -16,13 +16,13 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 
-import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
+import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
+import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalInterpretationSearch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,22 +32,22 @@ import java.util.List;
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class ClinicalAnalysisIterator extends ClinicalIncludeHandler implements Iterator<ClinicalAnalysis>, AutoCloseable {
+public class ClinicalInterpretationIterator extends ClinicalIncludeHandler implements Iterator<Interpretation>, AutoCloseable {
 
-    private ClinicalSolrterator<ClinicalAnalysisSearch> nativeSolrIterator;
-    private ClinicalAnalysisConverter converter;
+    private ClinicalSolrterator<ClinicalInterpretationSearch> nativeSolrIterator;
+    private ClinicalInterpretationConverter converter;
 
-    public ClinicalAnalysisIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
+    public ClinicalInterpretationIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
             throws IOException, SolrServerException {
         this(solrClient, collection, solrQuery, new ArrayList<>());
     }
 
-    public ClinicalAnalysisIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, List<String> includeList)
+    public ClinicalInterpretationIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, List<String> includeList)
             throws IOException, SolrServerException {
         super(includeList);
-        nativeSolrIterator = new ClinicalSolrterator<ClinicalAnalysisSearch>(solrClient, collection, solrQuery,
-                ClinicalAnalysisSearch.class);
-        converter = new ClinicalAnalysisConverter();
+        nativeSolrIterator = new ClinicalSolrterator<ClinicalInterpretationSearch>(solrClient, collection, solrQuery,
+                ClinicalInterpretationSearch.class);
+        converter = new ClinicalInterpretationConverter();
     }
 
     @Override
@@ -56,9 +56,9 @@ public class ClinicalAnalysisIterator extends ClinicalIncludeHandler implements 
     }
 
     @Override
-    public ClinicalAnalysis next() {
+    public Interpretation next() {
         try {
-            return applyInclude(converter.toClinicalAnalysis(nativeSolrIterator.next()));
+            return applyInclude(converter.toInterpretation(nativeSolrIterator.next()));
         } catch (CvdbException e) {
             e.printStackTrace();
             return null;

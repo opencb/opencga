@@ -18,6 +18,8 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -39,50 +41,32 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
         SolrQuery solrQuery = new SolrQuery("*:*");
 
+        List<String> filters;
+        String join;
+
         // /select?fq=
         // {!join from=join_field_of_A to=join_field_of_B fromIndex=collection_B}join_field_of_B:value1
         // AND
         // {!join from=join_field_of_A to=join_field_of_C fromIndex=collection_C}join_field_of_C:value2
 
-        //---------------------------------------------------------------------
+        // Clinical analysis filters
+        filters = clinicalAnalysisFilters(query);
+        addFilters(filters, solrQuery);
+
         // Clinical interpretation filters
-        //---------------------------------------------------------------------
+        filters = clinicalInterpretationFilters(query);
+        join = "{!join from=caId to=id fromIndex=" + getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX) + "}";
+        addFilters(filters, join, solrQuery);
 
-        if (query.containsKey(ClinicalAnalysisQueryParam.CI_PANEL_ID.key())) {
-            String ciCollection = getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX);
-            List<String> panelIds = query.getAsStringList(ClinicalAnalysisQueryParam.CI_PANEL_ID.key(), ",");
-
-            StringBuilder sb = new StringBuilder();
-            for (String panelId : panelIds) {
-                if (sb.length() > 0) {
-                    sb.append(" OR ");
-                }
-                sb.append("panelIds: \"").append(panelId).append("\"");
-            }
-
-            String joinFilterQuery = "{!join from=caId to=id fromIndex=" + ciCollection + "}(" + sb + ")";
-            solrQuery.addFilterQuery(joinFilterQuery);
-        }
-
-        //---------------------------------------------------------------------
         // Clinical variant filters
-        //---------------------------------------------------------------------
+        filters = clinicalVariantFilters(query);
+        join = "{!join from=caId to=id fromIndex=" + getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX) + "}";
+        addFilters(filters, join, solrQuery);
 
-        if (query.containsKey(ClinicalAnalysisQueryParam.CV_VARIANT_ID.key())) {
-            String cvCollection = getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            List<String> variantIds = query.getAsStringList(ClinicalAnalysisQueryParam.CV_VARIANT_ID.key(), ",");
-
-            StringBuilder sb = new StringBuilder();
-            for (String variantId : variantIds) {
-                if (sb.length() > 0) {
-                    sb.append(" OR ");
-                }
-                sb.append("variantId: \"").append(variantId).append("\"");
-            }
-
-            String joinFilterQuery = "{!join from=caId to=id fromIndex=" + cvCollection + "}(" + sb + ")";
-            solrQuery.addFilterQuery(joinFilterQuery);
-        }
+        // Clinical variant evidences filters
+        filters = clinicalVariantEvidenceFilters(query);
+        join = "{!join from=caId to=id fromIndex=" + getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
+        addFilters(filters, join, solrQuery);
 
         // Return Solr query
         logger.info("Solr query: {}", solrQuery.toQueryString());

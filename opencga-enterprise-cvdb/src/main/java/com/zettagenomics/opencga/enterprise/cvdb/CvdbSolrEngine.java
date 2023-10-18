@@ -62,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 /**
@@ -205,12 +206,16 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException {
-        List<ClinicalAnalysis> results = new ArrayList<>(queryOptions.getInt(LIMIT));
+        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalAnalysis> results = new ArrayList<>(limit);
 
         StopWatch stopWatch = StopWatch.createStarted();
         ClinicalAnalysisIterator iterator = iterator(query, queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
+            if (results.size() == limit) {
+                break;
+            }
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
@@ -224,11 +229,15 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
+        List<String> includeList = new ArrayList<>();
+        if (queryOptions.containsKey(INCLUDE)) {
+            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+        }
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalAnalysisIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new ClinicalAnalysisIterator(solrManager.getSolrClient(), collection, solrQuery, includeList);
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }

@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Assert;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +36,8 @@ import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PANEL
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.VARIANT_QUERY_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 public class CvdbSolrEngineQueryTest {
@@ -143,6 +146,39 @@ public class CvdbSolrEngineQueryTest {
                 fail();
             }
         }
+    }
+
+    @Test
+    public void testQueryClinicalAnalysesInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog
+        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+
+        // CVDB query
+        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
+
+        Query query = new Query();
+        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 1);
+
+        queryOptions.put(INCLUDE, "id,type,disorder.attributes");
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(MapUtils.isNotEmpty(result.first().getDisorder().getAttributes()));
+
+        queryOptions.put(INCLUDE, "id,type,disorder.id");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(MapUtils.isEmpty(result.first().getDisorder().getAttributes()));
+
+        queryOptions.put(INCLUDE, "id,type");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertEquals(null, result.first().getDisorder());
     }
 
     //-----------------------------------------------------------------------

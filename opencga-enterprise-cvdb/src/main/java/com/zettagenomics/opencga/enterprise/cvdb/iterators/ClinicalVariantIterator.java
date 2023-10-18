@@ -18,37 +18,47 @@ package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class ClinicalVariantSolrIterator implements Iterator<ClinicalVariant>, AutoCloseable {
+public class ClinicalVariantIterator extends ClinicalIncludeHandler implements Iterator<ClinicalVariant>, AutoCloseable {
 
-    private ClinicalVariantNativeSolrIterator clinicalVariantNativeSolrIterator;
-    private ClinicalVariantConverter cvConverter;
+    private ClinicalSolrterator<ClinicalVariantSearch> nativeSolrIterator;
+    private ClinicalVariantConverter converter;
 
-    public ClinicalVariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
+    public ClinicalVariantIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
             throws IOException, SolrServerException {
-        clinicalVariantNativeSolrIterator = new ClinicalVariantNativeSolrIterator(solrClient, collection, solrQuery);
-        cvConverter = new ClinicalVariantConverter();
+        this(solrClient, collection, solrQuery, new ArrayList<>());
+    }
+
+    public ClinicalVariantIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, List<String> includeList)
+            throws IOException, SolrServerException {
+        super(includeList);
+        nativeSolrIterator = new ClinicalSolrterator<ClinicalVariantSearch>(solrClient, collection, solrQuery,
+                ClinicalVariantSearch.class);
+        converter = new ClinicalVariantConverter();
     }
 
     @Override
     public boolean hasNext() {
-        return clinicalVariantNativeSolrIterator.hasNext();
+        return nativeSolrIterator.hasNext();
     }
 
     @Override
     public ClinicalVariant next() {
         try {
-            return cvConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
+            return applyInclude(converter.toClinicalVariant(nativeSolrIterator.next()));
         } catch (CvdbException e) {
             e.printStackTrace();
             return null;
@@ -61,6 +71,6 @@ public class ClinicalVariantSolrIterator implements Iterator<ClinicalVariant>, A
     }
 
     public long getNumFound() {
-        return clinicalVariantNativeSolrIterator.getNumFound();
+        return nativeSolrIterator.getNumFound();
     }
 }

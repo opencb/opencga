@@ -16,7 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -30,7 +29,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class ClinicalVariantNativeSolrIterator implements Iterator<ClinicalVariantSearch>, AutoCloseable {
+public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -39,22 +38,20 @@ public class ClinicalVariantNativeSolrIterator implements Iterator<ClinicalVaria
     private String cursorMark;
     private String nextCursorMark;
 
-    private Iterator<ClinicalVariantSearch> solrIterator;
+    private Iterator<T> solrIterator;
+    private Class<T> classType;
 
     private int remaining;
 
     private static final int BATCH_SIZE = 100;
 
-    @Deprecated
-    public ClinicalVariantNativeSolrIterator(Iterator<ClinicalVariantSearch> solrIterator) {
-        this.solrIterator = solrIterator;
-    }
-
-    public ClinicalVariantNativeSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
+    public ClinicalSolrterator(SolrClient solrClient, String collection, SolrQuery solrQuery, Class<T> classType)
             throws IOException, SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
         this.solrQuery = solrQuery;
+
+        this.classType = classType;
 
         // Make sure that query is sorted
         this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
@@ -114,7 +111,7 @@ public class ClinicalVariantNativeSolrIterator implements Iterator<ClinicalVaria
                     remaining -= solrResponse.getResults().size();
                 }
                 nextCursorMark = solrResponse.getNextCursorMark();
-                solrIterator = solrResponse.getBeans(ClinicalVariantSearch.class).iterator();
+                solrIterator = solrResponse.getBeans(classType).iterator();
                 return solrIterator.hasNext();
             } catch (SolrServerException | IOException e) {
                 throw new VariantQueryException("Error searching more variants", e);
@@ -123,7 +120,7 @@ public class ClinicalVariantNativeSolrIterator implements Iterator<ClinicalVaria
     }
 
     @Override
-    public ClinicalVariantSearch next() {
+    public T next() {
         // Sanity check
         if (hasNext()) {
             return solrIterator.next();
