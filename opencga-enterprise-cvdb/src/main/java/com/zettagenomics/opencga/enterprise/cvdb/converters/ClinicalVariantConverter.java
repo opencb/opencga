@@ -3,11 +3,13 @@ package com.zettagenomics.opencga.enterprise.cvdb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
@@ -18,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ClinicalVariantConverter extends SearchConverter {
+public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, ClinicalVariantSearch> {
 
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private ObjectReader clinicalVariantReader;
@@ -112,5 +114,10 @@ public class ClinicalVariantConverter extends SearchConverter {
             }
         }
         return cvList;
+    }
+
+    @Override
+    public ClinicalVariant toModel(ClinicalVariantSearch input) throws CvdbException {
+        return toClinicalVariant(input);
     }
 }

@@ -2,7 +2,6 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
-import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalAnalysisIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
@@ -18,7 +17,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -27,16 +25,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
-import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
-import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 @Path("/{apiVersion}/cvdb")
 @Produces(MediaType.APPLICATION_JSON)

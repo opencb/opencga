@@ -19,9 +19,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by jtarraga on 01/03/17.
@@ -57,17 +55,29 @@ public class ClinicalIncludeHandler {
             field.setAccessible(true);
             boolean toInclude = isIncluded(field.getName(), includes);
             try {
-                // Only set to null, field non-primitive types
-                // Primitive types are boolean, byte, char, short, int, long, float, and double
-                if (!field.getType().isPrimitive()) {
+                Object fieldValue = field.get(object);
+                // Only set to null, field non-primitive and no-enum types
+                // Primitive types: boolean, byte, char, short, int, long, float, and double
+                // Enum types: Enum, EnumMap, EnumSet, Enumeration
+                if (!field.getType().isPrimitive() && !isEnum(field.getType())) {
                     if (isNested(field.getName(), includes)) {
                         // Field belonging to a nested object, e.g.: disorder.id
-                        Object nestedObject = field.get(object);
-                        field.set(object, applyIncludeRecursive(nestedObject, updateIncludes(field.getName(), includes)));
+                        if (field.getType() == List.class && fieldValue instanceof List) {
+                            // e.g.: primaryFindings.id, where primaryFindings is a list
+                            List<?> list = (List<?>) fieldValue;
+                            field.set(object, applyIncludeToList(list, updateIncludes(field.getName(), includes)));
+                        } else {
+                            // e.g.: disorder.id
+                            field.set(object, applyIncludeRecursive(fieldValue, updateIncludes(field.getName(), includes)));
+                        }
                     } else {
                         // Field belonging to the current object, e.g.: id
                         if (!toInclude) {
-                            field.set(object, null);
+                            try {
+                                field.set(object, null);
+                            } catch (Exception e) {
+                                System.out.println("Impossible to set to null the field '" + field.getName() + "', value = " + object);
+                            }
                         }
                     }
                 }
@@ -76,6 +86,21 @@ public class ClinicalIncludeHandler {
             }
         }
         return object;
+    }
+
+    private boolean isEnum(Class<?> type) {
+        if (type == Enum.class || type == EnumSet.class || type == EnumMap.class || type == Enumeration.class) {
+            return true;
+        }
+        return false;
+    }
+
+    private <T> List<T> applyIncludeToList(List<T> list, List<String> includes) {
+        List<T> newList = new ArrayList<>();
+        for (T item : list) {
+            newList.add(applyIncludeRecursive(item, includes));
+        }
+        return newList;
     }
 
     private boolean isIncluded(String name, List<String> includeList) {

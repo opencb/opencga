@@ -23,9 +23,12 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretati
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalAnalysisIterator;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -46,7 +49,6 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.project.Project;
@@ -57,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -204,13 +207,18 @@ public class CvdbSolrEngine {
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
+    //----------------------------------------------------------------------
+    // CLINICAL ANALYSIS: SEARCH AND ITERATOR
+    //----------------------------------------------------------------------
+
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException {
         int limit = queryOptions.getInt(LIMIT);
         List<ClinicalAnalysis> results = new ArrayList<>(limit);
 
         StopWatch stopWatch = StopWatch.createStarted();
-        ClinicalAnalysisIterator iterator = iterator(query, queryOptions);
+        ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> iterator = clinicalAnalysisIterator(query,
+                queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
             if (results.size() == limit) {
@@ -222,7 +230,8 @@ public class CvdbSolrEngine {
         return new DataResult<>(dbTime, null, results.size(), results, results.size());
     }
 
-    public ClinicalAnalysisIterator iterator(Query query, QueryOptions queryOptions) throws CvdbException, IOException {
+    public ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> clinicalAnalysisIterator(
+            Query query, QueryOptions queryOptions) throws CvdbException, IOException {
         // Check
         check(query, queryOptions);
 
@@ -237,8 +246,151 @@ public class CvdbSolrEngine {
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalAnalysisIterator(solrManager.getSolrClient(), collection, solrQuery, includeList);
-        } catch (SolrServerException e) {
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalAnalysisSearch.class,
+                    ClinicalAnalysisConverter.class);
+        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
+                | IllegalAccessException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
+    //----------------------------------------------------------------------
+    // CLINICAL INTERPRETATION: SEARCH AND ITERATOR
+    //----------------------------------------------------------------------
+
+    public DataResult<Interpretation> searchClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        int limit = queryOptions.getInt(LIMIT);
+        List<Interpretation> results = new ArrayList<>(limit);
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> iterator =
+                clinicalInterpretationIterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+            if (results.size() == limit) {
+                break;
+            }
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+    }
+
+    public ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> clinicalInterpretationIterator(
+            Query query, QueryOptions queryOptions) throws CvdbException, IOException {
+        // Check
+        check(query, queryOptions);
+
+        // Parse query
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        List<String> includeList = new ArrayList<>();
+        if (queryOptions.containsKey(INCLUDE)) {
+            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+        }
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), INTERPRETATIONS_COLLECTION_SUFFIX);
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalInterpretationSearch.class,
+                    ClinicalInterpretationConverter.class);
+        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
+                | IllegalAccessException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
+    //----------------------------------------------------------------------
+    // CLINICAL VARIANT: SEARCH AND ITERATOR
+    //----------------------------------------------------------------------
+
+    public DataResult<ClinicalVariant> searchClinicalVariants(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalVariant> results = new ArrayList<>(limit);
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> iterator = clinicalVariantIterator(query,
+                queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+            if (results.size() == limit) {
+                break;
+            }
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+    }
+
+    public ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> clinicalVariantIterator(
+            Query query, QueryOptions queryOptions) throws CvdbException, IOException {
+        // Check
+        check(query, queryOptions);
+
+        // Parse query
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        List<String> includeList = new ArrayList<>();
+        if (queryOptions.containsKey(INCLUDE)) {
+            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+        }
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalVariant.class,
+                    ClinicalVariantConverter.class);
+        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
+                | IllegalAccessException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
+    //----------------------------------------------------------------------
+    // CLINICAL VARIANT EVIDENCE: SEARCH AND ITERATOR
+    //----------------------------------------------------------------------
+
+    public DataResult<ClinicalVariantEvidence> searchClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        int limit = queryOptions.getInt(LIMIT);
+        List<ClinicalVariantEvidence> results = new ArrayList<>(limit);
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter> iterator =
+                clinicalVariantEvidenceIterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+            if (results.size() == limit) {
+                break;
+            }
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+    }
+
+    public ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter>
+    clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions) throws CvdbException, IOException {
+        // Check
+        check(query, queryOptions);
+
+        // Parse query
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        List<String> includeList = new ArrayList<>();
+        if (queryOptions.containsKey(INCLUDE)) {
+            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+        }
+
+        // Execute query
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList,
+                    ClinicalVariantEvidenceSearch.class, ClinicalVariantEvidenceConverter.class);
+        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
+                | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
         }
     }

@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -179,6 +180,55 @@ public class CvdbSolrEngineQueryTest {
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertEquals(null, result.first().getDisorder());
+    }
+
+    @Test
+    public void testQueryClinicalInterpretationsInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog
+        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+
+        // CVDB query
+        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
+
+        Query query = new Query();
+        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 1);
+
+        queryOptions.put(INCLUDE, "id");
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(CollectionUtils.isEmpty(result.first().getPrimaryFindings()));
+
+        queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes.id");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
+        Phenotype phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
+        assertEquals("VACTERL-like phenotypes", phenotype.getId());
+        assertTrue(StringUtils.isEmpty(phenotype.getSource()));
+
+        queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
+        phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
+        assertEquals("VACTERL-like phenotypes", phenotype.getId());
+        assertEquals("non-standard", phenotype.getSource());
+
+        //        queryOptions.put(INCLUDE, "id,type,disorder.id");
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+//        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+//        assertTrue(MapUtils.isEmpty(result.first().getDisorder().getAttributes()));
+//
+//        queryOptions.put(INCLUDE, "id,type");
+//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+//        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+//        assertEquals(null, result.first().getDisorder());
     }
 
     //-----------------------------------------------------------------------

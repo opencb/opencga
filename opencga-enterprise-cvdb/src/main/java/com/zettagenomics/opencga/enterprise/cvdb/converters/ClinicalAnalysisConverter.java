@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
-public class ClinicalAnalysisConverter extends SearchConverter {
+public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis, ClinicalAnalysisSearch> {
 
     private ObjectReader clinicalAnalysisReader;
 
@@ -112,6 +112,11 @@ public class ClinicalAnalysisConverter extends SearchConverter {
         } catch (IOException e) {
             throw new CvdbException("Error when converting to clinical analysis", e);
         }
+    }
+
+    @Override
+    public ClinicalAnalysis toModel(ClinicalAnalysisSearch input) throws CvdbException {
+        return toClinicalAnalysis(input);
     }
 }
 

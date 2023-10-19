@@ -19,11 +19,13 @@ package com.zettagenomics.opencga.enterprise.cvdb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalInterpretationSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.io.IOException;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
-public class ClinicalInterpretationConverter extends SearchConverter {
+public class ClinicalInterpretationConverter extends SearchConverter<Interpretation, ClinicalInterpretationSearch> {
 
     //    private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private ObjectReader interpretationReader;
@@ -137,6 +139,11 @@ public class ClinicalInterpretationConverter extends SearchConverter {
         } catch (IOException e) {
             throw new CvdbException("Error when converting to interpretation", e);
         }
+    }
+
+    @Override
+    public org.opencb.opencga.core.models.clinical.Interpretation toModel(ClinicalInterpretationSearch input) throws CvdbException {
+        return toInterpretation(input);
     }
 }
 

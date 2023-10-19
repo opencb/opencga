@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantEvidenceSearch;
+import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
@@ -16,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ClinicalVariantEvidenceConverter extends SearchConverter {
+public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch> {
 
     private ObjectReader clinicalVariantEvidenceReader;
 
@@ -131,5 +133,10 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter {
             }
         }
         return cveList;
+    }
+
+    @Override
+    public ClinicalVariantEvidence toModel(ClinicalVariantEvidenceSearch input) throws CvdbException {
+        return toClinicalVariantEvidence(input);
     }
 }
