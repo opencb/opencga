@@ -145,6 +145,14 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+
+        <!-- TODO Review -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+
+
     </dependencies>
     <build>
         <plugins>
@@ -161,10 +169,7 @@
                         <configuration>
                             <failOnWarning>true</failOnWarning>
                             <ignoredUnusedDeclaredDependencies>
-                                <ignoredUnusedDeclaredDependency>javax.servlet:javax.servlet-api:jar:3.1.0
-                                </ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.opencb.opencga:opencga-storage-hadoop-deps*
-                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>

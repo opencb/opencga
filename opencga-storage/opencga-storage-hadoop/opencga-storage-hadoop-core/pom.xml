@@ -90,11 +90,6 @@
             <artifactId>mockito-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <version>${project.parent.version}</version>
@@ -102,7 +97,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>

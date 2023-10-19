@@ -192,8 +192,34 @@
             <groupId>com.databricks</groupId>
             <artifactId>SnpEff</artifactId>
         </dependency>
-    </dependencies>
 
+        <!-- TODO Review -->
+        <dependency>
+            <groupId>com.esotericsoftware.kryo</groupId>
+            <artifactId>kryo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.oskar</groupId>
+            <artifactId>oskar-analysis</artifactId>
+        </dependency>
+    </dependencies>
     <build>
         <resources>
             <resource>
