@@ -118,6 +118,14 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+
+
+        <!-- TODO Review -->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <classifier>shaded</classifier>
+        </dependency>
         <!--JLINE Terminal dependencies-->
         <!--        <dependency>-->
         <!--            <groupId>org.jline</groupId>-->

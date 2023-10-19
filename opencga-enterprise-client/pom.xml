@@ -36,5 +36,16 @@
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
         </dependency>
+
+        <!-- TODO Review -->
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
     </dependencies>
 </project>
