@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-10-04 OpenCB
+* Copyright 2015-2023-10-19 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -390,6 +390,9 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         cvdbSubCommands.addCommand("case-index", cvdbCommandOptions.indexCaseCommandOptions);
         cvdbSubCommands.addCommand("case-index-run", cvdbCommandOptions.runCaseIndexCommandOptions);
         cvdbSubCommands.addCommand("case-query", cvdbCommandOptions.queryCaseCommandOptions);
+        cvdbSubCommands.addCommand("clinical-variant-query", cvdbCommandOptions.queryClinicalVariantCommandOptions);
+        cvdbSubCommands.addCommand("clinical-variant-evidence-query", cvdbCommandOptions.queryClinicalVariantEvidenceCommandOptions);
+        cvdbSubCommands.addCommand("interpretation-query", cvdbCommandOptions.queryInterpretationCommandOptions);
         cvdbSubCommands.addCommand("info", cvdbCommandOptions.infoCommandOptions);
     }
     

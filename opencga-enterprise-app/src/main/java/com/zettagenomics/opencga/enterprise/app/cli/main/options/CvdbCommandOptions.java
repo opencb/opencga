@@ -36,6 +36,9 @@ public class CvdbCommandOptions {
         public IndexCaseCommandOptions indexCaseCommandOptions;
         public RunCaseIndexCommandOptions runCaseIndexCommandOptions;
         public QueryCaseCommandOptions queryCaseCommandOptions;
+        public QueryClinicalVariantCommandOptions queryClinicalVariantCommandOptions;
+        public QueryClinicalVariantEvidenceCommandOptions queryClinicalVariantEvidenceCommandOptions;
+        public QueryInterpretationCommandOptions queryInterpretationCommandOptions;
         public InfoCommandOptions infoCommandOptions;
 
 
@@ -46,6 +49,9 @@ public class CvdbCommandOptions {
         this.indexCaseCommandOptions = new IndexCaseCommandOptions();
         this.runCaseIndexCommandOptions = new RunCaseIndexCommandOptions();
         this.queryCaseCommandOptions = new QueryCaseCommandOptions();
+        this.queryClinicalVariantCommandOptions = new QueryClinicalVariantCommandOptions();
+        this.queryClinicalVariantEvidenceCommandOptions = new QueryClinicalVariantEvidenceCommandOptions();
+        this.queryInterpretationCommandOptions = new QueryInterpretationCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
     
     }
@@ -102,7 +108,7 @@ public class CvdbCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"case-query"}, commandDescription ="Filter and fetch clinical analysis from CVDB")
+    @Parameters(commandNames = {"case-query"}, commandDescription ="Filter and fetch clinical analyses from CVDB")
     public class QueryCaseCommandOptions {
     
         @ParametersDelegate
@@ -110,6 +116,81 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caId; 
+    
+        @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
+        public String caType; 
+    
+        @Parameter(names = {"--ca-disorder-id"}, description = "Clinical analysis disorder ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caDisorderId; 
+    
+        @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caProbandId; 
+    
+        @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyId; 
+    
+        @Parameter(names = {"--ca-family-phenotype-name"}, description = "Clinical analysis family phenotype names (or list of names separated by commas)", required = false, arity = 1)
+        public String caFamilyPhenotypeName; 
+    
+        @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyMemberId; 
+    
+        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
+        public String variantId; 
+    
+    }
+
+    @Parameters(commandNames = {"clinical-variant-query"}, commandDescription ="Filter and fetch clinical variants from CVDB")
+    public class QueryClinicalVariantCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
+        public String projectId; 
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
+        public String variantId; 
+    
+    }
+
+    @Parameters(commandNames = {"clinical-variant-evidence-query"}, commandDescription ="Filter and fetch clinical variant evidences from CVDB")
+    public class QueryClinicalVariantEvidenceCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
+        public String projectId; 
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
+        public String variantId; 
+    
+    }
+
+    @Parameters(commandNames = {"interpretation-query"}, commandDescription ="Filter and fetch clinical interpretations from CVDB")
+    public class QueryInterpretationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
+        public String projectId; 
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
     
         @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
         public String variantId; 

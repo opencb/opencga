@@ -20,7 +20,10 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvdbCommandOpti
 
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -65,6 +68,15 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
                 break;
             case "case-query":
                 queryResponse = queryCase();
+                break;
+            case "clinical-variant-query":
+                queryResponse = queryClinicalVariant();
+                break;
+            case "clinical-variant-evidence-query":
+                queryResponse = queryClinicalVariantEvidence();
+                break;
+            case "interpretation-query":
+                queryResponse = queryInterpretation();
                 break;
             case "info":
                 queryResponse = info();
@@ -139,9 +151,56 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("caId", commandOptions.caId);
+        queryParams.putIfNotEmpty("caType", commandOptions.caType);
+        queryParams.putIfNotEmpty("caDisorderId", commandOptions.caDisorderId);
+        queryParams.putIfNotEmpty("caProbandId", commandOptions.caProbandId);
+        queryParams.putIfNotEmpty("caFamilyId", commandOptions.caFamilyId);
+        queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
+        queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("variantId", commandOptions.variantId);
 
         return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryCase(queryParams);
+    }
+
+    private RestResponse<ClinicalVariant> queryClinicalVariant() throws Exception {
+        logger.debug("Executing queryClinicalVariant in Cvdb command line");
+
+        CvdbCommandOptions.QueryClinicalVariantCommandOptions commandOptions = cvdbCommandOptions.queryClinicalVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("variantId", commandOptions.variantId);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryClinicalVariant(queryParams);
+    }
+
+    private RestResponse<ClinicalVariantEvidence> queryClinicalVariantEvidence() throws Exception {
+        logger.debug("Executing queryClinicalVariantEvidence in Cvdb command line");
+
+        CvdbCommandOptions.QueryClinicalVariantEvidenceCommandOptions commandOptions = cvdbCommandOptions.queryClinicalVariantEvidenceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("variantId", commandOptions.variantId);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryClinicalVariantEvidence(queryParams);
+    }
+
+    private RestResponse<Interpretation> queryInterpretation() throws Exception {
+        logger.debug("Executing queryInterpretation in Cvdb command line");
+
+        CvdbCommandOptions.QueryInterpretationCommandOptions commandOptions = cvdbCommandOptions.queryInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("variantId", commandOptions.variantId);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryInterpretation(queryParams);
     }
 
     private RestResponse<Sample> info() throws Exception {
