@@ -40,42 +40,50 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
     public static final ClinicalAnalysisQueryParam PROJECT_ID = new ClinicalAnalysisQueryParam(ParamConstants.PROJECT_PARAM_NAME,
             STRING, PROJECT_ID_DESCR);
 
+    // ---------- Commons
+    private static final String OPT_LIST= "s separated by commas)";
     // ---------- Clinical analysis (aka CA)
 
-//    public static final String CA_ID_DESCR = "List of clinical analysis IDs";
-//    public static final ClinicalAnalysisQueryParam CA_ID = new ClinicalAnalysisQueryParam("caId", TEXT_ARRAY,
-//            CA_ID_DESCR);
-//
+    public static final String CA_ID_NAME = "caId";
+    public static final String CA_ID_DESCR = "Clinical analysis ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_ID = new ClinicalAnalysisQueryParam(CA_ID_NAME, TEXT_ARRAY, CA_ID_DESCR);
+
 //    public static final String CA_DESCRIPTION_DESCR = "Clinical analysis description";
 //    public static final ClinicalAnalysisQueryParam CA_DESCRIPTION = new ClinicalAnalysisQueryParam("caDescription", TEXT_ARRAY,
 //            CA_DESCRIPTION_DESCR);
-//
-//    public static final String CA_TYPE_DESCR = "List of clinical analysis types";
-//    public static final ClinicalAnalysisQueryParam CA_TYPE = new ClinicalAnalysisQueryParam("caType", TEXT_ARRAY, CA_TYPE_DESCR);
-//
-//    public static final String CA_DISORDER_ID_DESCR = "List of clinical analysis disorder IDs";
-//    public static final ClinicalAnalysisQueryParam CA_DISORDER_ID = new ClinicalAnalysisQueryParam("caDisorderId", TEXT_ARRAY,
-//            CA_DISORDER_ID_DESCR);
-//
-//    public static final String CA_FILENAME_DESCR = "List of clinical analysis file names";
+
+    public static final String CA_TYPE_NAME = "caType";
+    public static final String CA_TYPE_DESCR = "Clinical analysis type (or list of type" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_TYPE = new ClinicalAnalysisQueryParam(CA_TYPE_NAME, TEXT_ARRAY, CA_TYPE_DESCR);
+
+    public static final String CA_DISORDER_ID_NAME = "caDisorderId";
+    public static final String CA_DISORDER_ID_DESCR = "Clinical analysis disorder ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_DISORDER_ID = new ClinicalAnalysisQueryParam(CA_DISORDER_ID_NAME, TEXT_ARRAY,
+            CA_DISORDER_ID_DESCR);
+
+//    public static final String CA_FILENAME_DESCR = "Clinical analysis file name (or list of file name" + OPT_LIST;
 //    public static final ClinicalAnalysisQueryParam CA_FILENAME = new ClinicalAnalysisQueryParam("caFilename", TEXT_ARRAY, CA_FILENAME_DESCR);
-//
-//    public static final String CA_PROBAND_ID_DESCR = "List of clinical analysis proband IDs";
-//    public static final ClinicalAnalysisQueryParam CA_PROBAND_ID = new ClinicalAnalysisQueryParam("caProbandId", TEXT_ARRAY,
-//            CA_PROBAND_ID_DESCR);
-//
-//    public static final String CA_FAMILY_ID_DESCR = "List of clinical analysis family IDs";
-//    public static final ClinicalAnalysisQueryParam CA_FAMILY_ID = new ClinicalAnalysisQueryParam("caFamilyId", TEXT_ARRAY,
-//            CA_FAMILY_ID_DESCR);
-//
-//    public static final String CA_FAMILY_PHENOTYPE_NAME_DESCR = "List of clinical analysis family phenotype names";
-//    public static final ClinicalAnalysisQueryParam CA_FAMILY_PHENOTYPE_NAME = new ClinicalAnalysisQueryParam("caFamilyPhenotypeName",
-//            TEXT_ARRAY, CA_FAMILY_PHENOTYPE_NAME_DESCR);
-//
-//    public static final String CA_FAMILY_MEMBER_ID_DESCR = "List of clinical analysis family member IDs";
-//    public static final ClinicalAnalysisQueryParam CA_FAMILY_MEMBER_ID = new ClinicalAnalysisQueryParam("caFamilyMemberId", TEXT_ARRAY,
-//            CA_FAMILY_MEMBER_ID_DESCR);
-//
+
+    public static final String CA_PROBAND_ID_NAME = "caProbandId";
+    public static final String CA_PROBAND_ID_DESCR = "Clinical analysis proband ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_PROBAND_ID = new ClinicalAnalysisQueryParam(CA_PROBAND_ID_NAME, TEXT_ARRAY,
+            CA_PROBAND_ID_DESCR);
+
+    public static final String CA_FAMILY_ID_NAME = "caFamilyId";
+    public static final String CA_FAMILY_ID_DESCR = "Clinical analysis family ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_FAMILY_ID = new ClinicalAnalysisQueryParam(CA_FAMILY_ID_NAME, TEXT_ARRAY,
+            CA_FAMILY_ID_DESCR);
+
+    public static final String CA_FAMILY_PHENOTYPE_NAME_NAME = "caFamilyPhenotypeName";
+    public static final String CA_FAMILY_PHENOTYPE_NAME_DESCR = "Clinical analysis family phenotype names (or list of name" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_FAMILY_PHENOTYPE_NAME = new ClinicalAnalysisQueryParam(CA_FAMILY_PHENOTYPE_NAME_NAME,
+            TEXT_ARRAY, CA_FAMILY_PHENOTYPE_NAME_DESCR);
+
+    public static final String CA_FAMILY_MEMBER_ID_NAME = "caFamilyMemberId";
+    public static final String CA_FAMILY_MEMBER_ID_DESCR = "Clinical analysis family member ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CA_FAMILY_MEMBER_ID = new ClinicalAnalysisQueryParam(CA_FAMILY_MEMBER_ID_NAME,
+            TEXT_ARRAY, CA_FAMILY_MEMBER_ID_DESCR);
+
 //    public static final String CA_REPORT_DESCR = "List of clinical analysis reports";
 //    public static final ClinicalAnalysisQueryParam CA_REPORT = new ClinicalAnalysisQueryParam("caReport", TEXT_ARRAY, CA_REPORT_DESCR);
 //

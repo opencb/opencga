@@ -50,21 +50,21 @@ public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
         // Clinical analysis filters
         filters = clinicalAnalysisFilters(query);
         join = "{!join from=id to=caId fromIndex=" + getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX) + "}";
-        addFilters(filters, join, solrQuery);
+        addStringFilters(filters, join, solrQuery);
 
         // Clinical interpretation filters
         filters = clinicalInterpretationFilters(query);
         join = "{!join from=id to=ciId fromIndex=" + getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX) + "}";
-        addFilters(filters, join, solrQuery);
+        addStringFilters(filters, join, solrQuery);
 
         // Clinical variant filters
         filters = clinicalVariantFilters(query);
         join = "{!join from=id to=cvId fromIndex=" + getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX) + "}";
-        addFilters(filters, join, solrQuery);
+        addStringFilters(filters, join, solrQuery);
 
         // Clinical variant evidences filters
         filters = clinicalVariantEvidenceFilters(query);
-        addFilters(filters, solrQuery);
+        addStringFilters(filters, solrQuery);
 
         // Return Solr query
         logger.info("Solr query: {}", solrQuery.toQueryString());

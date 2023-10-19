@@ -33,10 +33,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PANEL_ID_QUERY_PARAM;
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.VARIANT_QUERY_PARAM;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParam.*;
 import static org.junit.Assert.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
@@ -73,6 +73,12 @@ public class CvdbSolrEngineQueryTest {
         if (!cvdbEngine.existCollections(projectId)) {
             cvdbEngine.createCollections(projectId);
         }
+
+        // Load and index
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog
+        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
@@ -97,17 +103,12 @@ public class CvdbSolrEngineQueryTest {
 
     @Test
     public void testQueryClinicalAnalysesFromVariantId() throws CatalogException, IOException, CvdbException, SolrServerException {
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
-
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-
         // CVDB query
         String variantId = "X:54751204:C:T";
         String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, variantId);
         query.put(PANEL_ID_QUERY_PARAM, panelId);
 
@@ -125,16 +126,11 @@ public class CvdbSolrEngineQueryTest {
 
     @Test
     public void testQueryClinicalAnalysesFromVariantIdList() throws CatalogException, IOException, CvdbException, SolrServerException {
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
-
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
@@ -151,16 +147,11 @@ public class CvdbSolrEngineQueryTest {
 
     @Test
     public void testQueryClinicalAnalysesInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
-
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
@@ -184,16 +175,11 @@ public class CvdbSolrEngineQueryTest {
 
     @Test
     public void testQueryClinicalInterpretationsInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
-
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
         Query query = new Query();
-        query.put(com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME, projectId);
+        query.put(PROJECT_PARAM_NAME, projectId);
         query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
@@ -231,8 +217,101 @@ public class CvdbSolrEngineQueryTest {
 //        assertEquals(null, result.first().getDisorder());
     }
 
+    @Test
+    public void testQueryClinicalAnalysesByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+        }
+
+        // Check non-existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check disorder
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+        }
+
+        // Check family member
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
+                    .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+        }
+    }
+
+    @Test
+    public void testQueryClinicalInterpretationByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        for (Interpretation ci : result.getResults()) {
+            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+        }
+
+        // Check non-existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check disorder
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        for (Interpretation ci : result.getResults()) {
+            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+        }
+
+        // Check family member
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        for (Interpretation ci : result.getResults()) {
+            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
+                    .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+        }
+    }
+
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
+
+    private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException {
+        // Check existing type
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_ID_NAME, caId);
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), null);
+        assertEquals(1, result.getNumResults());
+        assertEquals(caId, result.first().getId());
+        return result.first();
+    }
 
     private boolean existsVariantId(String variantId, ClinicalAnalysis clinicalAnalysis) {
         if (existsVariantId(variantId, clinicalAnalysis.getInterpretation())) {

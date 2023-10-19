@@ -18,23 +18,16 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.util.*;
-
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_VARIANTS_COLLECTION_SUFFIX;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.getCollectionName;
 
 public class ClinicalQueryParser {
 
@@ -49,23 +42,39 @@ public class ClinicalQueryParser {
         return solrParser.parse(query, queryOptions);
     }
 
-
-
     public List<String> clinicalAnalysisFilters(Query query) {
+        List<String> filters = new ArrayList<>();
 
-//    <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
-//    <field name="type" type="text_en" indexed="true" stored="true" multiValued="false"/>
-//    <field name="disorderId" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="fileNames" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="probandId" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        // <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+        addStringFilters("id", query.getString(ClinicalAnalysisQueryParam.CA_ID_NAME), filters);
 
-        return Collections.emptyList();
+        // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="type" type="text_en" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("type", query.getString(ClinicalAnalysisQueryParam.CA_TYPE_NAME), filters);
+
+        // <field name="disorderId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("disorderId", query.getString(ClinicalAnalysisQueryParam.CA_DISORDER_ID_NAME), filters);
+
+        // <field name="fileNames" type="string" indexed="true" stored="true" multiValued="true"/>
+
+        // <field name="probandId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("probandId", query.getString(ClinicalAnalysisQueryParam.CA_PROBAND_ID_NAME), filters);
+
+        // <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("familyId", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_ID_NAME), filters);
+
+        // <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("familyPhenotypeNames", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_PHENOTYPE_NAME_NAME), filters);
+
+        // <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("familyMemberIds", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_MEMBER_ID_NAME), filters);
+
+        // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+        // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+        // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+
+        return filters;
     }
 
     public List<String> clinicalInterpretationFilters(Query query) {
@@ -76,7 +85,7 @@ public class ClinicalQueryParser {
 
         //	<!-- Panel IDs contain both IDs and names -->
         //  <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
-        addFilters("panelIds", query.getString(ClinicalAnalysisQueryParam.CI_PANEL_ID.key()), filters);
+        addStringFilters("panelIds", query.getString(ClinicalAnalysisQueryParam.CI_PANEL_ID.key()), filters);
 
 //	<field name="analystId" type="string" indexed="true" stored="true" multiValued="false"/>
 //	<field name="analystName" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -128,7 +137,7 @@ public class ClinicalQueryParser {
 //    <!-- Variant fields copied from OpenCGA -->
 
         // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
-        addFilters("variantId", query.getString(ClinicalAnalysisQueryParam.CV_VARIANT_ID.key()), filters);
+        addStringFilters("variantId", query.getString(ClinicalAnalysisQueryParam.CV_VARIANT_ID.key()), filters);
 
 //    <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
 //    <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -229,7 +238,7 @@ public class ClinicalQueryParser {
         return filters;
     }
 
-    protected void addFilters(String fieldName, String fieldValue, List<String> filters) {
+    protected void addStringFilters(String fieldName, String fieldValue, List<String> filters) {
         if (StringUtils.isNotEmpty(fieldValue)) {
             List<String> values = Arrays.asList(fieldValue.split(","));
 
@@ -244,11 +253,11 @@ public class ClinicalQueryParser {
         }
     }
 
-    protected void addFilters(List<String> filters, SolrQuery solrQuery) {
-        addFilters(filters, null, solrQuery);
+    protected void addStringFilters(List<String> filters, SolrQuery solrQuery) {
+        addStringFilters(filters, null, solrQuery);
     }
 
-    protected void addFilters(List<String> filters, String join, SolrQuery solrQuery) {
+    protected void addStringFilters(List<String> filters, String join, SolrQuery solrQuery) {
         if (CollectionUtils.isEmpty(filters)) {
             // Nothing to do
             return;
