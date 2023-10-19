@@ -21,7 +21,10 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 public class ParamConstants {
 
     public static final String CLINICAL_ANALYSES_INDEX_DESCRIPTION = "Index clinical analyses into CVDB";
-    public static final String CLINICAL_ANALYSES_QUERY_DESCRIPTION = "Filter and fetch clinical analysis from CVDB";
+    public static final String CLINICAL_ANALYSES_QUERY_DESCRIPTION = "Filter and fetch clinical analyses from CVDB";
+    public static final String CLINICAL_INTERPRETATION_QUERY_DESCRIPTION = "Filter and fetch clinical interpretations from CVDB";
+    public static final String CLINICAL_VARIANT_QUERY_DESCRIPTION = "Filter and fetch clinical variants from CVDB";
+    public static final String CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION = "Filter and fetch clinical variant evidences from CVDB";
 
     public static final String INDEX_OVERWRITE_PARAM_NAME = "overwrite";
     public static final String INDEX_OVERWRITE_PARAM_DESCRIPTION = "Overwrite clinical analysis when CVDB indexing";
