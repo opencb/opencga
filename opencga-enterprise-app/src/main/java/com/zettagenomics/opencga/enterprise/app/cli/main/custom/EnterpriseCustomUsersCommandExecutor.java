@@ -99,10 +99,10 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
                 URI uri;
                 if (getClientConfiguration().getCurrentHost().getUrl().endsWith("/")) {
                     uri = new URI(getClientConfiguration().getCurrentHost().getUrl()
-                            + "webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
+                            + "webservices/rest/v2/meta/sso/login?url=http://localhost:5000/secure");
                 } else {
                     uri = new URI(getClientConfiguration().getCurrentHost().getUrl()
-                            + "/webservices/rest/v2/meta/sso?url=http://localhost:5000/secure");
+                            + "/webservices/rest/v2/meta/sso/login?url=http://localhost:5000/secure");
                 }
                 if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                     logger.debug("Loading URL {}", uri);

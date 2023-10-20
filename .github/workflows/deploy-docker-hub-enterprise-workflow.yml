@@ -1,16 +1,21 @@
-name: Reusable workflow to push in DockerHub
+name: Reusable workflow to build Java application
 
 on:
   workflow_call:
     inputs:
+      storage_hadoop:
+        type: string
+        required: false
       artifact_name:
         type: string
-        required: true
-    secrets:
-      DOCKER_HUB_USER:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
+        required: false
+      release:
+        type: string
+        required: false
+    outputs:
+      version:
+        description: "XetaBase project version"
+        value: ${{ jobs.build.outputs.version }}
 
 jobs:
   deploy-docker-hub:

@@ -1,5 +1,3 @@
-
-
 name: Manual build workflow
 
 on:
@@ -9,10 +7,18 @@ on:
         type: string
         required: false
         default: hdp3.1
-        
+
 jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
       storage_hadoop: ${{ inputs.storage_hadoop }}
       artifact_name: build-folder
+
+  deploy-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build
+    secrets: inherit
+    with:
+      artifact_name: build-folder
+

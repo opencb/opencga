@@ -147,6 +147,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     casInitParameters = new HashMap<>();
                     casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    requestWrapperFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of CAS configuration
                     break;
@@ -177,6 +178,7 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     samlInitParameters = new HashMap<>();
                     samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    saml1RequestWrapperFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(saml1RequestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of SAML1 configuration
                     break;
