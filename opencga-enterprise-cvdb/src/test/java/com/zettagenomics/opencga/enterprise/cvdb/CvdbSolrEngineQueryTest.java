@@ -5,7 +5,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -24,7 +26,6 @@ import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -43,11 +44,9 @@ public class CvdbSolrEngineQueryTest {
     protected static String projectId = "project1";
     protected static Study study;
 
-    @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+    public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
-    @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public static CatalogManagerExternalResource catalogManagerResource;
 
     protected static CatalogManager catalogManager;
     private static String opencgaToken;
@@ -56,8 +55,14 @@ public class CvdbSolrEngineQueryTest {
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
-    @Before
-    public void before() throws CatalogException, IOException, CvdbException {
+    @BeforeClass
+    public static void before() throws Throwable {
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource.before();
+
+        catalogManagerResource = new CatalogManagerExternalResource();
+        catalogManagerResource.before();
+
         // Catalog
         catalogManager = catalogManagerResource.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
@@ -77,7 +82,7 @@ public class CvdbSolrEngineQueryTest {
         cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+    public static void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
@@ -476,7 +481,7 @@ public class CvdbSolrEngineQueryTest {
         return false;
     }
 
-    private void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+    private static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
             InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
             GZIPInputStream gzipInputStream = new GZIPInputStream(is);
