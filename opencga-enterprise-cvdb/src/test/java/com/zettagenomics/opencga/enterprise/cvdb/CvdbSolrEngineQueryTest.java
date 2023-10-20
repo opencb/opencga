@@ -33,7 +33,7 @@ import java.util.zip.GZIPInputStream;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParam.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
@@ -76,13 +76,13 @@ public class CvdbSolrEngineQueryTest {
         }
 
         // Load and index
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
 
         // CVDB index from catalog
         cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
     }
 
-    public static void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+    public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
@@ -103,7 +103,7 @@ public class CvdbSolrEngineQueryTest {
     //-----------------------------------------------------------------------
 
     @Test
-    public void testQueryClinicalAnalysesFromVariantId() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalAnalysesFromVariantId() throws IOException, CvdbException {
         // CVDB query
         String variantId = "X:54751204:C:T";
         String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
@@ -126,7 +126,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesFromVariantIdList() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalAnalysesFromVariantIdList() throws IOException, CvdbException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -147,7 +147,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalAnalysesInclude() throws IOException, CvdbException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -175,7 +175,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationsInclude() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalInterpretationsInclude() throws IOException, CvdbException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -209,7 +209,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalAnalysesByCaFilters() throws IOException, CvdbException {
         // CVDB query
         Query query;
 
@@ -249,7 +249,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalInterpretationByCaFilters() throws IOException, CvdbException {
         // CVDB query
         Query query;
         Set<String> alreadyCaChecked = new HashSet<>();
@@ -308,7 +308,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalVariantByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalVariantByCaFilters() throws IOException, CvdbException {
         // CVDB query
         Query query;
         Set<String> alreadyCaChecked = new HashSet<>();
@@ -373,7 +373,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testQueryClinicalVariantEvidenceByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testQueryClinicalVariantEvidenceByCaFilters() throws IOException, CvdbException {
         // CVDB query
         Query query;
         Set<String> alreadyCaChecked = new HashSet<>();
@@ -437,16 +437,286 @@ public class CvdbSolrEngineQueryTest {
         }
     }
 
+    @Test
+    public void testQueryClinicalAnalysesByCiFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(ca.getInterpretation().getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+        }
+
+        // Check existing panel name
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(ca.getInterpretation().getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+        }
+
+        // Check non-existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check interpretation ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ID_NAME, "OPA-6522-1.1");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertEquals(query.getString(CI_ID_NAME), ca.getInterpretation().getId());
+        }
+
+        // Check analyst email
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ca.getInterpretation().getAnalyst().getEmail());
+        }
+    }
+
+    @Test
+    public void testQueryClinicalInterpretationsByCiFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+        }
+
+        // Check existing panel name
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+        }
+
+        // Check non-existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check interpretation ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ID_NAME, "OPA-6522-1.1");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertEquals(query.getString(CI_ID_NAME), ci.getId());
+        }
+
+        // Check analyst email
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantsByCiFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyCiChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check existing panel name
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check non-existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check interpretation ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ID_NAME, "OPA-6522-1.1");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertEquals(query.getString(CI_ID_NAME), ci.getId());
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check analyst email
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
+                alreadyCiChecked.add(ciId);
+            }
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantEvidencesByCiFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyCiChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
+        DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertTrue(ci.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check existing panel name
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "VACTERL-like phenotypes");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertTrue(ci.getPanels().stream().map(p -> p.getName()).collect(Collectors.toList()).contains(query.getString(CI_PANEL_ID_NAME)));
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check non-existing panel ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PANEL_ID_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check interpretation ID
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ID_NAME, "OPA-6522-1.1");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertEquals(query.getString(CI_ID_NAME), ci.getId());
+                alreadyCiChecked.add(ciId);
+            }
+        }
+
+        // Check analyst email
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCiChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(ciId));
+            if (!alreadyCiChecked.contains(ciId)) {
+                Interpretation ci = getClinicalInterpretation(ciId);
+                assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
+                alreadyCiChecked.add(ciId);
+            }
+        }
+    }
+
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException {
-        // Check existing type
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), null);
         assertEquals(1, result.getNumResults());
         assertEquals(caId, result.first().getId());
+        return result.first();
+    }
+
+    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException {
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_ID_NAME, ciId);
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), null);
+        assertEquals(1, result.getNumResults());
+        assertEquals(ciId, result.first().getId());
         return result.first();
     }
 

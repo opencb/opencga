@@ -3,7 +3,7 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParam;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.lang3.StringUtils;
@@ -35,7 +35,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParam.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/cvdb")
@@ -140,106 +141,55 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = "approximateCountSamplingSize", value = "Sampling size to get the approximate count. "
-//                    + "Larger values increase accuracy but also increase execution time", dataType = "integer", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
 
             // Clinical analysis filters
             @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
                     paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
-            // Variant filters
+            // Clinical interpretation filters
+            @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
+            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
+            // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
+            // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical variant filters
             @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
-            // Study filters
-//            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleData", value = SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleLimit", value = SAMPLE_LIMIT_DESCR, dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "cohortStatsPass", value = STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeSampleData", value = INCLUDE_SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "includeSampleId", value = INCLUDE_SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
-//
-//            // Annotation filters
-//            @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "java.lang.Boolean", paramType = "query"),
-//            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "xref", value = ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "proteinSubstitution", value = ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "conservation", value = ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
-//            @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
-//
-//            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "panelModeOfInheritance", value = VariantCatalogQueryUtils.PANEL_MOI_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "panelConfidence", value = VariantCatalogQueryUtils.PANEL_CONFIDENCE_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "panelRoleInCancer", value = VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "panelFeatureType", value = VariantCatalogQueryUtils.PANEL_FEATURE_TYPE_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "panelIntersection", value = VariantCatalogQueryUtils.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
-//
-//            // WARN: Only available in Solr
-//            @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+            // Clinical variant evidence filters
     })
     public Response searchClinicalAnalsyses() {
         String key = CA_ID.key();
@@ -257,8 +207,55 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            // Variant filters
+            // @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
+
+            // Clinical analysis filters
+            @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical interpretation filters
+            @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
+            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
+            // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
+            // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical variant filters
             @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            // Clinical variant evidence filters
     })
     public Response searchClinicalInterpretations() {
         return run(() -> {
@@ -275,8 +272,55 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            // Variant filters
+            // @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
+
+            // Clinical analysis filters
+            @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical interpretation filters
+            @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
+            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
+            // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
+            // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical variant filters
             @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            // Clinical variant evidence filters
     })
     public Response searchClinicalVariants() {
         return run(() -> {
@@ -293,8 +337,55 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            // Variant filters
+            // @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
+
+            // Clinical analysis filters
+            @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_DISORDER_ID_NAME, value = CA_DISORDER_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FILENAME_NAME, value = CA_FILENAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_PROBAND_ID_NAME, value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_ID_NAME, value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_PHENOTYPE_NAME_NAME, value = CA_FAMILY_PHENOTYPE_NAME_DESCR, dataType = "string",
+                    paramType = "query"),
+            @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical interpretation filters
+            @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
+            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
+            // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
+            // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+
+            // Clinical variant filters
             @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            // Clinical variant evidence filters
     })
     public Response searchClinicalVariantEvidences() {
         return run(() -> {

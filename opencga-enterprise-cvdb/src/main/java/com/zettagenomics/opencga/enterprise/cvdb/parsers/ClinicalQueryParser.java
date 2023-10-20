@@ -46,32 +46,35 @@ public class ClinicalQueryParser {
         List<String> filters = new ArrayList<>();
 
         // <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-        addStringFilters("id", query.getString(ClinicalAnalysisQueryParam.CA_ID_NAME), filters);
+        addStringFilters("id", query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
 
         // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
 
         // <field name="type" type="text_en" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("type", query.getString(ClinicalAnalysisQueryParam.CA_TYPE_NAME), filters);
+        addStringFilters("type", query.getString(ClinicalQueryParam.CA_TYPE_NAME), filters);
 
         // <field name="disorderId" type="string" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("disorderId", query.getString(ClinicalAnalysisQueryParam.CA_DISORDER_ID_NAME), filters);
+        addStringFilters("disorderId", query.getString(ClinicalQueryParam.CA_DISORDER_ID_NAME), filters);
 
         // <field name="fileNames" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("fileNames", query.getString(ClinicalQueryParam.CA_FILENAME_NAME), filters);
 
         // <field name="probandId" type="string" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("probandId", query.getString(ClinicalAnalysisQueryParam.CA_PROBAND_ID_NAME), filters);
+        addStringFilters("probandId", query.getString(ClinicalQueryParam.CA_PROBAND_ID_NAME), filters);
 
         // <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
-        addStringFilters("familyId", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_ID_NAME), filters);
+        addStringFilters("familyId", query.getString(ClinicalQueryParam.CA_FAMILY_ID_NAME), filters);
 
         // <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("familyPhenotypeNames", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_PHENOTYPE_NAME_NAME), filters);
+        addStringFilters("familyPhenotypeNames", query.getString(ClinicalQueryParam.CA_FAMILY_PHENOTYPE_NAME_NAME), filters);
 
         // <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("familyMemberIds", query.getString(ClinicalAnalysisQueryParam.CA_FAMILY_MEMBER_ID_NAME), filters);
+        addStringFilters("familyMemberIds", query.getString(ClinicalQueryParam.CA_FAMILY_MEMBER_ID_NAME), filters);
 
         // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+
         // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+
         // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
         return filters;
@@ -80,38 +83,61 @@ public class ClinicalQueryParser {
     public List<String> clinicalInterpretationFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
-//    <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
-//	<field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("id", query.getString(ClinicalQueryParam.CI_ID_NAME), filters);
 
-        //	<!-- Panel IDs contain both IDs and names -->
-        //  <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("panelIds", query.getString(ClinicalAnalysisQueryParam.CI_PANEL_ID.key()), filters);
+        // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
 
-//	<field name="analystId" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="analystName" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="analystEmail" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="analystAssignedBy" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
-//
-//	<field name="methodName" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="methodVersion" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="methodCommit" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<!-- Method software/dependencies are stores: name == version -->
-//	<field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
-//
-//	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
-//    <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-//
-//    <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
-//
-//    <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="statusName" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-//
-//	<field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-//	<field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+        // <!-- Panel IDs contain both IDs and names -->
+        // <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("panelIds", query.getString(ClinicalQueryParam.CI_PANEL_ID_NAME), filters);
+
+        // <field name="analystId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("analystId", query.getString(ClinicalQueryParam.CI_ANALYIST_ID_NAME), filters);
+
+        // <field name="analystName" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("analystName", query.getString(ClinicalQueryParam.CI_ANALYIST_NAME_NAME), filters);
+
+        // <field name="analystEmail" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("analystEmail", query.getString(ClinicalQueryParam.CI_ANALYIST_EMAIL_NAME), filters);
+
+        // <field name="analystAssignedBy" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("analystAssignedBy", query.getString(ClinicalQueryParam.CI_ANALYIST_ASSIGNED_BY_NAME), filters);
+
+        // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="methodName" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("methodName", query.getString(ClinicalQueryParam.CI_METHOD_NAME_NAME), filters);
+
+        // <field name="methodVersion" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("methodVersion", query.getString(ClinicalQueryParam.CI_METHOD_VERSION_NAME), filters);
+
+        // <field name="methodCommit" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("methodCommit", query.getString(ClinicalQueryParam.CI_METHOD_COMMIT_NAME), filters);
+
+        // <!-- Method software/dependencies are stores: name == version -->
+        // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+
+        // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
+        // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+
+        // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("statusId", query.getString(ClinicalQueryParam.CI_STATUS_ID_NAME), filters);
+
+        // <field name="statusName" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("statusName", query.getString(ClinicalQueryParam.CI_STATUS_NAME_NAME), filters);
+
+        // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
         return filters;
     }
@@ -137,7 +163,7 @@ public class ClinicalQueryParser {
 //    <!-- Variant fields copied from OpenCGA -->
 
         // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
-        addStringFilters("variantId", query.getString(ClinicalAnalysisQueryParam.CV_VARIANT_ID.key()), filters);
+        addStringFilters("variantId", query.getString(ClinicalQueryParam.CV_VARIANT_ID.key()), filters);
 
 //    <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
 //    <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
