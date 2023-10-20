@@ -1125,7 +1125,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             species = toCellBaseSpeciesName(species);
             cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, configuration.getCellbase().getDataRelease(),
-                    configuration.getCellbase().getToken(), clientConfiguration));
+                    configuration.getCellbase().getApiKey(), clientConfiguration));
         }
         return cellBaseUtils;
     }

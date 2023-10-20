@@ -11,6 +11,7 @@ import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AdminCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
@@ -18,6 +19,7 @@ import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserCreateParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
+import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
@@ -82,6 +84,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "users-sync":
                 queryResponse = syncUsers();
+                break;
+            case "update-groups-users":
+                queryResponse = usersUpdateGroups();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -283,5 +288,36 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
         return openCGAClient.getAdminClient().syncUsers(groupSyncParams);
+    }
+
+    private RestResponse<Group> usersUpdateGroups() throws Exception {
+        logger.debug("Executing usersUpdateGroups in Admin command line");
+
+        AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("action", commandOptions.action);
+
+
+        UserUpdateGroup userUpdateGroup = null;
+        if (commandOptions.jsonDataModel) {
+            userUpdateGroup = new UserUpdateGroup();
+            RestResponse<Group> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(userUpdateGroup));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            userUpdateGroup = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateGroup.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "studyIds",commandOptions.studyIds, true);
+            putNestedIfNotNull(beanParams, "groupIds",commandOptions.groupIds, true);
+
+            userUpdateGroup = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), UserUpdateGroup.class);
+        }
+        return openCGAClient.getAdminClient().usersUpdateGroups(commandOptions.user, userUpdateGroup, queryParams);
     }
 }

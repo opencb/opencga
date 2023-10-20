@@ -198,6 +198,9 @@ class RestClientGenerator(ABC):
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
             elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
                 method_name = '_'.join([items[3], items[1]])
+            # /{apiVersion}/admin/users/{user}/groups/update
+            elif self.all_arg([items[1]]) and not self.any_arg([items[0], items[2], items[3]]):
+                method_name = '_'.join([items[0], items[3], items[2]])
         elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):

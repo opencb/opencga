@@ -25,7 +25,7 @@
     <version>2.12.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
-    <description>OenCGA projects implements a big data platform for genomic data analysis</description>
+    <description>OpenCGA projects implements a big data platform for genomic data analysis</description>
     <url>http://docs.opencb.org/display/opencga/</url>
 
     <modules>
@@ -42,12 +42,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.8.4</pyopencga.version>
-        <opencgar.version>2.8.4</opencgar.version>
-        <cellbase.version>5.4.1</cellbase.version>
-        <biodata.version>2.8.0</biodata.version>
-        <java-common-libs.version>4.8.0</java-common-libs.version>
-        <iva.version>2.8.4</iva.version>
+        <pyopencga.version>2.12.0_dev</pyopencga.version>
+        <opencgar.version>2.12.0_dev</opencgar.version>
+        <cellbase.version>5.8.0-SNAPSHOT</cellbase.version>
+        <biodata.version>2.12.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>4.12.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>2.12.0-SNAPSHOT</iva.version>
 
 
         <oskar.version>0.2.0</oskar.version>

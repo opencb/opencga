@@ -217,6 +217,8 @@ public abstract class ParentClientRestApiWriter {
 //                 methodName = items[3] + "_" + items[1] + "_" + items[2];
             } else if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))) {
                 methodName = items[3] + "_" + items[1];
+            } else if (items[1].contains("}") && (!items[0].contains("}") && !items[2].contains("}") && !items[3].contains("}"))) {
+                methodName = items[0] + "_" + items[3] + "_" + items[2];
             }
         } else if (items.length == 5) {
             if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))

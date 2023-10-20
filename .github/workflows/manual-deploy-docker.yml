@@ -1,4 +1,4 @@
-name: Manual deploy Docker Ext-Tools
+name: Manual deploy Docker base
 on:
   workflow_dispatch:
     inputs:
@@ -42,10 +42,9 @@ jobs:
           path: build
 
 
-  deploy-docker-ext-tools:
+  deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ inputs.tag }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ inputs.tag }}
     secrets: inherit
-

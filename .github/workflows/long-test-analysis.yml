@@ -1,15 +1,17 @@
 name: Long test for run only on weekend
 
-#Every Saturday at 01:10
+
+## Every Saturday at 01:10
 on:
   schedule:
     - cron: '10 1 * * 6'
+  workflow_dispatch:
 
 jobs:
   test:
     uses: ./.github/workflows/test-analysis.yml
     secrets: inherit
     with:
-      test_profile: runLongTests,runMediumTests,runShortTests
-      report_context: development
+      test_profile: runShortTests,runMediumTests,runLongTests,
+
 
