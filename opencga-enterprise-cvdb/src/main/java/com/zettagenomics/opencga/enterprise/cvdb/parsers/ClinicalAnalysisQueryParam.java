@@ -42,6 +42,7 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
 
     // ---------- Commons
     private static final String OPT_LIST= "s separated by commas)";
+
     // ---------- Clinical analysis (aka CA)
 
     public static final String CA_ID_NAME = "caId";
@@ -95,6 +96,10 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
 
     // ---------- Clinical interpretation (aka CI)
 
+    public static final String CI_ID_NAME = "ciId";
+    public static final String CI_ID_DESCR = "Clinical interpretation ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CI_ID = new ClinicalAnalysisQueryParam(CI_ID_NAME, TEXT_ARRAY, CI_ID_DESCR);
+
 //    public static final String INT_ID_DESCR = "List of interpretation IDs";
 //    public static final ClinicalAnalysisQueryParam INT_ID = new ClinicalAnalysisQueryParam("intId", TEXT_ARRAY, INT_ID_DESCR);
 //
@@ -133,6 +138,10 @@ public final class ClinicalAnalysisQueryParam implements QueryParam {
     // TODO: intrepretation creation date
 
     // ---------- Clinical variant (aka CV)
+
+    public static final String CV_ID_NAME = "cvId";
+    public static final String CV_ID_DESCR = "Clinical variant ID (or list of ID" + OPT_LIST;
+    public static final ClinicalAnalysisQueryParam CV_ID = new ClinicalAnalysisQueryParam(CV_ID_NAME, TEXT_ARRAY, CV_ID_DESCR);
 
     public static final String CV_VARIANT_ID_DESCR = ParamConstants.VARIANT_QUERY_DESCRIPTION;
     public static final ClinicalAnalysisQueryParam CV_VARIANT_ID = new ClinicalAnalysisQueryParam(ParamConstants.VARIANT_QUERY_PARAM,

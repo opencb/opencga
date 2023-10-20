@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParam.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
@@ -340,7 +341,7 @@ public class CvdbSolrEngine {
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalVariant.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalVariantSearch.class,
                     ClinicalVariantConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -514,6 +515,11 @@ public class CvdbSolrEngine {
             UpdateResponse updateResponse;
 
             // Clinical variant search
+            if (clinicalVariant.getAttributes() == null) {
+                clinicalVariant.setAttributes(new HashMap<>());
+            }
+            clinicalVariant.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
+            clinicalVariant.getAttributes().put(CI_ID_NAME, interpretationId);
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, primary, interpretationId,
                     clinicalAnalysisId);
 
@@ -535,7 +541,13 @@ public class CvdbSolrEngine {
         try {
             UpdateResponse updateResponse;
 
-            // Clinical variants
+            // Clinical variant evidences
+            if (clinicalVariantEvidence.getAttributes() == null) {
+                clinicalVariantEvidence.setAttributes(new HashMap<>());
+            }
+            clinicalVariantEvidence.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
+            clinicalVariantEvidence.getAttributes().put(CI_ID_NAME, interpretationId);
+            clinicalVariantEvidence.getAttributes().put(CV_ID_NAME, variantId);
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
                     interpretationId, clinicalAnalysisId);
 

@@ -5,12 +5,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,9 +25,7 @@ import org.opencb.opencga.core.models.user.Account;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -43,9 +39,9 @@ import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 public class CvdbSolrEngineQueryTest {
 
-    protected CvdbSolrEngine cvdbEngine;
-    protected String projectId = "project1";
-    protected Study study;
+    protected static CvdbSolrEngine cvdbEngine;
+    protected static String projectId = "project1";
+    protected static Study study;
 
     @Rule
     public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
@@ -53,10 +49,10 @@ public class CvdbSolrEngineQueryTest {
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
-    protected CatalogManager catalogManager;
-    private String opencgaToken;
-    protected String sessionIdUser;
-    private FamilyManager familyManager;
+    protected static CatalogManager catalogManager;
+    private static String opencgaToken;
+    protected static String sessionIdUser;
+    private static FamilyManager familyManager;
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -205,16 +201,6 @@ public class CvdbSolrEngineQueryTest {
         phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
         assertEquals("VACTERL-like phenotypes", phenotype.getId());
         assertEquals("non-standard", phenotype.getSource());
-
-        //        queryOptions.put(INCLUDE, "id,type,disorder.id");
-//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
-//        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
-//        assertTrue(MapUtils.isEmpty(result.first().getDisorder().getAttributes()));
-//
-//        queryOptions.put(INCLUDE, "id,type");
-//        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
-//        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
-//        assertEquals(null, result.first().getDisorder());
     }
 
     @Test
@@ -261,6 +247,7 @@ public class CvdbSolrEngineQueryTest {
     public void testQueryClinicalInterpretationByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
         // CVDB query
         Query query;
+        Set<String> alreadyCaChecked = new HashSet<>();
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
@@ -269,9 +256,14 @@ public class CvdbSolrEngineQueryTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_TYPE_NAME, "FAMILY");
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
         for (Interpretation ci : result.getResults()) {
-            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
-            assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+            if (!alreadyCaChecked.contains(ci.getClinicalAnalysisId())) {
+                ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+                assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+                alreadyCaChecked.add(ci.getClinicalAnalysisId());
+            }
         }
 
         // Check non-existing type
@@ -284,19 +276,159 @@ public class CvdbSolrEngineQueryTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
         for (Interpretation ci : result.getResults()) {
-            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
-            assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+            if (!alreadyCaChecked.contains(ci.getClinicalAnalysisId())) {
+                ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+                assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+                alreadyCaChecked.add(ci.getClinicalAnalysisId());
+            }
         }
 
         // Check family member
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
         for (Interpretation ci : result.getResults()) {
-            ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
-            assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
-                    .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+            if (!alreadyCaChecked.contains(ci.getClinicalAnalysisId())) {
+                ClinicalAnalysis ca = getClinicalAnalyis(ci.getClinicalAnalysisId());
+                assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
+                        .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+                alreadyCaChecked.add(ci.getClinicalAnalysisId());
+            }
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyCaChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+                alreadyCaChecked.add(caId);
+            }
+        }
+
+        // Check non-existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check disorder
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+                alreadyCaChecked.add(caId);
+            }
+        }
+
+        // Check family member
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariant cv : result.getResults()) {
+            String caId = (String) cv.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
+                        .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+                alreadyCaChecked.add(caId);
+            }
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantEvidenceByCaFilters() throws CatalogException, IOException, CvdbException, SolrServerException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyCaChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+        DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertEquals(query.getString(CA_TYPE_NAME), ca.getType().name());
+                alreadyCaChecked.add(caId);
+            }
+        }
+
+        // Check non-existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "TOTOTO");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check disorder
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_DISORDER_ID_NAME, "Ultra-rare undescribed monogenic disorders");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertEquals(query.getString(CA_DISORDER_ID_NAME), ca.getDisorder().getId());
+                alreadyCaChecked.add(caId);
+            }
+        }
+
+        // Check family member
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_FAMILY_MEMBER_ID_NAME, "NR_111002765_3102043");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        alreadyCaChecked.clear();
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String caId = (String) cve.getAttributes().get(CA_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(caId));
+            if (!alreadyCaChecked.contains(caId)) {
+                ClinicalAnalysis ca = getClinicalAnalyis(caId);
+                assertTrue(ca.getFamily().getMembers().stream().map(m -> m.getId()).collect(Collectors.toList())
+                        .contains(query.getString(CA_FAMILY_MEMBER_ID_NAME)));
+                alreadyCaChecked.add(caId);
+            }
         }
     }
 
