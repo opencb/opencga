@@ -120,6 +120,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
     
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
@@ -128,6 +131,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ca-disorder-id"}, description = "Clinical analysis disorder ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caDisorderId; 
+    
+        @Parameter(names = {"--ca-filename"}, description = "Clinical analysis filename (or list of filenames separated by commas)", required = false, arity = 1)
+        public String caFilename; 
     
         @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caProbandId; 
@@ -140,6 +146,39 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
+    
+        @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciId; 
+    
+        @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
+        public String ciPanelId; 
+    
+        @Parameter(names = {"--ci-analyst-id"}, description = "Clinical interpretation analyst ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciAnalystId; 
+    
+        @Parameter(names = {"--ci-analyst-name"}, description = "Clinical interpretation analyst name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystName; 
+    
+        @Parameter(names = {"--ci-analyst-email"}, description = "Clinical interpretation analyst e-mail (or list of e-mails separated by commas)", required = false, arity = 1)
+        public String ciAnalystEmail; 
+    
+        @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystAssignedBy; 
+    
+        @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciMethodName; 
+    
+        @Parameter(names = {"--ci-method-version"}, description = "Clinical interpretation method version (or list of versions separated by commas)", required = false, arity = 1)
+        public String ciMethodVersion; 
+    
+        @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
+        public String ciMethodCommit; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
     
         @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
         public String variantId; 
@@ -158,6 +197,66 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
     
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
+        @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caId; 
+    
+        @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
+        public String caType; 
+    
+        @Parameter(names = {"--ca-disorder-id"}, description = "Clinical analysis disorder ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caDisorderId; 
+    
+        @Parameter(names = {"--ca-filename"}, description = "Clinical analysis filename (or list of filenames separated by commas)", required = false, arity = 1)
+        public String caFilename; 
+    
+        @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caProbandId; 
+    
+        @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyId; 
+    
+        @Parameter(names = {"--ca-family-phenotype-name"}, description = "Clinical analysis family phenotype names (or list of names separated by commas)", required = false, arity = 1)
+        public String caFamilyPhenotypeName; 
+    
+        @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyMemberId; 
+    
+        @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciId; 
+    
+        @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
+        public String ciPanelId; 
+    
+        @Parameter(names = {"--ci-analyst-id"}, description = "Clinical interpretation analyst ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciAnalystId; 
+    
+        @Parameter(names = {"--ci-analyst-name"}, description = "Clinical interpretation analyst name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystName; 
+    
+        @Parameter(names = {"--ci-analyst-email"}, description = "Clinical interpretation analyst e-mail (or list of e-mails separated by commas)", required = false, arity = 1)
+        public String ciAnalystEmail; 
+    
+        @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystAssignedBy; 
+    
+        @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciMethodName; 
+    
+        @Parameter(names = {"--ci-method-version"}, description = "Clinical interpretation method version (or list of versions separated by commas)", required = false, arity = 1)
+        public String ciMethodVersion; 
+    
+        @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
+        public String ciMethodCommit; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
         public String variantId; 
     
@@ -175,6 +274,66 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
     
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
+        @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caId; 
+    
+        @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
+        public String caType; 
+    
+        @Parameter(names = {"--ca-disorder-id"}, description = "Clinical analysis disorder ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caDisorderId; 
+    
+        @Parameter(names = {"--ca-filename"}, description = "Clinical analysis filename (or list of filenames separated by commas)", required = false, arity = 1)
+        public String caFilename; 
+    
+        @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caProbandId; 
+    
+        @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyId; 
+    
+        @Parameter(names = {"--ca-family-phenotype-name"}, description = "Clinical analysis family phenotype names (or list of names separated by commas)", required = false, arity = 1)
+        public String caFamilyPhenotypeName; 
+    
+        @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyMemberId; 
+    
+        @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciId; 
+    
+        @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
+        public String ciPanelId; 
+    
+        @Parameter(names = {"--ci-analyst-id"}, description = "Clinical interpretation analyst ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciAnalystId; 
+    
+        @Parameter(names = {"--ci-analyst-name"}, description = "Clinical interpretation analyst name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystName; 
+    
+        @Parameter(names = {"--ci-analyst-email"}, description = "Clinical interpretation analyst e-mail (or list of e-mails separated by commas)", required = false, arity = 1)
+        public String ciAnalystEmail; 
+    
+        @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystAssignedBy; 
+    
+        @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciMethodName; 
+    
+        @Parameter(names = {"--ci-method-version"}, description = "Clinical interpretation method version (or list of versions separated by commas)", required = false, arity = 1)
+        public String ciMethodVersion; 
+    
+        @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
+        public String ciMethodCommit; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
         public String variantId; 
     
@@ -191,6 +350,66 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
+    
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
+        @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caId; 
+    
+        @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
+        public String caType; 
+    
+        @Parameter(names = {"--ca-disorder-id"}, description = "Clinical analysis disorder ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caDisorderId; 
+    
+        @Parameter(names = {"--ca-filename"}, description = "Clinical analysis filename (or list of filenames separated by commas)", required = false, arity = 1)
+        public String caFilename; 
+    
+        @Parameter(names = {"--ca-proband-id"}, description = "Clinical analysis proband ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caProbandId; 
+    
+        @Parameter(names = {"--ca-family-id"}, description = "Clinical analysis family ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyId; 
+    
+        @Parameter(names = {"--ca-family-phenotype-name"}, description = "Clinical analysis family phenotype names (or list of names separated by commas)", required = false, arity = 1)
+        public String caFamilyPhenotypeName; 
+    
+        @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caFamilyMemberId; 
+    
+        @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciId; 
+    
+        @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
+        public String ciPanelId; 
+    
+        @Parameter(names = {"--ci-analyst-id"}, description = "Clinical interpretation analyst ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciAnalystId; 
+    
+        @Parameter(names = {"--ci-analyst-name"}, description = "Clinical interpretation analyst name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystName; 
+    
+        @Parameter(names = {"--ci-analyst-email"}, description = "Clinical interpretation analyst e-mail (or list of e-mails separated by commas)", required = false, arity = 1)
+        public String ciAnalystEmail; 
+    
+        @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciAnalystAssignedBy; 
+    
+        @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciMethodName; 
+    
+        @Parameter(names = {"--ci-method-version"}, description = "Clinical interpretation method version (or list of versions separated by commas)", required = false, arity = 1)
+        public String ciMethodVersion; 
+    
+        @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
+        public String ciMethodCommit; 
+    
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
     
         @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
         public String variantId; 
