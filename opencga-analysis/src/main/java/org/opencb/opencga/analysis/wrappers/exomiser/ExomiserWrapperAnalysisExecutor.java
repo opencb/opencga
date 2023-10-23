@@ -166,6 +166,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Build the docker command line to run Exomiser
         StringBuilder sb = initCommandLine();
 
+        // Get user/group
+        try {
+            String[] user = org.opencb.commons.utils.FileUtils.getUserAndGroup(getOutDir(), true);
+            sb.append(" --user ").append(user[0]).append(":").append(user[1]);
+        } catch (IOException e) {
+            throw new ToolException("Error getting user and group for the job dir", e);
+        }
+
+
         // Append mounts
         sb.append(" --mount type=bind,source=" + exomiserDataPath + ",target=/data")
                 .append(" --mount type=bind,source=" + getOutDir() + ",target=/jobdir ");
