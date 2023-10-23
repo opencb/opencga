@@ -106,7 +106,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiOperation(value = CLINICAL_ANALYSES_INDEX_DESCRIPTION, response = CvdbIndexResult.class)
     public Response indexClinicalAnalsyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = CLINICAL_ANALYSIS_PARAM_DESCRIPTION) @QueryParam(CLINICAL_ANALYSIS_PARAM_NAME) String caseIdStr,
+            @ApiParam(value = CA_ID_NAME) @QueryParam(CA_ID_DESCR) String caseIdStr,
             @ApiParam(value = INDEX_OVERWRITE_PARAM_DESCRIPTION) @QueryParam(INDEX_OVERWRITE_PARAM_NAME) boolean overwrite) {
         if (StringUtils.isEmpty(studyStr)) {
             return createErrorResponse("Invalid parameter", "Missing study ID");
@@ -148,6 +148,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
 
             // Clinical analysis filters
+
             @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -163,6 +164,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
+
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -187,9 +189,59 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
-            @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
+
+            // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TIER_NAME, value = CVE_TIER_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_CLINICAL_SIGNIFICANCE_NAME, value = CVE_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_DRUG_RESPONSE_NAME, value = CVE_DRUG_RESPONSE_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TRAIT_ASSOCIATION_NAME, value = CVE_TRAIT_ASSOCIATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_FUNCTIONAL_EFFECT_NAME, value = CVE_FUNCTIONAL_EFFECT_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query")
+
+            // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response searchClinicalAnalsyses() {
         String key = CA_ID.key();
@@ -214,6 +266,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
 
             // Clinical analysis filters
+
             @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -229,6 +282,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
+
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -253,9 +307,59 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
-            @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
+
+            // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TIER_NAME, value = CVE_TIER_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_CLINICAL_SIGNIFICANCE_NAME, value = CVE_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_DRUG_RESPONSE_NAME, value = CVE_DRUG_RESPONSE_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TRAIT_ASSOCIATION_NAME, value = CVE_TRAIT_ASSOCIATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_FUNCTIONAL_EFFECT_NAME, value = CVE_FUNCTIONAL_EFFECT_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query")
+
+            // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response searchClinicalInterpretations() {
         return run(() -> {
@@ -279,6 +383,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
 
             // Clinical analysis filters
+
             @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -294,6 +399,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
+
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -318,9 +424,59 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
-            @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
+
+            // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TIER_NAME, value = CVE_TIER_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_CLINICAL_SIGNIFICANCE_NAME, value = CVE_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_DRUG_RESPONSE_NAME, value = CVE_DRUG_RESPONSE_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TRAIT_ASSOCIATION_NAME, value = CVE_TRAIT_ASSOCIATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_FUNCTIONAL_EFFECT_NAME, value = CVE_FUNCTIONAL_EFFECT_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query")
+
+            // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response searchClinicalVariants() {
         return run(() -> {
@@ -344,6 +500,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
 
             // Clinical analysis filters
+
             @ApiImplicitParam(name = CA_ID_NAME, value = CA_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_TYPE_NAME, value = CA_TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -359,6 +516,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
+
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -383,9 +541,59 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
-            @ApiImplicitParam(name = VARIANT_QUERY_PARAM, value = VARIANT_QUERY_DESCRIPTION, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
+
+            // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_PHENOTYPE_NAME_NAME, value = CVE_PHENOTYPE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_GENE_NAME_NAME, value = CVE_GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_CONSEQUENCE_TYPE_ID_NAME, value = CVE_CONSEQUENCE_TYPE_ID_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_XREF_ID_NAME, value = CVE_XREF_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TIER_NAME, value = CVE_TIER_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_CLINICAL_SIGNIFICANCE_NAME, value = CVE_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_DRUG_RESPONSE_NAME, value = CVE_DRUG_RESPONSE_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TRAIT_ASSOCIATION_NAME, value = CVE_TRAIT_ASSOCIATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_FUNCTIONAL_EFFECT_NAME, value = CVE_FUNCTIONAL_EFFECT_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_TUMORIGENESIS_NAME, value = CVE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_OTHER_CLASSIFICATION_NAME, value = CVE_OTHER_CLASSIFICATION_DESCR, dataType = "string",
+                    paramType = "query"),
+
+            // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_ROL_IN_CANCER_NAME, value = CVE_ROL_IN_CANCER_DESCR, dataType = "string", paramType = "query")
+
+            // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
     public Response searchClinicalVariantEvidences() {
         return run(() -> {
