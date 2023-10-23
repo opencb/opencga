@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+
 public class ClinicalQueryParser {
 
     SolrQueryParser solrParser;
@@ -245,21 +247,49 @@ public class ClinicalQueryParser {
     public List<String> clinicalVariantEvidenceFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
-//    <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
-//    <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
-//    <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
-//	<field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
-//	<dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
+        // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("phenotypeNames", query.getString(ClinicalQueryParam.CVE_PHENOTYPE_NAME_NAME), filters);
+
+        // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("geneName", query.getString(ClinicalQueryParam.CVE_GENE_NAME_NAME), filters);
+
+        // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("consequenceTypeIds", query.getString(ClinicalQueryParam.CVE_CONSEQUENCE_TYPE_ID_NAME), filters);
+
+        // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("xrefIds", query.getString(ClinicalQueryParam.CVE_XREF_ID_NAME), filters);
+
+        // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("panelId", query.getString(ClinicalQueryParam.CVE_PANEL_ID_NAME), filters);
+
+        // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("acmgs", query.getString(ClinicalQueryParam.CVE_ACGM_NAME), filters);
+
+        // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("tier", query.getString(ClinicalQueryParam.CVE_TIER_NAME), filters);
+
+        // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("clinicalSignificance", query.getString(ClinicalQueryParam.CVE_CLINICAL_SIGNIFICANCE_NAME), filters);
+
+        // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("drugResponse", query.getString(ClinicalQueryParam.CVE_DRUG_RESPONSE_NAME), filters);
+
+        // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("traitAssociation", query.getString(ClinicalQueryParam.CVE_TRAIT_ASSOCIATION_NAME), filters);
+
+        // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("functionalEffect", query.getString(ClinicalQueryParam.CVE_FUNCTIONAL_EFFECT_NAME), filters);
+
+        // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("tumorigenesis", query.getString(ClinicalQueryParam.CVE_TUMORIGENESIS_NAME), filters);
+
+        // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("otherClassifications", query.getString(ClinicalQueryParam.CVE_OTHER_CLASSIFICATION_NAME), filters);
+
+        // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("rolesInCancer", query.getString(ClinicalQueryParam.CVE_ROL_IN_CANCER_NAME), filters);
+
+        // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
         return filters;
     }

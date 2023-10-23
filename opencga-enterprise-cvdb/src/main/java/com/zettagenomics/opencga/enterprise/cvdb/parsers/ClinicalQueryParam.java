@@ -41,6 +41,7 @@ public final class ClinicalQueryParam implements QueryParam {
             STRING, PROJECT_ID_DESCR);
 
     // ---------- Commons
+
     private static final String OPT_LIST= " separated by commas)";
 
     // ---------- Clinical analysis (aka CA)
@@ -153,10 +154,8 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <!-- Method software/dependencies are stores: name == version -->
     // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
-
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-
     // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
     // <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -172,7 +171,6 @@ public final class ClinicalQueryParam implements QueryParam {
             CI_STATUS_NAME_DESCR);
 
     // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-
     // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
     // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
     // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -188,68 +186,146 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CV_VARIANT_ID = new ClinicalQueryParam(ParamConstants.VARIANT_QUERY_PARAM,
             TEXT_ARRAY, CV_VARIANT_ID_DESCR);
 
-//    public static final String RV_DE_NOVO_QUALITY_SCORE_DESCR = "List of reported variant de novo quality scores";
-//    public static final ClinicalAnalysisQueryParam RV_DE_NOVO_QUALITY_SCORE = new ClinicalAnalysisQueryParam("rvDeNovoQualityScore",
-//            TEXT_ARRAY, RV_DE_NOVO_QUALITY_SCORE_DESCR);
-//
-//    public static final String RV_COMMENTS_DESCR = "List of reported variant comments";
-//    public static final ClinicalAnalysisQueryParam RV_COMMENTS = new ClinicalAnalysisQueryParam("rvComments", TEXT_ARRAY,
-//            RV_COMMENTS_DESCR);
+    // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
+    // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
+    // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+    // <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="confidenceAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
 
-    // ---------- Reported event (aka RE)
+    // Variant filters
+    // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
+    // <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
+    // <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+    // <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
+    // <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="siftDesc" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
+    // <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
+    // <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
+    // <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="clinicalSig" type="string" indexed="true" stored="true" multiValued="true"/>
+    // <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    // <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
+    // <dynamicField name="passStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="altStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="scorePValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <!-- These fields are only present when indexing one individual or a family -->
+    // <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    // <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
 
-//    public static final String RE_PHENOTYPE_NAMES_DESCR = "List of reported event phenotype names";
-//    public static final ClinicalAnalysisQueryParam RE_PHENOTYPE_NAMES = new ClinicalAnalysisQueryParam("rePhenotypeNames", TEXT_ARRAY,
-//            RE_PHENOTYPE_NAMES_DESCR);
-//
-//    public static final String RE_CONSEQUENCE_TYPE_IDS_DESCR = "List of reported event consequence type IDs";
-//    public static final ClinicalAnalysisQueryParam RE_CONSEQUENCE_TYPE_IDS = new ClinicalAnalysisQueryParam("reConsequenceTypeIds",
-//            TEXT_ARRAY, RE_CONSEQUENCE_TYPE_IDS_DESCR);
-//
-//    public static final String RE_GENE_NAMES_DESCR = "List of reported event gene names";
-//    public static final ClinicalAnalysisQueryParam RE_GENE_NAMES = new ClinicalAnalysisQueryParam("reGeneNames", TEXT_ARRAY,
-//            RE_GENE_NAMES_DESCR);
-//
-//    public static final String RE_XREFS_DESCR = "List of reported event phenotype xRefs";
-//    public static final ClinicalAnalysisQueryParam RE_XREFS = new ClinicalAnalysisQueryParam("reXrefs", TEXT_ARRAY, RE_XREFS_DESCR);
-//
-//    public static final String RE_PANEL_NAMES_DESCR = "List of reported event panel names";
-//    public static final ClinicalAnalysisQueryParam RE_PANEL_NAMES = new ClinicalAnalysisQueryParam("rePanelNames", TEXT_ARRAY,
-//            RE_PANEL_NAMES_DESCR);
-//
-//    public static final String RE_ACMG_DESCR = "List of reported event ACMG";
-//    public static final ClinicalAnalysisQueryParam RE_ACMG = new ClinicalAnalysisQueryParam("reAcmg", TEXT_ARRAY, RE_ACMG_DESCR);
-//
-//    public static final String RE_CLINICAL_SIGNIFICANCE_DESCR = "List of reported event clinical significance";
-//    public static final ClinicalAnalysisQueryParam RE_CLINICAL_SIGNIFICANCE = new ClinicalAnalysisQueryParam("reClinicalSignificance",
-//            TEXT_ARRAY, RE_CLINICAL_SIGNIFICANCE_DESCR);
-//
-//    public static final String RE_DRUG_RESPONSE_DESCR = "List of reported event drug response";
-//    public static final ClinicalAnalysisQueryParam RE_DRUG_RESPONSE = new ClinicalAnalysisQueryParam("reDrugResponse", TEXT_ARRAY,
-//            RE_DRUG_RESPONSE_DESCR);
-//
-//    public static final String RE_TRAIT_ASSOCIATION_DESCR = "List of reported event trait association";
-//    public static final ClinicalAnalysisQueryParam RE_TRAIT_ASSOCIATION = new ClinicalAnalysisQueryParam("reTraitAssociation", TEXT_ARRAY,
-//            RE_TRAIT_ASSOCIATION_DESCR);
-//
-//    public static final String RE_FUNCTIONAL_EFFECT_DESCR = "List of reported event functional effect";
-//    public static final ClinicalAnalysisQueryParam RE_FUNCTIONAL_EFFECT = new ClinicalAnalysisQueryParam("reFunctionalEffect", TEXT_ARRAY,
-//            RE_FUNCTIONAL_EFFECT_DESCR);
-//
-//    public static final String RE_TUMORIGENESIS_DESCR = "List of reported event tumorigenesis";
-//    public static final ClinicalAnalysisQueryParam RE_TUMORIGENESIS = new ClinicalAnalysisQueryParam("reTumorigenesis", TEXT_ARRAY,
-//            RE_TUMORIGENESIS_DESCR);
-//
-//    public static final String RE_OTHER_CLASSIFICATION_DESCR = "List of reported event other classification";
-//    public static final ClinicalAnalysisQueryParam RE_OTHER_CLASSIFICATION = new ClinicalAnalysisQueryParam("reOtherClassification",
-//            TEXT_ARRAY, RE_OTHER_CLASSIFICATION_DESCR);
-//
-//    public static final String RE_ROLES_IN_CANCER_DESCR = "List of reported event roles in cancer";
-//    public static final ClinicalAnalysisQueryParam RE_ROLES_IN_CANCER = new ClinicalAnalysisQueryParam("reRolesInCancer", TEXT_ARRAY,
-//            RE_ROLES_IN_CANCER_DESCR);
-//
-//    public static final String RE_SCORE_DESCR = "List of reported event scores";
-//    public static final ClinicalAnalysisQueryParam RE_SCORE = new ClinicalAnalysisQueryParam("reScore", TEXT_ARRAY, RE_SCORE_DESCR);
+    // ---------- Clinical variant evidence (aka CVE)
+
+    // <field name="phenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_PHENOTYPE_NAME_NAME = "cvePhenotypeName";
+    public static final String CVE_PHENOTYPE_NAME_DESCR = "Clinical variant evidence phenotype name (or names" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_PHENOTYPE_NAME = new ClinicalQueryParam(CVE_PHENOTYPE_NAME_NAME, TEXT_ARRAY,
+            CVE_PHENOTYPE_NAME_DESCR);
+
+    // <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_GENE_NAME_NAME = "cveGeneName";
+    public static final String CVE_GENE_NAME_DESCR = "Clinical variant evidence gene name (or names" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_GENE_NAME = new ClinicalQueryParam(CVE_GENE_NAME_NAME, TEXT_ARRAY, CVE_GENE_NAME_DESCR);
+
+    // <field name="consequenceTypeIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_CONSEQUENCE_TYPE_ID_NAME = "cveConsequenceTypeId";
+    public static final String CVE_CONSEQUENCE_TYPE_ID_DESCR = "Clinical variant evidence consequence type ID (or IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_CONSEQUENCE_TYPE_ID = new ClinicalQueryParam(CVE_CONSEQUENCE_TYPE_ID_NAME, TEXT_ARRAY,
+            CVE_CONSEQUENCE_TYPE_ID_DESCR);
+
+    // <field name="xrefIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_XREF_ID_NAME = "cveXrefId";
+    public static final String CVE_XREF_ID_DESCR = "Clinical variant evidence Xref ID (or IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_XREF_ID = new ClinicalQueryParam(CVE_XREF_ID_NAME, TEXT_ARRAY, CVE_XREF_ID_DESCR);
+
+    // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_PANEL_ID_NAME = "cvePanelId";
+    public static final String CVE_PANEL_ID_DESCR = "Clinical variant evidence panel ID (or IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_PANEL_ID = new ClinicalQueryParam(CVE_PANEL_ID_NAME, TEXT_ARRAY, CVE_PANEL_ID_DESCR);
+
+    // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_ACGM_NAME = "cveAcmg";
+    public static final String CVE_ACGM_DESCR = "Clinical variant evidence ACMG (or ACGMs" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_ACGM = new ClinicalQueryParam(CVE_ACGM_NAME, TEXT_ARRAY, CVE_ACGM_DESCR);
+
+    // <field name="tier" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_TIER_NAME = "cveTier";
+    public static final String CVE_TIER_DESCR = "Clinical variant evidence tier (or list of tier values" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_TIER = new ClinicalQueryParam(CVE_TIER_NAME, TEXT_ARRAY, CVE_TIER_DESCR);
+
+    // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_CLINICAL_SIGNIFICANCE_NAME = "cveClinicalSignificance";
+    public static final String CVE_CLINICAL_SIGNIFICANCE_DESCR = "Clinical variant evidence clinical significance (or list of clinical "
+        + " significances" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_CLINICAL_SIGNIFICANCE = new ClinicalQueryParam(CVE_CLINICAL_SIGNIFICANCE_NAME, TEXT_ARRAY,
+            CVE_CLINICAL_SIGNIFICANCE_DESCR);
+
+    // <field name="drugResponse" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_DRUG_RESPONSE_NAME = "cveDrugResponse";
+    public static final String CVE_DRUG_RESPONSE_DESCR = "Clinical variant evidence drug response (or list of drug responses"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CVE_DRUG_RESPONSE = new ClinicalQueryParam(CVE_DRUG_RESPONSE_NAME, TEXT_ARRAY,
+            CVE_DRUG_RESPONSE_DESCR);
+
+    // <field name="traitAssociation" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_TRAIT_ASSOCIATION_NAME = "cveTraitAssociation";
+    public static final String CVE_TRAIT_ASSOCIATION_DESCR = "Clinical variant evidence trait association (or list of traits" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_TRAIT_ASSOCIATION = new ClinicalQueryParam(CVE_TRAIT_ASSOCIATION_NAME, TEXT_ARRAY,
+            CVE_TRAIT_ASSOCIATION_DESCR);
+
+    // <field name="functionalEffect" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_FUNCTIONAL_EFFECT_NAME = "cveFunctionalEffect";
+    public static final String CVE_FUNCTIONAL_EFFECT_DESCR = "Clinical variant evidence functional effect (or list of functional effects"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CVE_FUNCTIONAL_EFFECT = new ClinicalQueryParam(CVE_FUNCTIONAL_EFFECT_NAME, TEXT_ARRAY,
+            CVE_FUNCTIONAL_EFFECT_DESCR);
+
+    // <field name="tumorigenesis" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_TUMORIGENESIS_NAME = "cveTumorigenesis";
+    public static final String CVE_TUMORIGENESIS_DESCR = "Clinical variant evidence tumorigenesis (or list of tumorigenesis values"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CVE_TUMORIGENESIS = new ClinicalQueryParam(CVE_TUMORIGENESIS_NAME, TEXT_ARRAY,
+            CVE_TUMORIGENESIS_DESCR);
+
+    // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_OTHER_CLASSIFICATION_NAME = "cveOtherClassification";
+    public static final String CVE_OTHER_CLASSIFICATION_DESCR = "Clinical variant evidence other-classification (or list of other "
+        + " classification values" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_OTHER_CLASSIFICATION = new ClinicalQueryParam(CVE_OTHER_CLASSIFICATION_NAME, TEXT_ARRAY,
+            CVE_OTHER_CLASSIFICATION_DESCR);
+
+    // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_ROL_IN_CANCER_NAME = "cveRolInCancer";
+    public static final String CVE_ROL_IN_CANCER_DESCR = "Clinical variant evidence rol in cancer (or roles in cancer" + OPT_LIST;
+    public static final ClinicalQueryParam CVE_ROL_IN_CANCER = new ClinicalQueryParam(CVE_ROL_IN_CANCER_NAME, TEXT_ARRAY,
+            CVE_ROL_IN_CANCER_DESCR);
+
+    // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
     // Constructor
     private ClinicalQueryParam(String key, Type type, String description) {
