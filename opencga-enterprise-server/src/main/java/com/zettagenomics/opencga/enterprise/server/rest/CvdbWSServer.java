@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
+import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
@@ -22,6 +23,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -48,7 +50,8 @@ public class CvdbWSServer extends OpenCGAWSServer {
 
         // Get enterprise configuration to set the CVDB engine
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null);
+        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), new VariantStorageMetadataManager(
+                new DummyVariantStorageMetadataDBAdaptorFactory()));
     }
 
     @POST
