@@ -61,7 +61,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     private final MongoDBCollection panelArchiveCollection;
     private final MongoDBCollection deletedPanelCollection;
     private final PanelConverter panelConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
                                MongoDBCollection deletedPanelCollection, Configuration configuration,
@@ -72,7 +72,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         this.panelArchiveCollection = panelArchiveCollection;
         this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
     }
 
     /**

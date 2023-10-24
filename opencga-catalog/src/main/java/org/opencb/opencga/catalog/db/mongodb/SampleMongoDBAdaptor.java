@@ -81,7 +81,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     private final MongoDBCollection deletedSampleCollection;
     private final SampleConverter sampleConverter;
     private final IndividualMongoDBAdaptor individualDBAdaptor;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
                                 MongoDBCollection deletedSampleCollection, Configuration configuration,
@@ -93,7 +93,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.deletedSampleCollection = deletedSampleCollection;
         sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
     }
 
     @Override

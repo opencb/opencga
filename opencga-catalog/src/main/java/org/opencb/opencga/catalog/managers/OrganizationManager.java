@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactor
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -40,6 +41,8 @@ public class OrganizationManager extends AbstractManager {
             OrganizationDBAdaptor.QueryParams.UUID.key()));
     public static final QueryOptions INCLUDE_ORGANIZATION_ADMINS = keepFieldsInQueryOptions(INCLUDE_ORGANIZATION_IDS,
             Arrays.asList(OrganizationDBAdaptor.QueryParams.OWNER.key(), OrganizationDBAdaptor.QueryParams.ADMINS.key()));
+    public static final QueryOptions INCLUDE_ORGANIZATION_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_ORGANIZATION_ADMINS,
+            Collections.singletonList(OrganizationDBAdaptor.QueryParams.CONFIGURATION.key()));
     protected static Logger logger = LoggerFactory.getLogger(OrganizationManager.class);
     private final CatalogIOManager catalogIOManager;
 
@@ -149,18 +152,20 @@ public class OrganizationManager extends AbstractManager {
         try {
             // The first time we create the ADMIN_ORGANIZATION as there are no users yet, we should not check anything
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
-                userId = this.catalogManager.getUserManager().getUserId(ParamConstants.ADMIN_ORGANIZATION, token);
+                JwtPayload jwtPayload = this.catalogManager.getUserManager().validateToken(token);
+                userId = jwtPayload.getUserId(organizationCreateParams.getId());
 
-                //Only the OpenCGA administrator can create an organization
-                authorizationManager.checkIsInstallationAdministrator(ParamConstants.ADMIN_ORGANIZATION, userId);
+                if (!ParamConstants.ADMIN_ORGANIZATION.equals(jwtPayload.getOrganization())) {
+                    throw CatalogAuthorizationException.adminOnlySupportedOperation();
+                }
             }
 
             ParamUtils.checkObj(organizationCreateParams, "organizationCreateParams");
 
             organization = organizationCreateParams.toOrganization();
-            validateOrganizationForCreation(organization);
+            validateOrganizationForCreation(organization, userId);
 
-            queryResult = catalogDBAdaptorFactory.createOrganization(organization, options);
+            queryResult = catalogDBAdaptorFactory.createOrganization(organization, options, userId);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organization.getId()).get(options);
                 organization = result.first();
@@ -246,7 +251,7 @@ public class OrganizationManager extends AbstractManager {
         return result;
     }
 
-    private void validateOrganizationForCreation(Organization organization) throws CatalogParameterException {
+    private void validateOrganizationForCreation(Organization organization, String userId) throws CatalogParameterException {
         ParamUtils.checkParameter(organization.getId(), OrganizationDBAdaptor.QueryParams.ID.key());
 
         organization.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.ORGANIZATION));
@@ -258,6 +263,7 @@ public class OrganizationManager extends AbstractManager {
                 OrganizationDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         organization.setInternal(new OrganizationInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(),
                 GitRepositoryState.getInstance().getBuildVersion(), Collections.emptyList()));
+        organization.setOwner(userId);
         organization.setAdmins(Collections.emptyList());
         organization.setProjects(Collections.emptyList());
 

@@ -5,6 +5,7 @@ import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrganizationInternal extends Internal {
@@ -15,6 +16,8 @@ public class OrganizationInternal extends Internal {
     @DataField(id = "migrations", description = "List of migrations run")
     private List<MigrationRun> migrations;
 
+    private List<String> organizationIds;
+
     public OrganizationInternal() {
     }
 
@@ -23,6 +26,7 @@ public class OrganizationInternal extends Internal {
         super(status, registrationDate, lastModified);
         this.version = version;
         this.migrations = migrations;
+        this.organizationIds = new ArrayList<>();
     }
 
     public String getVersion() {
@@ -40,6 +44,15 @@ public class OrganizationInternal extends Internal {
 
     public OrganizationInternal setMigrations(List<MigrationRun> migrations) {
         this.migrations = migrations;
+        return this;
+    }
+
+    public List<String> getOrganizationIds() {
+        return organizationIds;
+    }
+
+    public OrganizationInternal setOrganizationIds(List<String> organizationIds) {
+        this.organizationIds = organizationIds;
         return this;
     }
 }

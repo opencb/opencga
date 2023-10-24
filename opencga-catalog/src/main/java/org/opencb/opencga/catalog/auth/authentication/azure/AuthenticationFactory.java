@@ -126,4 +126,7 @@ public class AuthenticationFactory {
         return organizationAuthenticationManagers.get(authOriginId);
     }
 
+    public static void clear() {
+        authenticationManagerMap.clear();
+    }
 }

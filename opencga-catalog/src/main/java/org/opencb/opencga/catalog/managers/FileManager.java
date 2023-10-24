@@ -1218,7 +1218,8 @@ public class FileManager extends AnnotationSetManager<File> {
                         FilePermissions.WRITE);
             } else {
                 // It will be moved to an external folder. Only admins can move to that directory
-                if (!authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId)) {
+                long studyId = study.getUid();
+                if (!authorizationManager.isStudyAdministrator(organizationId, studyId, userId)) {
                     throw new CatalogAuthorizationException("Only owners or administrative users are allowed to move to folders different "
                             + "than the main OpenCGA workspace");
                 }
@@ -3189,7 +3190,8 @@ public class FileManager extends AnnotationSetManager<File> {
         File file = fileOpenCGAResult.first();
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single file
-        boolean checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
+        long studyId = study.getUid();
+        boolean checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
 
         Set<Long> indexFiles = new HashSet<>();
 

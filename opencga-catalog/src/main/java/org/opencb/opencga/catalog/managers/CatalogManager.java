@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;
@@ -39,6 +40,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -69,6 +71,7 @@ public class CatalogManager implements AutoCloseable {
     private CatalogIOManager catalogIOManager;
 
     private AdminManager adminManager;
+    private SettingsManager settingsManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -112,10 +115,16 @@ public class CatalogManager implements AutoCloseable {
 
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
+        for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
+            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
+                    .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+            AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
+        }
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
+        settingsManager = new SettingsManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
@@ -193,24 +202,24 @@ public class CatalogManager implements AutoCloseable {
 
     public void installCatalogDB(String algorithm, String secretKey, String password, String email, boolean force, boolean test)
             throws CatalogException {
-        if (existsCatalogDB()) {
-            if (force) {
-                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
-                // results calling first to "catalog delete" and then "catalog install"
-                deleteCatalogDB(password);
-                init();
-            } else {
-                // Check admin password ...
-                try {
-                    userManager.loginAsAdmin(password);
-                    logger.warn("A database called {} already exists", getCatalogDatabase());
-                    return;
-                } catch (CatalogException e) {
-                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
-                            + " password already exists. If you are aware of that installation, please delete it first.");
-                }
-            }
-        }
+//        if (existsCatalogDB()) {
+//            if (force) {
+//                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
+//                // results calling first to "catalog delete" and then "catalog install"
+//                deleteCatalogDB(password);
+//                init();
+//            } else {
+//                // Check admin password ...
+//                try {
+//                    userManager.loginAsAdmin(password);
+//                    logger.warn("A database called {} already exists", getCatalogDatabase());
+//                    return;
+//                } catch (CatalogException e) {
+//                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
+//                            + " password already exists. If you are aware of that installation, please delete it first.");
+//                }
+//            }
+//        }
 
         try {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
@@ -305,6 +314,9 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.deleteCatalogDB();
         catalogDBAdaptorFactory.close();
 
+        // Clear AuthenticationManager
+        AuthenticationFactory.clear();
+
         // Clear workspace folder
         Path rootdir;
         try {
@@ -345,6 +357,10 @@ public class CatalogManager implements AutoCloseable {
 
     public AdminManager getAdminManager() {
         return adminManager;
+    }
+
+    public SettingsManager getSettingsManager() {
+        return settingsManager;
     }
 
     public OrganizationManager getOrganizationManager() {

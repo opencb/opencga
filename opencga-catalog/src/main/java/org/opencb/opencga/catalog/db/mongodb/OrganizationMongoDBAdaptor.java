@@ -109,7 +109,8 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     public OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, organizationId, parameters, queryOptions));
+            QueryOptions options = queryOptions != null ? new QueryOptions(queryOptions) : QueryOptions.empty();
+            return runTransaction(clientSession -> privateUpdate(clientSession, organizationId, parameters, options));
         } catch (CatalogDBException e) {
             logger.error("Could not update organization {}: {}", organizationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update organization " + organizationId + ": " + e.getMessage(),
@@ -184,13 +185,10 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             List<String> adminList = parameters.getAsStringList(QueryParams.ADMINS.key());
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.ADMINS.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
-            if (ParamUtils.BasicUpdateAction.SET.equals(operation) || !adminList.isEmpty()) {
+            ParamUtils.AddRemoveAction operation = ParamUtils.AddRemoveAction.from(actionMap, QueryParams.ADMINS.key(),
+                    ParamUtils.AddRemoveAction.ADD);
+            if (!adminList.isEmpty()) {
                 switch (operation) {
-                    case SET:
-                        document.getSet().put(QueryParams.ADMINS.key(), adminList);
-                        break;
                     case REMOVE:
                         document.getPullAll().put(QueryParams.ADMINS.key(), adminList);
                         break;

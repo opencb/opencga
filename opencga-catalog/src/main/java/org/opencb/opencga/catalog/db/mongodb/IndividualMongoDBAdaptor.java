@@ -84,7 +84,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private final MongoDBCollection archiveIndividualCollection;
     private final MongoDBCollection deletedIndividualCollection;
     private final IndividualConverter individualConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     private final FamilyMongoDBAdaptor familyDBAdaptor;
 
@@ -97,7 +97,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         this.archiveIndividualCollection = archiveIndividualCollection;
         this.deletedIndividualCollection = deletedIndividualCollection;
         this.individualConverter = new IndividualConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(individualCollection, archiveIndividualCollection,
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(individualCollection, archiveIndividualCollection,
                 deletedIndividualCollection);
 
         this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();

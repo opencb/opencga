@@ -119,6 +119,7 @@ public class ParamConstants {
     public static final String PROJECT_STUDY_SEPARATOR = ":";
     public static final String OPENCGA_USER_ID = "opencga";
     public static final String ADMIN_ORGANIZATION = "opencga";
+    public static final String OPENCGA_USER_FQN = ADMIN_ORGANIZATION + ":" + OPENCGA_USER_ID;
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN =

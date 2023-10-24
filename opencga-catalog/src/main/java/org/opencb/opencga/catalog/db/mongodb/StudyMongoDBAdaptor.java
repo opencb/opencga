@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -168,9 +169,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Study> nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException {
+    public OpenCGAResult<Study> nativeInsert(Map<String, Object> study) throws CatalogDBException {
         Document studyDocument = getMongoDBDocument(study, "study");
-        studyDocument.put(PRIVATE_OWNER_ID, userId);
         return new OpenCGAResult<>(studyCollection.insert(studyDocument, null));
     }
 
@@ -274,7 +274,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(PRIVATE_UID, project.getUid())
                 .append(PRIVATE_UUID, project.getUuid())
         );
-        studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
         studyObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
@@ -345,19 +344,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return studies == null || studies.isEmpty() ? -1 : studies.get(0).getUid();
     }
 
-    @Override
-    public long getProjectUidByStudyUid(long studyUid) throws CatalogDBException {
-        Document privateProjet = getPrivateProject(studyUid);
-        Object id = privateProjet.get(PRIVATE_UID);
-        return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
-    }
-
-    @Override
-    public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
-        Document privateProjet = getPrivateProject(studyUid);
-        return privateProjet.getString(ID);
-    }
-
     int getCurrentRelease(ClientSession clientSession, long studyUid) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyUid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.FQN.key());
@@ -367,17 +353,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Study uid '" + studyUid + "' not found.");
         }
 
-        String[] split = StringUtils.split(StringUtils.split(studyResult.first().getFqn(), ":")[0], "@");
-        String userId = split[0];
-        String projectId = split[1];
+        String projectFqn = FqnUtils.parse(studyResult.first().getFqn()).getProjectFqn();
 
-        query = new Query()
-                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        query = new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn);
         options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
         OpenCGAResult<Project> projectResult = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(clientSession, query, options);
         if (projectResult.getNumResults() == 0) {
-            throw new CatalogDBException("Project id '" + projectId + "' from user '" + userId + "' not found.");
+            throw new CatalogDBException("Project '" + projectFqn + "' not found.");
         }
 
         return projectResult.first().getCurrentRelease();
@@ -396,17 +378,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw CatalogDBException.uidNotFound("Study", studyUid);
         }
         return privateProjet;
-    }
-
-    @Override
-    public String getOwnerId(long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), studyId);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_OWNER_ID);
-        OpenCGAResult<Document> documentDataResult = nativeGet(query, options);
-        if (documentDataResult.getNumResults() == 0) {
-            throw CatalogDBException.uidNotFound("Study", studyId);
-        }
-        return documentDataResult.first().getString(PRIVATE_OWNER_ID);
     }
 
     @Override

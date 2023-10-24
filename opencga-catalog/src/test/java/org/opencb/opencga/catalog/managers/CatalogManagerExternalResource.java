@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.bson.Document;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -34,6 +32,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.settings.SettingsCreateParams;
 import org.opencb.opencga.core.models.user.User;
 
 import java.io.FileInputStream;
@@ -58,9 +57,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
-//    private String adminToken;
+    protected String adminToken;
     protected String organizationId = "test";
-    protected String ownerId = "owner";
+    protected String ownerId = "user";
     protected String ownerToken;
 
 
@@ -81,7 +80,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
-        clearCatalog(configuration);
+//        clearCatalog(configuration);
 //        if (opencgaHome.toFile().exists()) {
 //            deleteFolderTree(opencgaHome.toFile());
 //            Files.createDirectory(opencgaHome);
@@ -95,16 +94,19 @@ public class CatalogManagerExternalResource extends ExternalResource {
         catalogManager = new CatalogManager(configuration);
         String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true, true);
+
 //        catalogManager.close();
 //         FIXME!! Should not need to create again the catalogManager
 //          Have to create again the CatalogManager, as it has a random "secretKey" inside
 //        catalogManager = new CatalogManager(configuration);
-        String adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        catalogManager.getSettingsManager().create(new SettingsCreateParams("default", null, null), adminToken);
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"),
                 QueryOptions.empty(), adminToken);
         catalogManager.getUserManager().create(organizationId, new User().setId(ownerId).setName(ownerId), TestParamConstants.PASSWORD, adminToken);
         catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner(ownerId),
                 QueryOptions.empty(), adminToken);
+        ownerToken = catalogManager.getUserManager().login(organizationId, ownerId, TestParamConstants.PASSWORD).getToken();
     }
 
     @Override
@@ -144,11 +146,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
-            for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
-                for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
-                    dbAdaptorFactory.getMongoDataStore(organizationId).getCollection(collection).remove(new Document(), QueryOptions.empty());
-                }
-            }
+            dbAdaptorFactory.deleteCatalogDB();
+//            for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+//                for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
+//                    dbAdaptorFactory.getMongoDataStore(organizationId).getCollection(collection).remove(new Document(), QueryOptions.empty());
+//                }
+//            }
         }
 
 //        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();

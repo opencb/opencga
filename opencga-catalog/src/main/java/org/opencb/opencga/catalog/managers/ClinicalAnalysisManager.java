@@ -1795,7 +1795,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         boolean checkPermissions;
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1918,7 +1919,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     INCLUDE_CLINICAL_INTERPRETATION_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

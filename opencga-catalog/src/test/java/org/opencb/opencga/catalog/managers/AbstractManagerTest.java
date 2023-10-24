@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -60,7 +59,7 @@ public class AbstractManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
-    protected String organizationId = "test";
+    protected String organizationId;
     protected String opencgaToken;
     protected String token;
     protected String sessionIdUser2;
@@ -94,17 +93,15 @@ public class AbstractManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        organizationId = catalogManagerResource.organizationId;
+        opencgaToken = catalogManagerResource.adminToken;
+        token = catalogManagerResource.ownerToken;
 
-        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test_org"), null, opencgaToken);
-
-        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
-        catalogManager.getOrganizationManager().update("test_org", new OrganizationUpdateParams().setOwner("user").setAdmins(Arrays.asList("user2", "user3")), null, opencgaToken);
+        catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner("user").setAdmins(Arrays.asList("user2", "user3")), null, opencgaToken);
 
-        token = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
         sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
 

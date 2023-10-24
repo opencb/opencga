@@ -74,7 +74,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     private final MongoDBCollection deleteInterpretationCollection;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationConverter interpretationConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
@@ -86,7 +86,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         this.archiveInterpretationCollection = archiveInterpretationCollection;
         this.deleteInterpretationCollection = deleteInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
     }
 

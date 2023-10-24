@@ -59,6 +59,7 @@ import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.*;
@@ -417,10 +418,7 @@ public class StudyManager extends AbstractManager {
         try {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            /* Check project permissions */
-            if (!project.getFqn().startsWith(userId + "@")) {
-                throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
-            }
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
 
             long projectUid = project.getUid();
 
@@ -459,9 +457,16 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
+            // Get organization owner and admins
+            Organization organization = catalogManager.getOrganizationManager().get(organizationId,
+                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, token).first();
+            Set<String> users = new HashSet<>();
+            users.add(organization.getOwner());
+            users.addAll(organization.getAdmins());
+
             List<Group> groups = Arrays.asList(
-                    new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())
+                    new Group(MEMBERS, new ArrayList<>(users)),
+                    new Group(ADMINS, new ArrayList<>(users))
             );
             study.setFiles(files);
             study.setGroups(groups);
@@ -473,7 +478,7 @@ public class StudyManager extends AbstractManager {
 
             URI uri;
             try {
-                uri = catalogIOManager.createStudy(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
+                uri = catalogIOManager.createStudy(organizationId, Long.toString(project.getUid()), Long.toString(study.getUid()));
             } catch (CatalogIOException e) {
                 try {
                     getStudyDBAdaptor(organizationId).delete(study);
@@ -1214,12 +1219,6 @@ public class StudyManager extends AbstractManager {
                     break;
                 case REMOVE:
                     if (MEMBERS.equals(groupId)) {
-                        // Check we are not trying to remove the owner of the study from the group
-                        String owner = getOwner(organizationId, study);
-                        if (updateParams.getUsers().contains(owner)) {
-                            throw new CatalogException("Cannot remove owner of the study from the '@members' group");
-                        }
-
                         // We remove the users from all the groups and acls
                         authorizationManager.resetPermissionsFromAllEntities(organizationId, study.getUid(), updateParams.getUsers());
                         getStudyDBAdaptor(organizationId).removeUsersFromAllGroups(study.getUid(), updateParams.getUsers());
@@ -1932,13 +1931,6 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Detected unsupported " + permission + " permission.");
             }
         }
-    }
-
-    private String getOwner(String organizationId, Study study) throws CatalogDBException {
-        if (!StringUtils.isEmpty(study.getFqn())) {
-            return StringUtils.split(study.getFqn(), "@")[0];
-        }
-        return getStudyDBAdaptor(organizationId).getOwnerId(study.getUid());
     }
 
     public String getProjectFqn(String studyFqn) throws CatalogException {

@@ -24,6 +24,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         DOMAIN("domain", STRING, ""),
         OWNER("owner", STRING, ""),
         ADMINS("admins", TEXT_ARRAY, ""),
+        CONFIGURATION("configuration", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),

@@ -41,7 +41,6 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.
 public class AuthorizationMongoDBUtils {
 
     static final String OPENCGA = "opencga";
-    static final String PRIVATE_OWNER_ID = "_ownerId";
     private static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
@@ -59,10 +58,6 @@ public class AuthorizationMongoDBUtils {
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
     public static boolean checkCanViewStudy(Document study, String user) {
-        // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return true;
-        }
         if (OPENCGA.equals(user)) {
             return true;
         }
@@ -74,10 +69,6 @@ public class AuthorizationMongoDBUtils {
     }
 
     public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
-        // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return true;
-        }
         if (OPENCGA.equals(user)) {
             return true;
         }
@@ -117,10 +108,6 @@ public class AuthorizationMongoDBUtils {
             return entry;
         }
 
-        // If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return entry;
-        }
         if (OPENCGA.equals(user)) {
             return entry;
         }
@@ -241,14 +228,10 @@ public class AuthorizationMongoDBUtils {
         List<String> permissions = Arrays.asList(userPermission[1].split(","));
 
         // If user is not checking its own permissions and it is not the owner or admin of the study, we fail
-        if (!user.equals(affectedUser) && !study.getString(PRIVATE_OWNER_ID).equals(user) && !getAdminUsers(study).contains(user)) {
+        if (!user.equals(affectedUser) && !getAdminUsers(study).contains(user)) {
             throw new CatalogAuthorizationException("Only study owners or admins are authorised to see other user's permissions.");
         }
 
-        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(affectedUser)) {
-            return aclDocuments;
-        }
         if (OPENCGA.equals(affectedUser)) {
             return aclDocuments;
         }
@@ -327,11 +310,7 @@ public class AuthorizationMongoDBUtils {
             return new Document();
         }
 
-        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return new Document();
-        }
-        if (OPENCGA.equals(user)) {
+        if (OPENCGA.equals(user) || ParamConstants.OPENCGA_USER_FQN.equals(user)) {
             return new Document();
         }
         if (getAdminUsers(study).contains(user)) {

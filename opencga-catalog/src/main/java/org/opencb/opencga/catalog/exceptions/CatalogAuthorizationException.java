@@ -49,7 +49,7 @@ public class CatalogAuthorizationException extends CatalogException {
     }
 
     public static CatalogAuthorizationException adminOnlySupportedOperation() {
-        return new CatalogAuthorizationException("Operation only supported for 'admin' user");
+        return new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
     }
 
     @Deprecated
@@ -80,6 +80,22 @@ public class CatalogAuthorizationException extends CatalogException {
         return new CatalogAuthorizationException("Permission denied. "
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + permission + " any " + resource + ".");
+    }
+
+    public static CatalogAuthorizationException notOwnerOrAdmin() {
+        return notOwnerOrAdmin("perform this action");
+    }
+
+    public static CatalogAuthorizationException notOwnerOrAdmin(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the owner or admins of the organization can " + action);
+    }
+
+    public static CatalogAuthorizationException notStudyAdmin(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the study admins of the organization can " + action);
+    }
+
+    public static CatalogAuthorizationException notStudyMember(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the members of the study can " + action);
     }
 
 }

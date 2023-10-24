@@ -86,7 +86,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private final MongoDBCollection archiveFamilyCollection;
     private final MongoDBCollection deletedFamilyCollection;
     private final FamilyConverter familyConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection archiveFamilyCollection,
                                 MongoDBCollection deletedFamilyCollection, Configuration configuration,
@@ -97,7 +97,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         this.archiveFamilyCollection = archiveFamilyCollection;
         this.deletedFamilyCollection = deletedFamilyCollection;
         this.familyConverter = new FamilyConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(familyCollection, archiveFamilyCollection, deletedFamilyCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(familyCollection, archiveFamilyCollection, deletedFamilyCollection);
     }
 
     /**

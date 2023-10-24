@@ -73,6 +73,7 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -594,7 +595,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected void checkToolExecutionPermission(Job job) throws Exception {
         Tool tool = new ToolFactory().getTool(job.getTool().getId());
 
-        if (catalogManager.getAuthorizationManager().isInstallationAdministrator(organizationId, job.getUserId())) {
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        String user = job.getUserId();
+        if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)) {
             // Installation administrator user can run everything
             return;
         }

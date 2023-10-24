@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -225,7 +226,9 @@ public class CatalogSolrManager implements AutoCloseable {
 
         queryCopy.put(CatalogSolrQueryParser.QueryParams.STUDY.key(), study.getFqn());
 
-        if (!catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId)) {
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        if (!authorizationManager.isStudyAdministrator(organizationId, studyId, userId)) {
             // We need to add an acl query to perform the facet query
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {

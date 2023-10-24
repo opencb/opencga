@@ -591,8 +591,8 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException, IOException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
-            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
+        if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOwnerOrAdmin("import data");
         }
 
         OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(owner, new QueryOptions(QueryOptions.INCLUDE,
@@ -637,7 +637,7 @@ public class ProjectManager extends AbstractManager {
             logger.info("Importing studies...");
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 Map<String, Object> study = objectMapper.readValue(line, Map.class);
-                getStudyDBAdaptor(organizationId).nativeInsert(study, owner);
+                getStudyDBAdaptor(organizationId).nativeInsert(study);
             }
         }
 
@@ -710,8 +710,8 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
-            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
+        if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOwnerOrAdmin("export data");
         }
 
         if (!filePath.exists() || !filePath.isFile()) {
@@ -897,8 +897,8 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isInstallationAdministrator(organizationId, userId)) {
-            throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
+        if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOwnerOrAdmin("export data");
         }
 
         Path outputDir = Paths.get(outputDirStr);

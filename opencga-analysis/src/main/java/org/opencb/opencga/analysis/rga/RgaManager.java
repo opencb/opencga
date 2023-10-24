@@ -19,6 +19,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -151,7 +152,9 @@ public class RgaManager implements AutoCloseable {
 
         Study studyObject = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first();
         try {
-            catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, studyObject.getUid(), userId);
+            AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+            long studyId = studyObject.getUid();
+            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can index", e.getCause());
@@ -234,7 +237,9 @@ public class RgaManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         try {
-            catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId);
+            AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+            long studyId = study.getUid();
+            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can generate the auxiliary RGA collection", e.getCause());
@@ -636,7 +641,9 @@ public class RgaManager implements AutoCloseable {
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        Boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // Get number of matches
@@ -773,7 +780,9 @@ public class RgaManager implements AutoCloseable {
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        Boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         ResourceIds resourceIds;
@@ -1732,7 +1741,9 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(organizationId, study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        Boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
 
         Preprocess preprocessResult = new Preprocess();
         preprocessResult.setUserId(userId);

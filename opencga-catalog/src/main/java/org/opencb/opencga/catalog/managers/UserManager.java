@@ -118,8 +118,11 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<User> create(String organizationId, User user, String password, @Nullable String token) throws CatalogException {
-        // Check if the users can be registered publicly or just the admin.
+    public OpenCGAResult<User> create(String organizationId, User user, String password, String token) throws CatalogException {
+        if (token == null && (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId()))) {
+            throw new CatalogException("Missing token parameter");
+        }
+
         ObjectMap auditParams = new ObjectMap("user", user);
 
         // Initialise fields
@@ -131,7 +134,7 @@ public class UserManager extends AbstractManager {
             checkEmail(user.getEmail());
         }
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
-        ParamUtils.checkObj(user.getAccount(), "account");
+        user.setAccount(ParamUtils.defaultObject(user.getAccount(), Account::new));
         user.getAccount().setType(ParamUtils.defaultObject(user.getAccount().getType(), Account.AccountType.GUEST));
         user.getAccount().setCreationDate(TimeUtils.getTime());
         user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
@@ -156,12 +159,13 @@ public class UserManager extends AbstractManager {
             user.getAccount().setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.INTERNAL, false));
         }
 
-        String userId = user.getId();
-        if (!OPENCGA.equals(user.getId())) {
-            userId = AuthenticationFactory.getUserId(organizationId, CatalogAuthenticationManager.INTERNAL, token);
-            if (!OPENCGA.equals(userId)) {
-                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
-                auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
+            JwtPayload jwtPayload = validateToken(token);
+            // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
+            if (!authorizationManager.isOpencga(jwtPayload.getUserId(organizationId))
+                    && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+                String errorMsg = "Please ask your administrator to create your account.";
+                auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
                 throw new CatalogException(errorMsg);
             }
@@ -180,17 +184,17 @@ public class UserManager extends AbstractManager {
             catalogIOManager.createUser(organizationId, user.getId());
             getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
 
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
             if (getUserDBAdaptor(organizationId).exists(user.getId())) {
-                logger.error("ERROR! DELETING USER! " + user.getId());
+                logger.error("Deleting user '{}'...", user.getId());
                 catalogIOManager.deleteUser(organizationId, user.getId());
             }
 
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
@@ -1351,7 +1355,7 @@ public class UserManager extends AbstractManager {
     }
 
     private void checkUserExists(String organizationId, String userId) throws CatalogException {
-        if (userId.toLowerCase().equals(ANONYMOUS)) {
+        if (userId.equalsIgnoreCase(ANONYMOUS)) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 

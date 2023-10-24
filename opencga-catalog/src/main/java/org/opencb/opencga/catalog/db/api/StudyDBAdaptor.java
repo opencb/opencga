@@ -198,7 +198,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    OpenCGAResult<Study> nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
+    OpenCGAResult<Study> nativeInsert(Map<String, Object> study) throws CatalogDBException;
 
     OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
@@ -209,12 +209,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
-
-    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getOwnerId(long studyId) throws CatalogDBException;
 
     OpenCGAResult<Study> createGroup(long studyId, Group group) throws CatalogDBException;
 

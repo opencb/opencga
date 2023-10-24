@@ -628,7 +628,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         boolean checkPermissions;
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -715,7 +716,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             iterator = getCohortDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_COHORT_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(organizationId, study.getUid(), userId);
+            long studyId = study.getUid();
+            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

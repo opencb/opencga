@@ -85,10 +85,12 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
 
-    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options)
+    OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     void deleteOrganization(Organization organization) throws CatalogDBException;
+
+    SettingsDBAdaptor getCatalogSettingsDBAdaptor(String organization) throws CatalogDBException;
 
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException;
 

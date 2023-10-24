@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
@@ -86,8 +87,7 @@ public interface AuthorizationManager {
     default void checkIsOrganizationOwnerOrAdmin(String organization, String userId)
             throws CatalogAuthorizationException, CatalogDBException {
         if (!isOrganizationOwnerOrAdmin(organization, userId)) {
-            throw new CatalogAuthorizationException("Permission denied: Only the owner or admins of the organization can perform this "
-                    + "action.");
+            throw CatalogAuthorizationException.notOwnerOrAdmin();
         }
     }
 
@@ -120,9 +120,11 @@ public interface AuthorizationManager {
 
     void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
 
-    boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException;
+    default boolean isOpencga(String userId) {
+        return ParamConstants.OPENCGA_USER_ID.equals(userId) || ParamConstants.OPENCGA_USER_FQN.equals(userId);
+    }
 
-    boolean isInstallationAdministrator(String organizationId, String user);
+    boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException;
 
     void checkIsInstallationAdministrator(String organizationId, String user) throws CatalogException;
 
@@ -130,7 +132,7 @@ public interface AuthorizationManager {
 
     boolean isOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogDBException;
 
-    boolean isOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
+    boolean isStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
 
     void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException;

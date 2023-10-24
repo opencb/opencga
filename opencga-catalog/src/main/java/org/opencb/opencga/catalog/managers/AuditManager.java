@@ -275,7 +275,7 @@ public class AuditManager {
     public OpenCGAResult groupBy(String organizationId, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        if (authorizationManager.isInstallationAdministrator(organizationId, userId)) {
+        if (authorizationManager.isOpencga(userId) || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).groupBy(query, fields, options);
         }
         throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");
