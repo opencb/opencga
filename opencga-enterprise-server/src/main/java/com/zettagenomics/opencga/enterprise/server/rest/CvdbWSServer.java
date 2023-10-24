@@ -74,7 +74,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     @ApiOperation(value = CLINICAL_ANALYSES_INDEX_DESCRIPTION, response = CvdbIndexResult.class)
     public Response indexClinicalAnalsyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = CA_ID_NAME) @QueryParam(CA_ID_DESCR) String caseIdStr,
+            @ApiParam(value = CA_ID_DESCR) @QueryParam(CA_ID_NAME) String caseIdStr,
             @ApiParam(value = INDEX_OVERWRITE_PARAM_DESCRIPTION) @QueryParam(INDEX_OVERWRITE_PARAM_NAME) boolean overwrite) {
         if (StringUtils.isEmpty(studyStr)) {
             return createErrorResponse("Invalid parameter", "Missing study ID");

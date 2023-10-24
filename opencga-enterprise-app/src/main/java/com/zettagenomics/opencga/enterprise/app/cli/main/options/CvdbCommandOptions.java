@@ -39,7 +39,6 @@ public class CvdbCommandOptions {
         public QueryClinicalVariantCommandOptions queryClinicalVariantCommandOptions;
         public QueryClinicalVariantEvidenceCommandOptions queryClinicalVariantEvidenceCommandOptions;
         public QueryInterpretationCommandOptions queryInterpretationCommandOptions;
-        public InfoCommandOptions infoCommandOptions;
 
 
     public CvdbCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -52,7 +51,6 @@ public class CvdbCommandOptions {
         this.queryClinicalVariantCommandOptions = new QueryClinicalVariantCommandOptions();
         this.queryClinicalVariantEvidenceCommandOptions = new QueryClinicalVariantEvidenceCommandOptions();
         this.queryInterpretationCommandOptions = new QueryInterpretationCommandOptions();
-        this.infoCommandOptions = new InfoCommandOptions();
     
     }
     
@@ -65,8 +63,8 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical analysis ID (or list of clinical analysis IDs separated by commas)", required = false, arity = 1)
-        public String clinicalAnalysisId; 
+        @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String caId; 
     
         @Parameter(names = {"--overwrite"}, description = "Overwrite clinical analysis when CVDB indexing", required = false, help = true, arity = 0)
         public boolean overwrite = false; 
@@ -147,6 +145,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
     
@@ -177,11 +178,137 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
-        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
-        public String ciStatusName; 
+        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvId; 
     
-        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
-        public String variantId; 
+        @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvDiscussionAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
+        public String cvConfidenceValue; 
+    
+        @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
+        public String cvTag; 
+    
+        @Parameter(names = {"--cv-status"}, description = "Clinical variant status (or list of status separated by commas)", required = false, arity = 1)
+        public String cvStatus; 
+    
+        @Parameter(names = {"--cv-region"}, description = "Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000)", required = false, arity = 1)
+        public String cvRegion; 
+    
+        @Parameter(names = {"--cv-biotype"}, description = "Variant biotype, e.g. protein_coding (or list of biotypes separated by commas)", required = false, arity = 1)
+        public String cvBiotype; 
+    
+        @Parameter(names = {"--cv-ct"}, description = "Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String cvCt; 
+    
+        @Parameter(names = {"--cv-transcript-flag"}, description = "Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String cvTranscriptFlag; 
+    
+        @Parameter(names = {"--cv-gene"}, description = "Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...)", required = false, arity = 1)
+        public String cvGene; 
+    
+        @Parameter(names = {"--cv-xref"}, description = "Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        public String cvXref; 
+    
+        @Parameter(names = {"--cv-annot-role-in-cancer-genes"}, description = "Variant rol in cancer genes (or list of roles separated by commas)", required = false, arity = 1)
+        public String cvAnnotRoleInCancerGenes; 
+    
+        @Parameter(names = {"--cv-type"}, description = "Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String cvType; 
+    
+        @Parameter(names = {"--cv-protein-substitution"}, description = "Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String cvProteinSubstitution; 
+    
+        @Parameter(names = {"--cv-conservation"}, description = "Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String cvConservation; 
+    
+        @Parameter(names = {"--cv-functional-score"}, description = "Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String cvFunctionalScore; 
+    
+        @Parameter(names = {"--cv-population-frequency-alt"}, description = "Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyAlt; 
+    
+        @Parameter(names = {"--cv-population-frequency-maf"}, description = "Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyMaf; 
+    
+        @Parameter(names = {"--cv-population-frequency-ref"}, description = "Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-alt"}, description = "Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsAlt; 
+    
+        @Parameter(names = {"--cv-cohort-stats-maf"}, description = "Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsMaf; 
+    
+        @Parameter(names = {"--cv-cohort-stats-ref"}, description = "Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-pass"}, description = "Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String cvCohortStatsPass; 
+    
+        @Parameter(names = {"--cv-score"}, description = "Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String cvScore; 
+    
+        @Parameter(names = {"--cv-annot-go-genes"}, description = "Variant gene GO (or list of GOs separated by commas)", required = false, arity = 1)
+        public String cvAnnotGoGenes; 
+    
+        @Parameter(names = {"--cv-annot-expression-genes"}, description = "Variant gene expression (or list of expressions separated by commas)", required = false, arity = 1)
+        public String cvAnnotExpressionGenes; 
+    
+        @Parameter(names = {"--cv-gene-trait-id"}, description = "Variant gene trait association ID (or list of trait IDs separated by commas), e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String cvGeneTraitId; 
+    
+        @Parameter(names = {"--cv-trait"}, description = "Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String cvTrait; 
+    
+        @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
+        public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
+        public String cvePhenotypeName; 
+    
+        @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
+        public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveConsequenceTypeId; 
+    
+        @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveXrefId; 
+    
+        @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveAcmg; 
+    
+        @Parameter(names = {"--cve-tier"}, description = "Clinical variant evidence tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveTier; 
+    
+        @Parameter(names = {"--cve-clinical-significance"}, description = "Clinical variant evidence clinical significance (or list of clinical  significances separated by commas)", required = false, arity = 1)
+        public String cveClinicalSignificance; 
+    
+        @Parameter(names = {"--cve-drug-response"}, description = "Clinical variant evidence drug response (or list of drug responses separated by commas)", required = false, arity = 1)
+        public String cveDrugResponse; 
+    
+        @Parameter(names = {"--cve-trait-association"}, description = "Clinical variant evidence trait association (or list of traits separated by commas)", required = false, arity = 1)
+        public String cveTraitAssociation; 
+    
+        @Parameter(names = {"--cve-functional-effect"}, description = "Clinical variant evidence functional effect (or list of functional effects separated by commas)", required = false, arity = 1)
+        public String cveFunctionalEffect; 
+    
+        @Parameter(names = {"--cve-tumorigenesis"}, description = "Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas)", required = false, arity = 1)
+        public String cveTumorigenesis; 
+    
+        @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
+        public String cveOtherClassification; 
+    
+        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRolInCancer; 
     
     }
 
@@ -224,6 +351,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
     
@@ -254,11 +384,137 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
-        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
-        public String ciStatusName; 
+        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvId; 
     
-        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
-        public String variantId; 
+        @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvDiscussionAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
+        public String cvConfidenceValue; 
+    
+        @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
+        public String cvTag; 
+    
+        @Parameter(names = {"--cv-status"}, description = "Clinical variant status (or list of status separated by commas)", required = false, arity = 1)
+        public String cvStatus; 
+    
+        @Parameter(names = {"--cv-region"}, description = "Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000)", required = false, arity = 1)
+        public String cvRegion; 
+    
+        @Parameter(names = {"--cv-biotype"}, description = "Variant biotype, e.g. protein_coding (or list of biotypes separated by commas)", required = false, arity = 1)
+        public String cvBiotype; 
+    
+        @Parameter(names = {"--cv-ct"}, description = "Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String cvCt; 
+    
+        @Parameter(names = {"--cv-transcript-flag"}, description = "Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String cvTranscriptFlag; 
+    
+        @Parameter(names = {"--cv-gene"}, description = "Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...)", required = false, arity = 1)
+        public String cvGene; 
+    
+        @Parameter(names = {"--cv-xref"}, description = "Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        public String cvXref; 
+    
+        @Parameter(names = {"--cv-annot-role-in-cancer-genes"}, description = "Variant rol in cancer genes (or list of roles separated by commas)", required = false, arity = 1)
+        public String cvAnnotRoleInCancerGenes; 
+    
+        @Parameter(names = {"--cv-type"}, description = "Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String cvType; 
+    
+        @Parameter(names = {"--cv-protein-substitution"}, description = "Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String cvProteinSubstitution; 
+    
+        @Parameter(names = {"--cv-conservation"}, description = "Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String cvConservation; 
+    
+        @Parameter(names = {"--cv-functional-score"}, description = "Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String cvFunctionalScore; 
+    
+        @Parameter(names = {"--cv-population-frequency-alt"}, description = "Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyAlt; 
+    
+        @Parameter(names = {"--cv-population-frequency-maf"}, description = "Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyMaf; 
+    
+        @Parameter(names = {"--cv-population-frequency-ref"}, description = "Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-alt"}, description = "Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsAlt; 
+    
+        @Parameter(names = {"--cv-cohort-stats-maf"}, description = "Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsMaf; 
+    
+        @Parameter(names = {"--cv-cohort-stats-ref"}, description = "Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-pass"}, description = "Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String cvCohortStatsPass; 
+    
+        @Parameter(names = {"--cv-score"}, description = "Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String cvScore; 
+    
+        @Parameter(names = {"--cv-annot-go-genes"}, description = "Variant gene GO (or list of GOs separated by commas)", required = false, arity = 1)
+        public String cvAnnotGoGenes; 
+    
+        @Parameter(names = {"--cv-annot-expression-genes"}, description = "Variant gene expression (or list of expressions separated by commas)", required = false, arity = 1)
+        public String cvAnnotExpressionGenes; 
+    
+        @Parameter(names = {"--cv-gene-trait-id"}, description = "Variant gene trait association ID (or list of trait IDs separated by commas), e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String cvGeneTraitId; 
+    
+        @Parameter(names = {"--cv-trait"}, description = "Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String cvTrait; 
+    
+        @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
+        public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
+        public String cvePhenotypeName; 
+    
+        @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
+        public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveConsequenceTypeId; 
+    
+        @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveXrefId; 
+    
+        @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveAcmg; 
+    
+        @Parameter(names = {"--cve-tier"}, description = "Clinical variant evidence tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveTier; 
+    
+        @Parameter(names = {"--cve-clinical-significance"}, description = "Clinical variant evidence clinical significance (or list of clinical  significances separated by commas)", required = false, arity = 1)
+        public String cveClinicalSignificance; 
+    
+        @Parameter(names = {"--cve-drug-response"}, description = "Clinical variant evidence drug response (or list of drug responses separated by commas)", required = false, arity = 1)
+        public String cveDrugResponse; 
+    
+        @Parameter(names = {"--cve-trait-association"}, description = "Clinical variant evidence trait association (or list of traits separated by commas)", required = false, arity = 1)
+        public String cveTraitAssociation; 
+    
+        @Parameter(names = {"--cve-functional-effect"}, description = "Clinical variant evidence functional effect (or list of functional effects separated by commas)", required = false, arity = 1)
+        public String cveFunctionalEffect; 
+    
+        @Parameter(names = {"--cve-tumorigenesis"}, description = "Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas)", required = false, arity = 1)
+        public String cveTumorigenesis; 
+    
+        @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
+        public String cveOtherClassification; 
+    
+        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRolInCancer; 
     
     }
 
@@ -301,6 +557,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
     
@@ -331,11 +590,137 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
-        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
-        public String ciStatusName; 
+        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvId; 
     
-        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
-        public String variantId; 
+        @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvDiscussionAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
+        public String cvConfidenceValue; 
+    
+        @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
+        public String cvTag; 
+    
+        @Parameter(names = {"--cv-status"}, description = "Clinical variant status (or list of status separated by commas)", required = false, arity = 1)
+        public String cvStatus; 
+    
+        @Parameter(names = {"--cv-region"}, description = "Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000)", required = false, arity = 1)
+        public String cvRegion; 
+    
+        @Parameter(names = {"--cv-biotype"}, description = "Variant biotype, e.g. protein_coding (or list of biotypes separated by commas)", required = false, arity = 1)
+        public String cvBiotype; 
+    
+        @Parameter(names = {"--cv-ct"}, description = "Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String cvCt; 
+    
+        @Parameter(names = {"--cv-transcript-flag"}, description = "Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String cvTranscriptFlag; 
+    
+        @Parameter(names = {"--cv-gene"}, description = "Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...)", required = false, arity = 1)
+        public String cvGene; 
+    
+        @Parameter(names = {"--cv-xref"}, description = "Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        public String cvXref; 
+    
+        @Parameter(names = {"--cv-annot-role-in-cancer-genes"}, description = "Variant rol in cancer genes (or list of roles separated by commas)", required = false, arity = 1)
+        public String cvAnnotRoleInCancerGenes; 
+    
+        @Parameter(names = {"--cv-type"}, description = "Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String cvType; 
+    
+        @Parameter(names = {"--cv-protein-substitution"}, description = "Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String cvProteinSubstitution; 
+    
+        @Parameter(names = {"--cv-conservation"}, description = "Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String cvConservation; 
+    
+        @Parameter(names = {"--cv-functional-score"}, description = "Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String cvFunctionalScore; 
+    
+        @Parameter(names = {"--cv-population-frequency-alt"}, description = "Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyAlt; 
+    
+        @Parameter(names = {"--cv-population-frequency-maf"}, description = "Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyMaf; 
+    
+        @Parameter(names = {"--cv-population-frequency-ref"}, description = "Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-alt"}, description = "Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsAlt; 
+    
+        @Parameter(names = {"--cv-cohort-stats-maf"}, description = "Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsMaf; 
+    
+        @Parameter(names = {"--cv-cohort-stats-ref"}, description = "Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-pass"}, description = "Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String cvCohortStatsPass; 
+    
+        @Parameter(names = {"--cv-score"}, description = "Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String cvScore; 
+    
+        @Parameter(names = {"--cv-annot-go-genes"}, description = "Variant gene GO (or list of GOs separated by commas)", required = false, arity = 1)
+        public String cvAnnotGoGenes; 
+    
+        @Parameter(names = {"--cv-annot-expression-genes"}, description = "Variant gene expression (or list of expressions separated by commas)", required = false, arity = 1)
+        public String cvAnnotExpressionGenes; 
+    
+        @Parameter(names = {"--cv-gene-trait-id"}, description = "Variant gene trait association ID (or list of trait IDs separated by commas), e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String cvGeneTraitId; 
+    
+        @Parameter(names = {"--cv-trait"}, description = "Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String cvTrait; 
+    
+        @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
+        public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
+        public String cvePhenotypeName; 
+    
+        @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
+        public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveConsequenceTypeId; 
+    
+        @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveXrefId; 
+    
+        @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveAcmg; 
+    
+        @Parameter(names = {"--cve-tier"}, description = "Clinical variant evidence tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveTier; 
+    
+        @Parameter(names = {"--cve-clinical-significance"}, description = "Clinical variant evidence clinical significance (or list of clinical  significances separated by commas)", required = false, arity = 1)
+        public String cveClinicalSignificance; 
+    
+        @Parameter(names = {"--cve-drug-response"}, description = "Clinical variant evidence drug response (or list of drug responses separated by commas)", required = false, arity = 1)
+        public String cveDrugResponse; 
+    
+        @Parameter(names = {"--cve-trait-association"}, description = "Clinical variant evidence trait association (or list of traits separated by commas)", required = false, arity = 1)
+        public String cveTraitAssociation; 
+    
+        @Parameter(names = {"--cve-functional-effect"}, description = "Clinical variant evidence functional effect (or list of functional effects separated by commas)", required = false, arity = 1)
+        public String cveFunctionalEffect; 
+    
+        @Parameter(names = {"--cve-tumorigenesis"}, description = "Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas)", required = false, arity = 1)
+        public String cveTumorigenesis; 
+    
+        @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
+        public String cveOtherClassification; 
+    
+        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRolInCancer; 
     
     }
 
@@ -378,6 +763,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
+        public String ciStatusName; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
     
@@ -408,43 +796,137 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
-        @Parameter(names = {"--ci-status-name"}, description = "Clinical interpretation status name (or list of names separated by commas)", required = false, arity = 1)
-        public String ciStatusName; 
+        @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
+        public String cvId; 
     
-        @Parameter(names = {"--variant-id"}, description = "Variant ID (or list of variant IDs separated by commas), e.g.: 6:31356248:G:C,X:53196017:G:A", required = false, arity = 1)
-        public String variantId; 
+        @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvDiscussionAuthor; 
     
-    }
-
-    @Parameters(commandNames = {"info"}, commandDescription ="Get sample information")
-    public class InfoCommandOptions {
+        @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
+        public String cvConfidenceValue; 
     
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
+        @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
+        public String cvConfidenceAuthor; 
     
-        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String include; 
+        @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
+        public String cvTag; 
     
-        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String exclude; 
+        @Parameter(names = {"--cv-status"}, description = "Clinical variant status (or list of status separated by commas)", required = false, arity = 1)
+        public String cvStatus; 
     
-        @Parameter(names = {"--include-individual"}, description = "Include Individual object as an attribute", required = false, help = true, arity = 0)
-        public boolean includeIndividual = false; 
+        @Parameter(names = {"--cv-region"}, description = "Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000)", required = false, arity = 1)
+        public String cvRegion; 
     
-        @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
-        public boolean flattenAnnotations = false; 
+        @Parameter(names = {"--cv-biotype"}, description = "Variant biotype, e.g. protein_coding (or list of biotypes separated by commas)", required = false, arity = 1)
+        public String cvBiotype; 
     
-        @Parameter(names = {"--case-id"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
-        public String caseId; 
+        @Parameter(names = {"--cv-ct"}, description = "Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String cvCt; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
+        @Parameter(names = {"--cv-transcript-flag"}, description = "Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String cvTranscriptFlag; 
     
-        @Parameter(names = {"--version"}, description = "Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids are provided", required = false, arity = 1)
-        public String version; 
+        @Parameter(names = {"--cv-gene"}, description = "Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...)", required = false, arity = 1)
+        public String cvGene; 
     
-        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
-        public boolean deleted = false; 
+        @Parameter(names = {"--cv-xref"}, description = "Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        public String cvXref; 
+    
+        @Parameter(names = {"--cv-annot-role-in-cancer-genes"}, description = "Variant rol in cancer genes (or list of roles separated by commas)", required = false, arity = 1)
+        public String cvAnnotRoleInCancerGenes; 
+    
+        @Parameter(names = {"--cv-type"}, description = "Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String cvType; 
+    
+        @Parameter(names = {"--cv-protein-substitution"}, description = "Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String cvProteinSubstitution; 
+    
+        @Parameter(names = {"--cv-conservation"}, description = "Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String cvConservation; 
+    
+        @Parameter(names = {"--cv-functional-score"}, description = "Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String cvFunctionalScore; 
+    
+        @Parameter(names = {"--cv-population-frequency-alt"}, description = "Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyAlt; 
+    
+        @Parameter(names = {"--cv-population-frequency-maf"}, description = "Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyMaf; 
+    
+        @Parameter(names = {"--cv-population-frequency-ref"}, description = "Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String cvPopulationFrequencyRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-alt"}, description = "Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsAlt; 
+    
+        @Parameter(names = {"--cv-cohort-stats-maf"}, description = "Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsMaf; 
+    
+        @Parameter(names = {"--cv-cohort-stats-ref"}, description = "Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String cvCohortStatsRef; 
+    
+        @Parameter(names = {"--cv-cohort-stats-pass"}, description = "Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String cvCohortStatsPass; 
+    
+        @Parameter(names = {"--cv-score"}, description = "Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String cvScore; 
+    
+        @Parameter(names = {"--cv-annot-go-genes"}, description = "Variant gene GO (or list of GOs separated by commas)", required = false, arity = 1)
+        public String cvAnnotGoGenes; 
+    
+        @Parameter(names = {"--cv-annot-expression-genes"}, description = "Variant gene expression (or list of expressions separated by commas)", required = false, arity = 1)
+        public String cvAnnotExpressionGenes; 
+    
+        @Parameter(names = {"--cv-gene-trait-id"}, description = "Variant gene trait association ID (or list of trait IDs separated by commas), e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String cvGeneTraitId; 
+    
+        @Parameter(names = {"--cv-trait"}, description = "Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String cvTrait; 
+    
+        @Parameter(names = {"--cv-protein-keyword"}, description = "Uniprot protein variant annotation keyword (or list of keywords separated by commas)", required = false, arity = 1)
+        public String cvProteinKeyword; 
+    
+        @Parameter(names = {"--cve-phenotype-name"}, description = "Clinical variant evidence phenotype name (or names separated by commas)", required = false, arity = 1)
+        public String cvePhenotypeName; 
+    
+        @Parameter(names = {"--cve-gene-name"}, description = "Clinical variant evidence gene name (or names separated by commas)", required = false, arity = 1)
+        public String cveGeneName; 
+    
+        @Parameter(names = {"--cve-consequence-type-id"}, description = "Clinical variant evidence consequence type ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveConsequenceTypeId; 
+    
+        @Parameter(names = {"--cve-xref-id"}, description = "Clinical variant evidence Xref ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cveXrefId; 
+    
+        @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
+        public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
+        public String cveAcmg; 
+    
+        @Parameter(names = {"--cve-tier"}, description = "Clinical variant evidence tier (or list of tier values separated by commas)", required = false, arity = 1)
+        public String cveTier; 
+    
+        @Parameter(names = {"--cve-clinical-significance"}, description = "Clinical variant evidence clinical significance (or list of clinical  significances separated by commas)", required = false, arity = 1)
+        public String cveClinicalSignificance; 
+    
+        @Parameter(names = {"--cve-drug-response"}, description = "Clinical variant evidence drug response (or list of drug responses separated by commas)", required = false, arity = 1)
+        public String cveDrugResponse; 
+    
+        @Parameter(names = {"--cve-trait-association"}, description = "Clinical variant evidence trait association (or list of traits separated by commas)", required = false, arity = 1)
+        public String cveTraitAssociation; 
+    
+        @Parameter(names = {"--cve-functional-effect"}, description = "Clinical variant evidence functional effect (or list of functional effects separated by commas)", required = false, arity = 1)
+        public String cveFunctionalEffect; 
+    
+        @Parameter(names = {"--cve-tumorigenesis"}, description = "Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas)", required = false, arity = 1)
+        public String cveTumorigenesis; 
+    
+        @Parameter(names = {"--cve-other-classification"}, description = "Clinical variant evidence other-classification (or list of other  classification values separated by commas)", required = false, arity = 1)
+        public String cveOtherClassification; 
+    
+        @Parameter(names = {"--cve-rol-in-cancer"}, description = "Clinical variant evidence rol in cancer (or roles in cancer separated by commas)", required = false, arity = 1)
+        public String cveRolInCancer; 
     
     }
 
