@@ -18,16 +18,18 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 
 import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_TYPE_NAME;
 
 public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
@@ -74,6 +76,14 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
         logger.info("Solr query: {}", solrQuery.toQueryString());
 
         return solrQuery;
+    }
+
+    private Query buildVariantQuery(Query query) {
+        Query variantQuery = new VariantQuery();
+        if (query.containsKey(CV_TYPE_NAME)) {
+            variantQuery.put(VariantQueryParam.TYPE.key(), query.get(CV_TYPE_NAME));
+        }
+        return variantQuery;
     }
 
 //    public SolrQuery parse(Query query, QueryOptions queryOptions) {

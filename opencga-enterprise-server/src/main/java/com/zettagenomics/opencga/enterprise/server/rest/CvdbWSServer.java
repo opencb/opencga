@@ -3,7 +3,6 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.lang3.StringUtils;
@@ -20,7 +19,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -36,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/cvdb")
@@ -52,35 +49,6 @@ public class CvdbWSServer extends OpenCGAWSServer {
         // Get enterprise configuration to set the CVDB engine
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null);
-    }
-
-    @GET
-    @Path("/{caseId}/info")
-    @ApiOperation(value = "Get sample information", response = Sample.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, format = "", example = "name,attributes",
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType =
-                    "string", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, value =
-                    ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION,
-                    defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
-                    dataType = "boolean", paramType = "query")
-    })
-    public Response infoSample(
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("caseId") String samplesStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.SAMPLE_VERSION_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VERSION_PARAM) String version,
-            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("samples");
-
-            return createOkResponse("Pajote!");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
     }
 
     @POST
@@ -160,7 +128,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
                     paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
@@ -191,6 +159,43 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+            // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_REGION_NAME, value = CV_REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_BIOTYPE_NAME, value = CV_ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSEQUENCE_TYPE_NAME, value = CV_ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRANSCRIPT_FLAG_NAME, value = CV_ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_GENE_NAME, value = CV_GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_XREF_NAME, value = CV_ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, value = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_TYPE_NAME, value = CV_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_SUBSTITUTION_NAME, value = CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSERVATION_NAME, value = CV_ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_FUNCTIONAL_SCORE_NAME, value = CV_ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_ALT_NAME, value = CV_STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_MAF_NAME, value = CV_STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_REF_NAME, value = CV_STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_PASS_FREQ_NAME, value = CV_STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_SCORE_NAME, value = CV_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GO_GENES_NAME, value = CV_ANNOT_GO_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_EXPRESSION_GENES_NAME, value = CV_ANNOT_EXPRESSION_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_TRAIT_ID_NAME, value = CV_ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRAIT_NAME, value = CV_ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_KEYWORD_NAME, value = CV_ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
 
@@ -278,7 +283,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
                     paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
@@ -309,6 +314,43 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+            // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_REGION_NAME, value = CV_REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_BIOTYPE_NAME, value = CV_ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSEQUENCE_TYPE_NAME, value = CV_ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRANSCRIPT_FLAG_NAME, value = CV_ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_GENE_NAME, value = CV_GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_XREF_NAME, value = CV_ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, value = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_TYPE_NAME, value = CV_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_SUBSTITUTION_NAME, value = CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSERVATION_NAME, value = CV_ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_FUNCTIONAL_SCORE_NAME, value = CV_ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_ALT_NAME, value = CV_STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_MAF_NAME, value = CV_STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_REF_NAME, value = CV_STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_PASS_FREQ_NAME, value = CV_STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_SCORE_NAME, value = CV_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GO_GENES_NAME, value = CV_ANNOT_GO_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_EXPRESSION_GENES_NAME, value = CV_ANNOT_EXPRESSION_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_TRAIT_ID_NAME, value = CV_ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRAIT_NAME, value = CV_ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_KEYWORD_NAME, value = CV_ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
 
@@ -395,7 +437,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
                     paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
@@ -426,6 +468,43 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+            // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_REGION_NAME, value = CV_REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_BIOTYPE_NAME, value = CV_ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSEQUENCE_TYPE_NAME, value = CV_ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRANSCRIPT_FLAG_NAME, value = CV_ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_GENE_NAME, value = CV_GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_XREF_NAME, value = CV_ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, value = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_TYPE_NAME, value = CV_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_SUBSTITUTION_NAME, value = CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSERVATION_NAME, value = CV_ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_FUNCTIONAL_SCORE_NAME, value = CV_ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_ALT_NAME, value = CV_STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_MAF_NAME, value = CV_STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_REF_NAME, value = CV_STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_PASS_FREQ_NAME, value = CV_STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_SCORE_NAME, value = CV_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GO_GENES_NAME, value = CV_ANNOT_GO_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_EXPRESSION_GENES_NAME, value = CV_ANNOT_EXPRESSION_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_TRAIT_ID_NAME, value = CV_ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRAIT_NAME, value = CV_ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_KEYWORD_NAME, value = CV_ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
 
@@ -512,7 +591,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
                     paramType = "query"),
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
             // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical interpretation filters
@@ -543,6 +622,43 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
+            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+            // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
+            // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
+            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CV_REGION_NAME, value = CV_REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_BIOTYPE_NAME, value = CV_ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSEQUENCE_TYPE_NAME, value = CV_ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRANSCRIPT_FLAG_NAME, value = CV_ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_GENE_NAME, value = CV_GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_XREF_NAME, value = CV_ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, value = CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_TYPE_NAME, value = CV_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_SUBSTITUTION_NAME, value = CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_CONSERVATION_NAME, value = CV_ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_FUNCTIONAL_SCORE_NAME, value = CV_ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, value = CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_ALT_NAME, value = CV_STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_MAF_NAME, value = CV_STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_REF_NAME, value = CV_STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_STATS_PASS_FREQ_NAME, value = CV_STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_SCORE_NAME, value = CV_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GO_GENES_NAME, value = CV_ANNOT_GO_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_EXPRESSION_GENES_NAME, value = CV_ANNOT_EXPRESSION_GENES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_GENE_TRAIT_ID_NAME, value = CV_ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_TRAIT_NAME, value = CV_ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CV_ANNOT_PROTEIN_KEYWORD_NAME, value = CV_ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
 
             // Clinical variant evidence filters
 

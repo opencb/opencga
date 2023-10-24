@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.STRING;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public final class ClinicalQueryParam implements QueryParam {
@@ -91,7 +92,12 @@ public final class ClinicalQueryParam implements QueryParam {
             CA_FAMILY_MEMBER_ID_DESCR);
 
     // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+
     // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CA_STATUS_NAME = "ciStatusName";
+    public static final String CA_STATUS_DESCR = "Clinical analysis status (or list of status" + OPT_LIST;
+    public static final ClinicalQueryParam CA_STATUS = new ClinicalQueryParam(CA_STATUS_NAME, TEXT_ARRAY, CA_STATUS_DESCR);
+
     // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
     // ---------- Clinical interpretation (aka CI)
@@ -178,66 +184,189 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // ---------- Clinical variant (aka CV)
 
-    public static final String CV_ID_NAME = "cvId";
-    public static final String CV_ID_DESCR = "Clinical variant ID (or list of ID" + OPT_LIST;
-    public static final ClinicalQueryParam CV_ID = new ClinicalQueryParam(CV_ID_NAME, TEXT_ARRAY, CV_ID_DESCR);
-
-    public static final String CV_VARIANT_ID_DESCR = ParamConstants.VARIANT_QUERY_DESCRIPTION;
-    public static final ClinicalQueryParam CV_VARIANT_ID = new ClinicalQueryParam(ParamConstants.VARIANT_QUERY_PARAM,
-            TEXT_ARRAY, CV_VARIANT_ID_DESCR);
-
     // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
     // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
     // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
     // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
+
     // <field name="discussionAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_DISCUSSION_AUTHOR_NAME = "cvDiscussionAuthor";
+    public static final String CV_DISCUSSION_AUTHOR_DESCR = "Clinical variant discussion author (or list of authors" + OPT_LIST;
+    public static final ClinicalQueryParam CV_DISCUSSION_AUTHOR = new ClinicalQueryParam(CV_DISCUSSION_AUTHOR_NAME, TEXT_ARRAY,
+            CV_DISCUSSION_AUTHOR_DESCR);
+
     // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
     // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+
     // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_CONFIDENCE_VALUE_NAME = "cvConfidenceValue";
+    public static final String CV_CONFIDENCE_VALUE_DESCR = "Clinical variant confidence value (or list of values" + OPT_LIST;
+    public static final ClinicalQueryParam CV_CONFIDENCE_VALUE = new ClinicalQueryParam(CV_CONFIDENCE_VALUE_NAME, TEXT_ARRAY,
+            CV_CONFIDENCE_VALUE_DESCR);
+
     // <field name="confidenceAuthor" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_CONFIDENCE_AUTHOR_NAME = "cvConfidenceAuthor";
+    public static final String CV_CONFIDENCE_AUTHOR_DESCR = "Clinical variant confidence author (or list of authors" + OPT_LIST;
+    public static final ClinicalQueryParam CV_CONFIDENCE_AUTHOR = new ClinicalQueryParam(CV_CONFIDENCE_AUTHOR_NAME, TEXT_ARRAY,
+            CV_CONFIDENCE_AUTHOR_DESCR);
+
     // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
     // <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CV_TAG_NAME = "cvTag";
+    public static final String CV_TAG_DESCR = "Clinical variant tag (or list of tags" + OPT_LIST;
+    public static final ClinicalQueryParam CV_TAG = new ClinicalQueryParam(CV_TAG_NAME, TEXT_ARRAY, CV_TAG_DESCR);
+
     // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_STATUS_NAME = "cvStatus";
+    public static final String CV_STATUS_DESCR = "Clinical variant status (or list of status" + OPT_LIST;
+    public static final ClinicalQueryParam CV_STATUS = new ClinicalQueryParam(CV_STATUS_NAME, TEXT_ARRAY, CV_STATUS_DESCR);
 
     // Variant filters
-    // <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
-    // <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
-    // <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
-    // <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
-    // <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
-    // <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
-    // <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="siftDesc" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
-    // <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
-    // <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
-    // <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
-    // <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
-    // <field name="clinicalSig" type="string" indexed="true" stored="true" multiValued="true"/>
-    // <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    // <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
-    // <dynamicField name="passStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="altStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="scorePValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <!-- These fields are only present when indexing one individual or a family -->
-    // <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
-    // <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+    public static final String CV_ID_NAME = "cvId";
+    public static final String CV_ID_DESCR = "Variant ID (or list of IDs" + OPT_LIST;
+    public static final ClinicalQueryParam CV_ID = new ClinicalQueryParam(CV_ID_NAME, TEXT_ARRAY, CV_ID_DESCR);
+
+    public static final String CV_REGION_NAME = "cvRegion";
+    public static final String CV_REGION_DESCR = "Variant region (or list of regions, these can be just a single chromosome name"
+            + " or regions in the format chr:start-end, e.g.: 2,3:100000-200000)";
+    public static final ClinicalQueryParam CV_REGION = new ClinicalQueryParam(CV_REGION_NAME, TEXT_ARRAY, CV_REGION_DESCR);
+
+    public static final String CV_ANNOT_BIOTYPE_NAME = "cvBiotype";
+    public static final String CV_ANNOT_BIOTYPE_DESCR = "Variant biotype, e.g. protein_coding (or list of biotypes" + OPT_LIST;
+    public static final ClinicalQueryParam CV_ANNOT_BIOTYPE = new ClinicalQueryParam(CV_ANNOT_BIOTYPE_NAME, TEXT_ARRAY,
+            CV_ANNOT_BIOTYPE_DESCR);
+
+    public static final String CV_ANNOT_CONSEQUENCE_TYPE_NAME = "cvCt";
+    public static final String CV_ANNOT_CONSEQUENCE_TYPE_DESCR = "Variant SO consequence type (or list of SOs" + OPT_LIST
+            + ", e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'";
+    public static final ClinicalQueryParam CV_ANNOT_CONSEQUENCE_TYPE = new ClinicalQueryParam(CV_ANNOT_CONSEQUENCE_TYPE_NAME, TEXT_ARRAY,
+            CV_ANNOT_CONSEQUENCE_TYPE_DESCR);
+
+    public static final String CV_ANNOT_TRANSCRIPT_FLAG_NAME = "cvTranscriptFlag";
+    public static final String CV_ANNOT_TRANSCRIPT_FLAG_DESCR = "Variant transcript flag (or list of flags" + OPT_LIST +", e.g."
+            + " canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500";
+    public static final ClinicalQueryParam CV_ANNOT_TRANSCRIPT_FLAG = new ClinicalQueryParam(CV_ANNOT_TRANSCRIPT_FLAG_NAME, TEXT_ARRAY,
+            CV_ANNOT_TRANSCRIPT_FLAG_DESCR);
+
+    public static final String CV_GENE_NAME = "cvGene";
+    public static final String CV_GENE_DESCR = "Variant gene (or list genes" + OPT_LIST + ", most gene IDs are accepted (HGNC,"
+            + " Ensembl gene, ...)";
+    public static final ClinicalQueryParam CV_GENE = new ClinicalQueryParam(CV_GENE_NAME, TEXT_ARRAY, CV_GENE_DESCR);
+
+    public static final String CV_ANNOT_XREF_NAME = "cvXref";
+    public static final String CV_ANNOT_XREF_DESCR = "Variant external reference (or list of references" + OPT_LIST + ", these"
+            + " can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...";
+    public static final ClinicalQueryParam CV_ANNOT_XREF = new ClinicalQueryParam(CV_ANNOT_XREF_NAME, TEXT_ARRAY, CV_ANNOT_XREF_DESCR);
+
+    public static final String CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME = "cvAnnotRoleInCancerGenes";
+    public static final String CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR = "Variant rol in cancer genes (or list of roles"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CV_ANNOT_GENE_ROLE_IN_CANER_GENES = new ClinicalQueryParam(
+            CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, TEXT_ARRAY, CV_ANNOT_GENE_ROLE_IN_CANER_GENES_DESCR);
+
+    public static final String CV_TYPE_NAME = "cvType";
+    public static final String CV_TYPE_DESCR = "Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER,"
+            + " COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL";
+    public static final ClinicalQueryParam CV_TYPE = new ClinicalQueryParam(CV_TYPE_NAME, TEXT_ARRAY, CV_TYPE_DESCR);
+
+    public static final String CV_ANNOT_PROTEIN_SUBSTITUTION_NAME = "cvProteinSubstitution";
+    public static final String CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR = "Variant protein substitution score (or list of scores"
+            + OPT_LIST + ", include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description"
+            + " {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant";
+    public static final ClinicalQueryParam CV_ANNOT_PROTEIN_SUBSTITUTION = new ClinicalQueryParam(CV_ANNOT_PROTEIN_SUBSTITUTION_NAME,
+            TEXT_ARRAY, CV_ANNOT_PROTEIN_SUBSTITUTION_DESCR);
+
+    public static final String CV_ANNOT_CONSERVATION_NAME = "cvConservation";
+    public static final String CV_ANNOT_CONSERVATION_DESCR = "Variant conservation score (or list of scores" + OPT_LIST
+            + " with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1";
+    public static final ClinicalQueryParam CV_ANNOT_CONSERVATION = new ClinicalQueryParam(CV_ANNOT_CONSERVATION_NAME, TEXT_ARRAY,
+            CV_ANNOT_CONSERVATION_DESCR);
+
+    public static final String CV_ANNOT_FUNCTIONAL_SCORE_NAME = "cvFunctionalScore";
+    public static final String CV_ANNOT_FUNCTIONAL_SCORE_DESCR = "Variant functional score (or list of scores" + OPT_LIST
+            + " with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3";
+    public static final ClinicalQueryParam CV_ANNOT_FUNCTIONAL_SCORE = new ClinicalQueryParam(CV_ANNOT_FUNCTIONAL_SCORE_NAME, TEXT_ARRAY,
+            CV_ANNOT_FUNCTIONAL_SCORE_DESCR);
+
+    public static final String CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME = "cvPopulationFrequencyAlt";
+    public static final String CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR = "Variant alternate population frequency (or list"
+            + " of frequencies" + OPT_LIST + ", with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01";
+    public static final ClinicalQueryParam CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY = new ClinicalQueryParam(
+            CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME, TEXT_ARRAY, CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR);
+
+    public static final String CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME = "cvPopulationFrequencyMaf";
+    public static final String CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR = "Variant population minor allele frequency (or"
+            + " list of frequencies" + OPT_LIST + ", with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01";
+    public static final ClinicalQueryParam CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY = new ClinicalQueryParam(
+            CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, TEXT_ARRAY, CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR);
+
+    public static final String CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME = "cvPopulationFrequencyRef";
+    public static final String CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR = "Variant reference population frequency (or"
+            + " list of frequences" + OPT_LIST + ", with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01";
+    public static final ClinicalQueryParam CV_ANNOT_POPULATION_REFERENCE_FREQUENCY = new ClinicalQueryParam(
+            CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, TEXT_ARRAY, CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR);
+
+    public static final String CV_STATS_ALT_NAME = "cvCohortStatsAlt";
+    public static final String CV_STATS_ALT_DESCR = "Variant alternate allele frequency (or list of frequencies" + OPT_LIST
+            + ", with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final ClinicalQueryParam CV_STATS_ALT = new ClinicalQueryParam(CV_STATS_ALT_NAME, TEXT_ARRAY, CV_STATS_ALT_DESCR);
+
+    public static final String CV_STATS_MAF_NAME = "cvCohortStatsMaf";
+    public static final String CV_STATS_MAF_DESCR = "Variant minor allele frequency (or list of frequencies" + OPT_LIST
+            + ", with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final ClinicalQueryParam CV_STATS_MAF = new ClinicalQueryParam(CV_STATS_MAF_NAME, TEXT_ARRAY, CV_STATS_MAF_DESCR);
+
+    public static final String CV_STATS_REF_NAME = "cvCohortStatsRef";
+    public static final String CV_STATS_REF_DESCR = "Variant reference allele frequency (or list of frequencies" + OPT_LIST
+            + ", with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final ClinicalQueryParam CV_STATS_REF = new ClinicalQueryParam(CV_STATS_REF_NAME, TEXT_ARRAY, CV_STATS_REF_DESCR);
+
+    public static final String CV_STATS_PASS_FREQ_NAME = "cvCohortStatsPass";
+    public static final String CV_STATS_PASS_FREQ_DESCR = "Variant filter PASS frequency (or list of frequencies" + OPT_LIST
+            + ", with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8";
+    public static final ClinicalQueryParam CV_STATS_PASS_FREQ = new ClinicalQueryParam(CV_STATS_PASS_FREQ_NAME, TEXT_ARRAY,
+            CV_STATS_PASS_FREQ_DESCR);
+
+    public static final String CV_SCORE_NAME = "cvScore";
+    public static final String CV_SCORE_DESCR = "Variant score (or list of scores" + OPT_LIST + ", with the format:"
+            + " [{study:}]{score}[<|>|<=|>=]{number}";
+    public static final ClinicalQueryParam CV_SCORE = new ClinicalQueryParam(CV_SCORE_NAME, TEXT_ARRAY, CV_SCORE_DESCR);
+
+    public static final String CV_ANNOT_GO_GENES_NAME = "cvAnnotGoGenes";
+    public static final String CV_ANNOT_GO_GENES_DESCR = "Variant gene GO (or list of GOs" + OPT_LIST;
+    public static final ClinicalQueryParam CV_ANNOT_GO_GENES = new ClinicalQueryParam(CV_ANNOT_GO_GENES_NAME, TEXT_ARRAY,
+            CV_ANNOT_GO_GENES_DESCR);
+
+    public static final String CV_ANNOT_EXPRESSION_GENES_NAME = "cvAnnotExpressionGenes";
+    public static final String CV_ANNOT_EXPRESSION_GENES_DESCR = "Variant gene expression (or list of expressions" + OPT_LIST;
+    public static final ClinicalQueryParam CV_ANNOT_EXPRESSION_GENES = new ClinicalQueryParam(CV_ANNOT_EXPRESSION_GENES_NAME, TEXT_ARRAY,
+            CV_ANNOT_EXPRESSION_GENES_DESCR);
+
+    public static final String CV_ANNOT_GENE_TRAIT_ID_NAME = "cvGeneTraitId";
+    public static final String CV_ANNOT_GENE_TRAIT_ID_DESCR = "Variant gene trait association ID (or list of trait IDs" + OPT_LIST
+            + ", e.g. \"umls:C0007222\" , \"OMIM:269600\"";
+    public static final ClinicalQueryParam CV_ANNOT_GENE_TRAIT_ID = new ClinicalQueryParam(CV_ANNOT_GENE_TRAIT_ID_NAME, TEXT_ARRAY,
+            CV_ANNOT_GENE_TRAIT_ID_DESCR);
+
+    public static final String CV_ANNOT_TRAIT_NAME = "cvTrait";
+    public static final String CV_ANNOT_TRAIT_DESCR = "Variant Trait (or list of traits" + OPT_LIST + ", based on ClinVar, HPO, COSMIC, i.e.:"
+            + " IDs, histologies, descriptions,...";
+    public static final ClinicalQueryParam CV_ANNOT_TRAIT = new ClinicalQueryParam(CV_ANNOT_TRAIT_NAME, TEXT_ARRAY, CV_ANNOT_TRAIT_DESCR);
+
+    public static final String CV_ANNOT_PROTEIN_KEYWORD_NAME = "cvProteinKeyword";
+    public static final String CV_ANNOT_PROTEIN_KEYWORD_DESCR = "Uniprot protein variant annotation keyword (or list of keywords"
+            + OPT_LIST;
+    public static final ClinicalQueryParam CV_ANNOT_PROTEIN_KEYWORD = new ClinicalQueryParam(CV_ANNOT_PROTEIN_KEYWORD_NAME, TEXT_ARRAY,
+            CV_ANNOT_PROTEIN_KEYWORD_DESCR);
+
+    public static final String CV_ANNOT_CLINICAL_NAME = "cvClinical";
+    public static final String CV_ANNOT_CLINICAL_DESCR = "Variant clinical source (or list of sources" + OPT_LIST + ". Valid values:"
+            + " clinvar, cosmic";
+    public static final ClinicalQueryParam CV_ANNOT_CLINICAL = new ClinicalQueryParam(CV_ANNOT_CLINICAL_NAME, TEXT_ARRAY,
+            CV_ANNOT_CLINICAL_DESCR);
 
     // ---------- Clinical variant evidence (aka CVE)
 
@@ -281,7 +410,7 @@ public final class ClinicalQueryParam implements QueryParam {
     // <field name="clinicalSignificance" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CVE_CLINICAL_SIGNIFICANCE_NAME = "cveClinicalSignificance";
     public static final String CVE_CLINICAL_SIGNIFICANCE_DESCR = "Clinical variant evidence clinical significance (or list of clinical "
-        + " significances" + OPT_LIST;
+            + " significances" + OPT_LIST;
     public static final ClinicalQueryParam CVE_CLINICAL_SIGNIFICANCE = new ClinicalQueryParam(CVE_CLINICAL_SIGNIFICANCE_NAME, TEXT_ARRAY,
             CVE_CLINICAL_SIGNIFICANCE_DESCR);
 
@@ -315,7 +444,7 @@ public final class ClinicalQueryParam implements QueryParam {
     // <field name="otherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_OTHER_CLASSIFICATION_NAME = "cveOtherClassification";
     public static final String CVE_OTHER_CLASSIFICATION_DESCR = "Clinical variant evidence other-classification (or list of other "
-        + " classification values" + OPT_LIST;
+            + " classification values" + OPT_LIST;
     public static final ClinicalQueryParam CVE_OTHER_CLASSIFICATION = new ClinicalQueryParam(CVE_OTHER_CLASSIFICATION_NAME, TEXT_ARRAY,
             CVE_OTHER_CLASSIFICATION_DESCR);
 

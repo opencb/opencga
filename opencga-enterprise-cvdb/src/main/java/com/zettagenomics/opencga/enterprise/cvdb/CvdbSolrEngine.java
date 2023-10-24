@@ -886,5 +886,14 @@ public class CvdbSolrEngine {
         this.solrManager.setSolrClient(solrClient);
         return this;
     }
+
+    public VariantStorageMetadataManager getVariantStorageMetadataManager() {
+        return variantStorageMetadataManager;
+    }
+
+    public CvdbSolrEngine setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        return this;
+    }
 }
 

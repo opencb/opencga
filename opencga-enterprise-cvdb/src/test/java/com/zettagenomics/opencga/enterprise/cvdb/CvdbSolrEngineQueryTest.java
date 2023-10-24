@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -10,7 +11,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.core.Xref;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -71,6 +73,7 @@ public class CvdbSolrEngineQueryTest {
 
         // CVDB
         cvdbEngine = cvdbSolrExternalResource.configure();
+        cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(projectId)) {
             cvdbEngine.createCollections(projectId);
@@ -111,8 +114,8 @@ public class CvdbSolrEngineQueryTest {
 
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
-        query.put(VARIANT_QUERY_PARAM, variantId);
-        query.put(PANEL_ID_QUERY_PARAM, panelId);
+        query.put(CV_ID_NAME, variantId);
+        query.put(CI_PANEL_ID_NAME, panelId);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 10);
@@ -133,7 +136,7 @@ public class CvdbSolrEngineQueryTest {
 
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
-        query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
+        query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 10);
@@ -154,7 +157,7 @@ public class CvdbSolrEngineQueryTest {
 
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
-        query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
+        query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 1);
@@ -182,7 +185,7 @@ public class CvdbSolrEngineQueryTest {
 
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
-        query.put(VARIANT_QUERY_PARAM, StringUtils.join(variantIds, ","));
+        query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 1);
@@ -697,6 +700,81 @@ public class CvdbSolrEngineQueryTest {
                 assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
                 alreadyChecked.add(ciId);
             }
+        }
+    }
+
+    @Test
+    public void testQueryClinicalAnalysesByCvFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_TYPE_NAME, "INDEL");
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(ca.getInterpretation().getPrimaryFindings().stream().map(v -> v.getType().name()).collect(Collectors.toList()).contains(query.getString(CV_TYPE_NAME)));
+        }
+    }
+
+    @Test
+    public void testQueryClinicalInterpretationsByCvFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_TYPE_NAME, "INDEL");
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertTrue(ci.getPrimaryFindings().stream().map(v -> v.getType().name()).collect(Collectors.toList()).contains(query.getString(CV_TYPE_NAME)));
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantsByCvFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_TYPE_NAME, "INDEL");
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariant cv : result.getResults()) {
+            assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
+        }
+    }
+
+    @Test
+    public void testQueryClinicalVariantEvidencesByCvFilters() throws IOException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        // Check type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_TYPE_NAME, "INDEL");
+        DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            String cvId = (String) cve.getAttributes().get(CV_ID_NAME);
+            assertTrue(StringUtils.isNotEmpty(cvId));
+            ClinicalVariant cv = getClinicalVariant(cvId);
+            assertEquals(query.getString(CV_TYPE_NAME), cv.getType().name());
         }
     }
 
@@ -1407,6 +1485,15 @@ public class CvdbSolrEngineQueryTest {
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), null);
         assertEquals(1, result.getNumResults());
         assertEquals(ciId, result.first().getId());
+        return result.first();
+    }
+
+    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException {
+        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_ID_NAME, cvId);
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), null);
+        assertEquals(1, result.getNumResults());
+        assertEquals(cvId, result.first().getId());
         return result.first();
     }
 
