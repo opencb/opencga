@@ -1,17 +1,17 @@
-package org.opencb.opencga.app.cli.conf;
+package org.opencb.opencga.app.cli.config;
 
 import java.util.Arrays;
 
-public class Category {
+public class CliCategory {
 
     private String name;
     private String description;
     private String[] options;
 
-    public Category() {
+    public CliCategory() {
     }
 
-    public Category(String name, String description, String[] options) {
+    public CliCategory(String name, String description, String[] options) {
         this.name = name;
         this.description = description;
         this.options = options;
@@ -31,7 +31,7 @@ public class Category {
         return name;
     }
 
-    public Category setName(String name) {
+    public CliCategory setName(String name) {
         this.name = name;
         return this;
     }
@@ -40,7 +40,7 @@ public class Category {
         return description;
     }
 
-    public Category setDescription(String description) {
+    public CliCategory setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -49,7 +49,7 @@ public class Category {
         return options;
     }
 
-    public Category setOptions(String[] options) {
+    public CliCategory setOptions(String[] options) {
         this.options = options;
         return this;
     }

@@ -7,9 +7,9 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.conf.Category;
-import org.opencb.opencga.app.cli.conf.Configuration;
-import org.opencb.opencga.app.cli.conf.Usage;
+import org.opencb.opencga.app.cli.config.CliCategory;
+import org.opencb.opencga.app.cli.config.CliConfiguration;
+import org.opencb.opencga.app.cli.config.CliUsage;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,16 +103,19 @@ public class CustomCliOptionsParser extends CliOptionsParser {
         return "opencga.sh ";
     }
 
+    /**
+     * Read cli-usage.yml file to print the usage.
+     */
     @Override
     protected void printMainUsage() {
-        Usage usage = Configuration.getUsage();
-        Category[] categories = usage.getCategories();
-        for (Category category : categories) {
-            String[] options = category.getOptions();
-            PrintUtils.println(PrintUtils.format(category.getDescription(), PrintUtils.Color.GREEN));
-            for (int i = 0; i < options.length; i++) {
+        CliUsage cliUsage = CliConfiguration.getUsage();
+        CliCategory[] categories = cliUsage.getCategories();
+        for (CliCategory cliCategory : categories) {
+            String[] options = cliCategory.getOptions();
+            PrintUtils.println(PrintUtils.format(cliCategory.getDescription(), PrintUtils.Color.GREEN));
+            for (String option : options) {
                 for (String command : jCommander.getCommands().keySet()) {
-                    if (command.equals(options[i])) {
+                    if (command.equals(option)) {
                         PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
                     }
                 }

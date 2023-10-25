@@ -1,15 +1,15 @@
-package org.opencb.opencga.app.cli.conf;
+package org.opencb.opencga.app.cli.config;
 
 import java.util.Arrays;
 
-public class Usage {
+public class CliUsage {
 
-    Category[] categories;
+    CliCategory[] categories;
 
-    public Usage() {
+    public CliUsage() {
     }
 
-    public Usage(Category[] categories) {
+    public CliUsage(CliCategory[] categories) {
         this.categories = categories;
     }
 
@@ -21,11 +21,11 @@ public class Usage {
         return sb.toString();
     }
 
-    public Category[] getCategories() {
+    public CliCategory[] getCategories() {
         return categories;
     }
 
-    public Usage setCategories(Category[] categories) {
+    public CliUsage setCategories(CliCategory[] categories) {
         this.categories = categories;
         return this;
     }
