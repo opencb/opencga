@@ -204,6 +204,8 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
         queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
         queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
         queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
@@ -281,6 +283,8 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
         queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
         queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
         queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
@@ -358,6 +362,8 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
         queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
         queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
         queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
@@ -435,6 +441,8 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
         queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
         queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
         queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
         queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
         queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);

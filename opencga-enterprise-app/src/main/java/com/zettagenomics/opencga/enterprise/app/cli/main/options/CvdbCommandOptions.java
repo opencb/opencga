@@ -283,6 +283,12 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
         public String cvePanelId; 
     
+        @Parameter(names = {"--cve-moi"}, description = "Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN", required = false, arity = 1)
+        public String cveMoi; 
+    
+        @Parameter(names = {"--cve-penetrance"}, description = "Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN", required = false, arity = 1)
+        public String cvePenetrance; 
+    
         @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
         public String cveAcmg; 
     
@@ -488,6 +494,12 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
         public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-moi"}, description = "Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN", required = false, arity = 1)
+        public String cveMoi; 
+    
+        @Parameter(names = {"--cve-penetrance"}, description = "Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN", required = false, arity = 1)
+        public String cvePenetrance; 
     
         @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
         public String cveAcmg; 
@@ -695,6 +707,12 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
         public String cvePanelId; 
     
+        @Parameter(names = {"--cve-moi"}, description = "Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN", required = false, arity = 1)
+        public String cveMoi; 
+    
+        @Parameter(names = {"--cve-penetrance"}, description = "Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN", required = false, arity = 1)
+        public String cvePenetrance; 
+    
         @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
         public String cveAcmg; 
     
@@ -900,6 +918,12 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cve-panel-id"}, description = "Clinical variant evidence panel ID (or IDs separated by commas)", required = false, arity = 1)
         public String cvePanelId; 
+    
+        @Parameter(names = {"--cve-moi"}, description = "Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN", required = false, arity = 1)
+        public String cveMoi; 
+    
+        @Parameter(names = {"--cve-penetrance"}, description = "Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN", required = false, arity = 1)
+        public String cvePenetrance; 
     
         @Parameter(names = {"--cve-acmg"}, description = "Clinical variant evidence ACMG (or ACGMs separated by commas)", required = false, arity = 1)
         public String cveAcmg; 
