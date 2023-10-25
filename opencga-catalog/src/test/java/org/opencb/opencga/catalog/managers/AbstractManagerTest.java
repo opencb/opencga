@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
@@ -64,7 +65,6 @@ public class AbstractManagerTest extends GenericTest {
     protected String token;
     protected String sessionIdUser2;
     protected String sessionIdUser3;
-    protected File testFolder;
     protected String project1;
     protected String project2;
     protected long studyUid;
@@ -84,6 +84,8 @@ public class AbstractManagerTest extends GenericTest {
     protected String testFile1;
     protected String testFile2;
 
+    private static boolean firstExecutionFinished = false;
+
     protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
@@ -97,6 +99,48 @@ public class AbstractManagerTest extends GenericTest {
         opencgaToken = catalogManagerResource.adminToken;
         token = catalogManagerResource.ownerToken;
 
+        if (!firstExecutionFinished) {
+            createDummyData(catalogManager);
+            catalogManagerResource.dump();
+            firstExecutionFinished = true;
+        } else {
+            catalogManagerResource.restoreDump();
+            initVariables();
+        }
+    }
+
+    private void initVariables() throws CatalogException {
+        sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
+
+        project1 = "1000G";
+        project2 = "pmp";
+
+        Study study = catalogManager.getStudyManager().get("phase1", StudyManager.INCLUDE_STUDY_IDS, token).first();
+        studyUid = study.getUid();
+        studyFqn = study.getFqn();
+
+        study = catalogManager.getStudyManager().get("phase3", StudyManager.INCLUDE_STUDY_IDS, token).first();
+        studyUid2 = study.getUid();
+        studyFqn2 = study.getFqn();
+
+        studyFqn3 = FqnUtils.buildFqn(organizationId, project2, "s1");
+
+        testFile1 = "data/test/folder/test_1K.txt.gz";
+        testFile2 = "data/test/folder/test_0.5K.txt";
+
+        s_1 = "s_1";
+        s_2 = "s_2";
+        s_3 = "s_3";
+        s_4 = "s_4";
+        s_5 = "s_5";
+        s_6 = "s_6";
+        s_7 = "s_7";
+        s_8 = "s_8";
+        s_9 = "s_9";
+    }
+
+    private void createDummyData(CatalogManager catalogManager) throws CatalogException {
         catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
         catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
@@ -126,7 +170,7 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
                 null, QueryOptions.empty(), token);
 
-        testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
+        File testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
                 true, null, INCLUDE_RESULT, token).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");

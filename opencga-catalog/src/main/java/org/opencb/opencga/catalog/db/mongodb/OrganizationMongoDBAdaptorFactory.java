@@ -256,8 +256,7 @@ public class OrganizationMongoDBAdaptorFactory {
     }
 
     public boolean isCatalogDBReady() {
-        return organizationCollection.getIndex().getNumMatches() > 0;
-//        return organizationCollection.count(new Document()).getNumMatches() == 1;
+        return organizationCollection.count(new Document()).getNumMatches() == 1;
     }
 
 //    public void createAllCollections(Configuration configuration) throws CatalogException {

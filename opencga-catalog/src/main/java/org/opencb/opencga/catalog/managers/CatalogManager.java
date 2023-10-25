@@ -197,33 +197,28 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB(String algorithm, String secretKey, String password, String email, boolean force) throws CatalogException {
-        installCatalogDB(algorithm, secretKey, password, email, force, false);
-    }
-
-    public void installCatalogDB(String algorithm, String secretKey, String password, String email, boolean force, boolean test)
-            throws CatalogException {
-//        if (existsCatalogDB()) {
-//            if (force) {
-//                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
-//                // results calling first to "catalog delete" and then "catalog install"
-//                deleteCatalogDB(password);
-//                init();
-//            } else {
-//                // Check admin password ...
-//                try {
-//                    userManager.loginAsAdmin(password);
-//                    logger.warn("A database called {} already exists", getCatalogDatabase());
-//                    return;
-//                } catch (CatalogException e) {
-//                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
-//                            + " password already exists. If you are aware of that installation, please delete it first.");
-//                }
-//            }
-//        }
+        if (existsCatalogDB()) {
+            if (force) {
+                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
+                // results calling first to "catalog delete" and then "catalog install"
+                deleteCatalogDB(password);
+                init();
+            } else {
+                // Check admin password ...
+                try {
+                    userManager.loginAsAdmin(password);
+                    logger.warn("A database called {} already exists", getCatalogDatabase());
+                    return;
+                } catch (CatalogException e) {
+                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
+                            + " password already exists. If you are aware of that installation, please delete it first.");
+                }
+            }
+        }
 
         try {
             logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-            privateInstall(algorithm, secretKey, password, email, test);
+            privateInstall(algorithm, secretKey, password, email);
             String token = userManager.loginAsAdmin(password).getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
@@ -236,7 +231,7 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
-    private void privateInstall(String algorithm, String secretKey, String password, String email, boolean test) throws CatalogException {
+    private void privateInstall(String algorithm, String secretKey, String password, String email) throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -247,24 +242,19 @@ public class CatalogManager implements AutoCloseable {
         ParamUtils.checkParameter(password, "password");
         JwtUtils.validateJWTKey(algorithm, secretKey);
 
-//        if (!test || !catalogDBAdaptorFactory.isCatalogDBReady()) {
-//            catalogDBAdaptorFactory.createAllCollections(configuration);
-//        }
         catalogIOManager.createDefaultOpenCGAFolders();
 
-        if (!test || !catalogDBAdaptorFactory.isCatalogDBReady()) {
-            OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
-                    Collections.singletonList(new AuthenticationOrigin()
-                            .setId("internal")
-                            .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                            .setAlgorithm(algorithm)
-                            .setExpiration(3600L)
-                            .setSecretKey(secretKey)),
-                    new Optimizations());
-            organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null,
-                            organizationConfiguration, null),
-                    QueryOptions.empty(), null);
-        }
+        OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
+                Collections.singletonList(new AuthenticationOrigin()
+                        .setId("internal")
+                        .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                        .setAlgorithm(algorithm)
+                        .setExpiration(3600L)
+                        .setSecretKey(secretKey)),
+                new Optimizations());
+        organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null,
+                        organizationConfiguration, null),
+                QueryOptions.empty(), null);
 
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
