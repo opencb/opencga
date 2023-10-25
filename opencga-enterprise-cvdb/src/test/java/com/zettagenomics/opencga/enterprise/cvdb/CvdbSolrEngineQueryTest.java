@@ -983,6 +983,53 @@ public class CvdbSolrEngineQueryTest {
                 alreadyChecked.add(ca.getId());
             }
         }
+
+        // Check moi
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "X_LINKED_DOMINANT");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            boolean found = false;
+            Interpretation ci = ca.getInterpretation();
+            for (ClinicalVariant cv : ci.getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (cve.getModeOfInheritances().stream().map(m -> m.name()).collect(Collectors.toList())
+                            .contains(query.getString(CVE_MOI_NAME))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check penetrance
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "COMPLETE");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalAnalysis ca : result.getResults()) {
+            boolean found = false;
+            Interpretation ci = ca.getInterpretation();
+            for (ClinicalVariant cv : ci.getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (query.getString(CVE_PENETRANCE_NAME).equals(cve.getPenetrance().name())) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
     }
 
     @Test
@@ -1191,6 +1238,51 @@ public class CvdbSolrEngineQueryTest {
                 alreadyChecked.add(ci.getId());
             }
         }
+
+        // Check moi
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "X_LINKED_DOMINANT");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ci.getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (cve.getModeOfInheritances().stream().map(m -> m.name()).collect(Collectors.toList())
+                            .contains(query.getString(CVE_MOI_NAME))) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check penetrance
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "COMPLETE");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            boolean found = false;
+            for (ClinicalVariant cv : ci.getPrimaryFindings()) {
+                for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                    if (query.getString(CVE_PENETRANCE_NAME).equals(cve.getPenetrance().name())) {
+                        found = true;
+                    }
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
     }
 
     @Test
@@ -1351,6 +1443,47 @@ public class CvdbSolrEngineQueryTest {
             }
             assertTrue(found);
         }
+
+        // Check moi
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "X_LINKED_RECESSIVE");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariant cv : result.getResults()) {
+            boolean found = false;
+            for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                if (cve.getModeOfInheritances().stream().map(m -> m.name()).collect(Collectors.toList())
+                        .contains(query.getString(CVE_MOI_NAME))) {
+                    found = true;
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check penetrance
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "COMPLETE");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariant cv : result.getResults()) {
+            boolean found = false;
+            for (ClinicalVariantEvidence cve : cv.getEvidences()) {
+                if (query.getString(CVE_PENETRANCE_NAME).equals(cve.getPenetrance().name())) {
+                    found = true;
+                }
+            }
+            assertTrue(found);
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
     }
 
     @Test
@@ -1463,6 +1596,40 @@ public class CvdbSolrEngineQueryTest {
             assertEquals(query.getString(CVE_GENE_NAME_NAME), cve.getGenomicFeature().getGeneName());
             assertTrue(cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.toList()).contains(query.getString(CVE_CONSEQUENCE_TYPE_ID_NAME)));
             assertFalse(cve.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.toList()).contains("splice_region_variant"));
+        }
+
+        // Check moi
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "AUTOSOMAL_RECESSIVE");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            assertTrue(cve.getModeOfInheritances().stream().map(m -> m.name()).collect(Collectors.toList()).contains(query.getString(CVE_MOI_NAME)));
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_MOI_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check penetrance
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "COMPLETE");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            assertEquals(query.getString(CVE_PENETRANCE_NAME), cve.getPenetrance().name());
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_PENETRANCE_NAME, "TOTOTOTO");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            System.out.println(StringUtils.join(cve.getModeOfInheritances().stream().map(m -> m.name()).collect(Collectors.toList()), ", "));
         }
     }
 

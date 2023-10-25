@@ -67,6 +67,12 @@ public class ClinicalVariantEvidenceSearch {
     @Field("panelId")
     private String panelId;
 
+    @Field("mois")
+    private List<String> mois;
+
+    @Field("penetrance")
+    private String penetrance;
+
     @Field("acmgs")
     private List<String> acmgs;
 
@@ -109,6 +115,7 @@ public class ClinicalVariantEvidenceSearch {
         phenotypeNames = new ArrayList<>();
         consequenceTypeIds = new ArrayList<>();
         xrefIds = new ArrayList<>();
+        mois = new ArrayList<>();
         acmgs = new ArrayList<>();
         otherClassifications = new ArrayList<>();
         rolesInCancer = new ArrayList<>();
@@ -130,6 +137,8 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
         sb.append(", xrefIds=").append(xrefIds);
         sb.append(", panelId='").append(panelId).append('\'');
+        sb.append(", mois='").append(mois).append('\'');
+        sb.append(", penetrance='").append(penetrance).append('\'');
         sb.append(", acmgs=").append(acmgs);
         sb.append(", tier='").append(tier).append('\'');
         sb.append(", clinicalSignificance='").append(clinicalSignificance).append('\'');
@@ -250,6 +259,24 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setPanelId(String panelId) {
         this.panelId = panelId;
+        return this;
+    }
+
+    public List<String> getMois() {
+        return mois;
+    }
+
+    public ClinicalVariantEvidenceSearch setMois(List<String> mois) {
+        this.mois = mois;
+        return this;
+    }
+
+    public String getPenetrance() {
+        return penetrance;
+    }
+
+    public ClinicalVariantEvidenceSearch setPenetrance(String penetrance) {
+        this.penetrance = penetrance;
         return this;
     }
 

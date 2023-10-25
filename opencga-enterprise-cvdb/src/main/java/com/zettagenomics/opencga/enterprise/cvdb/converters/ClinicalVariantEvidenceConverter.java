@@ -76,6 +76,14 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
             // Panel ID
             cves.setPanelId(cve.getPanelId());
 
+            // Mode of inheritance (moi)
+            if (CollectionUtils.isNotEmpty(cve.getModeOfInheritances())) {
+                cves.setMois(cve.getModeOfInheritances().stream().map(moi -> moi.name()).collect(Collectors.toList()));
+            }
+
+            // Penetrance
+            cves.setPenetrance(cve.getPenetrance().name());
+
             if (cve.getClassification() != null) {
                 VariantClassification classification = cve.getClassification();
                 cves.setTier(classification.getTier());

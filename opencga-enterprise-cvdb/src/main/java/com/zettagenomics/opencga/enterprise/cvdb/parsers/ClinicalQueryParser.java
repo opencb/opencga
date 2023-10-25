@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 public class ClinicalQueryParser {
 
@@ -210,6 +211,12 @@ public class ClinicalQueryParser {
 
         // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("panelId", query.getString(ClinicalQueryParam.CVE_PANEL_ID_NAME), filters);
+
+        // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("mois", query.getString(ClinicalQueryParam.CVE_MOI_NAME), filters);
+
+        // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("penetrance", query.getString(ClinicalQueryParam.CVE_PENETRANCE_NAME), filters);
 
         // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("acmgs", query.getString(ClinicalQueryParam.CVE_ACGM_NAME), filters);

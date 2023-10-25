@@ -218,6 +218,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
 
+            // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_MOI_NAME, value = CVE_MOI_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PENETRANCE_NAME, value = CVE_PENETRANCE_DESCR, dataType = "string", paramType = "query"),
+
             // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
             @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
 
@@ -373,6 +379,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
 
+            // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_MOI_NAME, value = CVE_MOI_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PENETRANCE_NAME, value = CVE_PENETRANCE_DESCR, dataType = "string", paramType = "query"),
+
             // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
             @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
 
@@ -527,6 +539,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
 
+            // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_MOI_NAME, value = CVE_MOI_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PENETRANCE_NAME, value = CVE_PENETRANCE_DESCR, dataType = "string", paramType = "query"),
+
             // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
             @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),
 
@@ -680,6 +698,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
 
             // <field name="panelId" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CVE_PANEL_ID_NAME, value = CVE_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+            @ApiImplicitParam(name = CVE_MOI_NAME, value = CVE_MOI_DESCR, dataType = "string", paramType = "query"),
+
+            // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CVE_PENETRANCE_NAME, value = CVE_PENETRANCE_DESCR, dataType = "string", paramType = "query"),
 
             // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
             @ApiImplicitParam(name = CVE_ACGM_NAME, value = CVE_ACGM_DESCR, dataType = "string", paramType = "query"),

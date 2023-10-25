@@ -42,11 +42,6 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         List<String> filters;
         String join;
 
-        // /select?fq=
-        // {!join from=join_field_of_A to=join_field_of_B fromIndex=collection_B}join_field_of_B:value1
-        // AND
-        // {!join from=join_field_of_A to=join_field_of_C fromIndex=collection_C}join_field_of_C:value2
-
         // Clinical analysis filters
         filters = clinicalAnalysisFilters(query);
         addStringFilters(filters, solrQuery);

@@ -397,6 +397,19 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final String CVE_PANEL_ID_DESCR = "Clinical variant evidence panel ID (or IDs" + OPT_LIST;
     public static final ClinicalQueryParam CVE_PANEL_ID = new ClinicalQueryParam(CVE_PANEL_ID_NAME, TEXT_ARRAY, CVE_PANEL_ID_DESCR);
 
+    // <field name="mois" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CVE_MOI_NAME = "cveMoi";
+    public static final String CVE_MOI_DESCR = "Clinical variant evidence mode of inheritance (or list of modes of inheritance" + OPT_LIST
+            + ", valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL,"
+            + " DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN";
+    public static final ClinicalQueryParam CVE_MOI = new ClinicalQueryParam(CVE_MOI_NAME, TEXT_ARRAY, CVE_MOI_DESCR);
+
+    // <field name="penetrance" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_PENETRANCE_NAME = "cvePenetrance";
+    public static final String CVE_PENETRANCE_DESCR = "Clinical variant evidence penetrance (or list of penetrance values" + OPT_LIST
+            + ", valid values: COMPLETE, INCOMPLETE, UNKNOWN";
+    public static final ClinicalQueryParam CVE_PENETRANCE = new ClinicalQueryParam(CVE_PENETRANCE_NAME, TEXT_ARRAY, CVE_PENETRANCE_DESCR);
+
     // <field name="acmgs" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CVE_ACGM_NAME = "cveAcmg";
     public static final String CVE_ACGM_DESCR = "Clinical variant evidence ACMG (or ACGMs" + OPT_LIST;
