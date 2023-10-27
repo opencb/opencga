@@ -61,6 +61,7 @@ import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
  */
 public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "operationsVariantStorage";
     public OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
 
     public OperationsVariantStorageCommandExecutor(OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions) throws CatalogAuthenticationException {
@@ -187,7 +188,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             cellBaseConfiguration = new CellBaseConfiguration();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(cellBaseConfiguration));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/cellbase/configure"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             cellBaseConfiguration = JacksonUtils.getDefaultObjectMapper()
@@ -227,7 +228,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAggregateParams = new VariantAggregateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantAggregateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/aggregate"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantAggregateParams = JacksonUtils.getDefaultObjectMapper()
@@ -282,7 +283,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAnnotationIndexParams = new VariantAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantAnnotationIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/annotation/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -324,7 +325,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAnnotationSaveParams = new VariantAnnotationSaveParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantAnnotationSaveParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/annotation/save"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantAnnotationSaveParams = JacksonUtils.getDefaultObjectMapper()
@@ -358,7 +359,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantConfigureParams = new VariantConfigureParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantConfigureParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/configure"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantConfigureParams = JacksonUtils.getDefaultObjectMapper()
@@ -395,7 +396,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantFileDeleteParams = new VariantFileDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantFileDeleteParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/delete"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantFileDeleteParams = JacksonUtils.getDefaultObjectMapper()
@@ -433,7 +434,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAggregateFamilyParams = new VariantAggregateFamilyParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantAggregateFamilyParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/family/aggregate"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantAggregateFamilyParams = JacksonUtils.getDefaultObjectMapper()
@@ -472,7 +473,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantFamilyIndexParams = new VariantFamilyIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantFamilyIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/family/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantFamilyIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -512,7 +513,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantIndexParams = new VariantIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -577,7 +578,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantFileIndexJobLauncherParams = new VariantFileIndexJobLauncherParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantFileIndexJobLauncherParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/index/launcher"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantFileIndexJobLauncherParams = JacksonUtils.getDefaultObjectMapper()
@@ -644,7 +645,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             julieParams = new JulieParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(julieParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/julie/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             julieParams = JacksonUtils.getDefaultObjectMapper()
@@ -679,7 +680,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantStorageMetadataRepairToolParams = new VariantStorageMetadataRepairToolParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantStorageMetadataRepairToolParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/metadata/repair"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantStorageMetadataRepairToolParams = JacksonUtils.getDefaultObjectMapper()
@@ -717,7 +718,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantStorageMetadataSynchronizeParams = new VariantStorageMetadataSynchronizeParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantStorageMetadataSynchronizeParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/metadata/synchronize"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantStorageMetadataSynchronizeParams = JacksonUtils.getDefaultObjectMapper()
@@ -751,7 +752,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantPruneParams = new VariantPruneParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantPruneParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/prune"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantPruneParams = JacksonUtils.getDefaultObjectMapper()
@@ -790,7 +791,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSampleDeleteParams = new VariantSampleDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSampleDeleteParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/sample/delete"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSampleDeleteParams = JacksonUtils.getDefaultObjectMapper()
@@ -829,7 +830,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondarySampleIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/sample/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -867,7 +868,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             sampleIndexConfiguration = new SampleIndexConfiguration();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleIndexConfiguration));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/sample/index/configure"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
@@ -918,7 +919,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantScoreIndexParams = new VariantScoreIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantScoreIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/score/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantScoreIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -961,7 +962,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondaryAnnotationIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/secondary/annotation/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -1000,7 +1001,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondarySampleIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/secondary/sample/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSecondarySampleIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -1038,7 +1039,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             sampleIndexConfiguration = new SampleIndexConfiguration();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleIndexConfiguration));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/secondary/sample/index/configure"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleIndexConfiguration = JacksonUtils.getDefaultObjectMapper()
@@ -1069,7 +1070,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondaryAnnotationIndexParams = new VariantSecondaryAnnotationIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantSecondaryAnnotationIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/secondaryIndex"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -1127,7 +1128,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantStatsDeleteParams = new VariantStatsDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantStatsDeleteParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/stats/delete"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantStatsDeleteParams = JacksonUtils.getDefaultObjectMapper()
@@ -1165,7 +1166,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantStatsIndexParams = new VariantStatsIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantStatsIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/stats/index"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantStatsIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -1207,7 +1208,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantStudyDeleteParams = new VariantStudyDeleteParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variantStudyDeleteParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/study/delete"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variantStudyDeleteParams = JacksonUtils.getDefaultObjectMapper()

@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
  */
 public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "diseasePanels";
     public DiseasePanelsCommandOptions diseasePanelsCommandOptions;
 
     public DiseasePanelsCommandExecutor(DiseasePanelsCommandOptions diseasePanelsCommandOptions) throws CatalogAuthenticationException {
@@ -114,7 +115,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelAclUpdateParams = new PanelAclUpdateParams();
             RestResponse<PanelAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -151,7 +152,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelCreateParams = new PanelCreateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(panelCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             panelCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -230,7 +231,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelImportParams = new PanelImportParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(panelImportParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/import"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             panelImportParams = JacksonUtils.getDefaultObjectMapper()
@@ -352,7 +353,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             panelUpdateParams = new PanelUpdateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(panelUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/{panels}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             panelUpdateParams = JacksonUtils.getDefaultObjectMapper()

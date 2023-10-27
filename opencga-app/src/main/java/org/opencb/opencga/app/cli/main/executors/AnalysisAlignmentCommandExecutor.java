@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.job.Job;
  */
 public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "analysisAlignment";
     public AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
 
     public AnalysisAlignmentCommandExecutor(AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions) throws CatalogAuthenticationException {
@@ -134,7 +135,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             bwaWrapperParams = new BwaWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(bwaWrapperParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/bwa/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             bwaWrapperParams = JacksonUtils.getDefaultObjectMapper()
@@ -176,7 +177,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             coverageIndexParams = new CoverageIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(coverageIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/coverage/index/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             coverageIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -215,7 +216,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(alignmentGeneCoverageStatsParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             alignmentGeneCoverageStatsParams = JacksonUtils.getDefaultObjectMapper()
@@ -311,7 +312,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             deeptoolsWrapperParams = new DeeptoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(deeptoolsWrapperParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/deeptools/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             deeptoolsWrapperParams = JacksonUtils.getDefaultObjectMapper()
@@ -350,7 +351,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             fastqcWrapperParams = new FastqcWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fastqcWrapperParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/fastqc/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fastqcWrapperParams = JacksonUtils.getDefaultObjectMapper()
@@ -389,7 +390,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             alignmentIndexParams = new AlignmentIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(alignmentIndexParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/index/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             alignmentIndexParams = JacksonUtils.getDefaultObjectMapper()
@@ -427,7 +428,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             picardWrapperParams = new PicardWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(picardWrapperParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/picard/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             picardWrapperParams = JacksonUtils.getDefaultObjectMapper()
@@ -466,7 +467,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             alignmentQcParams = new AlignmentQcParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(alignmentQcParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/qc/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             alignmentQcParams = JacksonUtils.getDefaultObjectMapper()
@@ -538,7 +539,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             samtoolsWrapperParams = new SamtoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(samtoolsWrapperParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/samtools/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             samtoolsWrapperParams = JacksonUtils.getDefaultObjectMapper()

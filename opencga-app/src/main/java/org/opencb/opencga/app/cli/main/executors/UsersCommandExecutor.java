@@ -61,6 +61,7 @@ import org.opencb.opencga.core.models.user.UserUpdateParams;
  */
 public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "users";
     public UsersCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
@@ -136,7 +137,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(passwordChangeParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/password"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
@@ -192,7 +193,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(configUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/configs/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             configUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -257,7 +258,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userUpdateParams = JacksonUtils.getDefaultObjectMapper()

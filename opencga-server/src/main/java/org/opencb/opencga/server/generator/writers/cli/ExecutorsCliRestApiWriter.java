@@ -170,6 +170,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append("public class " + getAsClassName(restCategory.getName()) + "CommandExecutor extends "
                 + getExtendedClass() + " {\n\n");
+        sb.append("    public String categoryName = \"" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "\";\n");
         sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions "
                 + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions;\n\n");
         sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandExecutor(" + getAsClassName(restCategory.getName())
@@ -373,7 +374,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n            " + variableName + " = new " + bodyClassName + "();");
             sb.append("\n            RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> res = new RestResponse<>();");
             sb.append("\n            res.setType(QueryType.VOID);");
-            sb.append("\n            PrintUtils.println(getObjectAsJSON(" + variableName + "));");
+            sb.append("\n            PrintUtils.println(getObjectAsJSON(categoryName,\""+restEndpoint.getPath()+"\"));");
             sb.append("\n            return res;");
             sb.append("\n        } else if (commandOptions.jsonFile != null) {");
             sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
