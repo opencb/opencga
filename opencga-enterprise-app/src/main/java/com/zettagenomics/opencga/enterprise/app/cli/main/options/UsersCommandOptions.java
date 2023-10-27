@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
+
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 
@@ -28,7 +30,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/users
  */
 @Parameters(commandNames = {"users"}, commandDescription = "Users commands")
-public class UsersCommandOptions extends org.opencb.opencga.app.cli.main.options.UsersCommandOptions {
+public class UsersCommandOptions extends CustomUsersCommandOptions {
 
 
         public LoginCommandOptions loginCommandOptions;
