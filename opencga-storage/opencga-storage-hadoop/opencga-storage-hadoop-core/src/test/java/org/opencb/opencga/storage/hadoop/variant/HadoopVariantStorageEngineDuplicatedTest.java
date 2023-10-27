@@ -15,6 +15,6 @@ public class HadoopVariantStorageEngineDuplicatedTest extends VariantStorageEngi
     public void testDuplicatedVariant() throws Exception {
         super.testDuplicatedVariant();
 
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
     }
 }

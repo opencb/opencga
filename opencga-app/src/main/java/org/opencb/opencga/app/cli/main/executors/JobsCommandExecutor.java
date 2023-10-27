@@ -1,41 +1,22 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
-
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomJobsCommandOptions;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
@@ -46,6 +27,8 @@ import org.opencb.opencga.core.models.job.JobRetryParams;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
@@ -122,6 +105,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "log-tail":
                 queryResponse = tailLog();
+                break;
+            case "log":
+                CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(
+                        new ObjectMap(jobsCommandOptions.commonCommandOptions.params), token,
+                        clientConfiguration, getSessionManager(), appHome, getLogger());
+                queryResponse = customJobsCommandExecutor.log(jobsCommandOptions.logCommandOptions);
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -364,7 +353,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
         CustomJobsCommandExecutor customJobsCommandExecutor = new CustomJobsCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
-        return customJobsCommandExecutor.top();
+        return customJobsCommandExecutor.top(commandOptions);
     }
 
     private RestResponse<JobAclEntryList> acl() throws Exception {

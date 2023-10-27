@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
+public abstract class StudyResourceMetadata<T extends StudyResourceMetadata<?>> {
 
     private int studyId;
     private int id;

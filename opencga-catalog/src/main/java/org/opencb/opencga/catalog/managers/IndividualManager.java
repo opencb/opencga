@@ -710,10 +710,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Check if the individual can be deleted
         if (!params.getBoolean(Constants.FORCE, false)) {
             if (familyDataResult.getNumResults() > 0) {
-                throw new CatalogException("Individual found in the families: " + familyDataResult.getResults()
-                        .stream()
-                        .map(Family::getId)
-                        .collect(Collectors.joining(", ")));
+                throw new CatalogException("Could not delete individual '" + individual.getId() + "'. Individual found in the families: "
+                        + familyDataResult.getResults().stream().map(Family::getId).collect(Collectors.joining(", ")));
             }
         } else {
             logger.info("Forcing deletion of individuals belonging to families");
