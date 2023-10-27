@@ -550,7 +550,7 @@ public class UserManager extends AbstractManager {
 
             if (userIdList.size() == 1 && userId.equals(userIdList.get(0))) {
                 userDataResult = getUserDBAdaptor(organizationId).get(userId, options);
-                auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, userId, "", "", "", auditParams,
+                auditManager.auditInfo(organizationId, operationUuid, userId, Enums.Resource.USER, userId, "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return userDataResult;
             }
@@ -623,7 +623,7 @@ public class UserManager extends AbstractManager {
             for (String tmpUserId : userIdList) {
                 if (userMap.containsKey(tmpUserId)) {
                     finalUserList.add(userMap.get(tmpUserId));
-                    auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                    auditManager.auditInfo(organizationId, operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 } else {
                     finalUserList.add(new User().setId(tmpUserId));
@@ -631,7 +631,7 @@ public class UserManager extends AbstractManager {
                     String msg = "'" + userId + "' is not administrating a study of user '" + tmpUserId + "' or user does not exist.";
                     eventList.add(new Event(Event.Type.ERROR, msg));
 
-                    auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                    auditManager.auditInfo(organizationId, operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, tmpUserId, msg)));
                 }
             }
@@ -642,7 +642,7 @@ public class UserManager extends AbstractManager {
             return result;
         } catch (CatalogException e) {
             for (String tmpUserId : userIdList) {
-                auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                auditManager.auditInfo(organizationId, operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
@@ -727,7 +727,7 @@ public class UserManager extends AbstractManager {
                 try {
                     OpenCGAResult result = getUserDBAdaptor(organizationId).delete(userId, options);
 
-                    auditManager.auditDelete(operationUuid, tokenUser, Enums.Resource.USER, userId, "", "", "", auditParams,
+                    auditManager.auditDelete(organizationId, operationUuid, tokenUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
                     Query query = new Query()
@@ -738,7 +738,7 @@ public class UserManager extends AbstractManager {
 
                     deletedUsers.append(deletedUser);
                 } catch (CatalogException e) {
-                    auditManager.auditDelete(operationUuid, tokenUser, Enums.Resource.USER, userId, "", "", "", auditParams,
+                    auditManager.auditDelete(organizationId, operationUuid, tokenUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
                 }
             }

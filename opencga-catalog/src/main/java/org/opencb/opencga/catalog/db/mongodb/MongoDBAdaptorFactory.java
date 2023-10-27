@@ -204,30 +204,31 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return getOrganizationMongoDBAdaptorFactory(organization, true);
     }
 
-    private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization, boolean raiseException)
+    private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organizationId, boolean raiseException)
             throws CatalogDBException {
-        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organization.toLowerCase());
+        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organizationId.toLowerCase());
         if (orgFactory == null) {
-            if (!organization.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
+            if (!organizationId.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
                 orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
-                QueryOptions options = new QueryOptions();
-//                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIG.key());
-                OpenCGAResult<Organization> result = orgFactory.getCatalogOrganizationDBAdaptor().get(options);
-                if (result.getNumResults() == 1) {
-                    // TODO: look for the organization. Will assume it is not present meanwhile
-                    boolean present = false;
-                    if (present) {
-                        // Create new OrganizationMongoDBAdaptorFactory for the organization
+
+                // Read organizations present in the installation
+                Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), ORGANIZATION_TAGS.ACTIVE.name());
+                OpenCGAResult<Settings> results = orgFactory.getCatalogSettingsDBAdaptor().get(query, new QueryOptions());
+
+                for (Settings organizationSettings : results.getResults()) {
+                    OrganizationSummary organizationSummary = getOrganizationSummary(organizationSettings);
+                    if (organizationId.equals(organizationSummary.getId())) {
+                        // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
-                                new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organization, configuration);
-                        organizationDBAdaptorMap.put(organization.toLowerCase(), organizationMongoDBAdaptorFactory);
+                                new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
+                        organizationDBAdaptorMap.put(organizationId.toLowerCase(), organizationMongoDBAdaptorFactory);
                         return organizationMongoDBAdaptorFactory;
                     }
                 }
             }
 
             if (raiseException) {
-                throw new CatalogDBException("Could not find database for organization '" + organization + "'");
+                throw new CatalogDBException("Could not find database for organization '" + organizationId + "'");
             } else {
                 return null;
             }
@@ -236,32 +237,32 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getMigrationDBAdaptor();
+    public MigrationDBAdaptor getMigrationDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getMigrationDBAdaptor();
     }
 
     @Override
-    public MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogMetaDBAdaptor();
+    public MetaDBAdaptor getCatalogMetaDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogMetaDBAdaptor();
     }
 
     @Override
-    public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
+    public OpenCGAResult<Organization> createOrganization(Organization organizationId, QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organizationId.getId(), false);
         if (orgFactory != null && orgFactory.isCatalogDBReady()) {
-            throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
+            throw new CatalogDBException("Organization '" + organizationId.getId() + "' already exists.");
         }
 
         try {
             // Create organization
             OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(mongoManager,
-                    mongoDbConfiguration, organization.getId(), configuration);
-            organizationDBAdaptorMap.put(organization.getId().toLowerCase(), organizationDBAdaptorFactory);
+                    mongoDbConfiguration, organizationId.getId(), configuration);
+            organizationDBAdaptorMap.put(organizationId.getId().toLowerCase(), organizationDBAdaptorFactory);
 
-            OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
+            OrganizationSummary organizationSummary = new OrganizationSummary(organizationId.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), ORGANIZATION_TAGS.ACTIVE.name(), null);
-            SettingsCreateParams settingsCreateParams = new SettingsCreateParams(ORGANIZATION_PREFIX + organization.getId(),
+            SettingsCreateParams settingsCreateParams = new SettingsCreateParams(ORGANIZATION_PREFIX + organizationId.getId(),
                     Collections.singletonList(ORGANIZATION_TAGS.ACTIVE.name()), null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
@@ -280,13 +281,13 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
             // Create organization
             OpenCGAResult<Organization> result = organizationDBAdaptorFactory.getCatalogOrganizationDBAdaptor()
-                    .insert(organization, options);
+                    .insert(organizationId, options);
 
             // Keep track of current organization in the ADMIN organization
             getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getCatalogSettingsDBAdaptor().insert(settings);
             return result;
         } catch (Exception e) {
-            OrganizationMongoDBAdaptorFactory tmpOrgFactory = organizationDBAdaptorMap.remove(organization.getId().toLowerCase());
+            OrganizationMongoDBAdaptorFactory tmpOrgFactory = organizationDBAdaptorMap.remove(organizationId.getId().toLowerCase());
             if (tmpOrgFactory != null) {
                 tmpOrgFactory.deleteCatalogDB();
             }
@@ -297,87 +298,87 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public void deleteOrganization(Organization organization) throws CatalogDBException {
-        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId());
+    public void deleteOrganization(Organization organizationId) throws CatalogDBException {
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organizationId.getId());
         orgFactory.deleteCatalogDB();
         orgFactory.close();
-        organizationDBAdaptorMap.remove(organization.getId());
+        organizationDBAdaptorMap.remove(organizationId.getId());
 
         // TODO: Remove organization from ADMIN database
     }
 
     @Override
-    public SettingsDBAdaptor getCatalogSettingsDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogSettingsDBAdaptor();
+    public SettingsDBAdaptor getCatalogSettingsDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogSettingsDBAdaptor();
     }
 
     @Override
-    public OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogOrganizationDBAdaptor();
+    public OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogOrganizationDBAdaptor();
     }
 
     @Override
-    public UserDBAdaptor getCatalogUserDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogUserDBAdaptor();
+    public UserDBAdaptor getCatalogUserDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogUserDBAdaptor();
     }
 
     @Override
-    public ProjectDBAdaptor getCatalogProjectDbAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogProjectDBAdaptor();
+    public ProjectDBAdaptor getCatalogProjectDbAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogProjectDBAdaptor();
     }
 
     @Override
-    public StudyDBAdaptor getCatalogStudyDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogStudyDBAdaptor();
+    public StudyDBAdaptor getCatalogStudyDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogStudyDBAdaptor();
     }
 
     @Override
-    public FileDBAdaptor getCatalogFileDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogFileDBAdaptor();
+    public FileDBAdaptor getCatalogFileDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogFileDBAdaptor();
     }
 
     @Override
-    public SampleDBAdaptor getCatalogSampleDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogSampleDBAdaptor();
+    public SampleDBAdaptor getCatalogSampleDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogSampleDBAdaptor();
     }
 
     @Override
-    public IndividualDBAdaptor getCatalogIndividualDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogIndividualDBAdaptor();
+    public IndividualDBAdaptor getCatalogIndividualDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogIndividualDBAdaptor();
     }
 
     @Override
-    public JobDBAdaptor getCatalogJobDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogJobDBAdaptor();
+    public JobDBAdaptor getCatalogJobDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogJobDBAdaptor();
     }
 
     @Override
-    public AuditDBAdaptor getCatalogAuditDbAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogAuditDbAdaptor();
+    public AuditDBAdaptor getCatalogAuditDbAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogAuditDbAdaptor();
     }
 
     @Override
-    public CohortDBAdaptor getCatalogCohortDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogCohortDBAdaptor();
+    public CohortDBAdaptor getCatalogCohortDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogCohortDBAdaptor();
     }
 
     @Override
-    public PanelDBAdaptor getCatalogPanelDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogPanelDBAdaptor();
+    public PanelDBAdaptor getCatalogPanelDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogPanelDBAdaptor();
     }
 
     @Override
-    public FamilyDBAdaptor getCatalogFamilyDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getCatalogFamilyDBAdaptor();
+    public FamilyDBAdaptor getCatalogFamilyDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogFamilyDBAdaptor();
     }
 
     @Override
-    public ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getClinicalAnalysisDBAdaptor();
+    public ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getClinicalAnalysisDBAdaptor();
     }
 
     @Override
-    public InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organization).getInterpretationDBAdaptor();
+    public InterpretationDBAdaptor getInterpretationDBAdaptor(String organizationId) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organizationId).getInterpretationDBAdaptor();
     }
 }

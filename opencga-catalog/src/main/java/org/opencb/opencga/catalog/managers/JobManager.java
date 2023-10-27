@@ -806,7 +806,7 @@ public class JobManager extends ResourceManager<Job> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -837,7 +837,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 result.append(getJobDBAdaptor(organizationId).delete(job));
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
@@ -845,7 +845,7 @@ public class JobManager extends ResourceManager<Job> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, jobId, jobUuid,
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FAMILY, jobId, jobUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -894,7 +894,7 @@ public class JobManager extends ResourceManager<Job> {
             long studyId1 = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId1, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -913,7 +913,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 result.append(getJobDBAdaptor(organizationId).delete(job));
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete job " + job.getId() + ": " + e.getMessage();
@@ -923,7 +923,7 @@ public class JobManager extends ResourceManager<Job> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1785,14 +1785,14 @@ public class JobManager extends ResourceManager<Job> {
                 if (!missingMap.containsKey(jobId)) {
                     Job job = queryResult.getResults().get(counter);
                     resultList.add(jobAcls.getResults().get(counter));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, job.getId(), job.getUuid(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, job.getId(), job.getUuid(),
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS),
                             new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg()));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, jobId, "", study.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, jobId, "", study.getId(),
                             study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", missingMap.get(jobId).getErrorMsg())),
                             new ObjectMap());
@@ -1805,7 +1805,7 @@ public class JobManager extends ResourceManager<Job> {
             jobAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String jobId : jobList) {
-                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, jobId, "", study.getId(),
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.JOB, jobId, "", study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1900,7 +1900,7 @@ public class JobManager extends ResourceManager<Job> {
                 queryResultList.getResults().get(i).setId(jobList.get(i).getId());
             }
             for (Job job : jobList) {
-                auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, job.getId(),
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, job.getId(),
                         job.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -1908,7 +1908,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             if (jobStrList != null) {
                 for (String jobId : jobStrList) {
-                    auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, jobId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.JOB, jobId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     e.getError()), new ObjectMap());
                 }

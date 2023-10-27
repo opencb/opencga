@@ -1679,11 +1679,11 @@ public class StudyManager extends AbstractManager {
                 }
                 studyAclList.append(allStudyAcls);
 
-                auditManager.audit(operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
+                auditManager.audit(organizationId, operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             } catch (CatalogException e) {
-                auditManager.audit(operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
+                auditManager.audit(organizationId, operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (ignoreException) {
@@ -1791,13 +1791,13 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> remainingAcls = authorizationManager.getStudyAcl(organizationId,
                     study.getUid(), members);
 
-            auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
+            auditManager.audit(organizationId, operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
 
             return remainingAcls;
         } catch (CatalogException e) {
-            auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
+            auditManager.audit(organizationId, operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 

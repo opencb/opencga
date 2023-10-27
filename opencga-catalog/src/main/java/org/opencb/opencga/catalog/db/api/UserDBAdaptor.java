@@ -131,12 +131,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),
-        PROJECTS_UID("projects.uid", INTEGER_ARRAY, ""),
+        @Deprecated
         PROJECTS_ID("projects.id", INTEGER_ARRAY, ""),
-        PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
-        PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
-        PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-
+        @Deprecated
         SHARED_PROJECTS("sharedProjects", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),

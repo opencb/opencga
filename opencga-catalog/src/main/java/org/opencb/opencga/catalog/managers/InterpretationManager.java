@@ -471,13 +471,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         null, options, userId);
                 result.append(writeResult);
 
-                auditManager.audit(operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
                         interpretationUuid, study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
 
                 return result;
             } catch (CatalogException e) {
-                auditManager.audit(operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId,
                         interpretationUuid, study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 throw e;
@@ -1314,7 +1314,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1332,7 +1332,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         userId, ClinicalAnalysisPermissions.WRITE);
             }
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1370,7 +1370,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         "Delete interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
                 result.append(getInterpretationDBAdaptor(organizationId).delete(interpretation, Collections.singletonList(clinicalAudit)));
 
-                auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -1381,7 +1381,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }

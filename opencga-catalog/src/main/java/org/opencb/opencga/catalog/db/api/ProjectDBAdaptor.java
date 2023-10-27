@@ -139,6 +139,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
     OpenCGAResult<Project> insert(Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
+    @Deprecated
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Project> get(long project, QueryOptions options) throws CatalogDBException;

@@ -147,8 +147,8 @@ public class AuditManager {
 
     public void auditInfo(String organizationId, String operationId, String userId, Enums.Resource resource, String resourceId,
                           String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, Enums.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
-                new ObjectMap());
+        audit(organizationId, operationId, userId, Enums.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params,
+                status, new ObjectMap());
     }
 
     public void auditSearch(String organizationId, String userId, Enums.Resource resource, String studyId, String studyUuid,

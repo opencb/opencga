@@ -1798,7 +1798,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1839,7 +1839,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 result.append(getClinicalAnalysisDBAdaptor(organizationId).delete(clinicalAnalysis,
                         Collections.singletonList(clinicalAudit)));
 
-                auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -1850,7 +1850,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1922,7 +1922,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1946,7 +1946,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 result.append(getClinicalAnalysisDBAdaptor(organizationId).delete(clinicalAnalysis,
                         Collections.singletonList(clinicalAudit)));
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -1957,7 +1957,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
@@ -2049,14 +2049,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 if (!missingMap.containsKey(clinicalId)) {
                     ClinicalAnalysis clinical = queryResult.getResults().get(counter);
                     resultList.add(clinicalAcls.getResults().get(counter));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
                             clinical.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, clinicalId, missingMap.get(clinicalId).getErrorMsg()));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(clinicalId).getErrorMsg())), new ObjectMap());
                 }
@@ -2068,7 +2068,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String caseId : clinicalList) {
-                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, caseId, "",
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.CLINICAL_ANALYSIS, caseId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -2230,7 +2230,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 queryResults.getResults().get(i).setId(queryResult.getResults().get(i).getId());
             }
             for (ClinicalAnalysis clinicalAnalysis : queryResult.getResults()) {
-                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
+                auditManager.audit(organizationId, operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS,
                         clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -2239,7 +2239,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } catch (CatalogException e) {
             if (clinicalList != null) {
                 for (String clinicalId : clinicalList) {
-                    auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
+                    auditManager.audit(organizationId, operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }

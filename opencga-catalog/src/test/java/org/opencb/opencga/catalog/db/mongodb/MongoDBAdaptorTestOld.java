@@ -67,7 +67,7 @@ import java.util.LinkedList;
 import static org.junit.Assert.assertTrue;
 
 @Category(MediumTests.class)
-public class MongoDBAdaptorTest extends GenericTest {
+public class MongoDBAdaptorTestOld extends GenericTest {
 
     public MongoDBAdaptorFactory catalogDBAdaptor;
     protected String organizationId = "test";
@@ -242,10 +242,10 @@ public class MongoDBAdaptorTest extends GenericTest {
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options).first();
-        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options).first();
-        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options).first();
-        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options).first();
+        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTestOld.user1.getId(), options).first();
+        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTestOld.user2.getId(), options).first();
+        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTestOld.user3.getId(), options).first();
+        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTestOld.user4.getId(), options).first();
 
     }
 

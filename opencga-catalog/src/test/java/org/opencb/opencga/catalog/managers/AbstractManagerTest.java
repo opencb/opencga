@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -33,12 +34,14 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.DataOutputStream;
@@ -60,13 +63,24 @@ public class AbstractManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
-    protected String organizationId;
+    protected String organizationId = "test";
     protected String opencgaToken;
-    protected String token;
-    protected String sessionIdUser2;
-    protected String sessionIdUser3;
+    protected String ownerUserId = "owner";
+    protected String ownerToken;
+    protected String adminUserId1 = "adminUser1";
+    protected String adminToken1;
+    protected String adminUserId2 = "adminUser2";
+    protected String adminToken2;
+    protected String normalUserId1 = "normalUser1";
+    protected String normalToken1;
+    protected String normalUserId2 = "normalUser2";
+    protected String normalToken2;
+    protected String normalUserId3 = "normalUser3";
+    protected String normalToken3;
+
     protected String project1;
     protected String project2;
+    protected String project3;
     protected long studyUid;
     protected String studyFqn;
     protected long studyUid2;
@@ -95,32 +109,34 @@ public class AbstractManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        organizationId = catalogManagerResource.organizationId;
-        opencgaToken = catalogManagerResource.adminToken;
-        token = catalogManagerResource.ownerToken;
-
         if (!firstExecutionFinished) {
             createDummyData(catalogManager);
-            catalogManagerResource.dump();
+            MongoBackupUtils.dump(catalogManager, catalogManagerResource.getOpencgaHome());
             firstExecutionFinished = true;
         } else {
-            catalogManagerResource.restoreDump();
+            MongoBackupUtils.restore(catalogManager, catalogManagerResource.getOpencgaHome());
             initVariables();
         }
     }
 
     private void initVariables() throws CatalogException {
-        sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        ownerToken = catalogManager.getUserManager().login(organizationId, ownerUserId, TestParamConstants.PASSWORD).getToken();
+        adminToken1 = catalogManager.getUserManager().login(organizationId, adminUserId1, TestParamConstants.PASSWORD).getToken();
+        adminToken2 = catalogManager.getUserManager().login(organizationId, adminUserId2, TestParamConstants.PASSWORD).getToken();
+        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
+        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
+        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
 
         project1 = "1000G";
         project2 = "pmp";
+        project3 = "p1";
 
-        Study study = catalogManager.getStudyManager().get("phase1", StudyManager.INCLUDE_STUDY_IDS, token).first();
+        Study study = catalogManager.getStudyManager().get("phase1", StudyManager.INCLUDE_STUDY_IDS, ownerToken).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().get("phase3", StudyManager.INCLUDE_STUDY_IDS, token).first();
+        study = catalogManager.getStudyManager().get("phase3", StudyManager.INCLUDE_STUDY_IDS, ownerToken).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
@@ -141,42 +157,57 @@ public class AbstractManagerTest extends GenericTest {
     }
 
     private void createDummyData(CatalogManager catalogManager) throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        // Create new organization, owner and admins
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId(ownerUserId).setName(ownerUserId), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, adminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, adminUserId2, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
-        catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner("user").setAdmins(Arrays.asList("user2", "user3")), null, opencgaToken);
+        catalogManager.getOrganizationManager().update(organizationId, 
+                new OrganizationUpdateParams()
+                        .setOwner(ownerUserId)
+                        .setAdmins(Arrays.asList(adminUserId1, adminUserId2)),
+                null, opencgaToken);
 
-        sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
+        ownerToken = catalogManager.getUserManager().login(organizationId, ownerUserId, TestParamConstants.PASSWORD).getToken();
+        adminToken1 = catalogManager.getUserManager().login(organizationId, adminUserId1, TestParamConstants.PASSWORD).getToken();
+        adminToken2 = catalogManager.getUserManager().login(organizationId, adminUserId2, TestParamConstants.PASSWORD).getToken();
+        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
+        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
+        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, token).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, ownerToken).first().getId();
         project2 = catalogManager.getProjectManager().create(organizationId, "pmp", "Project Management Project", "life art intelligent system",
-                "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser2).first().getId();
-        catalogManager.getProjectManager().create(organizationId, "p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
-                sessionIdUser3).first();
+                "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, adminToken1).first().getId();
+        project3 = catalogManager.getProjectManager().create(organizationId, "p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
+                adminToken2).first().getId();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, ownerToken).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, ownerToken).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, adminToken1).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
-                null, QueryOptions.empty(), token);
+                null, QueryOptions.empty(), ownerToken);
 
         File testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
-                true, null, INCLUDE_RESULT, token).first();
+                true, null, INCLUDE_RESULT, ownerToken).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
         catalogManager.getFileManager().update(studyFqn, testFolder.getPath(),
-                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), ownerToken);
 
         testFile1 = testFolder.getPath() + "test_1K.txt.gz";
         DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
@@ -184,16 +215,16 @@ public class AbstractManagerTest extends GenericTest {
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setPath(testFile1)
                         .setType(File.Type.FILE),
-                false, token);
+                false, ownerToken);
 
-        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, ownerToken).first();
         attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
         catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(),
-                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), ownerToken);
 
         testFile2 = testFolder.getPath() + "test_0.5K.txt";
         DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
@@ -202,16 +233,16 @@ public class AbstractManagerTest extends GenericTest {
                         .setPath(testFile2)
                         .setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION)
                         .setType(File.Type.FILE),
-                false, token);
+                false, ownerToken);
 
-        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
+        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, ownerToken).first();
         attributes = new ObjectMap();
         attributes.put("field", "valuable");
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
         catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(),
-                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), ownerToken);
 
         DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
@@ -219,16 +250,16 @@ public class AbstractManagerTest extends GenericTest {
                         .setPath(testFolder.getPath() + "test_0.1K.png")
                         .setFormat(File.Format.IMAGE)
                         .setType(File.Type.FILE),
-                false, token);
+                false, ownerToken);
 
-        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
+        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, ownerToken).first();
         attributes = new ObjectMap();
         attributes.put("field", "other");
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(),
-                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), token);
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), ownerToken);
 
         List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
@@ -246,56 +277,55 @@ public class AbstractManagerTest extends GenericTest {
                         Collections.<String, Object>emptyMap())
         ));
         VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
-                null, token).first();
+                null, ownerToken).first();
 
         Sample sample = new Sample().setId("s_1");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_1 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_1 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_2");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_2 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_2 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_3");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_3 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_3 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_4");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false).append("PHEN", "CONTROL"))));
-        s_4 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_4 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_5");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"))));
-        s_5 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_5 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_6");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_6 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_6 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_7");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_7 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_7 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_8");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_8 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_8 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         sample.setId("s_9");
         sample.setAnnotationSets(Collections.emptyList());
-        s_9 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
+        s_9 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, ownerToken).first().getId();
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
-                .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), INCLUDE_RESULT, token);
+                .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), INCLUDE_RESULT, ownerToken);
     }
-
 
     /* TYPE_FILE UTILS */
     public static java.io.File createDebugFile() throws IOException {

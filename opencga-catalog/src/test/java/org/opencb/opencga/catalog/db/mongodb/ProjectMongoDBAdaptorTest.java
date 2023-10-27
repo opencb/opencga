@@ -26,9 +26,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import static org.junit.Assert.*;
@@ -37,29 +40,28 @@ import static org.junit.Assert.*;
  * Created by pfurio on 3/2/16.
  */
 @Category(MediumTests.class)
-public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
+public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
-        Project p = new Project("1000G", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(p, null));
-        p = new Project("2000G", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(p, null));
-        p = new Project("pmp", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init());
-        System.out.println(catalogProjectDBAdaptor.insert(p, null));
-        System.out.println(catalogProjectDBAdaptor.insert(p, null));
+        Project p = new Project("project1", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init());
+        OpenCGAResult<Project> insert = catalogProjectDBAdaptor.insert(p, null);
+        assertEquals(1, insert.getNumInserted());
+        p = new Project("project2", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init());
+        insert = catalogProjectDBAdaptor.insert(p, null);
+        assertEquals(1, insert.getNumInserted());
+        p = new Project("project3", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init());
+        insert = catalogProjectDBAdaptor.insert(p, null);
+        assertEquals(1, insert.getNumInserted());
 
-        try {
-            System.out.println(catalogProjectDBAdaptor.insert(p, null));
-            fail("Expected \"projectAlias already exists\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println(e);
-        }
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("already exists");
+        catalogProjectDBAdaptor.insert(p, null);
     }
 
     @Test
     public void incrementCurrentRelease() throws CatalogDBException {
-        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), user3.getProjects().get(0).getId()),
+        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), project1),
                 QueryOptions.empty()).first().getUid();
         DataResult<Project> projectDataResult = catalogProjectDBAdaptor.get(projectUid, new QueryOptions(QueryOptions.INCLUDE,
                 ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
@@ -77,7 +79,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getProjectTest() throws CatalogDBException {
-        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), user3.getProjects().get(0).getId()),
+        long projectUid = catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), project1),
                 QueryOptions.empty()).first().getUid();
         System.out.println("projectUid = " + projectUid);
         DataResult<Project> project = catalogProjectDBAdaptor.get(projectUid, null);
@@ -112,9 +114,8 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllProjects() throws CatalogDBException {
-        DataResult<Project> allProjects = catalogProjectDBAdaptor.get(user3.getId(), null);
-        System.out.println(allProjects);
-        assertTrue(!allProjects.getResults().isEmpty());
+        DataResult<Project> allProjects = catalogProjectDBAdaptor.get(new Query(), QueryOptions.empty());
+        assertFalse(allProjects.getResults().isEmpty());
     }
 
     /**
@@ -128,12 +129,19 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
-        Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
-        Project p2 = getProject(user1.getId(), "p2");
+        catalogProjectDBAdaptor.insert(new Project("myp1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()).setFqn(FqnUtils.buildFqn(organizationId, "myp1")), null);
+        Project p1 = getProject("myp1");
+        catalogProjectDBAdaptor.insert(new Project("myp2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()).setFqn(FqnUtils.buildFqn(organizationId, "myp2")), null);
+        Project p2 = getProject("myp2");
+
+        // Add study
+        catalogStudyDBAdaptor.insert(p1, new Study().setId("study").setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null);
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
+        Project project = getProject("newpmp");
+        assertEquals(FqnUtils.buildFqn(organizationId, "newpmp"), project.getFqn());
+        assertEquals(1, project.getStudies().size());
+        assertEquals(FqnUtils.buildFqn(organizationId, "newpmp", "study"), project.getStudies().get(0).getFqn());
 
         try {
             catalogProjectDBAdaptor.update(-1, new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "falseProject"), QueryOptions.empty());
@@ -150,11 +158,10 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void test() throws Exception {
-        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
-        Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
-        Project p2 = getProject(user1.getId(), "p2");
+    public void cellbaseUpdateTest() throws Exception {
+        catalogProjectDBAdaptor.insert(new Project("myp1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        Project p1 = getProject("myp1");
+        catalogProjectDBAdaptor.insert(new Project("myp2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(),
                 new CellBaseConfiguration("url", "v")), QueryOptions.empty());

@@ -302,12 +302,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
-        QueryOptions userOptions;
-        if (includeProjects(options)) {
-            userOptions = filterQueryOptions(options, Arrays.asList(ID, PROJECTS_UID.key()));
-        } else {
-            userOptions = filterQueryOptions(options, Collections.singletonList(ID));
-        }
+        QueryOptions userOptions = filterQueryOptions(options, Collections.singletonList(ID));
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
         if (includeStudies(options)) {
@@ -331,28 +326,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         return new OpenCGAResult<>(userDataResult);
-    }
-
-    private boolean includeProjects(QueryOptions options) {
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-
-        if (!includeList.isEmpty()) {
-            for (String includeKey : includeList) {
-                if (includeKey.startsWith(PROJECTS.key() + ".")) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (!excludeList.isEmpty()) {
-            for (String excludeKey : excludeList) {
-                if (excludeKey.equals(PROJECTS.key())) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     private boolean includeSharedProjects(QueryOptions options) {
@@ -774,12 +747,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case ACCOUNT_TYPE:
                     case ACCOUNT_AUTHENTICATION_ID:
                     case ACCOUNT_CREATION_DATE:
-                    case PROJECTS:
-                    case PROJECTS_UID:
-                    case PROJECT_NAME:
-                    case PROJECTS_ID:
-                    case PROJECT_ORGANIZATION:
-                    case PROJECT_STATUS:
                     case TOOL_ID:
                     case TOOL_NAME:
                     case TOOL_ALIAS:

@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
  * Created by pfurio on 3/2/16.
  */
 @Category(MediumTests.class)
-public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
+public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     private Job getNewJob(String id) {
         // Constructor containining the minimal fields that are necessary and automatically populated by the manager
@@ -61,12 +61,11 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         Job job = getNewJob("jobName1");
-        System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
+        System.out.println(catalogJobDBAdaptor.insert(studyUid, job, null));
 
         job = getNewJob("jobName2");
-        System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
+        System.out.println(catalogJobDBAdaptor.insert(studyUid, job, null));
         try {
             catalogJobDBAdaptor.insert(-1, job, null);
             fail("error: expected exception");
@@ -77,12 +76,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteJobTest() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-
-        catalogJobDBAdaptor.insert(studyId, getNewJob("name")
-                .setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyUid, getNewJob("name")
+                .setUserId(ownerUserId)
                 .setOutDir(new File().setUid(4)), null);
-        Job job = getJob(studyId, "name");
+        Job job = getJob(studyUid, "name");
         assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
         catalogJobDBAdaptor.delete(job);
 
@@ -99,19 +96,16 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        DataResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
+        DataResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyUid, null);
         System.out.println(allJobs);
     }
 
 
     @Test
     public void getJobTest() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-
-        catalogJobDBAdaptor.insert(studyId, getNewJob("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyUid, getNewJob("name").setUserId(ownerUserId)
                 .setOutDir(new File().setUid(4)), null);
-        Job job = getJob(studyId, "name");
+        Job job = getJob(studyUid, "name");
 
         job = catalogJobDBAdaptor.get(job.getUid(), null).first();
         System.out.println(job);
@@ -127,8 +121,6 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void testSortResultsPriorityAndCreationDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-
         Date startDate = TimeUtils.getDate();
 
         // Create 100 jobs
@@ -170,9 +162,9 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
 //    @Test
 //    public void SetVisitedJob() throws CatalogException {
-//        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-//        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
-//        Job jobBefore = getJob(studyId, "name");
+//        long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
+//        catalogJobDBAdaptor.insert(studyUid, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
+//        Job jobBefore = getJob(studyUid, "name");
 //        long jobId = jobBefore.getUid();
 //        assertTrue(!jobBefore.isVisited());
 //
@@ -185,8 +177,6 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getJobsOrderedByDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-
         // Job with current date
         Job job1 = getNewJob("job1");
 
@@ -200,8 +190,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .setCreationDate(TimeUtils.getTime(oneHourBack));
 
         // We create the jobs
-        catalogJobDBAdaptor.insert(studyId, job1, new QueryOptions());
-        catalogJobDBAdaptor.insert(studyId, job2, new QueryOptions());
+        catalogJobDBAdaptor.insert(studyUid, job1, new QueryOptions());
+        catalogJobDBAdaptor.insert(studyUid, job2, new QueryOptions());
 
         // Obtain the jobs in descending order
         QueryOptions queryOptions = new QueryOptions()
@@ -229,9 +219,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void updateInputAndOutputFiles() throws Exception {
         Job job = getNewJob("jobName1")
                 .setOutDir(new File().setUid(5));
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogJobDBAdaptor.insert(studyId, job, null);
-        job = getJob(studyId, "jobName1");
+        catalogJobDBAdaptor.insert(studyUid, job, null);
+        job = getJob(studyUid, "jobName1");
 
         List<File> fileInput = Arrays.asList(
                 new File().setUid(5L).setName("file1").setInternal(FileInternal.init()),
@@ -262,7 +251,6 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void groupByStatus() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         for (int i = 0; i < 10; i++) {
             Enums.ExecutionStatus status = new Enums.ExecutionStatus();
             if (i < 5) {
@@ -273,12 +261,12 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             Job job = getNewJob("jobName" + i)
                     .setOutDir(new File().setUid(5));
             job.getInternal().setStatus(status);
-            catalogJobDBAdaptor.insert(studyId, job, null);
+            catalogJobDBAdaptor.insert(studyUid, job, null);
         }
 
-        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("internal.status.id"),
-                new QueryOptions(QueryOptions.COUNT, true), user3.getId());
+                new QueryOptions(QueryOptions.COUNT, true), ownerUserId);
 
         assertEquals(2, openCGAResult.getResults().size());
         for (Object o : openCGAResult.getResults()) {

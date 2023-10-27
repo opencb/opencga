@@ -1637,7 +1637,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     processedPaths.add(file.getPath());
                 }
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
@@ -1645,7 +1645,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not delete file {}: {}", fileId, e.getMessage(), e);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, fileId, fileUuid, study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FILE, fileId, fileUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1693,7 +1693,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
             fileIterator = getFileDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_FILE_URI_PATH, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             throw e;
         }
@@ -1722,7 +1722,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     processedPaths.add(file.getPath());
                 }
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg;
@@ -1736,7 +1736,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 dataResult.setNumErrors(dataResult.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -2819,14 +2819,14 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (!missingMap.containsKey(fileId)) {
                     File file = queryResult.getResults().get(counter);
                     resultList.add(fileAcls.getResults().get(counter));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, file.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, file.getId(),
                             file.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg()));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(fileId).getErrorMsg())), new ObjectMap());
                 }
@@ -2838,7 +2838,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fileAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String fileId : fileList) {
-                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.FILE, fileId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -2958,7 +2958,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 queryResultList.getResults().get(i).setId(extendedFileList.get(i).getId());
             }
             for (File file : extendedFileList) {
-                auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, file.getId(),
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, file.getId(),
                         file.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -2966,7 +2966,7 @@ public class FileManager extends AnnotationSetManager<File> {
         } catch (CatalogException e) {
             if (fileStrList != null) {
                 for (String fileId : fileStrList) {
-                    auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, fileId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FILE, fileId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     e.getError()), new ObjectMap());
                 }

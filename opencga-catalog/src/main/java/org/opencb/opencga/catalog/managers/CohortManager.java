@@ -243,7 +243,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
-            auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
+            auditManager.audit(organizationId, operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -258,15 +258,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 OpenCGAResult tmpResult = getCohortDBAdaptor(organizationId).insert(study.getUid(), cohort, study.getVariableSets(),
                         options);
                 insertResult.append(tmpResult);
-                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(),
+                        cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                 insertResult.getEvents().add(event);
 
                 logger.error("Could not create cohort {}: {}", cohort.getId(), e.getMessage(), e);
-                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(),
+                        cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
 
@@ -631,7 +633,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -659,7 +661,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 OpenCGAResult deleteResult = getCohortDBAdaptor(organizationId).delete(internalResult.first());
                 result.append(deleteResult);
 
-                auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, internalResult.first().getId(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.COHORT, internalResult.first().getId(),
                         internalResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -668,7 +670,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohortId, e.getMessage());
-                auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -719,7 +721,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -735,7 +737,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 OpenCGAResult tmpResult = getCohortDBAdaptor(organizationId).delete(cohort);
                 result.append(tmpResult);
 
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
@@ -743,7 +745,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage());
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1299,14 +1301,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 if (!missingMap.containsKey(cohortId)) {
                     Cohort cohort = queryResult.getResults().get(counter);
                     resultList.add(cohortAcls.getResults().get(counter));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohort.getId(),
                             cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg()));
-                    auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "", study.getId(),
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "", study.getId(),
                             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(cohortId).getErrorMsg())), new ObjectMap());
                 }
@@ -1318,7 +1320,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String cohortId : cohortList) {
-                auditManager.audit(operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "",
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.COHORT, cohortId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1417,7 +1419,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 queryResultList.getResults().get(i).setId(cohortList.get(i).getId());
             }
             for (Cohort cohort : cohortList) {
-                auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.COHORT, cohort.getId(),
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.COHORT, cohort.getId(),
                         cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -1425,7 +1427,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } catch (CatalogException e) {
             if (cohortStrList != null) {
                 for (String cohortId : cohortStrList) {
-                    auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.COHORT, cohortId, "",
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.COHORT, cohortId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }

@@ -1410,9 +1410,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         while (studyIterator.hasNext()) {
             Study study = studyIterator.next();
-            String[] split = study.getFqn().split("@");
-            String[] split1 = split[1].split(":");
-            String newFqn = split[0] + "@" + newProjectId + ":" + split1[1];
+            FqnUtils.FQN oldFqn = FqnUtils.parse(study.getFqn());
+            String newFqn = FqnUtils.buildFqn(oldFqn.getOrganization(), newProjectId, oldFqn.getStudy());
 
             // Update the internal project id and fqn
             Bson update = new Document("$set", new Document()

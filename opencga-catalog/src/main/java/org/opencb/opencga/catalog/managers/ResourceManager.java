@@ -175,7 +175,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
 //                            size));
 
                     R entry = versionedResults.get(i).get(0);
-                    auditManager.auditInfo(operationUuid, userId, getEntity(), entry.getId(), entry.getUuid(),
+                    auditManager.auditInfo(organizationId, operationUuid, userId, getEntity(), entry.getId(), entry.getUuid(),
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 }
             }
@@ -183,8 +183,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             return result;
         } catch (CatalogException e) {
             for (String entryId : entryList) {
-                auditManager.auditInfo(operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                auditManager.auditInfo(organizationId, operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(),
+                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
         } finally {
