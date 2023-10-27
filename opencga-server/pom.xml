@@ -222,15 +222,6 @@
             <artifactId>jersey-media-json-jackson</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-all</artifactId>
         </dependency>
@@ -395,7 +386,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
-                <!--<dependency>
+                <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-hadoop-core</artifactId>
                     <version>${project.parent.version}</version>
@@ -405,7 +396,7 @@
                     <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
                     <version>${project.parent.version}</version>
                     <classifier>shaded</classifier>
-                </dependency>-->
+                </dependency>
             </dependencies>
         </profile>
 
