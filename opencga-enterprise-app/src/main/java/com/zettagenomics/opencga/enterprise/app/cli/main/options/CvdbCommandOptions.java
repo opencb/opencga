@@ -124,6 +124,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
+        @Parameter(names = {"--ca-description"}, description = "Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caDescription; 
+    
         @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
         public String caType; 
     
@@ -145,6 +148,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ca-report"}, description = "Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caReport; 
+    
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
@@ -156,6 +162,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
         public boolean ciPrimary = false; 
+    
+        @Parameter(names = {"--ci-description"}, description = "Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciDescription; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -184,11 +193,20 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-method-dependencies"}, description = "Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciMethodDependencies; 
+    
+        @Parameter(names = {"--ci-comments"}, description = "Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciComments; 
+    
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-description"}, description = "Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciStatusDescription; 
     
         @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciStatusDate; 
@@ -208,11 +226,17 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
+        @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvComments; 
+    
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
         @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String cvDiscussionDate; 
+    
+        @Parameter(names = {"--cv-discussion-text"}, description = "Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvDiscussionText; 
     
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
@@ -369,6 +393,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
+        @Parameter(names = {"--ca-description"}, description = "Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caDescription; 
+    
         @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
         public String caType; 
     
@@ -390,6 +417,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ca-report"}, description = "Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caReport; 
+    
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
@@ -401,6 +431,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
         public boolean ciPrimary = false; 
+    
+        @Parameter(names = {"--ci-description"}, description = "Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciDescription; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -429,11 +462,20 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-method-dependencies"}, description = "Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciMethodDependencies; 
+    
+        @Parameter(names = {"--ci-comments"}, description = "Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciComments; 
+    
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-description"}, description = "Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciStatusDescription; 
     
         @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciStatusDate; 
@@ -453,11 +495,17 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
+        @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvComments; 
+    
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
         @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String cvDiscussionDate; 
+    
+        @Parameter(names = {"--cv-discussion-text"}, description = "Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvDiscussionText; 
     
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
@@ -614,6 +662,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
+        @Parameter(names = {"--ca-description"}, description = "Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caDescription; 
+    
         @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
         public String caType; 
     
@@ -635,6 +686,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ca-report"}, description = "Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caReport; 
+    
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
@@ -646,6 +700,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
         public boolean ciPrimary = false; 
+    
+        @Parameter(names = {"--ci-description"}, description = "Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciDescription; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -674,11 +731,20 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-method-dependencies"}, description = "Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciMethodDependencies; 
+    
+        @Parameter(names = {"--ci-comments"}, description = "Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciComments; 
+    
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-description"}, description = "Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciStatusDescription; 
     
         @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciStatusDate; 
@@ -698,11 +764,17 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
+        @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvComments; 
+    
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
         @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String cvDiscussionDate; 
+    
+        @Parameter(names = {"--cv-discussion-text"}, description = "Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvDiscussionText; 
     
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
@@ -859,6 +931,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
+        @Parameter(names = {"--ca-description"}, description = "Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caDescription; 
+    
         @Parameter(names = {"--ca-type"}, description = "Clinical analysis type (or list of types separated by commas)", required = false, arity = 1)
         public String caType; 
     
@@ -880,6 +955,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ca-family-member-id"}, description = "Clinical analysis family member ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caFamilyMemberId; 
     
+        @Parameter(names = {"--ca-report"}, description = "Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String caReport; 
+    
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
@@ -891,6 +969,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
         public boolean ciPrimary = false; 
+    
+        @Parameter(names = {"--ci-description"}, description = "Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciDescription; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -919,11 +1000,20 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-method-dependencies"}, description = "Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciMethodDependencies; 
+    
+        @Parameter(names = {"--ci-comments"}, description = "Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciComments; 
+    
         @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
         public boolean ciLocked = false; 
     
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
+    
+        @Parameter(names = {"--ci-status-description"}, description = "Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String ciStatusDescription; 
     
         @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciStatusDate; 
@@ -943,11 +1033,17 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
         public boolean cvPrimary = false; 
     
+        @Parameter(names = {"--cv-comments"}, description = "Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvComments; 
+    
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
         @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String cvDiscussionDate; 
+    
+        @Parameter(names = {"--cv-discussion-text"}, description = "Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
+        public String cvDiscussionText; 
     
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 

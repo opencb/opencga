@@ -64,6 +64,8 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
+    * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.caType] - Clinical analysis type (or list of types separated by commas).
     * @param {String} [params.caDisorderId] - Clinical analysis disorder ID (or list of IDs separated by commas).
     * @param {String} [params.caFilename] - Clinical analysis filename (or list of filenames separated by commas).
@@ -71,10 +73,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyId] - Clinical analysis family ID (or list of IDs separated by commas).
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
+    * @param {String} [params.caReport] - Clinical analysis report text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
     * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
     * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
+    * @param {String} [params.ciDescription] - Clinical interpretation description (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -85,8 +91,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {String} [params.ciMethodDependencies] - Clinical interpretation method dependencies (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+    * @param {String} [params.ciComments] - Clinical interpretation comment text (word or list of words contained in the text, if the words
+    *     are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
+    * @param {String} [params.ciStatusDescription] - Clinical interpretation status description (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciCreationDate] - Clinical interpretation creation date (or list of dates separated by commas), with format
@@ -96,9 +108,13 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {String} [params.cvDiscussionText] - Clinical variant discussion text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvConfidenceValue] - Clinical variant confidence value (or list of values separated by commas).
     * @param {String} [params.cvConfidenceAuthor] - Clinical variant confidence author (or list of authors separated by commas).
     * @param {String} [params.cvConfidenceDate] - Clinical variant confidence date (or list of dates separated by commas), with format
@@ -184,6 +200,8 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
+    * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.caType] - Clinical analysis type (or list of types separated by commas).
     * @param {String} [params.caDisorderId] - Clinical analysis disorder ID (or list of IDs separated by commas).
     * @param {String} [params.caFilename] - Clinical analysis filename (or list of filenames separated by commas).
@@ -191,10 +209,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyId] - Clinical analysis family ID (or list of IDs separated by commas).
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
+    * @param {String} [params.caReport] - Clinical analysis report text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
     * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
     * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
+    * @param {String} [params.ciDescription] - Clinical interpretation description (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -205,8 +227,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {String} [params.ciMethodDependencies] - Clinical interpretation method dependencies (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+    * @param {String} [params.ciComments] - Clinical interpretation comment text (word or list of words contained in the text, if the words
+    *     are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
+    * @param {String} [params.ciStatusDescription] - Clinical interpretation status description (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciCreationDate] - Clinical interpretation creation date (or list of dates separated by commas), with format
@@ -216,9 +244,13 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {String} [params.cvDiscussionText] - Clinical variant discussion text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvConfidenceValue] - Clinical variant confidence value (or list of values separated by commas).
     * @param {String} [params.cvConfidenceAuthor] - Clinical variant confidence author (or list of authors separated by commas).
     * @param {String} [params.cvConfidenceDate] - Clinical variant confidence date (or list of dates separated by commas), with format
@@ -304,6 +336,8 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
+    * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.caType] - Clinical analysis type (or list of types separated by commas).
     * @param {String} [params.caDisorderId] - Clinical analysis disorder ID (or list of IDs separated by commas).
     * @param {String} [params.caFilename] - Clinical analysis filename (or list of filenames separated by commas).
@@ -311,10 +345,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyId] - Clinical analysis family ID (or list of IDs separated by commas).
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
+    * @param {String} [params.caReport] - Clinical analysis report text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
     * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
     * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
+    * @param {String} [params.ciDescription] - Clinical interpretation description (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -325,8 +363,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {String} [params.ciMethodDependencies] - Clinical interpretation method dependencies (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+    * @param {String} [params.ciComments] - Clinical interpretation comment text (word or list of words contained in the text, if the words
+    *     are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
+    * @param {String} [params.ciStatusDescription] - Clinical interpretation status description (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciCreationDate] - Clinical interpretation creation date (or list of dates separated by commas), with format
@@ -336,9 +380,13 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {String} [params.cvDiscussionText] - Clinical variant discussion text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvConfidenceValue] - Clinical variant confidence value (or list of values separated by commas).
     * @param {String} [params.cvConfidenceAuthor] - Clinical variant confidence author (or list of authors separated by commas).
     * @param {String} [params.cvConfidenceDate] - Clinical variant confidence date (or list of dates separated by commas), with format
@@ -424,6 +472,8 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
     * @param {Number} [params.limit] - Number of results to be returned.
     * @param {String} [params.caId] - Clinical analysis ID (or list of IDs separated by commas).
+    * @param {String} [params.caDescription] - Clinical analysis description (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.caType] - Clinical analysis type (or list of types separated by commas).
     * @param {String} [params.caDisorderId] - Clinical analysis disorder ID (or list of IDs separated by commas).
     * @param {String} [params.caFilename] - Clinical analysis filename (or list of filenames separated by commas).
@@ -431,10 +481,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyId] - Clinical analysis family ID (or list of IDs separated by commas).
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
+    * @param {String} [params.caReport] - Clinical analysis report text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
     * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
     * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
+    * @param {String} [params.ciDescription] - Clinical interpretation description (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -445,8 +499,14 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {String} [params.ciMethodDependencies] - Clinical interpretation method dependencies (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+    * @param {String} [params.ciComments] - Clinical interpretation comment text (word or list of words contained in the text, if the words
+    *     are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
+    * @param {String} [params.ciStatusDescription] - Clinical interpretation status description (word or list of words contained in the
+    *     text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciCreationDate] - Clinical interpretation creation date (or list of dates separated by commas), with format
@@ -456,9 +516,13 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
+    * @param {String} [params.cvComments] - Clinical variant comment text (word or list of words contained in the text, if the words are
+    *     separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {String} [params.cvDiscussionText] - Clinical variant discussion text (word or list of words contained in the text, if the
+    *     words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
     * @param {String} [params.cvConfidenceValue] - Clinical variant confidence value (or list of values separated by commas).
     * @param {String} [params.cvConfidenceAuthor] - Clinical variant confidence author (or list of authors separated by commas).
     * @param {String} [params.cvConfidenceDate] - Clinical variant confidence date (or list of dates separated by commas), with format

@@ -65,6 +65,10 @@ class Cvdb(_ParentRestClient):
         :param int limit: Number of results to be returned.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
+        :param str ca_description: Clinical analysis description (word or list
+            of words contained in the text, if the words are separated by a
+            comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ca_type: Clinical analysis type (or list of types separated
             by commas).
         :param str ca_disorder_id: Clinical analysis disorder ID (or list of
@@ -79,6 +83,10 @@ class Cvdb(_ParentRestClient):
             phenotype names (or list of names separated by commas).
         :param str ca_family_member_id: Clinical analysis family member ID (or
             list of IDs separated by commas).
+        :param str ca_report: Clinical analysis report text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param bool ca_locked: Clinical analysis locked (true or false).
@@ -86,6 +94,10 @@ class Cvdb(_ParentRestClient):
             by commas).
         :param bool ci_primary: Clinical interpretation primary (true or
             false).
+        :param str ci_description: Clinical interpretation description (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -106,9 +118,21 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param str ci_method_dependencies: Clinical interpretation method
+            dependencies (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
+        :param str ci_comments: Clinical interpretation comment text (word or
+            list of words contained in the text, if the words are separated by
+            a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
+        :param str ci_status_description: Clinical interpretation status
+            description (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
         :param str ci_status_date: Clinical interpretation status date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
@@ -126,12 +150,20 @@ class Cvdb(_ParentRestClient):
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
+        :param str cv_comments: Clinical variant comment text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
             20231001000000-20231101000000.
+        :param str cv_discussion_text: Clinical variant discussion text (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str cv_confidence_value: Clinical variant confidence value (or
             list of values separated by commas).
         :param str cv_confidence_author: Clinical variant confidence author
@@ -272,6 +304,10 @@ class Cvdb(_ParentRestClient):
         :param int limit: Number of results to be returned.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
+        :param str ca_description: Clinical analysis description (word or list
+            of words contained in the text, if the words are separated by a
+            comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ca_type: Clinical analysis type (or list of types separated
             by commas).
         :param str ca_disorder_id: Clinical analysis disorder ID (or list of
@@ -286,6 +322,10 @@ class Cvdb(_ParentRestClient):
             phenotype names (or list of names separated by commas).
         :param str ca_family_member_id: Clinical analysis family member ID (or
             list of IDs separated by commas).
+        :param str ca_report: Clinical analysis report text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param bool ca_locked: Clinical analysis locked (true or false).
@@ -293,6 +333,10 @@ class Cvdb(_ParentRestClient):
             by commas).
         :param bool ci_primary: Clinical interpretation primary (true or
             false).
+        :param str ci_description: Clinical interpretation description (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -313,9 +357,21 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param str ci_method_dependencies: Clinical interpretation method
+            dependencies (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
+        :param str ci_comments: Clinical interpretation comment text (word or
+            list of words contained in the text, if the words are separated by
+            a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
+        :param str ci_status_description: Clinical interpretation status
+            description (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
         :param str ci_status_date: Clinical interpretation status date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
@@ -333,12 +389,20 @@ class Cvdb(_ParentRestClient):
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
+        :param str cv_comments: Clinical variant comment text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
             20231001000000-20231101000000.
+        :param str cv_discussion_text: Clinical variant discussion text (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str cv_confidence_value: Clinical variant confidence value (or
             list of values separated by commas).
         :param str cv_confidence_author: Clinical variant confidence author
@@ -479,6 +543,10 @@ class Cvdb(_ParentRestClient):
         :param int limit: Number of results to be returned.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
+        :param str ca_description: Clinical analysis description (word or list
+            of words contained in the text, if the words are separated by a
+            comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ca_type: Clinical analysis type (or list of types separated
             by commas).
         :param str ca_disorder_id: Clinical analysis disorder ID (or list of
@@ -493,6 +561,10 @@ class Cvdb(_ParentRestClient):
             phenotype names (or list of names separated by commas).
         :param str ca_family_member_id: Clinical analysis family member ID (or
             list of IDs separated by commas).
+        :param str ca_report: Clinical analysis report text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param bool ca_locked: Clinical analysis locked (true or false).
@@ -500,6 +572,10 @@ class Cvdb(_ParentRestClient):
             by commas).
         :param bool ci_primary: Clinical interpretation primary (true or
             false).
+        :param str ci_description: Clinical interpretation description (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -520,9 +596,21 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param str ci_method_dependencies: Clinical interpretation method
+            dependencies (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
+        :param str ci_comments: Clinical interpretation comment text (word or
+            list of words contained in the text, if the words are separated by
+            a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
+        :param str ci_status_description: Clinical interpretation status
+            description (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
         :param str ci_status_date: Clinical interpretation status date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
@@ -540,12 +628,20 @@ class Cvdb(_ParentRestClient):
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
+        :param str cv_comments: Clinical variant comment text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
             20231001000000-20231101000000.
+        :param str cv_discussion_text: Clinical variant discussion text (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str cv_confidence_value: Clinical variant confidence value (or
             list of values separated by commas).
         :param str cv_confidence_author: Clinical variant confidence author
@@ -686,6 +782,10 @@ class Cvdb(_ParentRestClient):
         :param int limit: Number of results to be returned.
         :param str ca_id: Clinical analysis ID (or list of IDs separated by
             commas).
+        :param str ca_description: Clinical analysis description (word or list
+            of words contained in the text, if the words are separated by a
+            comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ca_type: Clinical analysis type (or list of types separated
             by commas).
         :param str ca_disorder_id: Clinical analysis disorder ID (or list of
@@ -700,6 +800,10 @@ class Cvdb(_ParentRestClient):
             phenotype names (or list of names separated by commas).
         :param str ca_family_member_id: Clinical analysis family member ID (or
             list of IDs separated by commas).
+        :param str ca_report: Clinical analysis report text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
         :param bool ca_locked: Clinical analysis locked (true or false).
@@ -707,6 +811,10 @@ class Cvdb(_ParentRestClient):
             by commas).
         :param bool ci_primary: Clinical interpretation primary (true or
             false).
+        :param str ci_description: Clinical interpretation description (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -727,9 +835,21 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param str ci_method_dependencies: Clinical interpretation method
+            dependencies (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
+        :param str ci_comments: Clinical interpretation comment text (word or
+            list of words contained in the text, if the words are separated by
+            a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
+        :param str ci_status_description: Clinical interpretation status
+            description (word or list of words contained in the text, if the
+            words are separated by a comma an OR will be applied; if the words
+            are separated by a semicolon, an AND will be applied).
         :param str ci_status_date: Clinical interpretation status date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
@@ -747,12 +867,20 @@ class Cvdb(_ParentRestClient):
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param bool cv_primary: Clinical variant is a primary finding (true or
             false).
+        :param str cv_comments: Clinical variant comment text (word or list of
+            words contained in the text, if the words are separated by a comma
+            an OR will be applied; if the words are separated by a semicolon,
+            an AND will be applied).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
             list of dates separated by commas), with format YYYYMMDDhhmmss,
             e.g.: 20231026120345; range is available start_date-end_date, e.g.:
             20231001000000-20231101000000.
+        :param str cv_discussion_text: Clinical variant discussion text (word
+            or list of words contained in the text, if the words are separated
+            by a comma an OR will be applied; if the words are separated by a
+            semicolon, an AND will be applied).
         :param str cv_confidence_value: Clinical variant confidence value (or
             list of values separated by commas).
         :param str cv_confidence_author: Clinical variant confidence author

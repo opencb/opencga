@@ -91,6 +91,8 @@ public class CvdbClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
+     *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       caType: Clinical analysis type (or list of types separated by commas).
      *       caDisorderId: Clinical analysis disorder ID (or list of IDs separated by commas).
      *       caFilename: Clinical analysis filename (or list of filenames separated by commas).
@@ -98,10 +100,14 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyId: Clinical analysis family ID (or list of IDs separated by commas).
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
+     *       caReport: Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an
+     *            OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
      *       ciPrimary: Clinical interpretation primary (true or false).
+     *       ciDescription: Clinical interpretation description (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -112,9 +118,15 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciMethodDependencies: Clinical interpretation method dependencies (word or list of words contained in the text, if the words
+     *            are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+     *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
+     *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciCreationDate: Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss,
@@ -124,9 +136,13 @@ public class CvdbClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
+     *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+     *       cvDiscussionText: Clinical variant discussion text (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvConfidenceValue: Clinical variant confidence value (or list of values separated by commas).
      *       cvConfidenceAuthor: Clinical variant confidence author (or list of authors separated by commas).
      *       cvConfidenceDate: Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -211,6 +227,8 @@ public class CvdbClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
+     *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       caType: Clinical analysis type (or list of types separated by commas).
      *       caDisorderId: Clinical analysis disorder ID (or list of IDs separated by commas).
      *       caFilename: Clinical analysis filename (or list of filenames separated by commas).
@@ -218,10 +236,14 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyId: Clinical analysis family ID (or list of IDs separated by commas).
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
+     *       caReport: Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an
+     *            OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
      *       ciPrimary: Clinical interpretation primary (true or false).
+     *       ciDescription: Clinical interpretation description (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -232,9 +254,15 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciMethodDependencies: Clinical interpretation method dependencies (word or list of words contained in the text, if the words
+     *            are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+     *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
+     *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciCreationDate: Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss,
@@ -244,9 +272,13 @@ public class CvdbClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
+     *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+     *       cvDiscussionText: Clinical variant discussion text (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvConfidenceValue: Clinical variant confidence value (or list of values separated by commas).
      *       cvConfidenceAuthor: Clinical variant confidence author (or list of authors separated by commas).
      *       cvConfidenceDate: Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -331,6 +363,8 @@ public class CvdbClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
+     *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       caType: Clinical analysis type (or list of types separated by commas).
      *       caDisorderId: Clinical analysis disorder ID (or list of IDs separated by commas).
      *       caFilename: Clinical analysis filename (or list of filenames separated by commas).
@@ -338,10 +372,14 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyId: Clinical analysis family ID (or list of IDs separated by commas).
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
+     *       caReport: Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an
+     *            OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
      *       ciPrimary: Clinical interpretation primary (true or false).
+     *       ciDescription: Clinical interpretation description (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -352,9 +390,15 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciMethodDependencies: Clinical interpretation method dependencies (word or list of words contained in the text, if the words
+     *            are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+     *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
+     *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciCreationDate: Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss,
@@ -364,9 +408,13 @@ public class CvdbClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
+     *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+     *       cvDiscussionText: Clinical variant discussion text (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvConfidenceValue: Clinical variant confidence value (or list of values separated by commas).
      *       cvConfidenceAuthor: Clinical variant confidence author (or list of authors separated by commas).
      *       cvConfidenceDate: Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -451,6 +499,8 @@ public class CvdbClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       limit: Number of results to be returned.
      *       caId: Clinical analysis ID (or list of IDs separated by commas).
+     *       caDescription: Clinical analysis description (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       caType: Clinical analysis type (or list of types separated by commas).
      *       caDisorderId: Clinical analysis disorder ID (or list of IDs separated by commas).
      *       caFilename: Clinical analysis filename (or list of filenames separated by commas).
@@ -458,10 +508,14 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyId: Clinical analysis family ID (or list of IDs separated by commas).
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
+     *       caReport: Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an
+     *            OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
      *       ciPrimary: Clinical interpretation primary (true or false).
+     *       ciDescription: Clinical interpretation description (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -472,9 +526,15 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciMethodDependencies: Clinical interpretation method dependencies (word or list of words contained in the text, if the words
+     *            are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
+     *       ciComments: Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a
+     *            comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       ciStatusDescription: Clinical interpretation status description (word or list of words contained in the text, if the words are
+     *            separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciCreationDate: Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss,
@@ -484,9 +544,13 @@ public class CvdbClient extends AbstractParentClient {
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
      *       cvPrimary: Clinical variant is a primary finding (true or false).
+     *       cvComments: Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma
+     *            an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+     *       cvDiscussionText: Clinical variant discussion text (word or list of words contained in the text, if the words are separated by
+     *            a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
      *       cvConfidenceValue: Clinical variant confidence value (or list of values separated by commas).
      *       cvConfidenceAuthor: Clinical variant confidence author (or list of authors separated by commas).
      *       cvConfidenceDate: Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
