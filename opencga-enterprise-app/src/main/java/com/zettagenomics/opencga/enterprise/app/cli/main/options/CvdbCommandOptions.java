@@ -166,6 +166,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
         public String ciAnalystAssignedBy; 
     
+        @Parameter(names = {"--ci-analyst-date"}, description = "Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciAnalystDate; 
+    
         @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
         public String ciMethodName; 
     
@@ -178,17 +181,32 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
+        @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciStatusDate; 
+    
+        @Parameter(names = {"--ci-creation-date"}, description = "Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciCreationDate; 
+    
+        @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciModificationDate; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
+        @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvDiscussionDate; 
+    
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
     
         @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-date"}, description = "Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvConfidenceDate; 
     
         @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
         public String cvTag; 
@@ -378,6 +396,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
         public String ciAnalystAssignedBy; 
     
+        @Parameter(names = {"--ci-analyst-date"}, description = "Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciAnalystDate; 
+    
         @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
         public String ciMethodName; 
     
@@ -390,17 +411,32 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
+        @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciStatusDate; 
+    
+        @Parameter(names = {"--ci-creation-date"}, description = "Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciCreationDate; 
+    
+        @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciModificationDate; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
+        @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvDiscussionDate; 
+    
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
     
         @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-date"}, description = "Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvConfidenceDate; 
     
         @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
         public String cvTag; 
@@ -590,6 +626,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
         public String ciAnalystAssignedBy; 
     
+        @Parameter(names = {"--ci-analyst-date"}, description = "Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciAnalystDate; 
+    
         @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
         public String ciMethodName; 
     
@@ -602,17 +641,32 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
+        @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciStatusDate; 
+    
+        @Parameter(names = {"--ci-creation-date"}, description = "Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciCreationDate; 
+    
+        @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciModificationDate; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
+        @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvDiscussionDate; 
+    
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
     
         @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-date"}, description = "Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvConfidenceDate; 
     
         @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
         public String cvTag; 
@@ -802,6 +856,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-analyst-assigned-by"}, description = "Clinical interpretation analyst assignee name (or list of names separated by commas)", required = false, arity = 1)
         public String ciAnalystAssignedBy; 
     
+        @Parameter(names = {"--ci-analyst-date"}, description = "Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciAnalystDate; 
+    
         @Parameter(names = {"--ci-method-name"}, description = "Clinical interpretation method name (or list of names separated by commas)", required = false, arity = 1)
         public String ciMethodName; 
     
@@ -814,17 +871,32 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
+        @Parameter(names = {"--ci-status-date"}, description = "Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciStatusDate; 
+    
+        @Parameter(names = {"--ci-creation-date"}, description = "Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciCreationDate; 
+    
+        @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String ciModificationDate; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
     
+        @Parameter(names = {"--cv-discussion-date"}, description = "Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvDiscussionDate; 
+    
         @Parameter(names = {"--cv-confidence-value"}, description = "Clinical variant confidence value (or list of values separated by commas)", required = false, arity = 1)
         public String cvConfidenceValue; 
     
         @Parameter(names = {"--cv-confidence-author"}, description = "Clinical variant confidence author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvConfidenceAuthor; 
+    
+        @Parameter(names = {"--cv-confidence-date"}, description = "Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
+        public String cvConfidenceDate; 
     
         @Parameter(names = {"--cv-tag"}, description = "Clinical variant tag (or list of tags separated by commas)", required = false, arity = 1)
         public String cvTag; 
