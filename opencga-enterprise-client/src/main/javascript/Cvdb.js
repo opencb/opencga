@@ -90,6 +90,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
@@ -205,6 +206,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
@@ -320,6 +322,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
@@ -435,6 +438,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {String} [params.ciModificationDate] - Clinical interpretation modification date (or list of dates separated by commas), with
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
+    * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format

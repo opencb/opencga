@@ -173,6 +173,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
         queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
@@ -258,6 +259,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
         queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
@@ -343,6 +345,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
         queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
@@ -428,6 +431,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
         queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);

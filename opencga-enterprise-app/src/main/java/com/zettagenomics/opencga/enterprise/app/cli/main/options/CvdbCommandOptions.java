@@ -190,6 +190,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciModificationDate; 
     
+        @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
+        public Integer ciVersion; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
@@ -419,6 +422,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciModificationDate; 
+    
+        @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
+        public Integer ciVersion; 
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
@@ -650,6 +656,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciModificationDate; 
     
+        @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
+        public Integer ciVersion; 
+    
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
     
@@ -879,6 +888,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--ci-modification-date"}, description = "Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000", required = false, arity = 1)
         public String ciModificationDate; 
+    
+        @Parameter(names = {"--ci-version"}, description = "Clinical interpretation version number (or list of versions separated by commas)", required = false, arity = 1)
+        public Integer ciVersion; 
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 

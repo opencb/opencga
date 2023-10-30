@@ -117,6 +117,8 @@ class Cvdb(_ParentRestClient):
             date (or list of dates separated by commas), with format
             YYYYMMDDhhmmss, e.g.: 20231026120345; range is available
             start_date-end_date, e.g.: 20231001000000-20231101000000.
+        :param int ci_version: Clinical interpretation version number (or list
+            of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
@@ -316,6 +318,8 @@ class Cvdb(_ParentRestClient):
             date (or list of dates separated by commas), with format
             YYYYMMDDhhmmss, e.g.: 20231026120345; range is available
             start_date-end_date, e.g.: 20231001000000-20231101000000.
+        :param int ci_version: Clinical interpretation version number (or list
+            of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
@@ -515,6 +519,8 @@ class Cvdb(_ParentRestClient):
             date (or list of dates separated by commas), with format
             YYYYMMDDhhmmss, e.g.: 20231026120345; range is available
             start_date-end_date, e.g.: 20231001000000-20231101000000.
+        :param int ci_version: Clinical interpretation version number (or list
+            of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
@@ -714,6 +720,8 @@ class Cvdb(_ParentRestClient):
             date (or list of dates separated by commas), with format
             YYYYMMDDhhmmss, e.g.: 20231026120345; range is available
             start_date-end_date, e.g.: 20231001000000-20231101000000.
+        :param int ci_version: Clinical interpretation version number (or list
+            of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
