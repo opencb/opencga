@@ -100,6 +100,9 @@ public class ClinicalVariantEvidenceSearch {
     @Field("rolesInCancer")
     private List<String> rolesInCancer;
 
+    @Field("reviewText")
+    private String reviewText;
+
     @Field("score_*")
     private Map<String, Double> scores;
 
@@ -137,7 +140,7 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
         sb.append(", xrefIds=").append(xrefIds);
         sb.append(", panelId='").append(panelId).append('\'');
-        sb.append(", mois='").append(mois).append('\'');
+        sb.append(", mois=").append(mois);
         sb.append(", penetrance='").append(penetrance).append('\'');
         sb.append(", acmgs=").append(acmgs);
         sb.append(", tier='").append(tier).append('\'');
@@ -148,6 +151,7 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", tumorigenesis='").append(tumorigenesis).append('\'');
         sb.append(", otherClassifications=").append(otherClassifications);
         sb.append(", rolesInCancer=").append(rolesInCancer);
+        sb.append(", reviewText='").append(reviewText).append('\'');
         sb.append(", scores=").append(scores);
         sb.append(", json='").append(json).append('\'');
         sb.append('}');
@@ -358,6 +362,15 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setRolesInCancer(List<String> rolesInCancer) {
         this.rolesInCancer = rolesInCancer;
+        return this;
+    }
+
+    public String getReviewText() {
+        return reviewText;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewText(String reviewText) {
+        this.reviewText = reviewText;
         return this;
     }
 

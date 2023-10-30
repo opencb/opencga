@@ -113,7 +113,7 @@ public class CvdbSolrEngineQueryTest {
     //-----------------------------------------------------------------------
 
     @Test
-    public void test() throws IOException, CvdbException {
+    public void testCvdbContent() throws IOException, CvdbException {
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
         QueryOptions queryOptions = new QueryOptions();
@@ -519,7 +519,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testDate() throws IOException, CvdbException, ParseException {
+    public void testDateFilter() throws IOException, CvdbException, ParseException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -569,7 +569,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testInteger() throws IOException, CvdbException, ParseException {
+    public void testIntegerFilter() throws IOException, CvdbException, ParseException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -605,7 +605,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testBoolean() throws IOException, CvdbException, ParseException {
+    public void testBooleanFilter() throws IOException, CvdbException, ParseException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -648,6 +648,67 @@ public class CvdbSolrEngineQueryTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CI_PRIMARY_NAME, "toto");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+    }
+
+    @Test
+    public void testTextFilter() throws IOException, CvdbException, ParseException {
+        // CVDB query
+        Query query;
+        QueryOptions queryOptions = new QueryOptions();
+        DataResult<ClinicalVariantEvidence> result;
+        List<String> words;
+
+        // review text: "Classified as: Tier3, passed the XLinkedSimpleRecessive segregation filter"
+
+        // Check single word
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_REVIEW_TEXT_NAME, "passed");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            assertTrue(cve.getReview().getDiscussion().getText().contains(query.getString(CVE_REVIEW_TEXT_NAME)));
+        }
+
+        // Check non-existing value
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_REVIEW_TEXT_NAME, "toto");
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check multiple words separated by , (i.e., OR)
+        words = Arrays.asList("passed", "toto");
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ","));
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            boolean found = false;
+            for (String word : words) {
+                if (cve.getReview().getDiscussion().getText().contains(word)) {
+                    found = true;
+                }
+            }
+            assertTrue(found);
+        }
+
+        // Check multiple words separated by ; (i.e., AND)
+        words = Arrays.asList("passed", "segregation");
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ";"));
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            for (String word : words) {
+                assertTrue(cve.getReview().getDiscussion().getText().contains(word));
+            }
+        }
+
+        // Check multiple words separated by ; (i.e., AND)
+        words = Arrays.asList("passed", "toto");
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CVE_REVIEW_TEXT_NAME, StringUtils.join(words, ";"));
+        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
         assertEquals(0, result.getNumResults());
     }
 

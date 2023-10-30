@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantEvidenceSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
@@ -110,6 +111,11 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
 
             if (CollectionUtils.isNotEmpty(cve.getRolesInCancer())) {
                 cves.setRolesInCancer(cve.getRolesInCancer().stream().map(r -> r.name()).collect(Collectors.toList()));
+            }
+
+            if (cve.getReview() != null && cve.getReview().getDiscussion() != null
+                    && StringUtils.isNotEmpty(cve.getReview().getDiscussion().getText())) {
+                cves.setReviewText(cve.getReview().getDiscussion().getText());
             }
 
 //            private Map<String, Double> cveScores;

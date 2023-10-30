@@ -62,6 +62,7 @@ public class ClinicalQueryParser {
         addStringFilters("id", query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
 
         // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("description", query.getString(ClinicalQueryParam.CA_DESCRIPTION_NAME), filters);
 
         // <field name="type" type="text_en" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("type", query.getString(ClinicalQueryParam.CA_TYPE_NAME), filters);
@@ -85,6 +86,7 @@ public class ClinicalQueryParser {
         addStringFilters("familyMemberIds", query.getString(ClinicalQueryParam.CA_FAMILY_MEMBER_ID_NAME), filters);
 
         // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("report", query.getString(CA_REPORT_NAME), filters);
 
         // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("status", query.getString(ClinicalQueryParam.CA_STATUS_NAME), filters);
@@ -104,6 +106,7 @@ public class ClinicalQueryParser {
         addBooleanFilters("primary", query.getString(CI_PRIMARY_NAME), filters);
 
         // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("description", query.getString(CI_DESCRIPTION_NAME), filters);
 
         // <!-- Panel IDs contain both IDs and names -->
         // <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -135,9 +138,11 @@ public class ClinicalQueryParser {
 
         // <!-- Method software/dependencies are stores: name == version -->
         // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+        addTextFilters("methodDependencies", query.getString(CI_METHOD_DEPENDENCIES_NAME), filters);
 
         // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
         // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+        addTextFilters("comments", query.getString(CI_COMMENTS_NAME), filters);
 
         // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
         addBooleanFilters("locked", query.getString(CI_LOCKED_NAME), filters);
@@ -149,6 +154,7 @@ public class ClinicalQueryParser {
         addStringFilters("statusName", query.getString(ClinicalQueryParam.CI_STATUS_NAME_NAME), filters);
 
         // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("statusDescription", query.getString(CI_STATUS_DESCRIPTION_NAME), filters);
 
         // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
         addDateFilters("statusDate", query.getString(ClinicalQueryParam.CI_STATUS_DATE_NAME), filters);
@@ -182,6 +188,8 @@ public class ClinicalQueryParser {
 
         // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
         // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+        addTextFilters("comments", query.getString(CV_COMMENTS_NAME), filters);
+
         // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
         // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
         // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
@@ -193,6 +201,7 @@ public class ClinicalQueryParser {
         addStringFilters("discussionDate", query.getString(ClinicalQueryParam.CV_DISCUSSION_DATE_NAME), filters);
 
         // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("discussionText", query.getString(CV_DISCUSSION_TEXT_NAME), filters);
 
         // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("confidenceValue", query.getString(ClinicalQueryParam.CV_CONFIDENCE_VALUE_NAME), filters);
@@ -263,6 +272,9 @@ public class ClinicalQueryParser {
         // <field name="rolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("rolesInCancer", query.getString(ClinicalQueryParam.CVE_ROL_IN_CANCER_NAME), filters);
 
+        // <field name="reviewText" type="text_en" indexed="true" stored="true" multiValued="false"/>
+        addTextFilters("reviewText", query.getString(ClinicalQueryParam.CVE_REVIEW_TEXT_NAME), filters);
+
         // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
         return filters;
@@ -302,6 +314,22 @@ public class ClinicalQueryParser {
         if (StringUtils.isNotEmpty(fieldValue)) {
             String value = Boolean.parseBoolean(fieldValue) ? "true" : "false";
             filters.add(fieldName + ": " + value);
+        }
+    }
+
+    protected void addTextFilters(String fieldName, String fieldValue, List<String> filters) {
+        if (StringUtils.isNotEmpty(fieldValue)) {
+            List<String> values = Arrays.asList(fieldValue.split("[,;]"));
+            String op = fieldValue.contains(";") ? " AND " : " OR ";
+
+            StringBuilder sb = new StringBuilder();
+            for (String value : values) {
+                if (sb.length() > 0) {
+                    sb.append(op);
+                }
+                sb.append(fieldName).append(": \"*").append(value).append("*\"");
+            }
+            filters.add(sb.toString());
         }
     }
 

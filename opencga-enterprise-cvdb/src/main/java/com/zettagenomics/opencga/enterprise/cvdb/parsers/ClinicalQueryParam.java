@@ -43,7 +43,9 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // ---------- Commons
 
-    private static final String OPT_LIST= " separated by commas)";
+    private static final String OPT_LIST = " separated by commas)";
+    private static final String TEXT_LEGEND = "(word or list of words contained in the text, if the words are separated by a comma an OR"
+            + " will be applied; if the words are separated by a semicolon, an AND will be applied)";
 
     // ---------- Clinical analysis (aka CA)
 
@@ -53,6 +55,9 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CA_ID = new ClinicalQueryParam(CA_ID_NAME, TEXT_ARRAY, CA_ID_DESCR);
 
     // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    public static final String CA_DESCRIPTION_NAME = "caDescription";
+    public static final String CA_DESCRIPTION_DESCR = "Clinical analysis description " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CA_DESCRIPTION = new ClinicalQueryParam(CA_DESCRIPTION_NAME, TEXT_ARRAY, CA_DESCRIPTION_DESCR);
 
     // <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CA_TYPE_NAME = "caType";
@@ -92,6 +97,9 @@ public final class ClinicalQueryParam implements QueryParam {
             CA_FAMILY_MEMBER_ID_DESCR);
 
     // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CA_REPORT_NAME = "caReport";
+    public static final String CA_REPORT_DESCR = "Clinical analysis report text " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CA_REPORT = new ClinicalQueryParam(CA_REPORT_NAME, TEXT_ARRAY, CA_REPORT_DESCR);
 
     // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CA_STATUS_NAME = "ciStatusName";
@@ -116,6 +124,9 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CI_PRIMARY = new ClinicalQueryParam(CI_PRIMARY_NAME, TEXT_ARRAY, CI_PRIMARY_DESCR);
 
     // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_DESCRIPTION_NAME = "ciDescription";
+    public static final String CI_DESCRIPTION_DESCR = "Clinical interpretation description " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CI_DESCRIPTION = new ClinicalQueryParam(CI_DESCRIPTION_NAME, TEXT_ARRAY, CI_DESCRIPTION_DESCR);
 
     // <!-- Panel IDs contain both IDs and names -->
     // <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -173,8 +184,16 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <!-- Method software/dependencies are stores: name == version -->
     // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
+    public static final String CI_METHOD_DEPENDENCIES_NAME = "ciMethodDependencies";
+    public static final String CI_METHOD_DEPENDENCIES_DESCR = "Clinical interpretation method dependencies " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CI_METHOD_DEPENDENCIES = new ClinicalQueryParam(CI_METHOD_DEPENDENCIES_NAME, TEXT_ARRAY,
+            CI_METHOD_DEPENDENCIES_DESCR);
+
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    public static final String CI_COMMENTS_NAME = "ciComments";
+    public static final String CI_COMMENTS_DESCR = "Clinical interpretation comment text " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CI_COMMENTS = new ClinicalQueryParam(CI_COMMENTS_NAME, TEXT_ARRAY, CI_COMMENTS_DESCR);
 
     // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_LOCKED_NAME = "ciLocked";
@@ -194,6 +213,10 @@ public final class ClinicalQueryParam implements QueryParam {
             CI_STATUS_NAME_DESCR);
 
     // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_STATUS_DESCRIPTION_NAME = "ciStatusDescription";
+    public static final String CI_STATUS_DESCRIPTION_DESCR = "Clinical interpretation status description " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CI_STATUS_DESCRIPTION = new ClinicalQueryParam(CI_STATUS_DESCRIPTION_NAME, TEXT_ARRAY,
+            CI_STATUS_DESCRIPTION_DESCR);
 
     // <field name="statusDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_STATUS_DATE_NAME = "ciStatusDate";
@@ -230,6 +253,10 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    public static final String CV_COMMENTS_NAME = "cvComments";
+    public static final String CV_COMMENTS_DESCR = "Clinical variant comment text " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CV_COMMENTS = new ClinicalQueryParam(CV_COMMENTS_NAME, TEXT_ARRAY, CV_COMMENTS_DESCR);
+
     // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
     // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
     // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
@@ -248,6 +275,10 @@ public final class ClinicalQueryParam implements QueryParam {
             CV_DISCUSSION_DATE_DESCR);
 
     // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_DISCUSSION_TEXT_NAME = "cvDiscussionText";
+    public static final String CV_DISCUSSION_TEXT_DESCR = "Clinical variant discussion text " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CV_DISCUSSION_TEXT = new ClinicalQueryParam(CV_DISCUSSION_TEXT_NAME, TEXT_ARRAY,
+            CV_DISCUSSION_TEXT_DESCR);
 
     // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CV_CONFIDENCE_VALUE_NAME = "cvConfidenceValue";
@@ -520,6 +551,12 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final String CVE_ROL_IN_CANCER_DESCR = "Clinical variant evidence rol in cancer (or roles in cancer" + OPT_LIST;
     public static final ClinicalQueryParam CVE_ROL_IN_CANCER = new ClinicalQueryParam(CVE_ROL_IN_CANCER_NAME, TEXT_ARRAY,
             CVE_ROL_IN_CANCER_DESCR);
+
+    // <field name="reviewText" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    public static final String CVE_REVIEW_TEXT_NAME = "cveReviewText";
+    public static final String CVE_REVIEW_TEXT_DESCR = "Clinical variant evidence review text " + TEXT_LEGEND;
+    public static final ClinicalQueryParam CVE_REVIEW_TEXT = new ClinicalQueryParam(CVE_REVIEW_TEXT_NAME, TEXT_ARRAY,
+            CVE_REVIEW_TEXT_DESCR);
 
     // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
