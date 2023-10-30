@@ -157,7 +157,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
-            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_VERSION_NAME, value = CI_VERSION_DESCR, dataType = "integer", paramType = "query"),
 
             // Clinical variant filters
 
@@ -318,7 +318,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
-            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_VERSION_NAME, value = CI_VERSION_DESCR, dataType = "integer", paramType = "query"),
 
             // Clinical variant filters
 
@@ -478,7 +478,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
-            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_VERSION_NAME, value = CI_VERSION_DESCR, dataType = "integer", paramType = "query"),
 
             // Clinical variant filters
 
@@ -638,7 +638,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
-            // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_VERSION_NAME, value = CI_VERSION_DESCR, dataType = "integer", paramType = "query"),
 
             // Clinical variant filters
 

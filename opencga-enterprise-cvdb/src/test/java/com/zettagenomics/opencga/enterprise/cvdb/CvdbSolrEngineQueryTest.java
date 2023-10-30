@@ -569,6 +569,42 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
+    public void testInteger() throws IOException, CvdbException, ParseException {
+        // CVDB query
+        Query query;
+        QueryOptions queryOptions = new QueryOptions();
+        DataResult<Interpretation> result;
+
+        // ciId = OPA-6522-1.1, version = 1
+        // ciId = SAP-32015-1.1, version = 1
+
+        // Check single date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_VERSION_NAME, 1);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertEquals(query.getInt(CI_VERSION_NAME), ci.getVersion());
+        }
+
+        // Check multiple date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        List<Integer> versions = Arrays.asList(1, 3);
+        query.put(CI_VERSION_NAME, StringUtils.join(versions, ","));
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            assertTrue(versions.contains(ci.getVersion()));
+        }
+
+        // Check multiple date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_VERSION_NAME, "555");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+    }
+
+    @Test
     public void testQueryClinicalInterpretationsByCiFilters() throws IOException, CvdbException {
         // CVDB query
         Query query;

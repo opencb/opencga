@@ -156,6 +156,7 @@ public class ClinicalQueryParser {
         addDateFilters("modificationDate", query.getString(ClinicalQueryParam.CI_MODIFICATION_DATE_NAME), filters);
 
         // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+        addIntegerFilters("version", query.getString(ClinicalQueryParam.CI_VERSION_NAME), filters);
 
         return filters;
     }
@@ -271,6 +272,21 @@ public class ClinicalQueryParser {
                     sb.append(" OR ");
                 }
                 sb.append(fieldName).append(": \"").append(value).append("\"");
+            }
+            filters.add(sb.toString());
+        }
+    }
+
+    protected void addIntegerFilters(String fieldName, String fieldValue, List<String> filters) {
+        if (StringUtils.isNotEmpty(fieldValue)) {
+            List<String> values = Arrays.asList(fieldValue.split(","));
+
+            StringBuilder sb = new StringBuilder();
+            for (String value : values) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append(fieldName).append(": ").append(value);
             }
             filters.add(sb.toString());
         }

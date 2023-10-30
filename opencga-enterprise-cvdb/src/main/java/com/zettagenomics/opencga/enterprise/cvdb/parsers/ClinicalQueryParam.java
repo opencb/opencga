@@ -54,7 +54,7 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
 
-    // <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
+    // <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CA_TYPE_NAME = "caType";
     public static final String CA_TYPE_DESCR = "Clinical analysis type (or list of types" + OPT_LIST;
     public static final ClinicalQueryParam CA_TYPE = new ClinicalQueryParam(CA_TYPE_NAME, TEXT_ARRAY, CA_TYPE_DESCR);
@@ -198,12 +198,16 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <field name="modificationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_MODIFICATION_DATE_NAME = "ciModificationDate";
-    public static final String CI_MODIFICATION_DATE_DESCR = "Clinical interpretation modification date (or list of dates" + OPT_LIST + ", with"
-            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final String CI_MODIFICATION_DATE_DESCR = "Clinical interpretation modification date (or list of dates" + OPT_LIST
+            + ", with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.:"
+            + " 20231001000000-20231101000000";
     public static final ClinicalQueryParam CI_MODIFICATION_DATE = new ClinicalQueryParam(CI_MODIFICATION_DATE_NAME, TEXT_ARRAY,
             CI_MODIFICATION_DATE_DESCR);
 
     // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_VERSION_NAME = "ciVersion";
+    public static final String CI_VERSION_DESCR = "Clinical interpretation version number (or list of versions" + OPT_LIST;
+    public static final ClinicalQueryParam CI_VERSION = new ClinicalQueryParam(CI_VERSION_NAME, TEXT_ARRAY, CI_VERSION_DESCR);
 
     // ---------- Clinical variant (aka CV)
 
