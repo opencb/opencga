@@ -578,7 +578,7 @@ public class CvdbSolrEngineQueryTest {
         // ciId = OPA-6522-1.1, version = 1
         // ciId = SAP-32015-1.1, version = 1
 
-        // Check single date
+        // Check single integer
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CI_VERSION_NAME, 1);
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
@@ -587,7 +587,7 @@ public class CvdbSolrEngineQueryTest {
             assertEquals(query.getInt(CI_VERSION_NAME), ci.getVersion());
         }
 
-        // Check multiple date
+        // Check multiple integers
         query = new Query(PROJECT_PARAM_NAME, projectId);
         List<Integer> versions = Arrays.asList(1, 3);
         query.put(CI_VERSION_NAME, StringUtils.join(versions, ","));
@@ -597,9 +597,56 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(versions.contains(ci.getVersion()));
         }
 
-        // Check multiple date
+        // Check non-existing integer
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CI_VERSION_NAME, "555");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+    }
+
+    @Test
+    public void testBoolean() throws IOException, CvdbException, ParseException {
+        // CVDB query
+        Query query;
+        QueryOptions queryOptions = new QueryOptions();
+        DataResult<Interpretation> result;
+
+        // ciId = OPA-6522-1.1, primary = true
+        // ciId = SAP-32015-1.1, primary = true
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            ClinicalAnalysis clinicalAnalyis = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertEquals(ci.getId(), clinicalAnalyis.getInterpretation().getId());
+        }
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PRIMARY_NAME, "true");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertTrue(result.getNumResults() > 0);
+        for (Interpretation ci : result.getResults()) {
+            ClinicalAnalysis clinicalAnalyis = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertEquals(ci.getId(), clinicalAnalyis.getInterpretation().getId());
+        }
+
+        // Check boolean (false)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PRIMARY_NAME, Boolean.FALSE);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PRIMARY_NAME, "false");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        assertEquals(0, result.getNumResults());
+
+        // Check boolean (non-valid value -> false)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CI_PRIMARY_NAME, "toto");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
         assertEquals(0, result.getNumResults());
     }

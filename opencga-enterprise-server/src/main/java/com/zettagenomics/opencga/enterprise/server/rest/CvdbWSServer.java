@@ -132,12 +132,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_LOCKED_NAME, value = CA_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
 
             // Clinical interpretation filters
 
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PRIMARY_NAME, value = CI_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
@@ -150,7 +150,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
             // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_LOCKED_NAME, value = CI_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -162,7 +162,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
@@ -293,12 +293,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_LOCKED_NAME, value = CA_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
 
             // Clinical interpretation filters
 
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PRIMARY_NAME, value = CI_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
@@ -311,7 +311,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
             // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_LOCKED_NAME, value = CI_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -323,7 +323,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
@@ -453,12 +453,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_LOCKED_NAME, value = CA_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
 
             // Clinical interpretation filters
 
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PRIMARY_NAME, value = CI_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
@@ -471,7 +471,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
             // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_LOCKED_NAME, value = CI_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -483,7 +483,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
@@ -613,12 +613,12 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CA_FAMILY_MEMBER_ID_NAME, value = CA_FAMILY_MEMBER_ID_DESCR, dataType = "string", paramType = "query"),
             // <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CA_STATUS_NAME, value = CA_STATUS_DESCR, dataType = "string", paramType = "query"),
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CA_LOCKED_NAME, value = CA_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
 
             // Clinical interpretation filters
 
             @ApiImplicitParam(name = CI_ID_NAME, value = CI_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_PRIMARY_NAME, value = CI_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CI_PANEL_ID_NAME, value = CI_PANEL_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ID_NAME, value = CI_ANALYIST_ID_DESCR, dataType = "string", paramType = "query"),
@@ -631,7 +631,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
             // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
-            // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_LOCKED_NAME, value = CI_LOCKED_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -643,7 +643,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // Clinical variant filters
 
             @ApiImplicitParam(name = CV_ID_NAME, value = CV_ID_DESCR, dataType = "string", paramType = "query"),
-            // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_PRIMARY_NAME, value = CV_PRIMARY_DESCR, dataType = "boolean", paramType = "query"),
             // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>

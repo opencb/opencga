@@ -90,6 +90,7 @@ public class ClinicalQueryParser {
         addStringFilters("status", query.getString(ClinicalQueryParam.CA_STATUS_NAME), filters);
 
         // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("locked", query.getString(CA_LOCKED_NAME), filters);
 
         return filters;
     }
@@ -100,6 +101,8 @@ public class ClinicalQueryParser {
         addStringFilters("id", query.getString(ClinicalQueryParam.CI_ID_NAME), filters);
 
         // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primary", query.getString(CI_PRIMARY_NAME), filters);
+
         // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
 
         // <!-- Panel IDs contain both IDs and names -->
@@ -137,6 +140,7 @@ public class ClinicalQueryParser {
         // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
         // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("locked", query.getString(CI_LOCKED_NAME), filters);
 
         // <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("statusId", query.getString(ClinicalQueryParam.CI_STATUS_ID_NAME), filters);
@@ -174,6 +178,8 @@ public class ClinicalQueryParser {
         // Clinical variant filters
 
         // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+        addBooleanFilters("primary", query.getString(CV_PRIMARY_NAME), filters);
+
         // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
         // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
         // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
@@ -289,6 +295,13 @@ public class ClinicalQueryParser {
                 sb.append(fieldName).append(": ").append(value);
             }
             filters.add(sb.toString());
+        }
+    }
+
+    protected void addBooleanFilters(String fieldName, String fieldValue, List<String> filters) {
+        if (StringUtils.isNotEmpty(fieldValue)) {
+            String value = Boolean.parseBoolean(fieldValue) ? "true" : "false";
+            filters.add(fieldName + ": " + value);
         }
     }
 

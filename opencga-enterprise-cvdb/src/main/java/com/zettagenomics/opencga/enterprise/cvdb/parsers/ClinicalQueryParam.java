@@ -99,6 +99,10 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CA_STATUS = new ClinicalQueryParam(CA_STATUS_NAME, TEXT_ARRAY, CA_STATUS_DESCR);
 
     // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    public static final String CA_LOCKED_NAME = "caLocked";
+    public static final String CA_LOCKED_DESCR = "Clinical analysis locked (true or false)";
+    public static final ClinicalQueryParam CA_LOCKED = new ClinicalQueryParam(CA_LOCKED_NAME, TEXT_ARRAY, CA_LOCKED_DESCR);
+
 
     // ---------- Clinical interpretation (aka CI)
 
@@ -107,6 +111,10 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CI_ID = new ClinicalQueryParam(CI_ID_NAME, TEXT_ARRAY, CI_ID_DESCR);
 
     // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_PRIMARY_NAME = "ciPrimary";
+    public static final String CI_PRIMARY_DESCR = "Clinical interpretation primary (true or false)";
+    public static final ClinicalQueryParam CI_PRIMARY = new ClinicalQueryParam(CI_PRIMARY_NAME, TEXT_ARRAY, CI_PRIMARY_DESCR);
+
     // <field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
 
     // <!-- Panel IDs contain both IDs and names -->
@@ -167,7 +175,11 @@ public final class ClinicalQueryParam implements QueryParam {
     // <field name="methodDependencies" type="string" indexed="true" stored="true" multiValued="true"/>
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+
     // <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_LOCKED_NAME = "ciLocked";
+    public static final String CI_LOCKED_DESCR = "Clinical interpretation locked (true or false)";
+    public static final ClinicalQueryParam CI_LOCKED = new ClinicalQueryParam(CI_LOCKED_NAME, TEXT_ARRAY, CI_LOCKED_DESCR);
 
     // <field name="statusId" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_STATUS_ID_NAME = "ciStatusId";
@@ -212,6 +224,10 @@ public final class ClinicalQueryParam implements QueryParam {
     // ---------- Clinical variant (aka CV)
 
     // <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_PRIMARY_NAME = "cvPrimary";
+    public static final String CV_PRIMARY_DESCR = "Clinical variant is a primary finding (true or false)";
+    public static final ClinicalQueryParam CV_PRIMARY = new ClinicalQueryParam(CV_PRIMARY_NAME, TEXT_ARRAY, CV_PRIMARY_DESCR);
+
     // <!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     // <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
     // <!-- Filters are stored in two dynamic fields: one for string values, the other one for numeric ones -->
