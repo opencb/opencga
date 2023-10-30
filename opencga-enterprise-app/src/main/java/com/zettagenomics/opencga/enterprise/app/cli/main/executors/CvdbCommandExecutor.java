@@ -158,7 +158,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
         queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
         queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
         queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
@@ -168,6 +170,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
         queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
         queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
@@ -175,6 +178,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
         queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
         queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
@@ -244,7 +248,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
         queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
         queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
         queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
@@ -254,6 +260,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
         queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
         queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
@@ -261,6 +268,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
         queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
         queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
@@ -330,7 +338,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
         queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
         queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
         queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
@@ -340,6 +350,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
         queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
         queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
@@ -347,6 +358,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
         queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
         queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
@@ -416,7 +428,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
         queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
         queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
         queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
@@ -426,6 +440,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
         queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
         queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
         queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
         queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
         queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
@@ -433,6 +448,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
         queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
         queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
         queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
         queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
         queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);

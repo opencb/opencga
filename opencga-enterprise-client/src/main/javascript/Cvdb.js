@@ -72,7 +72,9 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
+    * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -83,6 +85,7 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -92,6 +95,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -188,7 +192,9 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
+    * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -199,6 +205,7 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -208,6 +215,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -304,7 +312,9 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
+    * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -315,6 +325,7 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -324,6 +335,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -420,7 +432,9 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.caFamilyPhenotypeName] - Clinical analysis family phenotype names (or list of names separated by commas).
     * @param {String} [params.caFamilyMemberId] - Clinical analysis family member ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusName] - Clinical interpretation status name (or list of names separated by commas).
+    * @param {Boolean} [params.caLocked] - Clinical analysis locked (true or false).
     * @param {String} [params.ciId] - Clinical interpretation ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.ciPrimary] - Clinical interpretation primary (true or false).
     * @param {String} [params.ciPanelId] - Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
     * @param {String} [params.ciAnalystId] - Clinical interpretation analyst ID (or list of IDs separated by commas).
     * @param {String} [params.ciAnalystName] - Clinical interpretation analyst name (or list of names separated by commas).
@@ -431,6 +445,7 @@ export default class Cvdb extends OpenCGAParentClass {
     * @param {String} [params.ciMethodName] - Clinical interpretation method name (or list of names separated by commas).
     * @param {String} [params.ciMethodVersion] - Clinical interpretation method version (or list of versions separated by commas).
     * @param {String} [params.ciMethodCommit] - Clinical interpretation method commit (or list of commits separated by commas).
+    * @param {Boolean} [params.ciLocked] - Clinical interpretation locked (true or false).
     * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas).
     * @param {String} [params.ciStatusDate] - Clinical interpretation status date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -440,6 +455,7 @@ export default class Cvdb extends OpenCGAParentClass {
     *     format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
     * @param {Number} [params.ciVersion] - Clinical interpretation version number (or list of versions separated by commas).
     * @param {String} [params.cvId] - Variant ID (or list of IDs separated by commas).
+    * @param {Boolean} [params.cvPrimary] - Clinical variant is a primary finding (true or false).
     * @param {String} [params.cvDiscussionAuthor] - Clinical variant discussion author (or list of authors separated by commas).
     * @param {String} [params.cvDiscussionDate] - Clinical variant discussion date (or list of dates separated by commas), with format
     *     YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.

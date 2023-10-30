@@ -81,8 +81,11 @@ class Cvdb(_ParentRestClient):
             list of IDs separated by commas).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
+        :param bool ca_locked: Clinical analysis locked (true or false).
         :param str ci_id: Clinical interpretation ID (or list of IDs separated
             by commas).
+        :param bool ci_primary: Clinical interpretation primary (true or
+            false).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -103,6 +106,7 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
         :param str ci_status_date: Clinical interpretation status date (or
@@ -120,6 +124,8 @@ class Cvdb(_ParentRestClient):
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param bool cv_primary: Clinical variant is a primary finding (true or
+            false).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
@@ -282,8 +288,11 @@ class Cvdb(_ParentRestClient):
             list of IDs separated by commas).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
+        :param bool ca_locked: Clinical analysis locked (true or false).
         :param str ci_id: Clinical interpretation ID (or list of IDs separated
             by commas).
+        :param bool ci_primary: Clinical interpretation primary (true or
+            false).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -304,6 +313,7 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
         :param str ci_status_date: Clinical interpretation status date (or
@@ -321,6 +331,8 @@ class Cvdb(_ParentRestClient):
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param bool cv_primary: Clinical variant is a primary finding (true or
+            false).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
@@ -483,8 +495,11 @@ class Cvdb(_ParentRestClient):
             list of IDs separated by commas).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
+        :param bool ca_locked: Clinical analysis locked (true or false).
         :param str ci_id: Clinical interpretation ID (or list of IDs separated
             by commas).
+        :param bool ci_primary: Clinical interpretation primary (true or
+            false).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -505,6 +520,7 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
         :param str ci_status_date: Clinical interpretation status date (or
@@ -522,6 +538,8 @@ class Cvdb(_ParentRestClient):
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param bool cv_primary: Clinical variant is a primary finding (true or
+            false).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or
@@ -684,8 +702,11 @@ class Cvdb(_ParentRestClient):
             list of IDs separated by commas).
         :param str ci_status_name: Clinical interpretation status name (or
             list of names separated by commas).
+        :param bool ca_locked: Clinical analysis locked (true or false).
         :param str ci_id: Clinical interpretation ID (or list of IDs separated
             by commas).
+        :param bool ci_primary: Clinical interpretation primary (true or
+            false).
         :param str ci_panel_id: Clinical interpretation panel ID or name (or
             list of IDs or names separated by commas).
         :param str ci_analyst_id: Clinical interpretation analyst ID (or list
@@ -706,6 +727,7 @@ class Cvdb(_ParentRestClient):
             (or list of versions separated by commas).
         :param str ci_method_commit: Clinical interpretation method commit (or
             list of commits separated by commas).
+        :param bool ci_locked: Clinical interpretation locked (true or false).
         :param str ci_status_id: Clinical interpretation status ID (or list of
             IDs separated by commas).
         :param str ci_status_date: Clinical interpretation status date (or
@@ -723,6 +745,8 @@ class Cvdb(_ParentRestClient):
         :param int ci_version: Clinical interpretation version number (or list
             of versions separated by commas).
         :param str cv_id: Variant ID (or list of IDs separated by commas).
+        :param bool cv_primary: Clinical variant is a primary finding (true or
+            false).
         :param str cv_discussion_author: Clinical variant discussion author
             (or list of authors separated by commas).
         :param str cv_discussion_date: Clinical variant discussion date (or

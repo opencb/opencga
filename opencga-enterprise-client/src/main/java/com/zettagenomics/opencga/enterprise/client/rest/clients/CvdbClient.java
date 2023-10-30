@@ -99,7 +99,9 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
+     *       ciPrimary: Clinical interpretation primary (true or false).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -110,6 +112,7 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -120,6 +123,7 @@ public class CvdbClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -215,7 +219,9 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
+     *       ciPrimary: Clinical interpretation primary (true or false).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -226,6 +232,7 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -236,6 +243,7 @@ public class CvdbClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -331,7 +339,9 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
+     *       ciPrimary: Clinical interpretation primary (true or false).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -342,6 +352,7 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -352,6 +363,7 @@ public class CvdbClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
@@ -447,7 +459,9 @@ public class CvdbClient extends AbstractParentClient {
      *       caFamilyPhenotypeName: Clinical analysis family phenotype names (or list of names separated by commas).
      *       caFamilyMemberId: Clinical analysis family member ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
+     *       caLocked: Clinical analysis locked (true or false).
      *       ciId: Clinical interpretation ID (or list of IDs separated by commas).
+     *       ciPrimary: Clinical interpretation primary (true or false).
      *       ciPanelId: Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
      *       ciAnalystId: Clinical interpretation analyst ID (or list of IDs separated by commas).
      *       ciAnalystName: Clinical interpretation analyst name (or list of names separated by commas).
@@ -458,6 +472,7 @@ public class CvdbClient extends AbstractParentClient {
      *       ciMethodName: Clinical interpretation method name (or list of names separated by commas).
      *       ciMethodVersion: Clinical interpretation method version (or list of versions separated by commas).
      *       ciMethodCommit: Clinical interpretation method commit (or list of commits separated by commas).
+     *       ciLocked: Clinical interpretation locked (true or false).
      *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas).
      *       ciStatusName: Clinical interpretation status name (or list of names separated by commas).
      *       ciStatusDate: Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
@@ -468,6 +483,7 @@ public class CvdbClient extends AbstractParentClient {
      *            YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
      *       ciVersion: Clinical interpretation version number (or list of versions separated by commas).
      *       cvId: Variant ID (or list of IDs separated by commas).
+     *       cvPrimary: Clinical variant is a primary finding (true or false).
      *       cvDiscussionAuthor: Clinical variant discussion author (or list of authors separated by commas).
      *       cvDiscussionDate: Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.:
      *            20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.

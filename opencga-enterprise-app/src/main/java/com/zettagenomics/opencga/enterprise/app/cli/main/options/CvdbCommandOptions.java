@@ -148,8 +148,14 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
+        @Parameter(names = {"--ca-locked"}, description = "Clinical analysis locked (true or false)", required = false, help = true, arity = 0)
+        public boolean caLocked = false; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
+    
+        @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
+        public boolean ciPrimary = false; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -178,6 +184,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
+        public boolean ciLocked = false; 
+    
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
@@ -195,6 +204,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
+    
+        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimary = false; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
@@ -381,8 +393,14 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
+        @Parameter(names = {"--ca-locked"}, description = "Clinical analysis locked (true or false)", required = false, help = true, arity = 0)
+        public boolean caLocked = false; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
+    
+        @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
+        public boolean ciPrimary = false; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -411,6 +429,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
+        public boolean ciLocked = false; 
+    
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
@@ -428,6 +449,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
+    
+        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimary = false; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
@@ -614,8 +638,14 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
+        @Parameter(names = {"--ca-locked"}, description = "Clinical analysis locked (true or false)", required = false, help = true, arity = 0)
+        public boolean caLocked = false; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
+    
+        @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
+        public boolean ciPrimary = false; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -644,6 +674,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
+        public boolean ciLocked = false; 
+    
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
@@ -661,6 +694,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
+    
+        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimary = false; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
@@ -847,8 +883,14 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-status-name"}, description = "Clinical analysis status (or list of status separated by commas)", required = false, arity = 1)
         public String ciStatusName; 
     
+        @Parameter(names = {"--ca-locked"}, description = "Clinical analysis locked (true or false)", required = false, help = true, arity = 0)
+        public boolean caLocked = false; 
+    
         @Parameter(names = {"--ci-id"}, description = "Clinical interpretation ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciId; 
+    
+        @Parameter(names = {"--ci-primary"}, description = "Clinical interpretation primary (true or false)", required = false, help = true, arity = 0)
+        public boolean ciPrimary = false; 
     
         @Parameter(names = {"--ci-panel-id"}, description = "Clinical interpretation panel ID or name (or list of IDs or names separated by commas)", required = false, arity = 1)
         public String ciPanelId; 
@@ -877,6 +919,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--ci-method-commit"}, description = "Clinical interpretation method commit (or list of commits separated by commas)", required = false, arity = 1)
         public String ciMethodCommit; 
     
+        @Parameter(names = {"--ci-locked"}, description = "Clinical interpretation locked (true or false)", required = false, help = true, arity = 0)
+        public boolean ciLocked = false; 
+    
         @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String ciStatusId; 
     
@@ -894,6 +939,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--cv-id"}, description = "Variant ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String cvId; 
+    
+        @Parameter(names = {"--cv-primary"}, description = "Clinical variant is a primary finding (true or false)", required = false, help = true, arity = 0)
+        public boolean cvPrimary = false; 
     
         @Parameter(names = {"--cv-discussion-author"}, description = "Clinical variant discussion author (or list of authors separated by commas)", required = false, arity = 1)
         public String cvDiscussionAuthor; 
