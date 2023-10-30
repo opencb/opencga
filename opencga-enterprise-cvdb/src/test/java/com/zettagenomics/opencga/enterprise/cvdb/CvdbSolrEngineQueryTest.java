@@ -227,7 +227,7 @@ public class CvdbSolrEngineQueryTest {
         assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
         Phenotype phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
         assertEquals("VACTERL-like phenotypes", phenotype.getId());
-        assertTrue(StringUtils.isEmpty(phenotype.getSource()));
+        assertTrue(StringUtils.isNotEmpty(phenotype.getSource()));
 
         queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
@@ -236,6 +236,70 @@ public class CvdbSolrEngineQueryTest {
         phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
         assertEquals("VACTERL-like phenotypes", phenotype.getId());
         assertEquals("non-standard", phenotype.getSource());
+    }
+
+    @Test
+    public void testQueryClinicalVariantInclude() throws IOException, CvdbException {
+        // CVDB query
+        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
+        DataResult<ClinicalVariant> result;
+
+        Query query = new Query();
+        query.put(PROJECT_PARAM_NAME, projectId);
+        query.put(CV_ID_NAME, StringUtils.join(variantIds, ","));
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 1);
+
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() != null);
+        assertTrue(result.first().getAnnotation() != null);
+        System.out.println(result.first().toJson());
+
+        queryOptions.put(INCLUDE, "impl.type");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() != null);
+        assertTrue(result.first().getAnnotation() == null);
+
+        queryOptions.put(INCLUDE, "impl.annotation");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() == null);
+        assertTrue(result.first().getAnnotation() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
+
+        queryOptions.put(INCLUDE, "impl.annotation.start");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() == null);
+        assertTrue(result.first().getAnnotation() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes() == null);
+
+        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() == null);
+        assertTrue(result.first().getAnnotation() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms() != null);
+
+        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes.geneName");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() == null);
+        assertTrue(result.first().getAnnotation() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms() == null);
+
+        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes.sequenceOntologyTerms");
+        result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(result.first().getType() == null);
+        assertTrue(result.first().getAnnotation() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
+        assertTrue(result.first().getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms() != null);
     }
 
     @Test

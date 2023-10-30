@@ -16,6 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 
+import org.apache.avro.Schema;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.lang.reflect.Field;
@@ -59,7 +60,8 @@ public class ClinicalIncludeHandler {
                 // Only set to null, field non-primitive and no-enum types
                 // Primitive types: boolean, byte, char, short, int, long, float, and double
                 // Enum types: Enum, EnumMap, EnumSet, Enumeration
-                if (!field.getType().isPrimitive() && !isEnum(field.getType())) {
+                if (!field.getType().isPrimitive() && field.getType() != String.class && !isEnum(field.getType())
+                        && field.getType() != Schema.class) {
                     if (isNested(field.getName(), includes)) {
                         // Field belonging to a nested object, e.g.: disorder.id
                         if (field.getType() == List.class && fieldValue instanceof List) {
