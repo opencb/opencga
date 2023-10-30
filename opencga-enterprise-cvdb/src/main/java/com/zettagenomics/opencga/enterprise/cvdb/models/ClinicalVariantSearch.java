@@ -19,10 +19,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.models;
 import org.apache.solr.client.solrj.beans.Field;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ClinicalVariantSearch extends VariantSearchModel {
 
@@ -65,7 +62,7 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     private String discussionAuthor;
 
     @Field("discussionDate")
-    private String discussionDate;
+    private Date discussionDate;
 
     @Field("discussionText")
     private String discussionText;
@@ -77,7 +74,7 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     private String confidenceAuthor;
 
     @Field("confidenceDate")
-    private String confidenceDate;
+    private Date confidenceDate;
 
     @Field("tags")
     private List<String> tags;
@@ -210,11 +207,11 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         return this;
     }
 
-    public String getDiscussionDate() {
+    public Date getDiscussionDate() {
         return discussionDate;
     }
 
-    public ClinicalVariantSearch setDiscussionDate(String discussionDate) {
+    public ClinicalVariantSearch setDiscussionDate(Date discussionDate) {
         this.discussionDate = discussionDate;
         return this;
     }
@@ -246,11 +243,11 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         return this;
     }
 
-    public String getConfidenceDate() {
+    public Date getConfidenceDate() {
         return confidenceDate;
     }
 
-    public ClinicalVariantSearch setConfidenceDate(String confidenceDate) {
+    public ClinicalVariantSearch setConfidenceDate(Date confidenceDate) {
         this.confidenceDate = confidenceDate;
         return this;
     }

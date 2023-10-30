@@ -19,6 +19,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.models;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ClinicalInterpretationSearch {
@@ -64,7 +65,7 @@ public class ClinicalInterpretationSearch {
     private String analystAssignedBy;
 
     @Field("analystDate")
-    private String analystDate;
+    private Date analystDate;
 
     @Field("methodName")
     private String methodName;
@@ -96,13 +97,13 @@ public class ClinicalInterpretationSearch {
     private String statusDescription;
 
     @Field("statusDate")
-    private String statusDate;
+    private Date statusDate;
 
     @Field("creationDate")
-    private String creationDate;
+    private Date creationDate;
 
     @Field("modificationDate")
-    private String modificationDate;
+    private Date modificationDate;
 
     @Field("version")
     private int version;
@@ -253,11 +254,11 @@ public class ClinicalInterpretationSearch {
         return this;
     }
 
-    public String getAnalystDate() {
+    public Date getAnalystDate() {
         return analystDate;
     }
 
-    public ClinicalInterpretationSearch setAnalystDate(String analystDate) {
+    public ClinicalInterpretationSearch setAnalystDate(Date analystDate) {
         this.analystDate = analystDate;
         return this;
     }
@@ -343,29 +344,29 @@ public class ClinicalInterpretationSearch {
         return this;
     }
 
-    public String getStatusDate() {
+    public Date getStatusDate() {
         return statusDate;
     }
 
-    public ClinicalInterpretationSearch setStatusDate(String statusDate) {
+    public ClinicalInterpretationSearch setStatusDate(Date statusDate) {
         this.statusDate = statusDate;
         return this;
     }
 
-    public String getCreationDate() {
+    public Date getCreationDate() {
         return creationDate;
     }
 
-    public ClinicalInterpretationSearch setCreationDate(String creationDate) {
+    public ClinicalInterpretationSearch setCreationDate(Date creationDate) {
         this.creationDate = creationDate;
         return this;
     }
 
-    public String getModificationDate() {
+    public Date getModificationDate() {
         return modificationDate;
     }
 
-    public ClinicalInterpretationSearch setModificationDate(String modificationDate) {
+    public ClinicalInterpretationSearch setModificationDate(Date modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }

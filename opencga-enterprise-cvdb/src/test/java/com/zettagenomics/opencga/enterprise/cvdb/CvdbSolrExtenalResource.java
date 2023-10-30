@@ -95,14 +95,14 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
     private void copyConfigSetConfiguration(String configSet, String managedSchemaFile) throws IOException {
         // Copy configuration
-        getResourceUri("configset/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
-        getResourceUri("configset/params.json", "configsets/" + configSet + "/params.json");
-        getResourceUri("configset/protwords.txt", "configsets/" + configSet + "/protwords.txt");
-        getResourceUri("configset/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
-        getResourceUri("configset/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
-        getResourceUri("configset/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
+        getResourceUri("configset/solrconfig.xml", "configsets/" + configSet + "/conf/solrconfig.xml");
+        getResourceUri("configset/params.json", "configsets/" + configSet + "/conf/params.json");
+        getResourceUri("configset/protwords.txt", "configsets/" + configSet + "/conf/protwords.txt");
+        getResourceUri("configset/stopwords.txt", "configsets/" + configSet + "/conf/stopwords.txt");
+        getResourceUri("configset/synonyms.txt", "configsets/" + configSet + "/conf/synonyms.txt");
+        getResourceUri("configset/lang/stopwords_en.txt", "configsets/" + configSet + "/conf/lang/stopwords_en.txt");
 
-        getResourceUri("schemas/" + managedSchemaFile, "configsets/" + configSet + "/managed-schema");
+        getResourceUri("schemas/" + managedSchemaFile, "configsets/" + configSet + "/conf/managed-schema");
     }
 
     public CvdbSolrEngine configure() {

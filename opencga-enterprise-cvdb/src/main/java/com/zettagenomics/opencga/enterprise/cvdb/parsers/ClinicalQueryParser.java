@@ -16,6 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
+import com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -31,10 +32,13 @@ import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
+import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
@@ -115,6 +119,7 @@ public class ClinicalQueryParser {
         addStringFilters("analystAssignedBy", query.getString(ClinicalQueryParam.CI_ANALYIST_ASSIGNED_BY_NAME), filters);
 
         // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addDateFilters("analystDate", query.getString(ClinicalQueryParam.CI_ANALYIST_DATE_NAME), filters);
 
         // <field name="methodName" type="string" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("methodName", query.getString(ClinicalQueryParam.CI_METHOD_NAME_NAME), filters);
@@ -142,10 +147,13 @@ public class ClinicalQueryParser {
         // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
 
         // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addDateFilters("statusDate", query.getString(ClinicalQueryParam.CI_STATUS_DATE_NAME), filters);
 
         // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addDateFilters("creationDate", query.getString(ClinicalQueryParam.CI_CREATION_DATE_NAME), filters);
 
         // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addDateFilters("modificationDate", query.getString(ClinicalQueryParam.CI_MODIFICATION_DATE_NAME), filters);
 
         // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
@@ -175,6 +183,8 @@ public class ClinicalQueryParser {
         addStringFilters("discussionAuthor", query.getString(ClinicalQueryParam.CV_DISCUSSION_AUTHOR_NAME), filters);
 
         // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("discussionDate", query.getString(ClinicalQueryParam.CV_DISCUSSION_DATE_NAME), filters);
+
         // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
 
         // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -184,6 +194,7 @@ public class ClinicalQueryParser {
         addStringFilters("confidenceAuthor", query.getString(ClinicalQueryParam.CV_CONFIDENCE_AUTHOR_NAME), filters);
 
         // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("confidenceDate", query.getString(ClinicalQueryParam.CV_CONFIDENCE_DATE_NAME), filters);
 
         // <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
         addStringFilters("tags", query.getString(ClinicalQueryParam.CV_TAG_NAME), filters);
@@ -260,6 +271,48 @@ public class ClinicalQueryParser {
                     sb.append(" OR ");
                 }
                 sb.append(fieldName).append(": \"").append(value).append("\"");
+            }
+            filters.add(sb.toString());
+        }
+    }
+
+    protected void addDateFilters(String fieldName, String fieldValue, List<String> filters) {
+        if (StringUtils.isNotEmpty(fieldValue)) {
+            List<String> values = Arrays.asList(fieldValue.split(","));
+
+            StringBuilder sb = new StringBuilder();
+            for (String value : values) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                try {
+                    StringBuilder tmp = new StringBuilder();
+                    if (value.contains("-")) {
+                        // Interval: start date - end date
+                        String[] split = value.split("-", -1);
+                        tmp.append(fieldName).append(":[");
+                        if (StringUtils.isEmpty(split[0])) {
+                            tmp.append("*");
+                        } else {
+                            tmp.append(solrDateFormat.format(simpleDateFormat.parse(split[0])));
+                        }
+                        tmp.append(" TO ");
+                        if (StringUtils.isEmpty(split[1])) {
+                            tmp.append("*");
+                        } else {
+                            tmp.append(solrDateFormat.format(simpleDateFormat.parse(split[1])));
+                        }
+                        tmp.append("]");
+                    } else {
+                        // Single date
+                        tmp.append(fieldName).append(": \"").append(solrDateFormat.format(simpleDateFormat.parse(value))).append("\"");
+//                        tmp.append(fieldName).append(": [").append(solrDateFormat.format(simpleDateFormat.parse(value))).append(" TO ")
+//                                .append(solrDateFormat.format(simpleDateFormat.parse(value))).append("]");
+                    }
+                    sb.append(tmp);
+                } catch (ParseException e) {
+                    logger.warn("Error parsing date {}: {}", value, e.getMessage());
+                }
             }
             filters.add(sb.toString());
         }

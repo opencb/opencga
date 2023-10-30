@@ -6,6 +6,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
@@ -15,6 +16,7 @@ import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConv
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,15 +66,29 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
             if (cv.getDiscussion() != null) {
                 ClinicalDiscussion discussion = cv.getDiscussion();
                 cvs.setDiscussionAuthor(discussion.getAuthor())
-                        .setDiscussionDate(discussion.getDate())
                         .setDiscussionText(discussion.getText());
+                if (StringUtils.isNotEmpty(discussion.getDate())) {
+                    try {
+                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(discussion.getDate()));
+                        cvs.setDiscussionDate(solrDateFormat.parse(solrDate));
+                    } catch (ParseException e) {
+                        logger.warn("Impossible to process clinical variant discussion date {}: {}", discussion.getDate(), e.getMessage());
+                    }
+                }
             }
 
             // Confidence
             if (cv.getConfidence() != null) {
                 ClinicalVariantConfidence confidence = cv.getConfidence();
-                cvs.setConfidenceAuthor(confidence.getAuthor())
-                        .setConfidenceDate(confidence.getDate());
+                cvs.setConfidenceAuthor(confidence.getAuthor());
+                if (StringUtils.isNotEmpty(confidence.getDate())) {
+                    try {
+                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(confidence.getDate()));
+                        cvs.setConfidenceDate(solrDateFormat.parse(solrDate));
+                    } catch (ParseException e) {
+                        logger.warn("Impossible to process clinical variant confidence date {}: {}", confidence.getDate(), e.getMessage());
+                    }
+                }
                 if (confidence.getValue() != null) {
                     cvs.setConfidenceValue(confidence.getValue().name());
                 }

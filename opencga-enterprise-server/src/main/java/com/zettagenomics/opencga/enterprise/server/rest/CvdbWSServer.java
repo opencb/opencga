@@ -144,7 +144,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
-            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_ANALYIST_DATE_NAME, value = CI_ANALYIST_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
@@ -154,9 +154,9 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
@@ -167,11 +167,11 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_DATE_NAME, value = CV_DISCUSSION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_DATE_NAME, value = CV_CONFIDENCE_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
 
@@ -305,7 +305,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
-            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_ANALYIST_DATE_NAME, value = CI_ANALYIST_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
@@ -315,9 +315,9 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
@@ -328,11 +328,11 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_DATE_NAME, value = CV_DISCUSSION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_DATE_NAME, value = CV_CONFIDENCE_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
 
@@ -465,7 +465,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
-            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_ANALYIST_DATE_NAME, value = CI_ANALYIST_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
@@ -475,9 +475,9 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
@@ -488,11 +488,11 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_DATE_NAME, value = CV_DISCUSSION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_DATE_NAME, value = CV_CONFIDENCE_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
 
@@ -625,7 +625,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_ANALYIST_NAME_NAME, value = CI_ANALYIST_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_EMAIL_NAME, value = CI_ANALYIST_EMAIL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_ANALYIST_ASSIGNED_BY_NAME, value = CI_ANALYIST_ASSIGNED_BY_DESCR, dataType = "string", paramType = "query"),
-            // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_ANALYIST_DATE_NAME, value = CI_ANALYIST_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_NAME_NAME, value = CI_METHOD_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_VERSION_NAME, value = CI_METHOD_VERSION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_METHOD_COMMIT_NAME, value = CI_METHOD_COMMIT_DESCR, dataType = "string", paramType = "query"),
@@ -635,9 +635,9 @@ public class CvdbWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CI_STATUS_NAME_NAME, value = CI_STATUS_NAME_DESCR, dataType = "string", paramType = "query"),
             // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-            // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CI_STATUS_DATE_NAME, value = CI_STATUS_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_CREATION_DATE_NAME, value = CI_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = CI_MODIFICATION_DATE_NAME, value = CI_MODIFICATION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
             // Clinical variant filters
@@ -648,11 +648,11 @@ public class CvdbWSServer extends OpenCGAWSServer {
             // <dynamicField name="annotations_*" type="string" indexed="false" stored="true" multiValued="false"/>
             // <dynamicField name="annotationScores_*" type="float" indexed="false" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_DISCUSSION_AUTHOR_NAME, value = CV_DISCUSSION_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_DISCUSSION_DATE_NAME, value = CV_DISCUSSION_DATE_DESCR, dataType = "string", paramType = "query"),
             // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
             @ApiImplicitParam(name = CV_CONFIDENCE_VALUE_NAME, value = CV_CONFIDENCE_VALUE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_CONFIDENCE_AUTHOR_NAME, value = CV_CONFIDENCE_AUTHOR_DESCR, dataType = "string", paramType = "query"),
-            // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+            @ApiImplicitParam(name = CV_CONFIDENCE_DATE_NAME, value = CV_CONFIDENCE_DATE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_TAG_NAME, value = CV_TAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = CV_STATUS_NAME, value = CV_STATUS_DESCR, dataType = "string", paramType = "query"),
 

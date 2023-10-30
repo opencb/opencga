@@ -138,7 +138,12 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CI_ANALYIST_ASSIGNED_BY = new ClinicalQueryParam(CI_ANALYIST_ASSIGNED_BY_NAME, TEXT_ARRAY,
             CI_ANALYIST_ASSIGNED_BY_DESCR);
 
-    // <field name="analystDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="analystDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_ANALYIST_DATE_NAME = "ciAnalystDate";
+    public static final String CI_ANALYIST_DATE_DESCR = "Clinical interpretation analyst date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CI_ANALYIST_DATE = new ClinicalQueryParam(CI_ANALYIST_DATE_NAME, TEXT_ARRAY,
+            CI_ANALYIST_DATE_DESCR);
 
     // <field name="methodName" type="string" indexed="true" stored="true" multiValued="false"/>
     public static final String CI_METHOD_NAME_NAME = "ciMethodName";
@@ -177,9 +182,27 @@ public final class ClinicalQueryParam implements QueryParam {
             CI_STATUS_NAME_DESCR);
 
     // <field name="statusDescription" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="statusDate" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="creationDate" type="string" indexed="true" stored="true" multiValued="false"/>
-    // <field name="modificationDate" type="string" indexed="true" stored="true" multiValued="false"/>
+
+    // <field name="statusDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_STATUS_DATE_NAME = "ciStatusDate";
+    public static final String CI_STATUS_DATE_DESCR = "Clinical interpretation status date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CI_STATUS_DATE = new ClinicalQueryParam(CI_STATUS_DATE_NAME, TEXT_ARRAY, CI_STATUS_DATE_DESCR);
+
+    // <field name="creationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_CREATION_DATE_NAME = "ciCreationDate";
+    public static final String CI_CREATION_DATE_DESCR = "Clinical interpretation creation date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CI_CREATION_DATE = new ClinicalQueryParam(CI_CREATION_DATE_NAME, TEXT_ARRAY,
+            CI_CREATION_DATE_DESCR);
+
+    // <field name="modificationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CI_MODIFICATION_DATE_NAME = "ciModificationDate";
+    public static final String CI_MODIFICATION_DATE_DESCR = "Clinical interpretation modification date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CI_MODIFICATION_DATE = new ClinicalQueryParam(CI_MODIFICATION_DATE_NAME, TEXT_ARRAY,
+            CI_MODIFICATION_DATE_DESCR);
+
     // <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
     // ---------- Clinical variant (aka CV)
@@ -197,7 +220,13 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CV_DISCUSSION_AUTHOR = new ClinicalQueryParam(CV_DISCUSSION_AUTHOR_NAME, TEXT_ARRAY,
             CV_DISCUSSION_AUTHOR_DESCR);
 
-    // <field name="discussionDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="discussionDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_DISCUSSION_DATE_NAME = "cvDiscussionDate";
+    public static final String CV_DISCUSSION_DATE_DESCR = "Clinical variant discussion date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CV_DISCUSSION_DATE = new ClinicalQueryParam(CV_DISCUSSION_DATE_NAME, TEXT_ARRAY,
+            CV_DISCUSSION_DATE_DESCR);
+
     // <field name="discussionText" type="string" indexed="true" stored="true" multiValued="false"/>
 
     // <field name="confidenceValue" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -212,7 +241,12 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CV_CONFIDENCE_AUTHOR = new ClinicalQueryParam(CV_CONFIDENCE_AUTHOR_NAME, TEXT_ARRAY,
             CV_CONFIDENCE_AUTHOR_DESCR);
 
-    // <field name="confidenceDate" type="string" indexed="true" stored="true" multiValued="false"/>
+    // <field name="confidenceDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
+    public static final String CV_CONFIDENCE_DATE_NAME = "cvConfidenceDate";
+    public static final String CV_CONFIDENCE_DATE_DESCR = "Clinical variant confidence date (or list of dates" + OPT_LIST + ", with"
+            + " format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000";
+    public static final ClinicalQueryParam CV_CONFIDENCE_DATE = new ClinicalQueryParam(CV_CONFIDENCE_DATE_NAME, TEXT_ARRAY,
+            CV_CONFIDENCE_DATE_DESCR);
 
     // <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
     public static final String CV_TAG_NAME = "cvTag";

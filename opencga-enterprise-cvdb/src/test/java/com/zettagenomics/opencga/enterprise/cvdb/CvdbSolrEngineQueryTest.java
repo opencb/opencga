@@ -1,7 +1,10 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -28,6 +31,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -82,7 +86,10 @@ public class CvdbSolrEngineQueryTest {
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
 
         // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+        CvdbIndexResult indexResult = cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+        System.out.println(indexResult.getFailures());
+        assertEquals(2, indexResult.getNumIndexed());
+        assertEquals(0, indexResult.getFailures().size());
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
@@ -104,6 +111,26 @@ public class CvdbSolrEngineQueryTest {
     //-----------------------------------------------------------------------
     // T E S T S
     //-----------------------------------------------------------------------
+
+    @Test
+    public void test() throws IOException, CvdbException {
+        Query query = new Query();
+        query.put(PROJECT_PARAM_NAME, projectId);
+        QueryOptions queryOptions = new QueryOptions();
+
+        DataResult<ClinicalAnalysis> caResult = cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+        System.out.println("num. ca = " + caResult.getNumResults());
+        assertTrue(caResult.getNumResults() > 0);
+        DataResult<Interpretation> ciResult = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println("num. ci = " + ciResult.getNumResults());
+        assertTrue(ciResult.getNumResults() > 0);
+        DataResult<ClinicalVariant> cvResult = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
+        System.out.println("num. cv = " + cvResult.getNumResults());
+        assertTrue(cvResult.getNumResults() > 0);
+        DataResult<ClinicalVariantEvidence> cveResult = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, null);
+        System.out.println("num. cve = " + cveResult.getNumResults());
+        assertTrue(cveResult.getNumResults() > 0);
+    }
 
     @Test
     public void testQueryClinicalAnalysesFromVariantId() throws IOException, CvdbException {
@@ -489,6 +516,56 @@ public class CvdbSolrEngineQueryTest {
         for (ClinicalAnalysis ca : result.getResults()) {
             assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ca.getInterpretation().getAnalyst().getEmail());
         }
+    }
+
+    @Test
+    public void testDate() throws IOException, CvdbException, ParseException {
+        // CVDB query
+        Query query;
+        QueryOptions queryOptions = new QueryOptions();
+
+        // ciId = OPA-6522-1.1, analyst date = 20231030104137
+        // ciId = SAP-32015-1.1, analyst date = 20231030104144
+
+        // Check single date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        String strDate = "20231030104137";
+        query.put(CI_ANALYIST_DATE_NAME, strDate);
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println(result.getNumResults());
+
+        // Check multiple date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        strDate = "20231030104137,20231030104144";
+        query.put(CI_ANALYIST_DATE_NAME, strDate);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println(result.getNumResults());
+
+        // Check range date
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        strDate = "20221030104137-20241030104144";
+        query.put(CI_ANALYIST_DATE_NAME, strDate);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println(result.getNumResults());
+
+        // Check range date (no start date)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        strDate = "-20231030104144";
+        query.put(CI_ANALYIST_DATE_NAME, strDate);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println(result.getNumResults());
+
+        // Check range date (no end date)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        strDate = "20231030104137-";
+        query.put(CI_ANALYIST_DATE_NAME, strDate);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, null);
+        System.out.println(result.getNumResults());
+
+        //        assertTrue(result.getNumResults() > 0);
+//        for (Interpretation ci : result.getResults()) {
+//            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getDate());
+//        }
     }
 
     @Test
