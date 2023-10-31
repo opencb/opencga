@@ -2,13 +2,12 @@ package org.opencb.opencga.app.cli.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Scanner;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 
 public class CliConfiguration {
 
@@ -20,7 +19,7 @@ public class CliConfiguration {
     /**
      * The instance of Usage that stores the "usage" information
      */
-    private static CliUsage cliUsage;
+    private CliUsage cliUsage;
 
     /**
      * FILENAME is the file location of the configuration yml file
@@ -41,15 +40,11 @@ public class CliConfiguration {
     }
 
     private CliUsage loadConfiguration() throws IOException {
-        // Loading the YAML file from the /conf folder
-        File file = new File(FileUtils.getTempDirectory()+File.separator+cliUsageFileName);
-
-        FileUtils.copyURLToFile(getClass().getClassLoader().getResource(cliUsageFileName),file);
-
-        // Mapping the config from the YAML file to the Configuration class
-        logger.info("Loading CLI configuration from: " + file.getAbsolutePath());
-        ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
-        return yamlObjectMapper.readValue(file, CliUsage.class);
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(cliUsageFileName)) {
+            // Mapping the config from the YAML file to the Configuration class
+            ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
+            return yamlObjectMapper.readValue(is, CliUsage.class);
+        }
     }
 
     /*
@@ -60,15 +55,14 @@ public class CliConfiguration {
             try {
                 cliUsage = loadConfiguration();
             } catch (IOException e) {
-                logger.error("Loading CLI configuration from: " + cliUsageFileName + " Failed");
-                System.err.println("Loading CLI configuration from: " + cliUsageFileName + " Failed");
+                throw new UncheckedIOException(e);
             }
         }
         return cliUsage;
     }
 
     public void setUsage(CliUsage cliUsage) {
-        CliConfiguration.cliUsage = cliUsage;
+        this.cliUsage = cliUsage;
     }
 
     public String getCliUsageFileName() {
