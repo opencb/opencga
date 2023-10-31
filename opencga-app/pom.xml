@@ -138,17 +138,16 @@
         <sourceDirectory>src/main/java</sourceDirectory>
 
         <resources>
-<!--            <resource>-->
-<!--                <directory>src/main/resources</directory>-->
-<!--                <filtering>true</filtering>-->
-<!--                <targetPath>${project.basedir}/target/clients/R</targetPath>-->
-<!--                <includes>-->
-<!--                    <include>compileR.sh</include>-->
-<!--                </includes>-->
-<!--            </resource>-->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <targetPath>${project.basedir}/target/clients/R</targetPath>
+                <includes>
+                    <include>compileR.sh</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
                 <includes>
                     <include>cli-usage.yml</include>
                 </includes>
