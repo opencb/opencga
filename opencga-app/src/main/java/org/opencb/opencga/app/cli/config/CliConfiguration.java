@@ -42,8 +42,10 @@ public class CliConfiguration {
 
     private CliUsage loadConfiguration() throws IOException {
         // Loading the YAML file from the /conf folder
-        File file = new File(cliUsageFileName);
+        File file = new File(FileUtils.getTempDirectory()+File.separator+cliUsageFileName);
+
         FileUtils.copyURLToFile(getClass().getClassLoader().getResource(cliUsageFileName),file);
+
         // Mapping the config from the YAML file to the Configuration class
         logger.info("Loading CLI configuration from: " + file.getAbsolutePath());
         ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
