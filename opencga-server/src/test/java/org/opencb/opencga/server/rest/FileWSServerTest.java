@@ -29,8 +29,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -97,10 +97,10 @@ public class FileWSServerTest {
             IOUtils.deleteDirectory(ROOT_DIR);
         }
         Files.createDirectory(ROOT_DIR);
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file1.txt").toString());
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
         Files.createDirectory(ROOT_DIR.resolve("data"));
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
         String fileName = "variant-test-file.vcf.gz";
         Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
         fileName = "HG00096.chrom20.small.bam";

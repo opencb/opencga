@@ -87,11 +87,11 @@ public class CatalogAuthorizationException extends CatalogException {
     }
 
     public static CatalogAuthorizationException notOwnerOrAdmin(String action) {
-        return new CatalogAuthorizationException("Permission denied: Only the owner or admins of the organization can " + action);
+        return new CatalogAuthorizationException("Permission denied: Only the owner or administrators of the organization can " + action);
     }
 
     public static CatalogAuthorizationException notStudyAdmin(String action) {
-        return new CatalogAuthorizationException("Permission denied: Only the study admins of the organization can " + action);
+        return new CatalogAuthorizationException("Permission denied: Only the study administrators of the organization can " + action);
     }
 
     public static CatalogAuthorizationException notStudyMember(String action) {

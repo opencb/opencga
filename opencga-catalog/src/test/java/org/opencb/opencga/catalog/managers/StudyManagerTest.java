@@ -166,7 +166,7 @@ public class StudyManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("admin");
         catalogManager.getStudyManager().updateSummaryIndex("newStudy",
-                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), adminToken1);
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), orgAdminToken1);
     }
 
     @Test

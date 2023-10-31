@@ -5,6 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -13,10 +14,16 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -129,6 +136,8 @@ public class MongoBackupUtils {
         IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
         Path usersFolder = opencgaHome.resolve("sessions").resolve("orgs").resolve(organizationId).resolve("users");
         ioManager.createDirectory(usersFolder.toUri(), true);
+        Path projectsFolder = opencgaHome.resolve("sessions").resolve("orgs").resolve(organizationId).resolve("projects");
+        ioManager.createDirectory(projectsFolder.toUri(), true);
 
         for (String collection : OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST) {
             MongoCollection<Document> dbCollection = database.getCollection(collection);
@@ -139,7 +148,9 @@ public class MongoBackupUtils {
                 List<Document> documentList = new LinkedList<>();
                 while (iterator.hasNext()) {
                     Document document = iterator.next();
-                    if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)
+                    if (OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION.equals(collection)) {
+                        ioManager.createDirectory(projectsFolder.resolve(document.getLong("uid").toString()).toUri());
+                    } else if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)
                             || OrganizationMongoDBAdaptorFactory.DELETED_FILE_COLLECTION.equals(collection)
                             || OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION.equals(collection)
                             || OrganizationMongoDBAdaptorFactory.DELETED_STUDY_COLLECTION.equals(collection)) {
@@ -150,7 +161,9 @@ public class MongoBackupUtils {
                         String replacedUri = uri.replace("TEMPORAL_FOLDER_HERE", temporalFolder);
                         document.put("uri", replacedUri);
 
-                        if (OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION.equals(collection)) {
+                        if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)) {
+                            createFile(ioManager, document);
+                        } else if (OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION.equals(collection)) {
                             // Create temporal study folder
                             ioManager.createDirectory(Paths.get(replacedUri).toUri(), true);
                         }
@@ -171,4 +184,77 @@ public class MongoBackupUtils {
         }
     }
 
+    private static void createFile(IOManager ioManager, Document document) throws IOException, CatalogIOException {
+        String type = document.getString("type");
+        if (File.Type.FILE.name().equals(type)) {
+            String uri = document.getString("uri");
+            Path uriPath;
+            try {
+                uriPath = Paths.get(UriUtils.createUri(uri));
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            URI directoryUri = uriPath.getParent().toUri();
+            // Ensure directories are created
+            if (!ioManager.exists(directoryUri)) {
+                ioManager.createDirectory(directoryUri, true);
+                logger.info("{} directory created", directoryUri);
+            }
+            // Create dummy file
+            createDebugFile(uriPath.toAbsolutePath().toString(), 1);
+            logger.info("{} file created", uri);
+        }
+    }
+
+    /* TYPE_FILE UTILS */
+    public static java.io.File createDebugFile() throws IOException {
+        String fileTestName = "/tmp/fileTest_" + RandomStringUtils.randomAlphanumeric(5);
+        return createDebugFile(fileTestName);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName) throws IOException {
+        return createDebugFile(fileTestName, 200);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName, int lines) throws IOException {
+        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
+
+        os.writeBytes("Debug file name: " + fileTestName + "\n");
+        for (int i = 0; i < 100; i++) {
+            os.writeBytes(i + ", ");
+        }
+        for (int i = 0; i < lines; i++) {
+            os.writeBytes(RandomStringUtils.randomAlphanumeric(500));
+            os.write('\n');
+        }
+        os.close();
+
+        return Paths.get(fileTestName).toFile();
+    }
+
+    public static String createRandomString(int lines) {
+        StringBuilder stringBuilder = new StringBuilder(lines);
+        for (int i = 0; i < 100; i++) {
+            stringBuilder.append(i + ", ");
+        }
+        for (int i = 0; i < lines; i++) {
+            stringBuilder.append(RandomStringUtils.randomAlphanumeric(500));
+            stringBuilder.append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String getDummyVCFContent() {
+        return "##fileformat=VCFv4.0\n" +
+                "##fileDate=20090805\n" +
+                "##source=myImputationProgramV3.1\n" +
+                "##reference=1000GenomesPilot-NCBI36\n" +
+                "##phasing=partial\n" +
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA00001\tNA00002\tNA00003\n" +
+                "20\t14370\trs6054257\tG\tA\t29\tPASS\tNS=3;DP=14;AF=0.5;DB;H2\tGT:GQ:DP:HQ\t0|0:48:1:51,51\t1|0:48:8:51,51\t1/1:43:5:.,.\n" +
+                "20\t17330\t.\tT\tA\t3\tq10\tNS=3;DP=11;AF=0.017\tGT:GQ:DP:HQ\t0|0:49:3:58,50\t0|1:3:5:65,3\t0/0:41:3\n" +
+                "20\t1110696\trs6040355\tA\tG,T\t67\tPASS\tNS=2;DP=10;AF=0.333,0.667;AA=T;DB\tGT:GQ:DP:HQ\t1|2:21:6:23,27\t2|1:2:0:18,2\t2/2:35:4\n" +
+                "20\t1230237\t.\tT\t.\t47\tPASS\tNS=3;DP=13;AA=T\tGT:GQ:DP:HQ\t0|0:54:7:56,60\t0|0:48:4:51,51\t0/0:61:2\n" +
+                "20\t1234567\tmicrosat1\tGTCT\tG,GTACT\t50\tPASS\tNS=3;DP=9;AA=G\tGT:GQ:DP\t0/1:35:4\t0/2:17:2\t1/1:40:3";
+    }
 }

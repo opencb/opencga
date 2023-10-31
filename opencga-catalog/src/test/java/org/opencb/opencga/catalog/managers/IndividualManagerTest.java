@@ -818,28 +818,15 @@ public class IndividualManagerTest extends AbstractManagerTest {
     @Test
     public void testGetIndividualWithSamples() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(studyFqn, new Individual().setId("individual1")
-                        .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"), new Sample().setId(
-                                "sample3"))),
-                QueryOptions.empty(), ownerToken);
-        individualManager.create(studyFqn, new Individual().setId("individual2")
-                        .setSamples(Arrays.asList(new Sample().setId("sample4"), new Sample().setId("sample5"), new Sample().setId(
-                                "sample6"))),
-                QueryOptions.empty(), ownerToken);
-
         DataResult<Individual> search = individualManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
-            assertEquals(3, i.getSamples().size());
+            assertEquals(1, i.getSamples().size());
             assertTrue(org.apache.commons.lang3.StringUtils.isNotEmpty(i.getSamples().get(0).getCreationDate()));
-            if (i.getId().equals("individual1")) {
-                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+            if (i.getId().equals(ind1)) {
+                assertEquals(s_1Id, i.getSamples().get(0).getId());
             } else {
-                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+                assertEquals(s_2Id, i.getSamples().get(0).getId());
             }
         });
 
@@ -847,16 +834,12 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 ownerToken);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
-            assertEquals(3, i.getSamples().size());
+            assertEquals(1, i.getSamples().size());
             assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
-            if (i.getId().equals("individual1")) {
-                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+            if (i.getId().equals(ind1)) {
+                assertEquals(s_1Id, i.getSamples().get(0).getId());
             } else {
-                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+                assertEquals(s_2Id, i.getSamples().get(0).getId());
             }
         });
 
@@ -864,16 +847,12 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 ownerToken);
         assertEquals(2, search.getNumResults());
         search.getResults().forEach(i -> {
-            assertEquals(3, i.getSamples().size());
+            assertEquals(1, i.getSamples().size());
             assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
-            if (i.getId().equals("individual1")) {
-                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+            if (i.getId().equals(ind1)) {
+                assertEquals(s_1Id, i.getSamples().get(0).getId());
             } else {
-                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+                assertEquals(s_2Id, i.getSamples().get(0).getId());
             }
         });
 
@@ -883,16 +862,12 @@ public class IndividualManagerTest extends AbstractManagerTest {
         search.getResults().forEach(i -> {
             assertTrue(org.apache.commons.lang3.StringUtils.isNotEmpty(i.getCreationDate()));
             assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getName()));
-            assertEquals(3, i.getSamples().size());
+            assertEquals(1, i.getSamples().size());
             assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(i.getSamples().get(0).getCreationDate()));
-            if (i.getId().equals("individual1")) {
-                assertTrue(Arrays.asList("sample1", "sample2", "sample3").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+            if (i.getId().equals(ind1)) {
+                assertEquals(s_1Id, i.getSamples().get(0).getId());
             } else {
-                assertTrue(Arrays.asList("sample4", "sample5", "sample6").containsAll(
-                        i.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
-                ));
+                assertEquals(s_2Id, i.getSamples().get(0).getId());
             }
         });
     }

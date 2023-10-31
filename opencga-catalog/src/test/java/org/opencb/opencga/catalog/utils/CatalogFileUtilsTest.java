@@ -18,31 +18,20 @@ package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 import static org.junit.Assert.*;
 
@@ -50,46 +39,47 @@ import static org.junit.Assert.*;
  * Created by jacobo on 28/01/15.
  */
 @Category(MediumTests.class)
-public class CatalogFileUtilsTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
+public class CatalogFileUtilsTest extends AbstractManagerTest {
+//
+//    @Rule
+//    public ExpectedException thrown = ExpectedException.none();
     FileUtils catalogFileUtils;
-    private long studyUid;
-    private String studyFqn;
-    private String userSessionId;
-    //    private String adminSessionId;
-    private CatalogManager catalogManager;
-    private String organizationId = "test";
-
-    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+//    private long studyUid;
+//    private String studyFqn;
+//    private String ownerToken;
+//    //    private String adminSessionId;
+//    private CatalogManager catalogManager;
+//    private String organizationId = "test";
+//
+//    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void before() throws CatalogException, IOException, URISyntaxException {
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
-                .openStream());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getDatabase().getUser())
-                .add("password", configuration.getCatalog().getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
-                .build();
-
-        CatalogManagerExternalResource.clearCatalog(configuration);
-        catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("HS256", configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-
-        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-
-        //Create USER
-        catalogManager.getUserManager().create(organizationId, "user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        userSessionId = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
-//        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
-        String projectId = catalogManager.getProjectManager().create(organizationId, "proj", "proj", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
-                userSessionId).getResults().get(0);
-        studyUid = study.getUid();
-        studyFqn = study.getFqn();
+    public void before() throws Exception {
+        setUp();
+//        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
+//                .openStream());
+//        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+//                .add("username", configuration.getCatalog().getDatabase().getUser())
+//                .add("password", configuration.getCatalog().getDatabase().getPassword())
+//                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+//                .build();
+//
+//        CatalogManagerExternalResource.clearCatalog(configuration);
+//        catalogManager = new CatalogManager(configuration);
+//        catalogManager.installCatalogDB("HS256", configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
+//
+//        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+//
+//        //Create USER
+//        catalogManager.getUserManager().create(organizationId, "user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+//        ownerToken = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
+////        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
+//        String projectId = catalogManager.getProjectManager().create(organizationId, "proj", "proj", "", "Homo sapiens",
+//                null, "GRCh38", INCLUDE_RESULT, ownerToken).getResults().get(0).getId();
+//        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
+//                ownerToken).getResults().get(0);
+//        studyUid = study.getUid();
+//        studyFqn = study.getFqn();
 
         catalogFileUtils = new FileUtils(catalogManager);
     }
@@ -107,31 +97,31 @@ public class CatalogFileUtilsTest {
                         .setPath("item." + TimeUtils.getTimeMillis() + ".txt")
                         .setDescription("file at root")
                         .setContent(RandomStringUtils.randomAlphanumeric(100)),
-                true, userSessionId).first();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
+                true, ownerToken).first();
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
         assertEquals(InternalStatus.READY, file.getInternal().getStatus().getId());
 
 //        /** Check READY and existing file **/
-//        catalogFileUtils.upload(sourceUri, file, null, userSessionId, false, false, false, true);
+//        catalogFileUtils.upload(sourceUri, file, null, ownerToken, false, false, false, true);
 //        fileUri = catalogManager.getFileManager().getUri(file);
-//        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, userSessionId).first();
-//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+//        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, ownerToken).first();
+//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 //
 //        assertSame("Should not modify the READY and existing file, so should return the same file.", file, returnedFile);
 
 
         /** Check READY and missing file **/
         assertTrue(new java.io.File(file.getUri()).delete());
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getId());
 
         /** Check MISSING file still missing **/
-        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, userSessionId).first();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
+        file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, ownerToken).first();
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
 
         assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getId(),
                 returnedFile.getInternal().getStatus().getId());
@@ -142,7 +132,7 @@ public class CatalogFileUtilsTest {
         os.write(RandomStringUtils.randomAlphanumeric(1000).getBytes());
         os.write('\n');
         os.close();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, userSessionId);
+        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getId());
@@ -151,26 +141,26 @@ public class CatalogFileUtilsTest {
 //        FileUpdateParams updateParams = new FileUpdateParams()
 //                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
 //        catalogManager.getFileManager().update(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), updateParams,
-//                QueryOptions.empty(), userSessionId);
+//                QueryOptions.empty(), ownerToken);
 //        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null,
-//                userSessionId);
+//                ownerToken);
 //
 //        Query query = new Query()
 //                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
-//        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
+//        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
 //
 //        file = fileDataResult.first();
-//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 //
 //        assertSame(file, returnedFile);
 //        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
 //
 //
 //        /** Check TRASHED file with missing file **/
-////        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+////        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, ownerToken);
 //        assertTrue(Paths.get(file.getUri()).toFile().delete());
 //
-//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 //
 ////        assertNotSame(file, returnedFile);
 //        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());

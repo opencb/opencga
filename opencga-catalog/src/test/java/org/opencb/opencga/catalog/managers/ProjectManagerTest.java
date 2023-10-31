@@ -58,7 +58,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, adminToken2);
+        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, orgAdminToken2);
         assertEquals(1, projectDataResult.getNumResults());
     }
 
@@ -66,7 +66,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void getOtherUsersProject() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("cannot view");
-        catalogManager.getProjectManager().get(project1, null, adminToken2);
+        catalogManager.getProjectManager().get(project1, null, orgAdminToken2);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         // User3 looks for any sample without providing any project or study and he has not been granted permissions anywhere
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("cannot view any study");
-        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), adminToken2);
+        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), orgAdminToken2);
     }
 
     @Test
@@ -95,9 +95,9 @@ public class ProjectManagerTest extends AbstractManagerTest {
         assertEquals(0, result.getEvents().size());
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, adminToken1).first().getId();
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken1).first().getId();
         catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList(otherUser)), adminToken1);
+                new GroupUpdateParams(Collections.singletonList(otherUser)), orgAdminToken1);
 
         result = catalogManager.getProjectManager()
                 .search(organizationId, new Query(), QueryOptions.empty(), otherUsertoken);
@@ -152,9 +152,9 @@ public class ProjectManagerTest extends AbstractManagerTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, adminToken1).first().getId();
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken1).first().getId();
         catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user")), adminToken1);
+                new GroupUpdateParams(Collections.singletonList("user")), orgAdminToken1);
 
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
         assertEquals(1, queryResult.getNumResults());
@@ -162,7 +162,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         assertEquals("s2", queryResult.first().getStudies().get(0).getId());
 
         // Add permissions to a group were user belongs
-        catalogManager.getStudyManager().createGroup(studyFqn3, "@member", Collections.singletonList("user"), adminToken1);
+        catalogManager.getStudyManager().createGroup(studyFqn3, "@member", Collections.singletonList("user"), orgAdminToken1);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
         assertEquals(1, queryResult.getNumResults());
@@ -170,9 +170,9 @@ public class ProjectManagerTest extends AbstractManagerTest {
         assertEquals("user2@pmp", queryResult.first().getFqn());
 
         // Add permissions to user in a study of user3
-        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, adminToken2).first().getId();
+        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken2).first().getId();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user")), adminToken2);
+                new GroupUpdateParams(Collections.singletonList("user")), orgAdminToken2);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
         assertEquals(2, queryResult.getNumResults());

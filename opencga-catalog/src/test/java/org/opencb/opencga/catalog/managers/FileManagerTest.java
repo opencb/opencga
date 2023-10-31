@@ -31,10 +31,12 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -89,14 +91,14 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
-            fileManager.create(studyFqn, new FileCreateParams()
+            fileManager.create(studyFqn2, new FileCreateParams()
                             .setType(File.Type.FILE)
                             .setPath("data/test/folder/file.txt")
                             .setDescription("My description"),
-                    true, adminToken1);
+                    true, normalToken1);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
-            assertEquals(0, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
+            assertEquals(0, fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                     "data/test/folder/file.txt"), null, ownerToken).getNumResults());
         }
     }
@@ -104,14 +106,14 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
-        catalogManager.getStudyManager().updateAcl(studyFqn, "user2", aclParams, ParamUtils.AclAction.ADD, ownerToken);
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
         fileManager.create(studyFqn,
                 new FileCreateParams()
                         .setType(File.Type.FILE)
                         .setPath("data/test/folder/file.txt")
                         .setDescription("My description")
                         .setContent("blabla"),
-                true, adminToken1);
+                true, normalToken2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, ownerToken).getNumResults());
     }
@@ -125,7 +127,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testSearchById() throws CatalogException {
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), "~/^data/");
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, FileManager.INCLUDE_FILE_IDS, ownerToken);
-        assertEquals(6, search.getNumResults());
+        assertEquals(11, search.getNumResults());
     }
 
     @Test
@@ -177,7 +179,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkFileWithoutReadPermissions() throws IOException, CatalogException {
-        java.io.File file = createDebugFile("/tmp/file_" + RandomStringUtils.randomAlphanumeric(5) + ".vcf");
+        java.io.File file = MongoBackupUtils.createDebugFile("/tmp/file_" + RandomStringUtils.randomAlphanumeric(5) + ".vcf");
         Files.setPosixFilePermissions(Paths.get(file.toURI()), new HashSet<>());
         thrown.expect(CatalogIOException.class);
         thrown.expectMessage("read VariantSource");
@@ -231,7 +233,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setType(File.Type.FILE)
                 .setFormat(File.Format.IMAGE)
                 .setSoftware(new Software().setName("software"))
-                .setSampleIds(Arrays.asList(s_1, s_2))
+                .setSampleIds(Arrays.asList(s_1Id, s_2Id))
                 .setPath("/files/folder/heart.png");
         File file = fileManager.create(studyFqn, params, true, ownerToken).first();
         FileContent content = fileManager.image(studyFqn, file.getPath(), ownerToken).first();
@@ -288,7 +290,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setBioformat(File.Bioformat.VARIANT)
                 .setType(File.Type.FILE)
                 .setSoftware(new Software().setName("software"))
-                .setSampleIds(Arrays.asList(s_1, "sample1"))
+                .setSampleIds(Arrays.asList(s_1Id, "sample1"))
                 .setPath("/files/folder/heart.png");
 
         thrown.expect(CatalogException.class);
@@ -907,7 +909,7 @@ public class FileManagerTest extends AbstractManagerTest {
                             .setType(File.Type.FILE)
                             .setPath("data/test/myTest/myFile.txt")
                             .setContent("This is the content\tof the file"),
-                    false, adminToken1);
+                    false, orgAdminToken1);
             fail("An error should be raised because parents is false");
         } catch (CatalogException e) {
             System.out.println("Correct");
@@ -918,7 +920,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setType(File.Type.FILE)
                         .setPath("data/test/myTest/myFile.txt")
                         .setContent(content),
-                true, adminToken1);
+                true, orgAdminToken1);
         IOManager ioManager = catalogManager.getIoManagerFactory().get(fileDataResult.first().getUri());
         assertTrue(ioManager.exists(fileDataResult.first().getUri()));
 
@@ -928,46 +930,39 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateFolder() throws Exception {
-        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user2");
-        Study study = catalogManager.getStudyManager().search(organizationId, query, QueryOptions.empty(), adminToken1).first();
-        Set<String> paths = fileManager.search(study.getFqn(), new Query("type", File.Type.DIRECTORY), new
-                        QueryOptions(), adminToken1)
+        Set<String> paths = fileManager.search(studyFqn, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(2, paths.size());
-        assertTrue(paths.contains(""));             //root
-        assertTrue(paths.contains("JOBS/"));        //JOBS
-//        assertTrue(paths.contains("analysis/"));    //analysis
+        assertEquals(9, paths.size());
+        assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/")));
 
         Path folderPath = Paths.get("data", "new", "folder");
-        File folder = fileManager.createFolder(study.getFqn(), folderPath.toString(), true, null,
-                QueryOptions.empty(), adminToken1).first();
+        File folder = fileManager.createFolder(studyFqn, folderPath.toString(), true, null, QueryOptions.empty(), orgAdminToken1).first();
         System.out.println(folder);
         IOManager ioManager = catalogManager.getIoManagerFactory().get(folder.getUri());
         assertTrue(!ioManager.exists(folder.getUri()));
 
-        paths = fileManager.search(study.getFqn(), new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type
-                .DIRECTORY), new QueryOptions(), adminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(5, paths.size());
-        assertTrue(paths.contains("data/new/"));
-        assertTrue(paths.contains("data/new/folder/"));
+        paths = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY), new QueryOptions(),
+                orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
+        assertEquals(11, paths.size());
+        assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "data/new/", "data/new/folder/")));
 
         URI uri = fileManager.getUri(organizationId, folder);
         assertTrue(!catalogManager.getIoManagerFactory().get(uri).exists(uri));
 
-        fileManager.createFolder(study.getFqn(), Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(),
-                adminToken1);
+        fileManager.createFolder(studyFqn, Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(), orgAdminToken1);
 
-        Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, adminToken1).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, orgAdminToken1).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
-                QueryOptions.empty(), adminToken1).first();
+                QueryOptions.empty(), orgAdminToken1).first();
         assertTrue(!ioManager.exists(folder.getUri()));
     }
 
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
-        Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), adminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
+        Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
         assertEquals(2, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
@@ -975,13 +970,13 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null,
-                adminToken1).first();
+                orgAdminToken1).first();
 
         assertNotNull(folder);
         assertTrue(folder.getPath().contains(folderPath.toString()));
 
         // When creating the same folder, we should not complain and return it directly
-        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null, adminToken1).first();
+        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null, orgAdminToken1).first();
         assertNotNull(sameFolder);
         assertEquals(folder.getPath(), sameFolder.getPath());
         assertEquals(folder.getUid(), sameFolder.getUid());
@@ -989,7 +984,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // However, a user without create permissions will receive an exception
         thrown.expect(CatalogAuthorizationException.class);
         fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null,
-                adminToken2);
+                orgAdminToken2);
     }
 
     @Test
@@ -1110,7 +1105,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.VARIANT)
                         .setPath("data/" + fileName)
                         .setDescription("description")
-                        .setContent(getDummyVCFContent()),
+                        .setContent(MongoBackupUtils.getDummyVCFContent()),
                 true, ownerToken);
         assertEquals(3, fileResult.first().getSampleIds().size());
 
@@ -1122,7 +1117,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.VARIANT)
                         .setPath("data/" + fileName)
                         .setDescription("description")
-                        .setContent(getDummyVCFContent()),
+                        .setContent(MongoBackupUtils.getDummyVCFContent()),
                 true, ownerToken);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
@@ -1142,7 +1137,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.NONE)
                         .setPath("data/deletable/folder/item." + TimeUtils.getTimeMillis() + ".txt")
                         .setDescription("description")
-                        .setContent(createRandomString(200)),
+                        .setContent(MongoBackupUtils.createRandomString(200)),
                 true, ownerToken);
 
         fileManager.create(studyFqn2,
@@ -1152,7 +1147,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.NONE)
                         .setPath("data/deletable/item." + TimeUtils.getTimeMillis() + ".txt")
                         .setDescription("description")
-                        .setContent(createRandomString(200)),
+                        .setContent(MongoBackupUtils.createRandomString(200)),
                 true, ownerToken);
 
         fileManager.create(studyFqn2,
@@ -1162,7 +1157,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.NONE)
                         .setPath("item." + TimeUtils.getTimeMillis() + ".txt")
                         .setDescription("file at root")
-                        .setContent(createRandomString(200)),
+                        .setContent(MongoBackupUtils.createRandomString(200)),
                 true, ownerToken);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
@@ -1173,7 +1168,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.NONE)
                         .setPath(fileName)
                         .setDescription("file at root")
-                        .setContent(createRandomString(200)),
+                        .setContent(MongoBackupUtils.createRandomString(200)),
                 true, ownerToken);
 
         DataResult<File> fileDataResult = fileManager.get(studyFqn2, fileName, null, ownerToken);
@@ -1212,7 +1207,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setBioformat(File.Bioformat.VARIANT)
                         .setPath("data/" + fileName)
                         .setDescription("description")
-                        .setContent(getDummyVCFContent()),
+                        .setContent(MongoBackupUtils.getDummyVCFContent()),
                 true, ownerToken).first();
 
         byte[] bytes = new byte[100];
@@ -1323,11 +1318,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("content"), true, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(23, fileTree.getNumResults());
-        assertEquals(23, countElementsInTree(fileTree.first()));
+        assertEquals(27, fileTree.getNumResults());
+        assertEquals(27, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), ownerToken);
-        assertEquals(16, fileTree.getNumResults());
+        assertEquals(17, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, ownerToken);
@@ -1396,7 +1391,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void getFileIdByString() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
-        catalogManager.getStudyManager().updateAcl(studyFqn, "user2", aclParams, ParamUtils.AclAction.ADD, ownerToken);
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
         File file = fileManager.create(studyFqn,
                 new FileCreateParams()
                         .setType(File.Type.FILE)
@@ -1405,7 +1400,7 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setPath("data/test/folder/file.txt")
                         .setDescription("My description")
                         .setContent("blabla"),
-                true, adminToken1).first();
+                true, normalToken2).first();
         long fileId = fileManager.get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, ownerToken).first().getUid();
         assertEquals(file.getUid(), fileId);
 
@@ -2241,12 +2236,12 @@ public class FileManagerTest extends AbstractManagerTest {
                 true, ownerToken);
 
         OpenCGAResult<AclEntryList<FilePermissions>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
-                filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
+                filePath.toString()), normalUserId2, new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
 
         assertEquals(3, dataResult.getNumResults());
         for (AclEntryList<FilePermissions> result : dataResult.getResults()) {
             assertEquals(1, result.getAcl().size());
-            assertEquals("user2", result.getAcl().get(0).getMember());
+            assertEquals(normalUserId2, result.getAcl().get(0).getMember());
             assertEquals(1, result.getAcl().get(0).getPermissions().size());
             assertTrue(result.getAcl().get(0).getPermissions().contains(FilePermissions.VIEW));
         }
@@ -2329,24 +2324,24 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue("Destination uri within the workspace and path do not match".equals(e.getMessage()));
         }
 
-        // We grant permissions to user2 to the study
-        catalogManager.getStudyManager().updateAcl(studyFqn, "user2",
+        // We grant permissions to normalUserId2 to the study
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2,
                 new StudyAclParams("", "admin"), ParamUtils.AclAction.ADD, ownerToken);
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {
-            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", adminToken1);
+            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
             fail("user2 should not have permissions to move to an external folder");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("owners or administrative users"));
         }
 
-        // Now we add user2 to admins group
-        catalogManager.getStudyManager().updateGroup(studyFqn, "admins", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user2")), ownerToken);
+        // Now we add normalUserId2 to admins group
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId2)), ownerToken);
 
         // and try the same action again
-        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", adminToken1);
+        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
         assertEquals("a/b/c/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(Paths.get("/tmp/other/variant-test-file.vcf.gz")));

@@ -60,12 +60,13 @@ public class CatalogIOManagerTest {
     @Test
     public void testCreateAccount() throws Exception {
         String organizationId = "opencb";
+        ioManager.createOrganization(organizationId);
         String userId = "imedina";
         URI userUri = ioManager.createUser(organizationId, userId);
 
         Path userPath = Paths.get(userUri);
         assertTrue(Files.exists(userPath));
-        assertEquals(tmpOutdir.resolve("users/" + userId).toAbsolutePath().toString(), userUri.getPath());
+        assertEquals(tmpOutdir.resolve("orgs").resolve(organizationId).resolve("users/").resolve(userId).toAbsolutePath().toString(), userUri.getPath());
 
         ioManager.deleteUser(organizationId, userId);
         assertFalse(Files.exists(userPath));
@@ -74,17 +75,15 @@ public class CatalogIOManagerTest {
     @Test
     public void testCreateStudy() throws Exception {
         String organizationId = "opencb";
-        String userId = "imedina";
+        ioManager.createOrganization(organizationId);
         String projectId = "1000g";
 
-        Path userPath = Paths.get(ioManager.createUser(organizationId, userId));
-
-        Path projectPath = Paths.get(ioManager.createProject(userId, projectId));
+        Path projectPath = Paths.get(ioManager.createProject(organizationId, projectId));
         assertTrue(Files.exists(projectPath));
-        assertEquals(userPath.toString() + "/projects/" + projectId, projectPath.toString());
+        assertEquals(tmpOutdir.resolve("orgs").resolve(organizationId).resolve("projects").resolve(projectId).toAbsolutePath().toString(), projectPath.toString());
 
-        Path studyPath = Paths.get(ioManager.createStudy(userId, projectId, "phase1"));
+        Path studyPath = Paths.get(ioManager.createStudy(organizationId, projectId, "phase1"));
         assertTrue(Files.exists(studyPath));
-        assertEquals(projectPath.toString() + "/phase1", studyPath.toString());
+        assertEquals(projectPath.resolve("phase1").toString(), studyPath.toString());
     }
 }

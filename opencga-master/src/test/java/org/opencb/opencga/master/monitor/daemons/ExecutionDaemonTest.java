@@ -222,9 +222,9 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
                 params, "job1", "", null, null, ownerToken).first().getId();
         String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job2", "", null, null, adminToken1).first().getId();
+                params, "job2", "", null, null, orgAdminToken1).first().getId();
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job3", "", null, null, adminToken2).first().getId();
+                params, "job3", "", null, null, orgAdminToken2).first().getId();
 
         daemon.checkPendingJobs();
 
@@ -408,7 +408,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
 
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, adminToken1);
+        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, orgAdminToken1);
     }
 
     @Test

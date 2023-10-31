@@ -170,7 +170,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.FQN.key());
-        user = catalogManager.getUserManager().get(organizationId, "user2", options, adminToken1);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, orgAdminToken1);
         assertEquals(0, user.first().getSharedProjects().size());
 
         // Grant permissions to user2 to access study of user1
@@ -180,7 +180,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.FQN.key());
-        user = catalogManager.getUserManager().get(organizationId, "user2", options, adminToken1);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, orgAdminToken1);
         assertEquals(1, user.first().getSharedProjects().size());
         assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
         assertNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
@@ -188,7 +188,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
                         + StudyDBAdaptor.QueryParams.ID.key());
-        user = catalogManager.getUserManager().get(organizationId, "user2", options, adminToken1);
+        user = catalogManager.getUserManager().get(organizationId, "user2", options, orgAdminToken1);
         assertEquals(1, user.first().getSharedProjects().size());
         assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
         assertNotNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
@@ -239,7 +239,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         try {
-            catalogManager.getUserManager().update(organizationId, "user", params, null, adminToken1);
+            catalogManager.getUserManager().update(organizationId, "user", params, null, orgAdminToken1);
             fail("Expected exception");
         } catch (CatalogException e) {
             System.out.println(e);
@@ -300,7 +300,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Only owners");
-        catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), adminToken1);
+        catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), orgAdminToken1);
     }
 
     @Ignore
@@ -425,7 +425,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Project> projects = catalogManager.getProjectManager().search(organizationId, query, null, ownerToken);
         assertEquals(1, projects.getNumResults());
 
-        projects = catalogManager.getProjectManager().search(organizationId, query, null, adminToken1);
+        projects = catalogManager.getProjectManager().search(organizationId, query, null, orgAdminToken1);
         assertEquals(0, projects.getNumResults());
     }
 
@@ -569,7 +569,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getStudyManager().search(organizationId, new
                         Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, ownerToken).getResults().stream()
                 .map(Study::getId).collect(Collectors.toSet()));
-        assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().search(organizationId, new Query(), null, adminToken1).getResults()
+        assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().search(organizationId, new Query(), null, orgAdminToken1).getResults()
                 .stream()
                 .map(Study::getId).collect(Collectors.toSet()));
     }
@@ -577,7 +577,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
-        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, adminToken1);
+        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, orgAdminToken1);
 
         String userId = catalogManager.getUserManager().getUserId(organizationId, ownerToken);
         List<Long> uids = catalogManager.getStudyManager().resolveIds(Arrays.asList("*"), userId, organizationId)
@@ -651,7 +651,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", "d", null,
-                null, null, null, null, adminToken1);
+                null, null, null, null, orgAdminToken1);
         try {
             studyManager.resolveIds(Collections.emptyList(), "*", organizationId);
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -659,7 +659,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("*")), adminToken1);
+                new GroupUpdateParams(Collections.singletonList("*")), orgAdminToken1);
 
         List<Study> studies = studyManager.resolveIds(Collections.emptyList(), "*", organizationId);
         assertEquals(1, studies.size());
@@ -678,9 +678,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null,
-                null, null, adminToken1);
+                null, null, orgAdminToken1);
         catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("*")), adminToken1);
+                new GroupUpdateParams(Collections.singletonList("*")), orgAdminToken1);
 
         List<Study> studies = studyManager.resolveIds(Collections.singletonList("phase3"), "*", organizationId);
         assertEquals(1, studies.size());
@@ -1063,7 +1063,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", ""), ParamUtils.AclAction.SET, ownerToken);
 
         try {
-            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), adminToken2);
+            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), orgAdminToken2);
             fail("Submission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
@@ -1086,7 +1086,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, ownerToken);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                adminToken2);
+                orgAdminToken2);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
     }
@@ -1098,7 +1098,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams(StudyPermissions.Permissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, ownerToken);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                adminToken2);
+                orgAdminToken2);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
 

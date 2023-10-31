@@ -77,7 +77,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     @Test
     public void deleteJobTest() throws CatalogException {
         catalogJobDBAdaptor.insert(studyUid, getNewJob("name")
-                .setUserId(ownerUserId)
+                .setUserId(orgOwnerUserId)
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyUid, "name");
         assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getId());
@@ -103,7 +103,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void getJobTest() throws CatalogException {
-        catalogJobDBAdaptor.insert(studyUid, getNewJob("name").setUserId(ownerUserId)
+        catalogJobDBAdaptor.insert(studyUid, getNewJob("name").setUserId(orgOwnerUserId)
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyUid, "name");
 
@@ -266,7 +266,7 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("internal.status.id"),
-                new QueryOptions(QueryOptions.COUNT, true), ownerUserId);
+                new QueryOptions(QueryOptions.COUNT, true), orgOwnerUserId);
 
         assertEquals(2, openCGAResult.getResults().size());
         for (Object o : openCGAResult.getResults()) {

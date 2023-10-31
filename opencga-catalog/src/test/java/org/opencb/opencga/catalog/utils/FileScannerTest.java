@@ -18,26 +18,20 @@ package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileStatus;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.BufferedInputStream;
@@ -58,35 +52,38 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 @Category(MediumTests.class)
-public class FileScannerTest {
-    @Rule
-    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
-
-    private CatalogManager catalogManager;
-    private String organizationId = "test";
-    private String sessionIdUser;
+public class FileScannerTest extends AbstractManagerTest {
+//    @Rule
+//    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+//
+//    private CatalogManager catalogManager;
+//    private String organizationId = "test";
+//    private String ownerToken;
     private File folder;
     private Study study;
-    private Project project;
+//    private Project project;
     private Path directory;
 
-    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+//    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void setUp() throws IOException, CatalogException {
-        catalogManager = catalogManagerExternalResource.getCatalogManager();
+    public void setUp() throws Exception {
+        super.setUp();
+//        catalogManager = catalogManagerExternalResource.getCatalogManager();
+//
+//        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+//
+//        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+//        ownerToken = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
+//        project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
+//                null, "GRCh38", INCLUDE_RESULT, ownerToken).first();
+//        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, ownerToken).first();
+//        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
+//                true, null, QueryOptions.empty(), ownerToken).first();
 
-        String opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-
-        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
-        project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
-                true, null, QueryOptions.empty(), sessionIdUser).first();
-
-        directory = catalogManagerExternalResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();
+        study = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), ownerToken).first();
+        folder = catalogManager.getFileManager().get(studyFqn, "data/test/folder/", QueryOptions.empty(), ownerToken).first();
+        directory = catalogManagerResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();
         if (directory.toFile().exists()) {
             IOUtils.deleteDirectory(directory);
         }
@@ -98,18 +95,18 @@ public class FileScannerTest {
 
         Files.createDirectory(directory.resolve("subfolder"));
         Files.createDirectory(directory.resolve("subfolder/subsubfolder"));
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file2.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file3.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/file1.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/file2.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/file3.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/subsubfolder/file1.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/subsubfolder/file2.txt").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("subfolder/subsubfolder/file3.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file2.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file3.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/file2.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/file3.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/subsubfolder/file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/subsubfolder/file2.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("subfolder/subsubfolder/file3.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, true, ownerToken);
 
         assertEquals(9, files.size());
         files.forEach((File file) -> assertTrue(StringUtils.isNotEmpty(file.getChecksum())));
@@ -119,15 +116,15 @@ public class FileScannerTest {
     @Test
     public void testDeleteExisting() throws IOException, CatalogException {
         DataResult<File> queryResult;
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
+            queryResult = catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, ownerToken);
         }
         File file = queryResult.first();
 
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.txt").toString());
         List<File> files = new FileScanner(catalogManager).scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
-                true, sessionIdUser);
+                true, ownerToken);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
         assertEquals(FileStatus.DELETED, getDeletedFile(file.getUid()).getInternal().getStatus().getId());
@@ -137,31 +134,31 @@ public class FileScannerTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), id)
                 .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
-        return catalogManager.getFileManager().search(study.getFqn(), query, null, sessionIdUser).first();
+        return catalogManager.getFileManager().search(studyFqn, query, null, ownerToken).first();
     }
 
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         // Create and register file1.txt and s/file2.txt
         File file;
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + "file1.txt"), false, true, true, sessionIdUser).first();
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
+            file = catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, true, true, ownerToken).first();
         }
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, sessionIdUser).first();
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, ownerToken).first();
         }
 
         // Create same file structure, and replace
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.txt").toString());
         Files.createDirectory(directory.resolve("s/"));
-        CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("s/file2.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, ownerToken);
 
-        File replacedFile = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
+        File replacedFile = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, ownerToken).first();
         assertEquals(FileStatus.READY, replacedFile.getInternal().getStatus().getId());
         assertEquals(file.getUid(), replacedFile.getUid());
         assertNotEquals(replacedFile.getChecksum(), file.getChecksum());
@@ -175,18 +172,18 @@ public class FileScannerTest {
         Path folder = directory.resolve("s/");
         Path file3 = directory.resolve("file3.txt");
 
-        CatalogManagerTest.createDebugFile(file1.toString());
+        MongoBackupUtils.createDebugFile(file1.toString());
         Files.createDirectory(folder);
-        CatalogManagerTest.createDebugFile(file2.toString());
-        CatalogManagerTest.createDebugFile(file3.toString());
+        MongoBackupUtils.createDebugFile(file2.toString());
+        MongoBackupUtils.createDebugFile(file3.toString());
 
         List<Path> filePaths = new ArrayList<>(2);
         filePaths.add(file1);
         filePaths.add(file2);
         FileScanner fileScanner = new FileScanner(catalogManager);
-//        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
+//        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, ownerToken);
         Predicate<URI> uriPredicate = uri -> uri.getPath().endsWith("file1.txt") || uri.getPath().endsWith("file2.txt");
-        List<File> files = fileScanner.scan(organizationId, this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, ownerToken);
 
         assertEquals(2, files.size());
         for (File file : files) {
@@ -202,16 +199,16 @@ public class FileScannerTest {
     @Test
     public void testScanStudyURI() throws IOException, CatalogException {
 
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.txt").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, ownerToken);
         assertEquals(1, files.size());
 
         Path studyUriPath = Paths.get(study.getUri());
-        CatalogManagerTest.createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file2.txt").toString());
-        File root = catalogManager.getFileManager().search(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
-        files = fileScanner.scan(organizationId, root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        MongoBackupUtils.createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file2.txt").toString());
+        File root = catalogManager.getFileManager().search(studyFqn, new Query("name", "."), null, ownerToken).first();
+        files = fileScanner.scan(organizationId, root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, ownerToken);
 
         assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getSize() > 0));
@@ -221,21 +218,21 @@ public class FileScannerTest {
 
     @Test
     public void testResyncStudy() throws IOException, CatalogException {
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.txt").toString());
 
         //ReSync study folder. Will detect any difference.
         FileScanner fileScanner = new FileScanner(catalogManager);
         List<File> files;
-        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, ownerToken);
         assertEquals(0, files.size());
 
         //Add one extra file. ReSync study folder.
         Path studyUriPath = Paths.get(study.getUri());
         // Create the directories
         catalogManager.getIoManagerFactory().getDefault().createDirectory(studyUriPath.resolve("data/test/folder/").toUri(), true);
-        Path filePath = CatalogManagerTest
+        Path filePath = MongoBackupUtils
                 .createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").toString()).toPath();
-        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, ownerToken);
 
         assertEquals(1, files.size());
         File file = files.get(0);
@@ -245,15 +242,15 @@ public class FileScannerTest {
 
         //Delete file. CheckStudyFiles. Will detect one File.Status.MISSING file
         Files.delete(filePath);
-        files = fileScanner.checkStudyFiles(organizationId, study, true, sessionIdUser);
+        files = fileScanner.checkStudyFiles(organizationId, study, true, ownerToken);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getId());
         String originalChecksum = files.get(0).getChecksum();
 
         //Restore file. CheckStudyFiles. Will detect one re-tracked file. Checksum must be different.
-        CatalogManagerTest.createDebugFile(filePath.toString());
-        files = fileScanner.checkStudyFiles(organizationId, study, true, sessionIdUser);
+        MongoBackupUtils.createDebugFile(filePath.toString());
+        files = fileScanner.checkStudyFiles(organizationId, study, true, ownerToken);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getId());
@@ -262,15 +259,15 @@ public class FileScannerTest {
 
         //Delete file. ReSync. Will detect one File.Status.MISSING file (like checkFile)
         Files.delete(filePath);
-        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
+        files = fileScanner.reSync(organizationId, study, true, ownerToken);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getId());
         originalChecksum = files.get(0).getChecksum();
 
         //Restore file. CheckStudyFiles. Will detect one found file. Checksum must be different.
-        CatalogManagerTest.createDebugFile(filePath.toString());
-        files = fileScanner.reSync(organizationId, study, true, sessionIdUser);
+        MongoBackupUtils.createDebugFile(filePath.toString());
+        files = fileScanner.reSync(organizationId, study, true, ownerToken);
 
         assertEquals(1, files.size());
         assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getId());
@@ -286,14 +283,14 @@ public class FileScannerTest {
         URI fileUri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
         ioManager.copy(fileUri, directory.resolve("file1.vcf.gz").toUri());
 
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.vcf.variants.json").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.vcf.variants.json.gz").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.vcf.variants.json.snappy").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file2.bam").toString());
-        CatalogManagerTest.createDebugFile(directory.resolve("file2.sam.gz").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.vcf.variants.json").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.vcf.variants.json.gz").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file1.vcf.variants.json.snappy").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file2.bam").toString());
+        MongoBackupUtils.createDebugFile(directory.resolve("file2.sam.gz").toString());
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        List<File> files = fileScanner.scan(organizationId, folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, ownerToken);
 
         Map<String, File> map = files.stream().collect(Collectors.toMap(File::getName, (f) -> f));
 

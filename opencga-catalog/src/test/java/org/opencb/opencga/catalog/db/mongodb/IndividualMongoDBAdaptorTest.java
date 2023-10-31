@@ -54,13 +54,13 @@ public class IndividualMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void testCreateIndividual() throws Exception {
-        OpenCGAResult<Individual> result = catalogIndividualDBAdaptor.get(studyUid, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "individual"), QueryOptions.empty(), ownerUserId);
+        OpenCGAResult<Individual> result = catalogIndividualDBAdaptor.get(studyUid, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "individual"), QueryOptions.empty(), orgOwnerUserId);
         assertEquals(0, result.getNumResults());
 
         OpenCGAResult individual = catalogIndividualDBAdaptor.insert(studyUid, new Individual().setId("individual"), null, null);
         assertEquals(1, individual.getNumInserted());
 
-        result = catalogIndividualDBAdaptor.get(studyUid, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "individual"), QueryOptions.empty(), ownerUserId);
+        result = catalogIndividualDBAdaptor.get(studyUid, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "individual"), QueryOptions.empty(), orgOwnerUserId);
         assertEquals(1, result.getNumResults());
     }
 
