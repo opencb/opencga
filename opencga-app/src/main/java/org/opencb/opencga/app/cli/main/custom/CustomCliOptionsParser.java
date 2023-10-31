@@ -108,7 +108,7 @@ public class CustomCliOptionsParser extends CliOptionsParser {
      */
     @Override
     protected void printMainUsage() {
-        CliUsage cliUsage = CliConfiguration.getUsage();
+        CliUsage cliUsage = CliConfiguration.getInstance().getUsage();
         CliCategory[] categories = cliUsage.getCategories();
         for (CliCategory cliCategory : categories) {
             String[] options = cliCategory.getOptions();

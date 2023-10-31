@@ -2,11 +2,13 @@ package org.opencb.opencga.app.cli.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Scanner;
 
 public class CliConfiguration {
 
@@ -23,7 +25,7 @@ public class CliConfiguration {
     /**
      * FILENAME is the file location of the configuration yml file
      */
-    public static final String CLI_USAGE_FILENAME = "cli-usage.yml";
+    private String cliUsageFileName = "cli-usage.yml";
 
     /**
      * LOGGER is an instance of the Logger class so that we can do proper
@@ -38,12 +40,10 @@ public class CliConfiguration {
         return CliConfiguration.instance;
     }
 
-    private static CliUsage loadConfiguration() throws IOException {
+    private CliUsage loadConfiguration() throws IOException {
         // Loading the YAML file from the /conf folder
-        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        String conf = appHome + "/conf";
-        File file = new File(conf + File.separator + CLI_USAGE_FILENAME);
-
+        File file = new File(cliUsageFileName);
+        FileUtils.copyURLToFile(getClass().getClassLoader().getResource(cliUsageFileName),file);
         // Mapping the config from the YAML file to the Configuration class
         logger.info("Loading CLI configuration from: " + file.getAbsolutePath());
         ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
@@ -53,18 +53,27 @@ public class CliConfiguration {
     /*
      * We keep an instance of cliUsage for the Shell
      */
-    public static CliUsage getUsage() {
+    public CliUsage getUsage() {
         if (cliUsage == null) {
             try {
                 cliUsage = loadConfiguration();
             } catch (IOException e) {
-                logger.error("Loading CLI configuration from: " + CLI_USAGE_FILENAME + " Failed");
+                logger.error("Loading CLI configuration from: " + cliUsageFileName + " Failed");
+                System.err.println("Loading CLI configuration from: " + cliUsageFileName + " Failed");
             }
         }
         return cliUsage;
     }
 
-    public static void setUsage(CliUsage cliUsage) {
+    public void setUsage(CliUsage cliUsage) {
         CliConfiguration.cliUsage = cliUsage;
+    }
+
+    public String getCliUsageFileName() {
+        return cliUsageFileName;
+    }
+
+    public void setCliUsageFileName(String cliUsageFileName) {
+        this.cliUsageFileName = cliUsageFileName;
     }
 }
