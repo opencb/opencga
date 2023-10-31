@@ -781,7 +781,6 @@
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>commons-logging</groupId>
