@@ -1,34 +1,27 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
-
+import java.util.List;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -64,6 +57,8 @@ import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyC
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
 import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*

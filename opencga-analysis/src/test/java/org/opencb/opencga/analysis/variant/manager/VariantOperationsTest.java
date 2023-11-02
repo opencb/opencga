@@ -36,20 +36,22 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualInternal;
-import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -57,7 +59,9 @@ import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeP
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -75,6 +79,8 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
@@ -148,6 +154,16 @@ public class VariantOperationsTest {
     @After
     public void tearDown() {
         if (hadoopExternalResource != null) {
+
+            try {
+                VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
+                if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+                    VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants_AFTER")).toUri());
+                }
+            } catch (Exception ignore) {
+                ignore.printStackTrace();
+            }
+
             hadoopExternalResource.after();
             hadoopExternalResource = null;
         }
@@ -246,7 +262,7 @@ public class VariantOperationsTest {
                         Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
         catalogManager.getFamilyManager().create(
                 STUDY,
-                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
+                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 4, null, null),
                 individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                 token);
 
@@ -274,6 +290,28 @@ public class VariantOperationsTest {
             }
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
+
+    }
+
+    @Test
+    public void testVariantFileReload() throws Exception {
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class, STUDY,
+                    new VariantIndexParams()
+                            .setForceReload(false)
+                            .setFile(file.getId()),
+                    Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+            fail("Should have thrown an exception");
+        } catch (ToolException e) {
+            assertEquals(StorageEngineException.class, e.getCause().getClass());
+            assertEquals("We can only INDEX VCF files not transformed, the status is READY", e.getCause().getMessage());
+        }
+
+        toolRunner.execute(VariantIndexOperationTool.class, STUDY,
+                new VariantIndexParams()
+                        .setForceReload(true)
+                        .setFile(file.getId()),
+                Paths.get(opencga.createTmpOutdir()), "index_reload", token);
 
     }
 
@@ -376,6 +414,50 @@ public class VariantOperationsTest {
     }
 
     @Test
+    public void testVariantSecondarySampleIndexPartialFamily() throws Exception {
+        Assume.assumeThat(storageEngine, anyOf(
+//                is(DummyVariantStorageEngine.STORAGE_ENGINE_ID),
+                is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+        ));
+        for (String sample : samples) {
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
+            assertEquals(sample, IndexStatus.NONE, sampleIndex.getFamilyStatus().getId());
+            assertEquals(sample, 1, sampleIndex.getVersion().intValue());
+        }
+
+        Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
+        Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
+
+        catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList("f1"), null, token);
+        catalogManager.getIndividualManager().update(STUDY, daughter, new IndividualUpdateParams()
+                .setMother(new IndividualReferenceParam(null, null)), null, token);
+        catalogManager.getFamilyManager().create(
+                STUDY,
+                new Family("f2", "f2", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 2, null, null),
+                Arrays.asList(father, daughter), new QueryOptions(),
+                token);
+
+        // Run family index. The family index status should be READY on offspring
+        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+                new VariantSecondarySampleIndexParams()
+                        .setFamilyIndex(true)
+                        .setSample(Arrays.asList(daughter)),
+                Paths.get(opencga.createTmpOutdir()), "index", token);
+
+        for (String sample : samples) {
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            assertEquals(sample, IndexStatus.READY, sampleIndex.getStatus().getId());
+            if (sample.equals(daughter)) {
+                assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
+            } else {
+                assertEquals(sample, IndexStatus.NONE, sampleIndex.getFamilyStatus().getId());
+            }
+            assertEquals(sample, 1, sampleIndex.getVersion().intValue());
+        }
+    }
+
+    @Test
     public void testGwasIndex() throws Exception {
         // Variant scores can not be loaded in mongodb nor dummy
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
@@ -406,6 +488,28 @@ public class VariantOperationsTest {
         variantStorageManager.iterator(new Query(VariantQueryParam.STUDY.key(), STUDY), new QueryOptions(), token).forEachRemaining(variant -> {
             assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
         });
+    }
+
+    @Test
+    public void testCellbaseConfigure() throws Exception {
+        String project = "Project_test_cellbase_configure";
+        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
+
+        CellBaseUtils cellBaseUtils = variantStorageManager.getVariantStorageEngineByProject(project, null, token).getCellBaseUtils();
+        assertEquals(ParamConstants.CELLBASE_URL, cellBaseUtils.getURL());
+        assertEquals(ParamConstants.CELLBASE_VERSION, cellBaseUtils.getVersion());
+        assertEquals("hsapiens", cellBaseUtils.getSpecies());
+        assertEquals("GRCh38", cellBaseUtils.getAssembly());
+
+        String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
+        String newCellbaseVersion = "v5.2";
+
+        assertNotEquals(newCellbase, cellBaseUtils.getURL());
+        assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
+
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, "1", ""), false, null, token);
+        CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
+//        assertTrue(family.getPedigreeGraph() != null);
     }
 
     public void checkExecutionResult(ExecutionResult er) {
