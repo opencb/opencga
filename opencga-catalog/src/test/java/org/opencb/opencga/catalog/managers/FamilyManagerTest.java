@@ -599,7 +599,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         }
 
         familyManager.updateAcl(studyFqn, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.NO), "user2",
-                ParamUtils.AclAction.SET, token);
+                ParamUtils.AclAction.SET, ownerToken);
         DataResult<Family> familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(0, familyDataResult.first().getMembers().size());
@@ -610,7 +610,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         assertEquals(0, nsamples);
 
         familyManager.updateAcl(studyFqn, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.YES), "user2",
-                ParamUtils.AclAction.SET, token);
+                ParamUtils.AclAction.SET, ownerToken);
         familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(5, familyDataResult.first().getMembers().size());
@@ -628,7 +628,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         }
 
         familyManager.updateAcl(studyFqn, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
-                FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW), "user2", ParamUtils.AclAction.SET, token);
+                FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW), "user2", ParamUtils.AclAction.SET, ownerToken);
         familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(5, familyDataResult.first().getMembers().size());
@@ -661,20 +661,20 @@ public class FamilyManagerTest extends AbstractManagerTest {
         }
 
         familyManager.updateAcl(studyFqn, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.NO), "user2",
-                ParamUtils.AclAction.SET, token);
+                ParamUtils.AclAction.SET, ownerToken);
         DataResult<Family> familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(0, familyDataResult.first().getMembers().size());
 
         catalogManager.getIndividualManager().updateAcl(studyFqn, Collections.singletonList("child2"), "user2",
-                new IndividualAclParams("", "VIEW"), ParamUtils.AclAction.SET, false, token);
+                new IndividualAclParams("", "VIEW"), ParamUtils.AclAction.SET, false, ownerToken);
         familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(1, familyDataResult.first().getMembers().size());
         assertEquals("child2", familyDataResult.first().getMembers().get(0).getId());
 
         catalogManager.getIndividualManager().updateAcl(studyFqn, Collections.singletonList("child3"), "user2",
-                new IndividualAclParams("", "VIEW"), ParamUtils.AclAction.SET, false, token);
+                new IndividualAclParams("", "VIEW"), ParamUtils.AclAction.SET, false, ownerToken);
         familyDataResult = familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(2, familyDataResult.first().getMembers().size());

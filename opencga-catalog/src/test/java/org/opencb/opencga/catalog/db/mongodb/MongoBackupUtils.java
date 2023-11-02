@@ -149,7 +149,10 @@ public class MongoBackupUtils {
                 while (iterator.hasNext()) {
                     Document document = iterator.next();
                     if (OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION.equals(collection)) {
-                        ioManager.createDirectory(projectsFolder.resolve(document.getLong("uid").toString()).toUri());
+                        URI projectFolderUri = projectsFolder.resolve(document.getLong("uid").toString()).toUri();
+                        if (!ioManager.exists(projectFolderUri)) {
+                            ioManager.createDirectory(projectsFolder.resolve(document.getLong("uid").toString()).toUri());
+                        }
                     } else if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)
                             || OrganizationMongoDBAdaptorFactory.DELETED_FILE_COLLECTION.equals(collection)
                             || OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION.equals(collection)

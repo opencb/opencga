@@ -3,7 +3,6 @@ package org.opencb.opencga.core.models;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.util.Base64;
@@ -36,7 +35,7 @@ public class JwtPayload {
      */
     public JwtPayload(String token) {
         if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
-            this.userId = ParamConstants.ANONYMOUS_USER_ID;
+            throw new IllegalArgumentException("Missing token");
         } else {
             // Analyse token
             String[] split = StringUtils.split(token, ".");

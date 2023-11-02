@@ -64,6 +64,7 @@ import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -2353,7 +2354,9 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), this.ownerToken);
-        queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "*", QueryOptions.empty(), null);
+        AuthenticationResponse authResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
+        queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "*", QueryOptions.empty(),
+                authResponse.getToken());
         assertEquals(1, queryResult.getNumResults());
     }
 

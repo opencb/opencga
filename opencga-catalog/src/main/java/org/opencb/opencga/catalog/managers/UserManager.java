@@ -229,11 +229,16 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
 
-        OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT);
-        if (userResult.getNumResults() == 0) {
-            throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
+        String authOrigin;
+        if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
+            authOrigin = CatalogAuthenticationManager.INTERNAL;
+        } else {
+            OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT);
+            if (userResult.getNumResults() == 0) {
+                throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
+            }
+            authOrigin = userResult.first().getAccount().getAuthentication().getId();
         }
-        String authOrigin = userResult.first().getAccount().getAuthentication().getId();
 
         AuthenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
         return jwtPayload;
@@ -859,6 +864,21 @@ public class UserManager extends AbstractManager {
         }
 
         return response;
+    }
+
+    public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {
+        ParamUtils.checkParameter(organizationId, "organization id");
+
+        // Check user anonymous has access to any study within the organization
+        Query query = new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), ParamConstants.ANONYMOUS_USER_ID);
+        OpenCGAResult<Long> count = getStudyDBAdaptor(organizationId).count(query);
+        if (count.getNumMatches() == 0) {
+            throw CatalogAuthenticationException.userNotFound(organizationId, ParamConstants.ANONYMOUS_USER_ID);
+        }
+
+        String token = AuthenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL,
+                ParamConstants.ANONYMOUS_USER_ID);
+        return new AuthenticationResponse(token);
     }
 
     /**

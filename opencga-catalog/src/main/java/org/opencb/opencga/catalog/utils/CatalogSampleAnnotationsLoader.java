@@ -28,12 +28,11 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -48,7 +47,7 @@ import java.util.*;
  */
 public class CatalogSampleAnnotationsLoader {
 
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(CatalogSampleAnnotationsLoader.class);
     private final CatalogManager catalogManager;
 
     public CatalogSampleAnnotationsLoader(CatalogManager catalogManager) {

@@ -161,12 +161,12 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertEquals(date, study.getInternal().getIndex().getRecessiveGene().getModificationDate());
 
         catalogManager.getStudyManager().updateGroup("newStudy", "members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user2")), ownerToken);
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("admin");
         catalogManager.getStudyManager().updateSummaryIndex("newStudy",
-                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), orgAdminToken1);
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), normalToken1);
     }
 
     @Test

@@ -1407,7 +1407,8 @@ public class StudyManager extends AbstractManager {
             throws CatalogException {
         ParamUtils.checkParameter(variableSet.getId(), "id");
         ParamUtils.checkObj(variableSet.getVariables(), "Variables from VariableSet");
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = jwtPayload.getUserId(organizationId);
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
 
         variableSet.setDescription(ParamUtils.defaultString(variableSet.getDescription(), ""));
