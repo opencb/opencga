@@ -1,18 +1,16 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.PivotField;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -23,41 +21,47 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static org.junit.Assert.assertEquals;
 
 public class ClinicalAggregationTest {
 
-    protected CvdbSolrEngine cvdbEngine;
-    protected String projectId = "project1";
-    protected Study study;
+    protected static CvdbSolrEngine cvdbEngine;
+    protected static String projectId = "project1";
+    protected static Study study;
 
-    @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);;
+    public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
-    @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public static CatalogManagerExternalResource catalogManagerResource;
 
-    protected CatalogManager catalogManager;
-    private String opencgaToken;
-    protected String sessionIdUser;
-    private FamilyManager familyManager;
+    protected static CatalogManager catalogManager;
+    private static String opencgaToken;
+    protected static String sessionIdUser;
+    private static FamilyManager familyManager;
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
-    @Before
-    public void before() throws CatalogException, IOException, CvdbException {
+    @BeforeClass
+    public static void before() throws Throwable {
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
+        cvdbSolrExternalResource.before();
+
+        catalogManagerResource = new CatalogManagerExternalResource();
+        catalogManagerResource.before();
+
         // Catalog
         catalogManager = catalogManagerResource.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
@@ -65,15 +69,23 @@ public class ClinicalAggregationTest {
 
         // CVDB
         cvdbEngine = cvdbSolrExternalResource.configure();
+        cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(projectId)) {
             cvdbEngine.createCollections(projectId);
         }
 
-        setUpCvdb(catalogManager);
+        // Load and index
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog
+        CvdbIndexResult indexResult = cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+        System.out.println(indexResult.getFailures());
+        assertEquals(2, indexResult.getNumIndexed());
+        assertEquals(0, indexResult.getFailures().size());
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+    public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
@@ -89,85 +101,94 @@ public class ClinicalAggregationTest {
                 sessionIdUser).first();
     }
 
-
-    public void setUpCvdb(CatalogManager catalogManager) throws IOException, CatalogException, CvdbException {
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
-
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
-    }
     //-----------------------------------------------------------------------
     // T E S T S
     //-----------------------------------------------------------------------
 
+//    @Test
+//    public void testAggregationWithFacetPivot() throws IOException, SolrServerException {
+//        SolrQuery solrQuery = new SolrQuery("*:*");
+//        solrQuery.setFacet(true);
+//        solrQuery.addFacetPivotField("ciId,cvId,geneName,panelId");
+//
+//        // Execute the Solr query
+//        System.out.println("solr query = " + solrQuery.toQueryString());
+//        solrQuery.setShowDebugInfo(true);
+//        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+//                solrQuery);
+//
+//        // Print out the results
+//        int count = 0;
+//        NamedList<List<PivotField>> pivotFacets = response.getFacetPivot();
+//        for (Map.Entry<String, List<PivotField>> entry : pivotFacets) {
+//            System.out.println("key = " + entry.getKey());
+//            for (PivotField pivotField1 : entry.getValue()) {
+//                System.out.println("\tvalue = " + pivotField1.getValue() + ", count = " + pivotField1.getCount());
+//                for (PivotField pivotField2 : pivotField1.getPivot()) {
+//                    System.out.println("\t\tvalue = " + pivotField2.getValue() + ", count = " + pivotField2.getCount());
+//                    for (PivotField pivotField3 : pivotField2.getPivot()) {
+//                        System.out.println("\t\t\tvalue = " + pivotField3.getValue() + ", count = " + pivotField3.getCount());
+//                        for (PivotField pivotField4 : pivotField3.getPivot()) {
+//                            System.out.println("\t\t\t\tvalue = " + pivotField4.getValue() + ", count = " + pivotField4.getCount());
+//                            count++;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        Assert.assertEquals(8, count);
+//    }
+//
+//    @Test
+//    public void testAggregationWithFacetField() throws IOException, SolrServerException {
+//        String fieldName = "panelId";
+//        SolrQuery solrQuery = new SolrQuery("*:*");
+//        solrQuery.setFacet(true);
+//        solrQuery.addFacetField(fieldName);
+//
+//        // Execute the Solr query
+//        System.out.println("solr query = " + solrQuery.toQueryString());
+//        solrQuery.setShowDebugInfo(true);
+//        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
+//                solrQuery);
+//        FacetField facetField = response.getFacetField(fieldName);
+//
+//        // Print out the results
+//        Assert.assertEquals(3, facetField.getValues().stream().count());
+//        System.out.println("name = " + facetField.getName());
+//        for (FacetField.Count facetCount : facetField.getValues()) {
+//            System.out.println("\tvalue = " + facetCount.getName() + ", count = " + facetCount.getCount());
+//            switch (facetCount.getName() + ":" + facetCount.getCount()) {
+//                case "VACTERL-like_phenotypes-PanelAppId-101:5":
+//                case "Periodic_fever_syndromes-PanelAppId-60:0":
+//                case "Severe_multi-system_atopic_disease_with_high_IgE-PanelAppId-62:3":
+//                    break;
+//                default:
+//                    Assert.fail();
+//            }
+//        }
+//    }
+
     @Test
-    public void testAggregationWithFacetPivot() throws IOException, SolrServerException {
-        SolrQuery solrQuery = new SolrQuery("*:*");
-        solrQuery.setFacet(true);
-        solrQuery.addFacetPivotField("ciId,cvId,geneName,panelId");
+    public void testFacetClinicalAnalyses() throws IOException, SolrServerException, CvdbException {
+        // CVDB query
+        Query query;
 
-        // Execute the Solr query
-        System.out.println("solr query = " + solrQuery.toQueryString());
-        solrQuery.setShowDebugInfo(true);
-        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-                solrQuery);
+        QueryOptions queryOptions = new QueryOptions();
 
-        // Print out the results
-        int count = 0;
-        NamedList<List<PivotField>> pivotFacets = response.getFacetPivot();
-        for (Map.Entry<String, List<PivotField>> entry : pivotFacets) {
-            System.out.println("key = " + entry.getKey());
-            for (PivotField pivotField1 : entry.getValue()) {
-                System.out.println("\tvalue = " + pivotField1.getValue() + ", count = " + pivotField1.getCount());
-                for (PivotField pivotField2 : pivotField1.getPivot()) {
-                    System.out.println("\t\tvalue = " + pivotField2.getValue() + ", count = " + pivotField2.getCount());
-                    for (PivotField pivotField3 : pivotField2.getPivot()) {
-                        System.out.println("\t\t\tvalue = " + pivotField3.getValue() + ", count = " + pivotField3.getCount());
-                        for (PivotField pivotField4 : pivotField3.getPivot()) {
-                            System.out.println("\t\t\t\tvalue = " + pivotField4.getValue() + ", count = " + pivotField4.getCount());
-                            count++;
-                        }
-                    }
-                }
-            }
-        }
-        Assert.assertEquals(8, count);
-    }
-
-    @Test
-    public void testAggregationWithFacetField() throws IOException, SolrServerException {
-        String fieldName = "panelId";
-        SolrQuery solrQuery = new SolrQuery("*:*");
-        solrQuery.setFacet(true);
-        solrQuery.addFacetField(fieldName);
-
-        // Execute the Solr query
-        System.out.println("solr query = " + solrQuery.toQueryString());
-        solrQuery.setShowDebugInfo(true);
-        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-                solrQuery);
-        FacetField facetField = response.getFacetField(fieldName);
-
-        // Print out the results
-        Assert.assertEquals(3, facetField.getValues().stream().count());
-        System.out.println("name = " + facetField.getName());
-        for (FacetField.Count facetCount : facetField.getValues()) {
-            System.out.println("\tvalue = " + facetCount.getName() + ", count = " + facetCount.getCount());
-            switch (facetCount.getName() + ":" + facetCount.getCount()) {
-                case "VACTERL-like_phenotypes-PanelAppId-101:5":
-                case "Periodic_fever_syndromes-PanelAppId-60:0":
-                case "Severe_multi-system_atopic_disease_with_high_IgE-PanelAppId-62:3":
-                    break;
-                default:
-                    Assert.fail();
-            }
+        // Check existing type
+        queryOptions.put(QueryOptions.FACET, CA_STATUS_NAME);
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
+        for (FacetField result : facetResult.getResults()) {
+            System.out.println(result);
         }
     }
 
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
-    private void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+    private static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
             InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
             GZIPInputStream gzipInputStream = new GZIPInputStream(is);

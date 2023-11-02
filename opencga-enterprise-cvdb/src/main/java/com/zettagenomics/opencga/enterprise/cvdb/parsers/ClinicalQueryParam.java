@@ -102,7 +102,7 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam CA_REPORT = new ClinicalQueryParam(CA_REPORT_NAME, TEXT_ARRAY, CA_REPORT_DESCR);
 
     // <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
-    public static final String CA_STATUS_NAME = "ciStatusName";
+    public static final String CA_STATUS_NAME = "caStatus";
     public static final String CA_STATUS_DESCR = "Clinical analysis status (or list of status" + OPT_LIST;
     public static final ClinicalQueryParam CA_STATUS = new ClinicalQueryParam(CA_STATUS_NAME, TEXT_ARRAY, CA_STATUS_DESCR);
 

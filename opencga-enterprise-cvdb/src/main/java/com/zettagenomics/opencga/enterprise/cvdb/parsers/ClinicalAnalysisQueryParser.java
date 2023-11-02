@@ -18,9 +18,11 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.util.List;
@@ -38,6 +40,24 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         String projectId = query.getString(ParamConstants.PROJECT_PARAM_NAME);
 
         SolrQuery solrQuery = new SolrQuery("*:*");
+
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            try {
+                FacetQueryParser facetQueryParser = new FacetQueryParser();
+
+                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
+                String jsonFacet = facetQueryParser.parse(facetQuery);
+
+                solrQuery.set("json.facet", jsonFacet);
+                solrQuery.setRows(0);
+                solrQuery.setStart(0);
+                solrQuery.setFields();
+
+                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
+            } catch (Exception e) {
+                throw new CvdbException("Error parsing facet query", e);
+            }
+        }
 
         List<String> filters;
         String join;

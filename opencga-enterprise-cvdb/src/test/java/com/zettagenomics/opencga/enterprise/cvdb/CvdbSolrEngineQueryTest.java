@@ -1979,7 +1979,7 @@ public class CvdbSolrEngineQueryTest {
         return false;
     }
 
-    private static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
+    public static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
             InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
             GZIPInputStream gzipInputStream = new GZIPInputStream(is);

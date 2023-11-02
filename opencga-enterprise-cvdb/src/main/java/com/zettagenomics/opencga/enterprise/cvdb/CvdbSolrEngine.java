@@ -41,8 +41,10 @@ import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -66,6 +68,7 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
@@ -209,7 +212,7 @@ public class CvdbSolrEngine {
     }
 
     //----------------------------------------------------------------------
-    // CLINICAL ANALYSIS: SEARCH AND ITERATOR
+    // CLINICAL ANALYSIS: SEARCH, ITERATOR, FACET
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
@@ -234,7 +237,7 @@ public class CvdbSolrEngine {
     public ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> clinicalAnalysisIterator(
             Query query, QueryOptions queryOptions) throws CvdbException, IOException {
         // Check
-        check(query, queryOptions);
+        checkQuery(query, queryOptions);
 
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
@@ -255,8 +258,30 @@ public class CvdbSolrEngine {
         }
     }
 
+    public DataResult<FacetField> facetClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        // Check
+        checkFacet(query, queryOptions, CA_FACET_FIELD_SET);
+
+        // Parse query
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+            SolrCollection solrCollection = solrManager.getCollection(collection);
+            facetResult = solrCollection.facet(solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
+    }
+
     //----------------------------------------------------------------------
-    // CLINICAL INTERPRETATION: SEARCH AND ITERATOR
+    // CLINICAL INTERPRETATION: SEARCH, ITERATOR, FACET
     //----------------------------------------------------------------------
 
     public DataResult<Interpretation> searchClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
@@ -281,7 +306,7 @@ public class CvdbSolrEngine {
     public ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> clinicalInterpretationIterator(
             Query query, QueryOptions queryOptions) throws CvdbException, IOException {
         // Check
-        check(query, queryOptions);
+        checkQuery(query, queryOptions);
 
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
@@ -302,8 +327,30 @@ public class CvdbSolrEngine {
         }
     }
 
+    public DataResult<FacetField> facetClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        // Check
+        checkFacet(query, queryOptions, CI_FACET_FIELD_SET);
+
+        // Parse query
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), INTERPRETATIONS_COLLECTION_SUFFIX);
+            SolrCollection solrCollection = solrManager.getCollection(collection);
+            facetResult = solrCollection.facet(solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
+    }
+
     //----------------------------------------------------------------------
-    // CLINICAL VARIANT: SEARCH AND ITERATOR
+    // CLINICAL VARIANT: SEARCH, ITERATOR, FACET
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalVariant> searchClinicalVariants(Query query, QueryOptions queryOptions, String token)
@@ -328,7 +375,7 @@ public class CvdbSolrEngine {
     public ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> clinicalVariantIterator(
             Query query, QueryOptions queryOptions) throws CvdbException, IOException {
         // Check
-        check(query, queryOptions);
+        checkQuery(query, queryOptions);
 
         // Parse query
         ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
@@ -349,8 +396,30 @@ public class CvdbSolrEngine {
         }
     }
 
+    public DataResult<FacetField> facetClinicalVariants(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        // Check
+        checkFacet(query, queryOptions, CV_FACET_FIELD_SET);
+
+        // Parse query
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+            SolrCollection solrCollection = solrManager.getCollection(collection);
+            facetResult = solrCollection.facet(solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
+    }
+
     //----------------------------------------------------------------------
-    // CLINICAL VARIANT EVIDENCE: SEARCH AND ITERATOR
+    // CLINICAL VARIANT EVIDENCE: SEARCH, ITERATOR, FACET
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalVariantEvidence> searchClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
@@ -375,7 +444,7 @@ public class CvdbSolrEngine {
     public ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter>
     clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions) throws CvdbException, IOException {
         // Check
-        check(query, queryOptions);
+        checkQuery(query, queryOptions);
 
         // Parse query
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
@@ -396,6 +465,28 @@ public class CvdbSolrEngine {
         }
     }
 
+    public DataResult<FacetField> facetClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException {
+        // Check
+        checkFacet(query, queryOptions, CVE_FACET_FIELD_SET);
+
+        // Parse query
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            SolrCollection solrCollection = solrManager.getCollection(collection);
+            facetResult = solrCollection.facet(solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
+    }
+
     //----------------------------------------------------------------------
     // P R I V A T E      M E T H O D S
     //----------------------------------------------------------------------
@@ -404,11 +495,29 @@ public class CvdbSolrEngine {
         if (!query.containsKey(PROJECT_PARAM_NAME) || StringUtils.isEmpty(query.getString(PROJECT_PARAM_NAME))) {
             throw new CvdbException("Missing project ID");
         }
+    }
+
+    private void checkQuery(Query query, QueryOptions queryOptions) throws CvdbException {
+        check(query, queryOptions);
 
         if (queryOptions.containsKey(LIMIT)) {
             int limit = queryOptions.getInt(LIMIT);
             if (limit < 1 || limit > ParamConstants.DEFAULT_LIMIT) {
                 throw new CvdbException("Invalid limit value: " + limit);
+            }
+        }
+    }
+
+    private void checkFacet(Query query, QueryOptions queryOptions, Set<String> fieldSet) throws CvdbException {
+        check(query, queryOptions);
+
+        if (!queryOptions.containsKey(QueryOptions.FACET) || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            throw new CvdbException("Missing facet field to aggregation stats");
+        }
+
+        for (String field : queryOptions.getString(QueryOptions.FACET).split(";")) {
+            if (!fieldSet.contains(field)) {
+                throw new CvdbException("Invalid facet field '" + field + "'. Valid values are: " + StringUtils.join(fieldSet, ", "));
             }
         }
     }

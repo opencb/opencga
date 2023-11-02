@@ -24,8 +24,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
+import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
@@ -33,18 +36,80 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SCORE;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 public class ClinicalQueryParser {
 
     SolrQueryParser solrParser;
+
+    public static Set<String> CA_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CA_TYPE_NAME, CA_DISORDER_ID_NAME, CA_FILENAME_NAME,
+            CA_PROBAND_ID_NAME, CA_FAMILY_ID_NAME, CA_FAMILY_PHENOTYPE_NAME_NAME, CA_FAMILY_MEMBER_ID_NAME, CA_STATUS_NAME,
+            CA_LOCKED_NAME));
+
+    public static final String CA_FACET_FIELDS = CA_TYPE_NAME + ", " + CA_DISORDER_ID_NAME + ", " + CA_FILENAME_NAME + ", "
+            + CA_PROBAND_ID_NAME + ", " + CA_FAMILY_ID_NAME + ", " + CA_FAMILY_PHENOTYPE_NAME_NAME + ", " + CA_FAMILY_MEMBER_ID_NAME
+            + ", " + CA_STATUS_NAME + ", " + CA_LOCKED_NAME;
+
+    public static Set<String> CI_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CI_ID_NAME, CI_PRIMARY_NAME, CI_PANEL_ID_NAME,
+            CI_ANALYIST_ID_NAME, CI_ANALYIST_NAME_NAME, CI_ANALYIST_EMAIL_NAME, CI_ANALYIST_ASSIGNED_BY_NAME, CI_ANALYIST_DATE_NAME,
+            CI_METHOD_NAME_NAME, CI_METHOD_VERSION_NAME, CI_METHOD_COMMIT_NAME, CI_LOCKED_NAME, CI_STATUS_ID_NAME, CI_STATUS_NAME_NAME,
+            CI_STATUS_DATE_NAME, CI_CREATION_DATE_NAME, CI_MODIFICATION_DATE_NAME, CI_VERSION_NAME));
+
+    public static final String CI_FACET_FIELDS = CI_ID_NAME + ", " + CI_PRIMARY_NAME + ", " + CI_PANEL_ID_NAME + ", " + CI_ANALYIST_ID_NAME
+            + ", " + CI_ANALYIST_NAME_NAME + ", " + CI_ANALYIST_EMAIL_NAME + ", " + CI_ANALYIST_ASSIGNED_BY_NAME + ", "
+            + CI_ANALYIST_DATE_NAME + ", " + CI_METHOD_NAME_NAME + ", " + CI_METHOD_VERSION_NAME + ", " + CI_METHOD_COMMIT_NAME + ", "
+            + CI_LOCKED_NAME + ", " + CI_STATUS_ID_NAME + ", " + CI_STATUS_NAME_NAME + ", " + CI_STATUS_DATE_NAME + ", "
+            + CI_CREATION_DATE_NAME + ", " + CI_MODIFICATION_DATE_NAME + ", " + CI_VERSION_NAME;
+
+    public static Set<String> CV_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CV_ID_NAME, CV_PRIMARY_NAME, CV_DISCUSSION_AUTHOR_NAME,
+            CV_DISCUSSION_DATE_NAME, CV_CONFIDENCE_VALUE_NAME, CV_CONFIDENCE_AUTHOR_NAME, CV_CONFIDENCE_DATE_NAME, CV_TAG_NAME,
+            CV_STATUS_NAME, CV_ANNOT_BIOTYPE_NAME, CV_ANNOT_CONSEQUENCE_TYPE_NAME,
+            //CV_ANNOT_TRANSCRIPT_FLAG_NAME,
+            CV_GENE_NAME,
+            CV_ANNOT_XREF_NAME, CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME, CV_TYPE_NAME
+            //CV_ANNOT_PROTEIN_SUBSTITUTION_NAME,
+            //CV_ANNOT_CONSERVATION_NAME, CV_ANNOT_FUNCTIONAL_SCORE_NAME, CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME,
+            //CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, CV_STATS_ALT_NAME,
+            //CV_STATS_MAF_NAME, CV_STATS_REF_NAME, CV_STATS_PASS_FREQ_NAME, CV_SCORE_NAME,
+            //CV_ANNOT_GO_GENES_NAME,
+            //CV_ANNOT_EXPRESSION_GENES_NAME, CV_ANNOT_GENE_TRAIT_ID_NAME, CV_ANNOT_TRAIT_NAME, CV_ANNOT_PROTEIN_KEYWORD_NAME
+    ));
+
+    public static final String CV_FACET_FIELDS = CV_ID_NAME + ", " + CV_PRIMARY_NAME + ", " + CV_DISCUSSION_AUTHOR_NAME + ", " +
+            CV_DISCUSSION_DATE_NAME + ", " + CV_CONFIDENCE_VALUE_NAME + ", " + CV_CONFIDENCE_AUTHOR_NAME + ", " + CV_CONFIDENCE_DATE_NAME
+            + ", " + CV_TAG_NAME + ", " + CV_STATUS_NAME + ", " + CV_ANNOT_BIOTYPE_NAME + ", " + CV_ANNOT_CONSEQUENCE_TYPE_NAME + ", "
+            //+ CV_ANNOT_TRANSCRIPT_FLAG_NAME + ", "
+            +  CV_GENE_NAME + ", " + CV_ANNOT_XREF_NAME + ", "
+            + CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME + ", " + CV_TYPE_NAME
+            //CV_ANNOT_PROTEIN_SUBSTITUTION_NAME,
+            //CV_ANNOT_CONSERVATION_NAME, CV_ANNOT_FUNCTIONAL_SCORE_NAME, CV_ANNOT_POPULATION_ALTERNATE_FREQUENCY_NAME,
+            //CV_ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_NAME, CV_ANNOT_POPULATION_REFERENCE_FREQUENCY_NAME, CV_STATS_ALT_NAME,
+            //CV_STATS_MAF_NAME, CV_STATS_REF_NAME, CV_STATS_PASS_FREQ_NAME, CV_SCORE_NAME,
+            //CV_ANNOT_GO_GENES_NAME,
+            //+ ", " + CV_ANNOT_EXPRESSION_GENES_NAME + ", " + CV_ANNOT_GENE_TRAIT_ID_NAME + ", " + CV_ANNOT_TRAIT_NAME + ", "
+            //+ CV_ANNOT_PROTEIN_KEYWORD_NAME
+            ;
+
+    public static Set<String> CVE_FACET_FIELD_SET = new HashSet<>(Arrays.asList(CVE_PHENOTYPE_NAME_NAME, CVE_GENE_NAME_NAME,
+            CVE_CONSEQUENCE_TYPE_ID_NAME, CVE_XREF_ID_NAME, CVE_PANEL_ID_NAME, CVE_MOI_NAME, CVE_PENETRANCE_NAME, CVE_ACGM_NAME,
+            CVE_TIER_NAME, CVE_CLINICAL_SIGNIFICANCE_NAME, CVE_DRUG_RESPONSE_NAME, CVE_TRAIT_ASSOCIATION_NAME, CVE_FUNCTIONAL_EFFECT_NAME,
+            CVE_TUMORIGENESIS_NAME, CVE_OTHER_CLASSIFICATION_NAME, CVE_ROL_IN_CANCER_NAME));
+
+    public static final String CVE_FACET_FIELDS = CVE_PHENOTYPE_NAME_NAME + ", " + CVE_GENE_NAME_NAME + ", "
+            + CVE_CONSEQUENCE_TYPE_ID_NAME + ", " + CVE_XREF_ID_NAME + ", " + CVE_PANEL_ID_NAME + ", " + CVE_MOI_NAME + ", "
+            + CVE_PENETRANCE_NAME + ", " + CVE_ACGM_NAME + ", " + CVE_TIER_NAME + ", " + CVE_CLINICAL_SIGNIFICANCE_NAME + ", "
+            + CVE_DRUG_RESPONSE_NAME + ", " + CVE_TRAIT_ASSOCIATION_NAME + ", " + CVE_FUNCTIONAL_EFFECT_NAME + ", "
+            + CVE_TUMORIGENESIS_NAME + ", " + CVE_OTHER_CLASSIFICATION_NAME + ", " + CVE_ROL_IN_CANCER_NAME;
+
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
     protected ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
@@ -486,4 +551,277 @@ public class ClinicalQueryParser {
 
         return variantQuery;
     }
+
+    //-------------------------------------------------------------------------
+    //  A G G R E G A T I O N      S T A T S     /     F A C E T
+    //-------------------------------------------------------------------------
+
+    protected String parseFacet(String facetQuery) {
+        StringBuilder sb = new StringBuilder();
+        String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);
+
+        for (int i = 0; i < facets.length; i++) {
+            if (i > 0) {
+                sb.append(FacetQueryParser.FACET_SEPARATOR);
+            }
+            String[] nestedFacets = facets[i].split(FacetQueryParser.NESTED_FACET_SEPARATOR);
+            for (int j = 0; j < nestedFacets.length; j++) {
+                if (j > 0) {
+                    sb.append(FacetQueryParser.NESTED_FACET_SEPARATOR);
+                }
+                String[] nestedSubfacets = nestedFacets[j].split(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                for (int k = 0; k < nestedSubfacets.length; k++) {
+                    if (k > 0) {
+                        sb.append(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                    }
+                    // Convert to Solr schema fields, if necessary
+                    sb.append(toSolrSchemaFields(nestedSubfacets[k]));
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String toSolrSchemaFields(String facet) {
+        switch (facet) {
+
+            // Clinical analysis
+            case CA_TYPE_NAME:
+                return "type";
+            case CA_DISORDER_ID_NAME:
+                return "disorderId";
+            case CA_FILENAME_NAME:
+                return "fileNames";
+            case CA_PROBAND_ID_NAME:
+                return "probandId";
+            case CA_FAMILY_ID_NAME:
+                return "familyId";
+            case CA_FAMILY_PHENOTYPE_NAME_NAME:
+                return "familyPhenotypeNames";
+            case CA_FAMILY_MEMBER_ID_NAME:
+                return "familyMemberIds";
+            case CA_STATUS_NAME:
+                return "status";
+            case CA_LOCKED_NAME:
+                return "locked";
+
+            // Clinical interpretation
+            case CI_ID_NAME:
+                return "id";
+            case CI_PRIMARY_NAME:
+                return "primary";
+            case CI_PANEL_ID_NAME:
+                return "panelIds";
+            case CI_ANALYIST_ID_NAME:
+                return "analystId";
+            case CI_ANALYIST_NAME_NAME:
+                return "analystName";
+            case CI_ANALYIST_EMAIL_NAME:
+                return "analystEmail";
+            case CI_ANALYIST_ASSIGNED_BY_NAME:
+                return "analystAssignedBy";
+            case CI_ANALYIST_DATE_NAME:
+                return "analystDate";
+            case CI_METHOD_NAME_NAME:
+                return "methodName";
+            case CI_METHOD_VERSION_NAME:
+                return "methodVersion";
+            case CI_METHOD_COMMIT_NAME:
+                return "methodCommit";
+            case CI_LOCKED_NAME:
+                return "locked";
+            case CI_STATUS_ID_NAME:
+                return "statusId";
+            case CI_STATUS_NAME_NAME:
+                return "statusName";
+            case CI_STATUS_DATE_NAME:
+                return "statusDate";
+            case CI_CREATION_DATE_NAME:
+                return "creationDate";
+            case CI_MODIFICATION_DATE_NAME:
+                return "modificationDate";
+            case CI_VERSION_NAME:
+                return "version";
+
+            // Clinical variant
+            case CV_ID_NAME:
+                return "variantId";
+            case CV_PRIMARY_NAME:
+                return "primary";
+            case CV_DISCUSSION_AUTHOR_NAME:
+                return "discussionAuthor";
+            case CV_DISCUSSION_DATE_NAME:
+                return "discussionDate";
+            case CV_CONFIDENCE_VALUE_NAME:
+                return "confidenceValue";
+            case CV_CONFIDENCE_AUTHOR_NAME:
+                return "confidenceAuthor";
+            case CV_CONFIDENCE_DATE_NAME:
+                return "confidenceDate";
+            case CV_TAG_NAME:
+                return "tags";
+            case CV_STATUS_NAME:
+                return "status";
+            case CV_ANNOT_BIOTYPE_NAME:
+                return "biotypes";
+            case CV_ANNOT_CONSEQUENCE_TYPE_NAME:
+                return "soAcc";
+//            case CV_ANNOT_TRANSCRIPT_FLAG_NAME:
+//                return "";
+            case CV_GENE_NAME:
+                return "genes";
+            case CV_ANNOT_XREF_NAME:
+                return "xrefs";
+//            case CV_ANNOT_GENE_ROLE_IN_CANER_GENES_NAME:
+//                return "";
+            case CV_TYPE_NAME:
+                return "type";
+//            case CV_ANNOT_EXPRESSION_GENES_NAME:
+//                return "";
+//            case CV_ANNOT_GENE_TRAIT_ID_NAME:
+//                return "";
+//            case CV_ANNOT_TRAIT_NAME:
+//                return "";
+//            case CV_ANNOT_PROTEIN_KEYWORD_NAME:
+//                return "";
+
+            // Clinical variant evidence
+            case CVE_PHENOTYPE_NAME_NAME:
+                return "phenotypeNames";
+            case CVE_GENE_NAME_NAME:
+                return "geneName";
+            case CVE_CONSEQUENCE_TYPE_ID_NAME:
+                return "consequenceTypeIds";
+            case CVE_XREF_ID_NAME:
+                return "xrefIds";
+            case CVE_PANEL_ID_NAME:
+                return "panelId";
+            case CVE_MOI_NAME:
+                return "mois";
+            case CVE_PENETRANCE_NAME:
+                return "penetrance";
+            case CVE_ACGM_NAME:
+                return "acmgs";
+            case CVE_TIER_NAME:
+                return "tier";
+            case CVE_CLINICAL_SIGNIFICANCE_NAME:
+                return "clinicalSignificance";
+            case CVE_DRUG_RESPONSE_NAME:
+                return "drugResponse";
+            case CVE_TRAIT_ASSOCIATION_NAME:
+                return "traitAssociation";
+            case CVE_FUNCTIONAL_EFFECT_NAME:
+                return "functionalEffect";
+            case CVE_TUMORIGENESIS_NAME:
+                return "tumorigenesis";
+            case CVE_OTHER_CLASSIFICATION_NAME:
+                return "otherClassifications";
+            case CVE_ROL_IN_CANCER_NAME:
+                return "rolesInCancer";
+
+            // default
+            default:
+                return facet;
+        }
+//        if (facet.contains(CHROM_DENSITY)) {
+//            return parseChromDensity(facet);
+//        } else if (facet.contains(ANNOT_FUNCTIONAL_SCORE.key())) {
+//            return parseFacet(facet, ANNOT_FUNCTIONAL_SCORE.key());
+//        } else if (facet.contains(ANNOT_CONSERVATION.key())) {
+//            return parseFacet(facet, ANNOT_CONSERVATION.key());
+//        } else if (facet.contains(ANNOT_PROTEIN_SUBSTITUTION.key())) {
+//            return parseFacet(facet, ANNOT_PROTEIN_SUBSTITUTION.key());
+//        } else if (facet.contains(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+//            return parseFacetWithStudy(facet, "popFreq");
+//        } else if (facet.contains(STATS_ALT.key())) {
+//            return parseFacetWithStudy(facet, "altStats");
+//        } else if (facet.contains(SCORE.key())) {
+//            return parseFacetWithStudy(facet, SCORE.key());
+//        } else {
+//            return facet;
+//        }
+    }
+
+//    private String parseFacet(String facet, String categoryName) {
+//        if (facet.contains("(")) {
+//            // Aggregation function
+//            return facet.replace(categoryName, "").replace("[", "").replace("]", "");
+//        } else if (facet.contains("..")) {
+//            // Range
+//            Matcher matcher = FACET_RANGE_PATTERN.matcher(facet);
+//            if (matcher.find()) {
+//                return matcher.group(2) + "[" + matcher.group(3) + "]:" + matcher.group(4);
+//            } else {
+//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+//            }
+//        }
+//        // Nothing to do
+//        return facet;
+//    }
+//
+//    private String parseFacetWithStudy(String facet, String categoryName) {
+//        if (facet.contains("(")) {
+//            // Aggregation function
+//            Matcher matcher = FACET_FUNCTION_STUDY_PATTERN.matcher(facet);
+//            if (matcher.find()) {
+//                return matcher.group(1) + "(" + categoryName + FIELD_SEPARATOR + matcher.group(3) + FIELD_SEPARATOR + matcher.group(4)
+//                        + ")";
+//            } else {
+//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet function.");
+//            }
+//        } else if (facet.contains("..")) {
+//            // Range
+//            Matcher matcher = FACET_RANGE_STUDY_PATTERN.matcher(facet);
+//            if (matcher.find()) {
+//                return categoryName + FIELD_SEPARATOR + matcher.group(2) + FIELD_SEPARATOR + matcher.group(3) + "[" + matcher.group(4)
+//                        + "]:" + matcher.group(5);
+//            } else {
+//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+//            }
+//        }
+//        // Nothing to do
+//        return facet;
+//    }
+//
+//    private String parseChromDensity(String facet) {
+//        // Categorical...
+//        Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
+//        if (matcher.find()) {
+//            if (matcher.group(1).equals(CHROM_DENSITY)) {
+//                // Step management
+//                int step = 1000000;
+//                if (StringUtils.isNotEmpty(matcher.group(3))) {
+//                    step = Integer.parseInt(matcher.group(3).substring(1));
+//                }
+//                int maxLength = 0;
+//                // Include management
+//                List<String> chromList;
+//                String include = matcher.group(2);
+//                if (StringUtils.isNotEmpty(include)) {
+//                    chromList = new ArrayList<>();
+//                    include = include.replace("]", "").replace("[", "");
+//                    for (String value : include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
+//                        chromList.add(value);
+//                    }
+//                } else {
+//                    chromList = new ArrayList<>(chromosomeMap.keySet());
+//                }
+//
+//                List<String> chromQueryList = new ArrayList<>();
+//                for (String chrom : chromList) {
+//                    if (chromosomeMap.get(chrom) > maxLength) {
+//                        maxLength = chromosomeMap.get(chrom);
+//                    }
+//                    chromQueryList.add("chromosome:" + chrom);
+//                }
+//                return "start[1.." + maxLength + "]:" + step + ":chromDensity" + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
+//                        + StringUtils.join(chromQueryList, " OR ");
+//            } else {
+//                throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+//            }
+//        } else {
+//            throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+//        }
+//    }
 }
