@@ -225,32 +225,95 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
-        String jsonInString = "";
+        String jsonInString = "\n";
         try {
             ObjectMap queryParams = new ObjectMap();
-            queryParams.putIfNotEmpty("category", String.valueOf(objectCategory));
+            queryParams.putIfNotEmpty("category", objectCategory);
             RestResponse<List> response = openCGAClient.getMetaClient().api(queryParams);
             ObjectMapper jsonObjectMapper = new ObjectMapper();
            for (List list : response.getResponses().get(0).getResults()) {
                 List<RestCategory> categories = jsonObjectMapper.convertValue(list, new TypeReference<List<RestCategory>>() {});
                 for (RestCategory category : categories) {
-                    for (RestEndpoint endpoint: category.getEndpoints()){
-                        if(objectPath.equals(endpoint.getPath())){
-                            for (RestParameter parameter:endpoint.getParameters()){
+                    for (RestEndpoint endpoint : category.getEndpoints()) {
+                        if (objectPath.equals(endpoint.getPath())) {
+                            boolean enc = false;
+                            for (RestParameter parameter : endpoint.getParameters()) {
                                 //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
-                                jsonInString += parameter.toString()+"\n";
+                                if (parameter.getData() != null) {
+                                    enc = true;
+                                    jsonInString += printBody(parameter.getData(), "");
+                                }
+                            }
+                            if (!enc) {
+                                jsonInString += "No model available";
                             }
                             //
                         }
                     }
                 }
-            }
-            //  jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
+           }
         } catch (Exception e) {
             jsonInString = "Data model not found.";
             CommandLineUtils.error(e);
         }
         return jsonInString;
+    }
+
+    private String printBody(List<RestParameter> data, String tabs) {
+        String res = "";
+        res += "{\n";
+        String tab = "    " + tabs;
+        for (RestParameter parameter : data) {
+            if (parameter.getData() == null) {
+                res += printParameter(parameter, tab);
+            } else {
+                res += tab + parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+            }
+        }
+        res += tabs + "}";
+        return res;
+
+    }
+
+    private String printParameter(RestParameter parameter, String tab) {
+
+        return tab + "\"" + parameter.getName() + "\"" + ":" + printParameterValue(parameter) + ",\n";
+    }
+
+    private String printParameterValue(RestParameter parameter) {
+
+        if(!StringUtils.isEmpty(parameter.getAllowedValues())){
+            return parameter.getAllowedValues().replace(" ", "|");
+        }
+        switch (parameter.getType()) {
+            case "Boolean":
+            case "java.lang.Boolean":
+                return "false";
+            case "Long":
+            case "Float":
+            case "Double":
+            case "Integer":
+            case "int":
+            case "double":
+            case "float":
+            case "long":
+                return "0";
+            case "List":
+                return "[\"\"]";
+            case "Date":
+                return "\"dd/mm/yyyy\"";
+            case "Map":
+                return "{\"key\": \"value\"}";
+            case "String":
+                return "\"\"";
+            default:
+                return "\"-\"";
+        }
+    }
+
+    private boolean isNumeric(String type) {
+
+        return "int".equals(type) || "Long".equals(type) || "Float".equals(type) || "double".equals(type);
     }
 
     public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {

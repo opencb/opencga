@@ -61,7 +61,7 @@ import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
  */
 public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecutor {
 
-    public String categoryName = "operationsVariantStorage";
+    public String categoryName = "operation";
     public OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
 
     public OperationsVariantStorageCommandExecutor(OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions) throws CatalogAuthenticationException {

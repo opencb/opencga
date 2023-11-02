@@ -80,7 +80,7 @@ import org.opencb.opencga.core.models.study.configuration.InterpretationStudyCon
  */
 public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
-    public String categoryName = "analysisClinical";
+    public String categoryName = "clinical";
     public AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
 
     public AnalysisClinicalCommandExecutor(AnalysisClinicalCommandOptions analysisClinicalCommandOptions) throws CatalogAuthenticationException {

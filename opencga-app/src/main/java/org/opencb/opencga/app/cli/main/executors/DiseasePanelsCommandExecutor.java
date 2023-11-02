@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
  */
 public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
-    public String categoryName = "diseasePanels";
+    public String categoryName = "panels";
     public DiseasePanelsCommandOptions diseasePanelsCommandOptions;
 
     public DiseasePanelsCommandExecutor(DiseasePanelsCommandOptions diseasePanelsCommandOptions) throws CatalogAuthenticationException {

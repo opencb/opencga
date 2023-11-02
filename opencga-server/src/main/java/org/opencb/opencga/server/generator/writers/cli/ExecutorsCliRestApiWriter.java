@@ -170,7 +170,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append("public class " + getAsClassName(restCategory.getName()) + "CommandExecutor extends "
                 + getExtendedClass() + " {\n\n");
-        sb.append("    public String categoryName = \"" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "\";\n");
+        sb.append("    public String categoryName = \"" + getCategoryRestName(restCategory, config) + "\";\n");
         sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions "
                 + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions;\n\n");
         sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandExecutor(" + getAsClassName(restCategory.getName())

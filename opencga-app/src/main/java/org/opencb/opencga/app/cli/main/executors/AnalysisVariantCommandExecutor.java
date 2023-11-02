@@ -76,7 +76,7 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
  */
 public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
-    public String categoryName = "analysisVariant";
+    public String categoryName = "variant";
     public AnalysisVariantCommandOptions analysisVariantCommandOptions;
 
     public AnalysisVariantCommandExecutor(AnalysisVariantCommandOptions analysisVariantCommandOptions) throws CatalogAuthenticationException {
