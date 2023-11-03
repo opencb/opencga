@@ -13,7 +13,6 @@ categories:
       - samples
       - cohorts
       - meta
-      - cva
   - name: Analysis
     description: "Analysis commands:"
     options:
