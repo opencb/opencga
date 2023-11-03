@@ -376,7 +376,7 @@ public class FillGapsTask {
                                           List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords) {
         String chromosome = vcfSlice.getChromosome();
         int position = vcfSlice.getPosition();
-        Integer resetPosition = null;
+        Integer resetIteratorIndex = null;
         boolean isAlreadyPresent = false;
         int firstIndex = iterator.nextIndex();
         // Assume sorted VcfRecords
@@ -388,8 +388,8 @@ public class FillGapsTask {
             String alternate = vcfRecord.getAlternate();
             // If the VcfRecord starts after the variant, stop looking for variants
             if (overlapsWith(variant, chromosome, start, end)) {
-                if (resetPosition == null) {
-                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
+                if (resetIteratorIndex == null) {
+                    resetIteratorIndex = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
 
 //                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
@@ -406,8 +406,8 @@ public class FillGapsTask {
 
                 overlappingRecords.add(ImmutablePair.of(vcfSlice, vcfRecord));
             } else if (isRegionAfterVariantStart(start, end, variant)) {
-                if (resetPosition == null) {
-                    resetPosition = Math.max(iterator.previousIndex() - 1, firstIndex);
+                if (resetIteratorIndex == null) {
+                    resetIteratorIndex = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
                 // Shouldn't happen that the first VcfRecord from the iterator is beyond the variant to process,
                 // and is not the first VcfRecord from the slice.
@@ -429,14 +429,15 @@ public class FillGapsTask {
                 }
             }
         }
-        if (resetPosition == null && !iterator.hasNext()) {
+        if (resetIteratorIndex == null && !iterator.hasNext()) {
             // If the iterator reaches the end without finding any point, reset the iterator
-            resetPosition = firstIndex;
+            resetIteratorIndex = firstIndex;
         }
         // Send back the iterator
-        if (resetPosition != null) {
-//            logger.info("Reset from " + iterator.nextIndex() + " to " + resetPosition + ". fileId : " + fileId + " variant " + variant);
-            while (iterator.nextIndex() > resetPosition) {
+        if (resetIteratorIndex != null) {
+//            logger.info("Reset from " + iterator.nextIndex() + " to " + resetIteratorIndex
+//                    + ". fileId : " + fileId + " variant " + variant);
+            while (iterator.nextIndex() > resetIteratorIndex) {
                 iterator.previous();
             }
         }
@@ -506,10 +507,19 @@ public class FillGapsTask {
         });
     }
 
+    /**
+     * Checks if the given region is entirely or partially (overlapping) after the variant start.
+     *
+     * @param start Start of a region
+     * @param end   End of a region (might be before the start if the region represented an insertion)
+     * @param variant Variant to check
+     * @return  if the region is after the variant
+     */
     public static boolean isRegionAfterVariantStart(int start, int end, Variant variant) {
-        int pos = Math.min(start, end);
-        int variantPos = Math.min(variant.getStart(), variant.getEnd());
-        return pos > variantPos;
+        // Get region max position. In the region represents an insertion, the start might be after the end
+        int regionMaxPos = Math.max(start, end);
+        int variantMinPos = Math.min(variant.getStart(), variant.getEnd());
+        return regionMaxPos > variantMinPos;
     }
 
     public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {

@@ -17,7 +17,6 @@ package org.opencb.opencga.app.cli.main.custom;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.session.SessionManager;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.file.File;
@@ -36,10 +35,10 @@ public class CustomFilesCommandExecutor extends CustomCommandExecutor {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
     }
 
-    public RestResponse<File> upload() throws Exception {
+    public RestResponse<File> upload(CustomFilesCommandOptions.UploadCommandOptions commandOptions) throws Exception {
 //        ObjectMap params = new ObjectMap()
-        options.append("fileFormat", ParamUtils.defaultString(String.valueOf(options.get("fileFormat")), File.Format.UNKNOWN.toString()))
-                .append("bioformat", ParamUtils.defaultString(String.valueOf(options.get("bioformat")), File.Bioformat.UNKNOWN.toString()));
+        options.append("fileFormat", options.getString("fileFormat", File.Format.UNKNOWN.toString()))
+                .append("bioformat", options.getString("bioformat", File.Bioformat.UNKNOWN.toString()));
 //        //If the DEPRECATED parameter fileFormat has set we only override it if the new parameter format is also set
 //        params.append("fileFormat", ParamUtils.defaultString(commandOptions.format, params.getString("fileFormat")));
 //        params.putIfNotEmpty("study", commandOptions.study);

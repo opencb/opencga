@@ -51,29 +51,25 @@ public class CustomStudiesCommandExecutor extends CustomCommandExecutor {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
     }
 
-    public RestResponse<Job> runTemplates() throws Exception {
+    public RestResponse<Job> runTemplates(CustomStudiesCommandOptions.RunTemplatesCommandOptions c) throws Exception {
         logger.debug("Run template");
-        //   StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
-        String study = getSingleValidStudy(String.valueOf(options.get("study")));
-        TemplateParams templateParams = new TemplateParams(String.valueOf(options.get("id")),
-                Boolean.parseBoolean(String.valueOf(options.get("overwrite"))),
-                Boolean.parseBoolean(String.valueOf(options.get("resume"))));
+        String study = getSingleValidStudy(c.study);
+        TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
         ObjectMap params = new ObjectMap();
 
         return openCGAClient.getStudyClient().runTemplates(study, templateParams, params);
     }
 
-    public RestResponse<String> uploadTemplates() throws Exception {
+    public RestResponse<String> uploadTemplates(CustomStudiesCommandOptions.UploadTemplatesCommandOptions c) throws Exception {
         logger.debug("Upload template file");
-        // StudiesCommandOptions.UploadTemplatesCommandOptions c = studiesCommandOptions.uploadTemplatesCommandOptions;
 
         ObjectMap params = new ObjectMap();
 
-        String study = getSingleValidStudy(String.valueOf(options.get("study")));
-        Path path = Paths.get(String.valueOf(options.get("inputFile")));
+        String study = c.study = getSingleValidStudy(c.study);
+        Path path = Paths.get(c.file);
         if (!path.toFile().exists()) {
-            throw new CatalogException("File '" + options.get("inputFile") + "' not found");
+            throw new CatalogException("File '" + path + "' not found");
         }
         IOManagerFactory ioManagerFactory = new IOManagerFactory();
         IOManager ioManager = ioManagerFactory.get(path.toUri());
@@ -106,10 +102,10 @@ public class CustomStudiesCommandExecutor extends CustomCommandExecutor {
             logger.debug("Compressing file in '" + manifestPath + "' before uploading");
             ioManager.zip(fileList, manifestPath.toFile());
             params.put("file", manifestPath.toString());
-        } else if (String.valueOf(options.get("inputFile")).endsWith("zip")) {
-            params.put("file", String.valueOf(options.get("inputFile")));
+        } else if (c.file.endsWith("zip")) {
+            params.put("file", c.file);
         } else {
-            throw new CatalogException("File '" + options.get("inputFile") + "' is not a zip file");
+            throw new CatalogException("File '" + c.file + "' is not a zip file");
         }
 
         RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(study, params);

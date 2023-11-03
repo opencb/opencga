@@ -1,54 +1,29 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
-
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
 import java.io.InputStream;
 import java.lang.Object;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomStudiesCommandOptions;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -73,6 +48,8 @@ import org.opencb.opencga.core.models.study.TemplateParams;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.VariableSetCreateParams;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -464,7 +441,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
         CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
-        return customStudiesCommandExecutor.runTemplates();
+        return customStudiesCommandExecutor.runTemplates(commandOptions);
     }
 
     private RestResponse<String> uploadTemplates() throws Exception {
@@ -478,7 +455,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
         CustomStudiesCommandExecutor customStudiesCommandExecutor = new CustomStudiesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
-        return customStudiesCommandExecutor.uploadTemplates();
+        return customStudiesCommandExecutor.uploadTemplates(commandOptions);
     }
 
     private RestResponse<Boolean> deleteTemplates() throws Exception {

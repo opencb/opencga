@@ -98,6 +98,9 @@ apiConfig:
         - name: top
           executorExtended: True
           optionExtended: True
+        - name: log
+          executorExtended: True
+          optionExtended: True
       addedMethods:
         - log
     - name: samples
@@ -148,6 +151,7 @@ apiConfig:
       key: DiseasePanel
       commands:
         - name: import
+          ## Rename needed as `import` is a reserved word in Java
           rename: importPanels
     - name: analysisAlignment
       commandName: alignments

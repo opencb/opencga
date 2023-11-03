@@ -112,4 +112,5 @@ public class CellBaseValidatorTest {
         CellBaseConfiguration validated = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.4", null, apiKey), "hsapiens", "grch38", true);
         Assert.assertNotNull(validated.getApiKey());
     }
+
 }
