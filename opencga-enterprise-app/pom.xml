@@ -21,6 +21,7 @@
 <!--        <dep.jline.version>3.12.1</dep.jline.version>-->
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
@@ -68,6 +69,16 @@
     <build>
         <finalName>opencga-enterprise-app</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>enterprise-cli-usage.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/classes</targetPath>
+            </resource>
+        </resources>
 
         <plugins>
             <plugin>
@@ -130,6 +141,7 @@
                     </programs>
                 </configuration>
             </plugin>
+
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
