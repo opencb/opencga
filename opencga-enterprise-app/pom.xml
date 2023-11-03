@@ -305,11 +305,11 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-<!--                                <exec executable="cp">-->
-<!--                                    <arg value="${build.dir}/bin/opencga.sh"/>-->
-<!--                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
-<!--                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>-->
-<!--                                </exec>-->
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/bin/opencga.sh"/>
+                                    <!--<arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                </exec>
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
