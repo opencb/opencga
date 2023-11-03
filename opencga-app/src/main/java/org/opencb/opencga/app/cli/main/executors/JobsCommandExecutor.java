@@ -140,7 +140,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobAclUpdateParams jobAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobAclUpdateParams = new JobAclUpdateParams();
             RestResponse<JobAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/acl/{members}/update"));
@@ -205,7 +204,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobCreateParams jobCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobCreateParams = new JobCreateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/create"));
@@ -292,7 +290,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobRetryParams jobRetryParams = null;
         if (commandOptions.jsonDataModel) {
-            jobRetryParams = new JobRetryParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/retry"));
@@ -428,7 +425,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobUpdateParams jobUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobUpdateParams = new JobUpdateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/{jobs}/update"));

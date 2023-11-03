@@ -313,7 +313,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         CircosAnalysisParams circosAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            circosAnalysisParams = new CircosAnalysisParams();
             RestResponse<String> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/circos/run"));
@@ -382,7 +381,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            cohortVariantStatsAnalysisParams = new CohortVariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/cohort/stats/run"));
@@ -423,7 +421,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         ExomiserWrapperParams exomiserWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            exomiserWrapperParams = new ExomiserWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/exomiser/run"));
@@ -464,7 +461,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantExportParams variantExportParams = null;
         if (commandOptions.jsonDataModel) {
-            variantExportParams = new VariantExportParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/export/run"));
@@ -605,7 +601,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyQcAnalysisParams familyQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            familyQcAnalysisParams = new FamilyQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/family/qc/run"));
@@ -665,7 +660,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         GatkWrapperParams gatkWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            gatkWrapperParams = new GatkWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/gatk/run"));
@@ -704,7 +698,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         GenomePlotAnalysisParams genomePlotAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            genomePlotAnalysisParams = new GenomePlotAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/genomePlot/run"));
@@ -745,7 +738,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         GwasAnalysisParams gwasAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            gwasAnalysisParams = new GwasAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/gwas/run"));
@@ -793,7 +785,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         HRDetectAnalysisParams hRDetectAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            hRDetectAnalysisParams = new HRDetectAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/hrDetect/run"));
@@ -842,7 +833,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantIndexParams variantIndexParams = null;
         if (commandOptions.jsonDataModel) {
-            variantIndexParams = new VariantIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/index/run"));
@@ -907,7 +897,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualQcAnalysisParams individualQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            individualQcAnalysisParams = new IndividualQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/individual/qc/run"));
@@ -947,7 +936,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         InferredSexAnalysisParams inferredSexAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            inferredSexAnalysisParams = new InferredSexAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/inferredSex/run"));
@@ -1020,7 +1008,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         KnockoutAnalysisParams knockoutAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            knockoutAnalysisParams = new KnockoutAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/knockout/run"));
@@ -1066,7 +1053,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         MendelianErrorAnalysisParams mendelianErrorAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            mendelianErrorAnalysisParams = new MendelianErrorAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/mendelianError/run"));
@@ -1159,7 +1145,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            mutationalSignatureAnalysisParams = new MutationalSignatureAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/mutationalSignature/run"));
@@ -1211,7 +1196,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         PlinkWrapperParams plinkWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            plinkWrapperParams = new PlinkWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/plink/run"));
@@ -1339,7 +1323,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         RelatednessAnalysisParams relatednessAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            relatednessAnalysisParams = new RelatednessAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/relatedness/run"));
@@ -1380,7 +1363,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         RvtestsWrapperParams rvtestsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            rvtestsWrapperParams = new RvtestsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/rvtests/run"));
@@ -1454,7 +1436,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleEligibilityAnalysisParams = new SampleEligibilityAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/sample/eligibility/run"));
@@ -1493,7 +1474,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         SampleQcAnalysisParams sampleQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleQcAnalysisParams = new SampleQcAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/sample/qc/run"));
@@ -1594,7 +1574,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         SampleVariantFilterParams sampleVariantFilterParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleVariantFilterParams = new SampleVariantFilterParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/sample/run"));
@@ -1688,7 +1667,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleVariantStatsAnalysisParams = new SampleVariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/sample/stats/run"));
@@ -1761,7 +1739,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantStatsExportParams variantStatsExportParams = null;
         if (commandOptions.jsonDataModel) {
-            variantStatsExportParams = new VariantStatsExportParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/stats/export/run"));
@@ -1802,7 +1779,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantStatsAnalysisParams variantStatsAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            variantStatsAnalysisParams = new VariantStatsAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/stats/run"));

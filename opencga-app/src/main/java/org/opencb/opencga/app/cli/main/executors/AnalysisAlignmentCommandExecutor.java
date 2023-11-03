@@ -132,7 +132,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         BwaWrapperParams bwaWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            bwaWrapperParams = new BwaWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/bwa/run"));
@@ -174,7 +173,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         CoverageIndexParams coverageIndexParams = null;
         if (commandOptions.jsonDataModel) {
-            coverageIndexParams = new CoverageIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/coverage/index/run"));
@@ -213,7 +211,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = null;
         if (commandOptions.jsonDataModel) {
-            alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run"));
@@ -309,7 +306,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         DeeptoolsWrapperParams deeptoolsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            deeptoolsWrapperParams = new DeeptoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/deeptools/run"));
@@ -348,7 +344,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         FastqcWrapperParams fastqcWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            fastqcWrapperParams = new FastqcWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/fastqc/run"));
@@ -387,7 +382,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         AlignmentIndexParams alignmentIndexParams = null;
         if (commandOptions.jsonDataModel) {
-            alignmentIndexParams = new AlignmentIndexParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/index/run"));
@@ -425,7 +419,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         PicardWrapperParams picardWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            picardWrapperParams = new PicardWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/picard/run"));
@@ -464,7 +457,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         AlignmentQcParams alignmentQcParams = null;
         if (commandOptions.jsonDataModel) {
-            alignmentQcParams = new AlignmentQcParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/qc/run"));
@@ -536,7 +528,6 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         SamtoolsWrapperParams samtoolsWrapperParams = null;
         if (commandOptions.jsonDataModel) {
-            samtoolsWrapperParams = new SamtoolsWrapperParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/alignment/samtools/run"));

@@ -218,7 +218,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileAclUpdateParams fileAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileAclUpdateParams = new FileAclUpdateParams();
             RestResponse<FileAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/acl/{members}/update"));
@@ -288,7 +287,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/annotationSets/load"));
@@ -329,7 +327,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileCreateParams fileCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileCreateParams = new FileCreateParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/create"));
@@ -425,7 +422,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileFetch fileFetch = null;
         if (commandOptions.jsonDataModel) {
-            fileFetch = new FileFetch();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/fetch"));
@@ -467,7 +463,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileLinkParams fileLinkParams = null;
         if (commandOptions.jsonDataModel) {
-            fileLinkParams = new FileLinkParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/link"));
@@ -513,7 +508,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileLinkToolParams fileLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
-            fileLinkToolParams = new FileLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/link/run"));
@@ -555,7 +549,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         PostLinkToolParams postLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
-            postLinkToolParams = new PostLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/postlink/run"));
@@ -721,7 +714,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileUpdateParams fileUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileUpdateParams = new FileUpdateParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{files}/update"));
@@ -788,7 +780,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update"));

@@ -112,7 +112,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         PanelAclUpdateParams panelAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            panelAclUpdateParams = new PanelAclUpdateParams();
             RestResponse<PanelAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/acl/{members}/update"));
@@ -149,7 +148,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         PanelCreateParams panelCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            panelCreateParams = new PanelCreateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/create"));
@@ -228,7 +226,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         PanelImportParams panelImportParams = null;
         if (commandOptions.jsonDataModel) {
-            panelImportParams = new PanelImportParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/import"));
@@ -350,7 +347,6 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         PanelUpdateParams panelUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            panelUpdateParams = new PanelUpdateParams();
             RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/{panels}/update"));

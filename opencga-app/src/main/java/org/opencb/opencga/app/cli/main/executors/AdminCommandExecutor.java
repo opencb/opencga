@@ -136,7 +136,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         InstallationParams installationParams = null;
         if (commandOptions.jsonDataModel) {
-            installationParams = new InstallationParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/install"));
@@ -165,7 +164,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         JWTParams jWTParams = null;
         if (commandOptions.jsonDataModel) {
-            jWTParams = new JWTParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
@@ -191,7 +189,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/create"));
@@ -222,7 +219,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserImportParams userImportParams = null;
         if (commandOptions.jsonDataModel) {
-            userImportParams = new UserImportParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/import"));
@@ -270,7 +266,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         GroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
-            groupSyncParams = new GroupSyncParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
@@ -306,7 +301,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserUpdateGroup userUpdateGroup = null;
         if (commandOptions.jsonDataModel) {
-            userUpdateGroup = new UserUpdateGroup();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/{user}/groups/update"));

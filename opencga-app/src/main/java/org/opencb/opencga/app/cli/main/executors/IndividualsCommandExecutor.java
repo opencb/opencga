@@ -134,7 +134,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualAclUpdateParams individualAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualAclUpdateParams = new IndividualAclUpdateParams();
             RestResponse<IndividualAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/acl/{members}/update"));
@@ -205,7 +204,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/annotationSets/load"));
@@ -242,7 +240,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualCreateParams individualCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualCreateParams = new IndividualCreateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/create"));
@@ -447,7 +444,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualUpdateParams individualUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualUpdateParams = new IndividualUpdateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individuals}/update"));
@@ -517,7 +513,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update"));

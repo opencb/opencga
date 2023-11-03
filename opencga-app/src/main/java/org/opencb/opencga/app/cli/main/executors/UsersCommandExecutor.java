@@ -134,7 +134,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         PasswordChangeParams passwordChangeParams = null;
         if (commandOptions.jsonDataModel) {
-            passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/password"));
@@ -190,7 +189,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         ConfigUpdateParams configUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/configs/update"));
@@ -255,7 +253,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         UserUpdateParams userUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/update"));

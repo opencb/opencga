@@ -181,7 +181,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyAclUpdateParams studyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyAclUpdateParams = new StudyAclUpdateParams();
             RestResponse<StudyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/acl/{members}/update"));
@@ -216,7 +215,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyCreateParams studyCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyCreateParams = new StudyCreateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/create"));
@@ -358,7 +356,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams groupCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            groupCreateParams = new GroupCreateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/groups/update"));
@@ -389,7 +386,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         GroupUpdateParams groupUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            groupUpdateParams = new GroupUpdateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/groups/{group}/users/update"));
@@ -426,7 +422,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         PermissionRule permissionRule = null;
         if (commandOptions.jsonDataModel) {
-            permissionRule = new PermissionRule();
             RestResponse<PermissionRule> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/permissionRules/update"));
@@ -509,7 +504,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyUpdateParams studyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyUpdateParams = new StudyUpdateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/update"));
@@ -560,7 +554,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         VariableSetCreateParams variableSetCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            variableSetCreateParams = new VariableSetCreateParams();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/variableSets/update"));
@@ -594,7 +587,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         Variable variable = null;
         if (commandOptions.jsonDataModel) {
-            variable = new Variable();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update"));

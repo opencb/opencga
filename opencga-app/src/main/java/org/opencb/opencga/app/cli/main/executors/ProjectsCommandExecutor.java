@@ -103,7 +103,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCreateParams projectCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/create"));
@@ -225,7 +224,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectUpdateParams projectUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/{project}/update"));

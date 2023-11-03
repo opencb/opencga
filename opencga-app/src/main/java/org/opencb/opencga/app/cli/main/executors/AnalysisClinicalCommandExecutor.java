@@ -215,7 +215,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
             RestResponse<ClinicalAnalysisAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/acl/{members}/update"));
@@ -249,7 +248,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/clinical/configuration/update"));
@@ -286,7 +284,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/create"));
@@ -465,7 +462,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/cancerTiering/run"));
@@ -504,7 +500,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ExomiserInterpretationAnalysisParams exomiserInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            exomiserInterpretationAnalysisParams = new ExomiserInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/exomiser/run"));
@@ -541,7 +536,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/team/run"));
@@ -581,7 +575,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/tiering/run"));
@@ -621,7 +614,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/zetta/run"));
@@ -824,7 +816,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         RgaAnalysisParams rgaAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            rgaAnalysisParams = new RgaAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/rga/index/run"));
@@ -1164,7 +1155,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalyses}/update"));
@@ -1239,7 +1229,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         InterpretationCreateParams interpretationCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationCreateParams = new InterpretationCreateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create"));
@@ -1329,7 +1318,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         InterpretationUpdateParams interpretationUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationUpdateParams = new InterpretationUpdateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update"));

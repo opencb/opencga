@@ -371,7 +371,6 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n        " + bodyClassName + " " + variableName + " = null;");
 
             sb.append("\n        if (commandOptions.jsonDataModel) {");
-            sb.append("\n            " + variableName + " = new " + bodyClassName + "();");
             sb.append("\n            RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> res = new RestResponse<>();");
             sb.append("\n            res.setType(QueryType.VOID);");
             sb.append("\n            PrintUtils.println(getObjectAsJSON(categoryName,\""+restEndpoint.getPath()+"\"));");

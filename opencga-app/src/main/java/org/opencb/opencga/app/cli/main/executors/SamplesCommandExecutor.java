@@ -132,7 +132,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleAclUpdateParams sampleAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleAclUpdateParams = new SampleAclUpdateParams();
             RestResponse<SampleAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/acl/{members}/update"));
@@ -200,7 +199,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/annotationSets/load"));
@@ -236,7 +234,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleCreateParams sampleCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleCreateParams = new SampleCreateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/create"));
@@ -474,7 +471,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleUpdateParams sampleUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleUpdateParams = new SampleUpdateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{samples}/update"));
@@ -534,7 +530,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update"));

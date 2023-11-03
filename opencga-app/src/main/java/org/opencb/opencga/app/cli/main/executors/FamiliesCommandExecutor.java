@@ -125,7 +125,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyAclUpdateParams familyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyAclUpdateParams = new FamilyAclUpdateParams();
             RestResponse<FamilyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/acl/{members}/update"));
@@ -190,7 +189,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/annotationSets/load"));
@@ -227,7 +225,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyCreateParams familyCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyCreateParams = new FamilyCreateParams();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/create"));
@@ -391,7 +388,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyUpdateParams familyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyUpdateParams = new FamilyUpdateParams();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/{families}/update"));
@@ -435,7 +431,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update"));

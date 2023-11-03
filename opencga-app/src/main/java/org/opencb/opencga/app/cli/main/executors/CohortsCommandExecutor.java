@@ -127,7 +127,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         CohortAclUpdateParams cohortAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            cohortAclUpdateParams = new CohortAclUpdateParams();
             RestResponse<CohortAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/acl/{members}/update"));
@@ -188,7 +187,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/annotationSets/load"));
@@ -226,7 +224,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         CohortCreateParams cohortCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            cohortCreateParams = new CohortCreateParams();
             RestResponse<Cohort> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/create"));
@@ -312,7 +309,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         CohortGenerateParams cohortGenerateParams = null;
         if (commandOptions.jsonDataModel) {
-            cohortGenerateParams = new CohortGenerateParams();
             RestResponse<Cohort> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/generate"));
@@ -439,7 +435,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         CohortUpdateParams cohortUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            cohortUpdateParams = new CohortUpdateParams();
             RestResponse<Cohort> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/{cohorts}/update"));
@@ -482,7 +477,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Cohort> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update"));
