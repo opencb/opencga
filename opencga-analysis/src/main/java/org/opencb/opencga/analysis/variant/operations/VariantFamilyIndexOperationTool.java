@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,7 +68,7 @@ public class VariantFamilyIndexOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            DataResult<List<String>> trios;
+            DataResult<Trio> trios;
             if (variantFamilyIndexParams.isUpdateIndex()) {
                 trios = variantStorageManager.familyIndexUpdate(study, params, token);
             } else {

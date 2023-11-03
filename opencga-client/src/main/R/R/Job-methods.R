@@ -40,7 +40,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("jobClient", "OpencgaR", function(OpencgaR, job, members, jobs, endpointName, params=NULL, ...) {
+setMethod("jobClient", "OpencgaR", function(OpencgaR, jobs, members, job, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/jobs/acl/{members}/update:

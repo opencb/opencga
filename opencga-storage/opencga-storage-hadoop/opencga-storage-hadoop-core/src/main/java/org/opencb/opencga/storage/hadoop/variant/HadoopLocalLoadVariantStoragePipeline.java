@@ -513,49 +513,44 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         metadataManager.setStatus(getStudyId(), taskId, Status.READY);
 
         boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        int updatedSamples = 0;
         for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
             // Worth to check first to avoid too many updates in scenarios like 1000G
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
             boolean updateSampleIndexStatus = loadSampleIndex && sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY;
             int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
-            boolean alreadyLoadedFiles = false;
-            if (sampleMetadata.getFiles().size() > 1) {
-                int loadedFiles = 0;
-                for (Integer fileId : sampleMetadata.getFiles()) {
-                    if (metadataManager.isFileIndexed(getStudyId(), fileId)) {
-                        loadedFiles++;
-                    }
-                }
-                if (loadedFiles > 1) {
-                    alreadyLoadedFiles = true;
-                }
-                metadataManager.getFileIdsFromSampleId(1, 1, true);
-            }
+            boolean isLargestVariantLengthDefined = sampleMetadata.getAttributes()
+                    .containsKey(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
+            boolean unknownLargestVariantLength = sampleMetadata.getAttributes()
+                    .getBoolean(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH);
+
             boolean updateLargestVariantLength;
-            if (alreadyLoadedFiles) {
-                if (actualLargestVariantLength > 0) {
-                    // Already loaded files, with a valid value. Update if needed.
-                    updateLargestVariantLength = largestVariantLength > actualLargestVariantLength;
-                } else {
-                    // Already loaded files without a valid value. Do not set a value, as it might be smaller than previous files.
-                    updateLargestVariantLength = false;
-                }
+            if (isLargestVariantLengthDefined) {
+                // Update only if the new value is bigger than the current one
+                updateLargestVariantLength = largestVariantLength > actualLargestVariantLength;
+            } else if (unknownLargestVariantLength) {
+                // Already loaded files with unknown largest variant length. Do not update value.
+                updateLargestVariantLength = false;
             } else {
                 // First file loaded. Update value
                 updateLargestVariantLength = true;
             }
 
             if (updateSampleIndexStatus || updateLargestVariantLength) {
+                updatedSamples++;
                 metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
                     if (updateSampleIndexStatus) {
                         s.setSampleIndexStatus(Status.READY, sampleIndexVersion);
                     }
                     if (updateLargestVariantLength) {
-                        s.getAttributes().put(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);
+                        int current = s.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);
+                        s.getAttributes().put(SampleIndexSchema.LARGEST_VARIANT_LENGTH, Math.max(current, largestVariantLength));
                     }
                 });
             }
         }
+        getLoadStats().put("updatedSampleMetadata", updatedSamples);
+        logger.info("Updated status of {} samples", updatedSamples);
 
         boolean loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()).orYes().booleanValue();
         if (loadArchive) {

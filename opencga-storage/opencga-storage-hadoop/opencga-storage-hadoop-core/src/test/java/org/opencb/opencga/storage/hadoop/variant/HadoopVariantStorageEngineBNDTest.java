@@ -19,7 +19,7 @@ public class HadoopVariantStorageEngineBNDTest extends VariantStorageEngineBNDTe
     @Override
     protected void loadFiles() throws Exception {
         super.loadFiles();
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
     }
 
 }

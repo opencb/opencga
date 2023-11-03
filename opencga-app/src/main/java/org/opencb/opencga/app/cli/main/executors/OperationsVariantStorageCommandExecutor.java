@@ -1,25 +1,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
-
+import java.util.List;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -44,6 +37,8 @@ import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -522,6 +517,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotNull(beanParams, "forceReload",commandOptions.forceReload, true);
             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
@@ -591,6 +587,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             putNestedIfNotNull(beanParams, "indexParams.family",commandOptions.indexParamsFamily, true);
             putNestedIfNotNull(beanParams, "indexParams.somatic",commandOptions.indexParamsSomatic, true);
             putNestedIfNotNull(beanParams, "indexParams.load",commandOptions.indexParamsLoad, true);
+            putNestedIfNotNull(beanParams, "indexParams.forceReload",commandOptions.indexParamsForceReload, true);
             putNestedIfNotEmpty(beanParams, "indexParams.loadSplitData",commandOptions.indexParamsLoadSplitData, true);
             putNestedIfNotNull(beanParams, "indexParams.loadMultiFileData",commandOptions.indexParamsLoadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "indexParams.loadSampleIndex",commandOptions.indexParamsLoadSampleIndex, true);

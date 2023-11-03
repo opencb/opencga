@@ -1299,10 +1299,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return release;
     }
 
-    public List<List<String>> getTriosFromFamily(
+    public List<Trio> getTriosFromFamily(
             String studyFqn, Family family, VariantStorageMetadataManager metadataManager, boolean skipIncompleteFamily, String sessionId)
             throws StorageEngineException, CatalogException {
-        List<List<String>> trios = getTrios(studyFqn, metadataManager, family.getMembers(), sessionId);
+        List<Trio> trios = getTrios(studyFqn, metadataManager, family.getMembers(), sessionId);
         if (trios.size() == 0) {
             if (skipIncompleteFamily) {
                 logger.debug("Skip family '" + family.getId() + "'. ");
@@ -1313,7 +1313,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return trios;
     }
 
-    public List<List<String>> getTriosFromSamples(
+    public List<Trio> getTriosFromSamples(
             String studyFqn, VariantStorageMetadataManager metadataManager, Collection<String> sampleIds, String token)
             throws CatalogException {
         OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
@@ -1330,12 +1330,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return getTrios(studyFqn, metadataManager, individualResult.getResults(), token);
     }
 
-    public List<List<String>> getTrios(
+    public List<Trio> getTrios(
             String studyFqn, VariantStorageMetadataManager metadataManager, List<Individual> membersList, String sessionId)
             throws CatalogException {
         int studyId = metadataManager.getStudyId(studyFqn);
         Map<Long, Individual> membersMap = membersList.stream().collect(Collectors.toMap(Individual::getUid, i -> i));
-        List<List<String>> trios = new LinkedList<>();
+        List<Trio> trios = new LinkedList<>();
         for (Individual individual : membersList) {
             String fatherSample = null;
             String motherSample = null;
@@ -1402,10 +1402,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             // Allow one missing parent
             if (childSample != null && (fatherSample != null || motherSample != null)) {
-                trios.add(Arrays.asList(
-                        fatherSample == null ? "-" : fatherSample,
-                        motherSample == null ? "-" : motherSample,
-                        childSample));
+                trios.add(new Trio(fatherSample, motherSample, childSample));
             }
         }
         return trios;

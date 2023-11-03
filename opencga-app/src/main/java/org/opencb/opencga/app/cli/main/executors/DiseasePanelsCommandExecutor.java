@@ -1,25 +1,19 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
-
+import java.util.List;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntryList;
@@ -27,6 +21,8 @@ import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.panel.PanelImportParams;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -209,7 +205,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> importPanels() throws Exception {
-        logger.debug("Executing import in Disease Panels command line");
+        logger.debug("Executing importPanels in Disease Panels command line");
 
         DiseasePanelsCommandOptions.ImportCommandOptions commandOptions = diseasePanelsCommandOptions.importCommandOptions;
 

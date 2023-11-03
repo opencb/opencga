@@ -18,6 +18,13 @@ import java.util.Set;
  */
 public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
+    /**
+     * List of fileIds that contains the sample.
+     * This list is sorted by the order files were loaded.
+     * Only files of type {@link FileMetadata.Type#NORMAL} and {@link FileMetadata.Type#VIRTUAL} will be present in this list.
+     * If the sample was part of a set of {@link FileMetadata.Type#PARTIAL} files, only the
+     * {@link FileMetadata.Type#VIRTUAL} file will appear in this list.
+     */
     private List<Integer> files;
     private Set<Integer> cohorts;
     // Prepared to have more than one secondary index per sample.

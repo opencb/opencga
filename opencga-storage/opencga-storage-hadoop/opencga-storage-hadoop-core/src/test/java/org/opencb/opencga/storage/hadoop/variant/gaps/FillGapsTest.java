@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import com.google.common.collect.BiMap;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,10 +28,13 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
@@ -79,7 +84,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             inputFiles.add(getResourceUri(fileName));
         }
 
-        StudyMetadata studyMetadata = load(new ObjectMap(VariantStorageOptions.GVCF.key(), false), inputFiles, newOutputUri(1));
+        StudyMetadata studyMetadata = load(new ObjectMap(VariantStorageOptions.GVCF.key(), false), inputFiles, newOutputUri());
 
         // Do not check new missing genotypes, as the input files does not have missing genotype regions
         testFillGapsPlatinumFiles(studyMetadata, false);
@@ -217,8 +222,10 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         sampleIds.sort(Integer::compareTo);
         List<String> samples = sampleIds.stream().map(samplesMap::get).collect(Collectors.toList());
 
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
+
         fillGaps(variantStorageEngine, studyMetadata, samples);
-        printVariants(studyMetadata, dbAdaptor, newOutputUri(1));
+        printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkFillGaps(studyMetadata, dbAdaptor, samples, Collections.singleton("1:10020:A:T"));
         checkSampleIndexTable(dbAdaptor);
 
@@ -317,6 +324,62 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                 .setSamples(Arrays.asList("ISDBM322015", "ISDBM322016", "ISDBM322017", "ISDBM322018")), new ObjectMap());
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
+        load(new ObjectMap(VariantStorageOptions.STUDY.key(), STUDY_NAME_2),
+                Collections.singletonList(getResourceUri("quartet.variants.annotated.partial.vcf.gz")));
+
+        checkInputValuesAreUnmodified(STUDY_NAME, STUDY_NAME_2);
+    }
+
+    @Test
+    public void testFillGapsGiabChinesse() throws Exception {
+        ObjectMap options = new ObjectMap(VariantStorageOptions.GVCF.key(), true)
+                .append(HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE.key(), 1000000)
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        loadGIAB(options);
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+        variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
+                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap());
+        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+
+        options.put(VariantStorageOptions.STUDY.key(), STUDY_NAME_2);
+        loadGIAB(options);
+
+        checkInputValuesAreUnmodified(STUDY_NAME, STUDY_NAME_2);
+    }
+
+    private void checkInputValuesAreUnmodified(String aggregatedStudy, String referenceStudy) throws Exception {
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+
+        int studyId1 = dbAdaptor.getMetadataManager().getStudyId(aggregatedStudy);
+        int studyId2 = dbAdaptor.getMetadataManager().getStudyId(referenceStudy);
+
+        dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
+            table.getScanner(new Scan()).iterator().forEachRemaining(r -> {
+                byte[] row = r.getRow();
+                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(row);
+
+                NavigableMap<byte[], byte[]> cells = r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
+                for (Map.Entry<byte[], byte[]> entry : cells.entrySet()) {
+                    String columnKey = Bytes.toString(entry.getKey());
+                    Integer studyId = VariantPhoenixSchema.extractStudyId(columnKey, false);
+                    if (studyId != null && studyId == studyId2) {
+                        String otherColumnKey = columnKey.replaceFirst(VariantPhoenixSchema.buildStudyColumnsPrefix(studyId2),
+                                VariantPhoenixSchema.buildStudyColumnsPrefix(studyId1));
+                        byte[] thisCell = entry.getValue();
+                        byte[] otherCell = cells.get(Bytes.toBytes(otherColumnKey));
+                        assertArrayEquals(variant.toString() + " study1ColumnKey " + otherColumnKey + ", study2ColumnKey " + columnKey,
+                                thisCell, otherCell);
+                    }
+                }
+            });
+        });
+    }
+
+    private void loadGIAB(ObjectMap options) throws Exception {
+        load(options, Collections.singletonList(getResourceUri("giab_chinesse/HG005_GRCh38_1_22_v4.2.1_benchmark.partial.vcf.gz")), newOutputUri(), false);
+        load(options, Collections.singletonList(getResourceUri("giab_chinesse/HG006_GRCh38_1_22_v4.2.1_benchmark.partial.vcf.gz")), newOutputUri(), false);
+        load(options, Collections.singletonList(getResourceUri("giab_chinesse/HG007_GRCh38_1_22_v4.2.1_benchmark.partial.vcf.gz")), newOutputUri(), false);
     }
 
     @Test
@@ -325,12 +388,12 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         ObjectMap extraParams = new ObjectMap(VariantStorageOptions.LOAD_HOM_REF.key(), true);
 //        extraParams.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
 //        extraParams.append(VariantStorageOptions.GVCF.key(), true);
-        StudyMetadata study = load(extraParams, Collections.singletonList(getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
+        load(extraParams, Collections.singletonList(getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
         load(extraParams, Collections.singletonList(getResourceUri("impact/HG006_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
         load(extraParams, Collections.singletonList(getResourceUri("impact/HG007_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
-        variantStorageEngine.aggregateFamily(study.getName(), new VariantAggregateFamilyParams()
+        variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
                 .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap());
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
@@ -373,11 +436,11 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             inputFiles.add(getResourceUri(fileName));
         }
 
-        return load(extraParams, inputFiles, newOutputUri(1));
+        return load(extraParams, inputFiles, newOutputUri());
     }
 
     private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
-        return load(extraParams, inputFiles, newOutputUri(1));
+        return load(extraParams, inputFiles, newOutputUri());
     }
 
     private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles, URI outputUri) throws Exception {
