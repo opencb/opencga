@@ -13,13 +13,13 @@ categories:
       - samples
       - cohorts
       - meta
+      - cva
   - name: Analysis
     description: "Analysis commands:"
     options:
       - alignments
       - variant
       - clinical
-      - cva
   - name: Operation
     description: "Operation commands:"
     options:

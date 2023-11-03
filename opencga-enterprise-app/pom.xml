@@ -185,11 +185,6 @@
                                 </exec>
 
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/src/main/resources/usage.yml"/>
-                                    <arg value="${build.dir}/conf"/>
-                                </exec>
-
-                                <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/cloud/docker/docker-build.py"/>
                                     <arg value="${opencga.build.dir}/cloud/docker/README.md"/>
