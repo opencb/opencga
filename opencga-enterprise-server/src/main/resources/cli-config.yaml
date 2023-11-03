@@ -49,7 +49,6 @@ apiConfig:
       key: User
       executorExtended: True
       optionExtended: True
-      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.UsersCommandOptions
       commands:
         - name: update-filters
           ignore: True
@@ -68,7 +67,6 @@ apiConfig:
     - name: studies
       executorExtended: True
       optionExtended: True
-      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.StudiesCommandOptions
       commands:
         - name: run-templates
           executorExtended: True
@@ -83,7 +81,6 @@ apiConfig:
       key: File
       executorExtended: True
       optionExtended: True
-      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.FilesCommandOptions
       commands:
         - name: upload
           executorExtended: True
@@ -101,9 +98,11 @@ apiConfig:
       key: Job
       executorExtended: True
       optionExtended: True
-      optionExtendedClassName: org.opencb.opencga.app.cli.main.options.JobsCommandOptions
       commands:
         - name: top
+          executorExtended: True
+          optionExtended: True
+        - name: log
           executorExtended: True
           optionExtended: True
       addedMethods:
@@ -156,6 +155,7 @@ apiConfig:
       key: DiseasePanel
       commands:
         - name: import
+          ## Rename needed as `import` is a reserved word in Java
           rename: importPanels
     - name: analysisAlignment
       commandName: alignments

@@ -5,6 +5,7 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -68,9 +69,9 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
     }
 
     @Override
-    public RestResponse<AuthenticationResponse> login() throws Exception {
+    public RestResponse<AuthenticationResponse> login(CustomUsersCommandOptions.LoginCommandOptions c) throws Exception {
         if (this.enterpriseConfiguration.getSso() == null || !this.enterpriseConfiguration.getSso().isActive()) {
-            return super.login();
+            return super.login(c);
         } else {
             Path pythonScriptPath = Paths.get(appHome)
                         .resolve("cloud")
