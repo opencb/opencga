@@ -4,6 +4,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,8 +62,8 @@ public class CommandLineUtils {
         }
     }
 
-    public static String[] processShortCuts(String[] args) {
-        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+    public static String[] processShortCuts(String[] args, CustomCliOptionsParser parser) {
+
         switch (getShortcut(args)) {
             case "login":
                 return LoginUtils.parseLoginCommand(args);
@@ -78,7 +79,7 @@ public class CommandLineUtils {
                     }
                 }
                 try {
-                    cliOptionsParser.printUsage(args);
+                    parser.printUsage(args);
                 } catch (Exception e) {
                     // malformed command
                     return args;

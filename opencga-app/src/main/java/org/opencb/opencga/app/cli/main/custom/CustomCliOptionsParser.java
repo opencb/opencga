@@ -7,11 +7,16 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.config.CliCategory;
+import org.opencb.opencga.app.cli.config.CliConfiguration;
+import org.opencb.opencga.app.cli.config.CliUsage;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CustomCliOptionsParser extends CliOptionsParser {
 
@@ -67,6 +72,7 @@ public class CustomCliOptionsParser extends CliOptionsParser {
             } else {
                 PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       " + getPrefix() + "[-h|--help] [--shell] [--host] [--version] <command> [options]"));
             }
+
             System.err.println();
             printMainUsage();
             System.err.println();
@@ -97,6 +103,40 @@ public class CustomCliOptionsParser extends CliOptionsParser {
         return "opencga.sh ";
     }
 
+    /**
+     * Read cli-usage.yml file to print the usage.
+     */
+    @Override
+    protected void printMainUsage() {
+        CliUsage cliUsage = CliConfiguration.getInstance().getUsage();
+        CliCategory[] categories = cliUsage.getCategories();
+        for (CliCategory cliCategory : categories) {
+            String[] options = cliCategory.getOptions();
+            PrintUtils.println(PrintUtils.format(cliCategory.getDescription(), PrintUtils.Color.GREEN));
+            for (String option : options) {
+                for (String command : jCommander.getCommands().keySet()) {
+                    if (command.equals(option)) {
+                        PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                    }
+                }
+            }
+            System.err.println();
+        }
+        printOpencgaCommands();
+    }
+
+    private void printOpencgaCommands() {
+        Map<String, String> opencgaCommands = getOpencgaCommands();
+        if (!OpencgaMain.isShellMode()) {
+            PrintUtils.println(PrintUtils.format("Opencga options:", PrintUtils.Color.GREEN));
+        } else {
+            PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.GREEN));
+        }
+        for (Map.Entry entry : opencgaCommands.entrySet()) {
+            PrintUtils.printCommandHelpFormattedString(entry.getKey().toString(), entry.getValue().toString());
+        }
+    }
+    /*
     @Override
     protected void printMainUsage() {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
@@ -153,7 +193,7 @@ public class CustomCliOptionsParser extends CliOptionsParser {
         for (Map.Entry entry : opencgaCommands.entrySet()) {
             PrintUtils.printCommandHelpFormattedString(entry.getKey().toString(), entry.getValue().toString());
         }
-    }
+    }*/
 
     private Map<String, String> getOpencgaCommands() {
         Map<String, String> h = new HashMap<>();
