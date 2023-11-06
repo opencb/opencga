@@ -252,10 +252,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list family IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list family names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list family UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -270,10 +270,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list of member's samples", required = false, arity = 1)
         public String samples; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names", required = false, arity = 1)
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
-        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names", required = false, arity = 1)
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorders; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
@@ -335,10 +335,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list family IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list family names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list family UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -353,10 +353,10 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list of member's samples", required = false, arity = 1)
         public String samples; 
     
-        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names", required = false, arity = 1)
+        @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
-        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names", required = false, arity = 1)
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorders; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)

@@ -241,13 +241,13 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
         public boolean otherStudies = false; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job", required = false, arity = 1)
+        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
@@ -362,13 +362,13 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
         public boolean otherStudies = false; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job", required = false, arity = 1)
+        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
