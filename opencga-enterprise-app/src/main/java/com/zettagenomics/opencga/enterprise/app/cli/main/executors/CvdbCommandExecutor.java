@@ -1,30 +1,27 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.CvdbCommandOptions;
-
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import java.util.HashMap;
+import java.util.List;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -59,6 +56,9 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "case-aggregation-stats":
+                queryResponse = aggregationStatsCase();
+                break;
             case "case-index":
                 queryResponse = indexCase();
                 break;
@@ -68,11 +68,20 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "case-query":
                 queryResponse = queryCase();
                 break;
+            case "clinical-variant-aggregation-stats":
+                queryResponse = aggregationStatsClinicalVariant();
+                break;
             case "clinical-variant-query":
                 queryResponse = queryClinicalVariant();
                 break;
+            case "clinical-variant-evidence-aggregation-stats":
+                queryResponse = aggregationStatsClinicalVariantEvidence();
+                break;
             case "clinical-variant-evidence-query":
                 queryResponse = queryClinicalVariantEvidence();
+                break;
+            case "interpretation-aggregation-stats":
+                queryResponse = aggregationStatsInterpretation();
                 break;
             case "interpretation-query":
                 queryResponse = queryInterpretation();
@@ -84,6 +93,104 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<FacetField> aggregationStatsCase() throws Exception {
+        logger.debug("Executing aggregationStatsCase in Cvdb command line");
+
+        CvdbCommandOptions.AggregationStatsCaseCommandOptions commandOptions = cvdbCommandOptions.aggregationStatsCaseCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("caId", commandOptions.caId);
+        queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
+        queryParams.putIfNotEmpty("caType", commandOptions.caType);
+        queryParams.putIfNotEmpty("caDisorderId", commandOptions.caDisorderId);
+        queryParams.putIfNotEmpty("caFilename", commandOptions.caFilename);
+        queryParams.putIfNotEmpty("caProbandId", commandOptions.caProbandId);
+        queryParams.putIfNotEmpty("caFamilyId", commandOptions.caFamilyId);
+        queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
+        queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
+        queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
+        queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
+        queryParams.putIfNotEmpty("ciDescription", commandOptions.ciDescription);
+        queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
+        queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
+        queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
+        queryParams.putIfNotEmpty("ciAnalystEmail", commandOptions.ciAnalystEmail);
+        queryParams.putIfNotEmpty("ciAnalystAssignedBy", commandOptions.ciAnalystAssignedBy);
+        queryParams.putIfNotEmpty("ciAnalystDate", commandOptions.ciAnalystDate);
+        queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
+        queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
+        queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotEmpty("ciMethodDependencies", commandOptions.ciMethodDependencies);
+        queryParams.putIfNotEmpty("ciComments", commandOptions.ciComments);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
+        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("ciStatusDescription", commandOptions.ciStatusDescription);
+        queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
+        queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
+        queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
+        queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
+        queryParams.putIfNotEmpty("cvComments", commandOptions.cvComments);
+        queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
+        queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
+        queryParams.putIfNotEmpty("cvDiscussionText", commandOptions.cvDiscussionText);
+        queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
+        queryParams.putIfNotEmpty("cvConfidenceAuthor", commandOptions.cvConfidenceAuthor);
+        queryParams.putIfNotEmpty("cvConfidenceDate", commandOptions.cvConfidenceDate);
+        queryParams.putIfNotEmpty("cvTag", commandOptions.cvTag);
+        queryParams.putIfNotEmpty("cvStatus", commandOptions.cvStatus);
+        queryParams.putIfNotEmpty("cvRegion", commandOptions.cvRegion);
+        queryParams.putIfNotEmpty("cvBiotype", commandOptions.cvBiotype);
+        queryParams.putIfNotEmpty("cvCt", commandOptions.cvCt);
+        queryParams.putIfNotEmpty("cvTranscriptFlag", commandOptions.cvTranscriptFlag);
+        queryParams.putIfNotEmpty("cvGene", commandOptions.cvGene);
+        queryParams.putIfNotEmpty("cvXref", commandOptions.cvXref);
+        queryParams.putIfNotEmpty("cvAnnotRoleInCancerGenes", commandOptions.cvAnnotRoleInCancerGenes);
+        queryParams.putIfNotEmpty("cvType", commandOptions.cvType);
+        queryParams.putIfNotEmpty("cvProteinSubstitution", commandOptions.cvProteinSubstitution);
+        queryParams.putIfNotEmpty("cvConservation", commandOptions.cvConservation);
+        queryParams.putIfNotEmpty("cvFunctionalScore", commandOptions.cvFunctionalScore);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyAlt", commandOptions.cvPopulationFrequencyAlt);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyMaf", commandOptions.cvPopulationFrequencyMaf);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyRef", commandOptions.cvPopulationFrequencyRef);
+        queryParams.putIfNotEmpty("cvCohortStatsAlt", commandOptions.cvCohortStatsAlt);
+        queryParams.putIfNotEmpty("cvCohortStatsMaf", commandOptions.cvCohortStatsMaf);
+        queryParams.putIfNotEmpty("cvCohortStatsRef", commandOptions.cvCohortStatsRef);
+        queryParams.putIfNotEmpty("cvCohortStatsPass", commandOptions.cvCohortStatsPass);
+        queryParams.putIfNotEmpty("cvScore", commandOptions.cvScore);
+        queryParams.putIfNotEmpty("cvAnnotGoGenes", commandOptions.cvAnnotGoGenes);
+        queryParams.putIfNotEmpty("cvAnnotExpressionGenes", commandOptions.cvAnnotExpressionGenes);
+        queryParams.putIfNotEmpty("cvGeneTraitId", commandOptions.cvGeneTraitId);
+        queryParams.putIfNotEmpty("cvTrait", commandOptions.cvTrait);
+        queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
+        queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
+        queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
+        queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
+        queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
+        queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
+        queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
+        queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
+        queryParams.putIfNotEmpty("cveDrugResponse", commandOptions.cveDrugResponse);
+        queryParams.putIfNotEmpty("cveTraitAssociation", commandOptions.cveTraitAssociation);
+        queryParams.putIfNotEmpty("cveFunctionalEffect", commandOptions.cveFunctionalEffect);
+        queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
+        queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
+        queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().aggregationStatsCase(queryParams);
     }
 
     private RestResponse<CvdbIndexResult> indexCase() throws Exception {
@@ -159,7 +266,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
-        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
         queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
         queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
@@ -238,6 +345,104 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryCase(queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStatsClinicalVariant() throws Exception {
+        logger.debug("Executing aggregationStatsClinicalVariant in Cvdb command line");
+
+        CvdbCommandOptions.AggregationStatsClinicalVariantCommandOptions commandOptions = cvdbCommandOptions.aggregationStatsClinicalVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("caId", commandOptions.caId);
+        queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
+        queryParams.putIfNotEmpty("caType", commandOptions.caType);
+        queryParams.putIfNotEmpty("caDisorderId", commandOptions.caDisorderId);
+        queryParams.putIfNotEmpty("caFilename", commandOptions.caFilename);
+        queryParams.putIfNotEmpty("caProbandId", commandOptions.caProbandId);
+        queryParams.putIfNotEmpty("caFamilyId", commandOptions.caFamilyId);
+        queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
+        queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
+        queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
+        queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
+        queryParams.putIfNotEmpty("ciDescription", commandOptions.ciDescription);
+        queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
+        queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
+        queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
+        queryParams.putIfNotEmpty("ciAnalystEmail", commandOptions.ciAnalystEmail);
+        queryParams.putIfNotEmpty("ciAnalystAssignedBy", commandOptions.ciAnalystAssignedBy);
+        queryParams.putIfNotEmpty("ciAnalystDate", commandOptions.ciAnalystDate);
+        queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
+        queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
+        queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotEmpty("ciMethodDependencies", commandOptions.ciMethodDependencies);
+        queryParams.putIfNotEmpty("ciComments", commandOptions.ciComments);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
+        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("ciStatusDescription", commandOptions.ciStatusDescription);
+        queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
+        queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
+        queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
+        queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
+        queryParams.putIfNotEmpty("cvComments", commandOptions.cvComments);
+        queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
+        queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
+        queryParams.putIfNotEmpty("cvDiscussionText", commandOptions.cvDiscussionText);
+        queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
+        queryParams.putIfNotEmpty("cvConfidenceAuthor", commandOptions.cvConfidenceAuthor);
+        queryParams.putIfNotEmpty("cvConfidenceDate", commandOptions.cvConfidenceDate);
+        queryParams.putIfNotEmpty("cvTag", commandOptions.cvTag);
+        queryParams.putIfNotEmpty("cvStatus", commandOptions.cvStatus);
+        queryParams.putIfNotEmpty("cvRegion", commandOptions.cvRegion);
+        queryParams.putIfNotEmpty("cvBiotype", commandOptions.cvBiotype);
+        queryParams.putIfNotEmpty("cvCt", commandOptions.cvCt);
+        queryParams.putIfNotEmpty("cvTranscriptFlag", commandOptions.cvTranscriptFlag);
+        queryParams.putIfNotEmpty("cvGene", commandOptions.cvGene);
+        queryParams.putIfNotEmpty("cvXref", commandOptions.cvXref);
+        queryParams.putIfNotEmpty("cvAnnotRoleInCancerGenes", commandOptions.cvAnnotRoleInCancerGenes);
+        queryParams.putIfNotEmpty("cvType", commandOptions.cvType);
+        queryParams.putIfNotEmpty("cvProteinSubstitution", commandOptions.cvProteinSubstitution);
+        queryParams.putIfNotEmpty("cvConservation", commandOptions.cvConservation);
+        queryParams.putIfNotEmpty("cvFunctionalScore", commandOptions.cvFunctionalScore);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyAlt", commandOptions.cvPopulationFrequencyAlt);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyMaf", commandOptions.cvPopulationFrequencyMaf);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyRef", commandOptions.cvPopulationFrequencyRef);
+        queryParams.putIfNotEmpty("cvCohortStatsAlt", commandOptions.cvCohortStatsAlt);
+        queryParams.putIfNotEmpty("cvCohortStatsMaf", commandOptions.cvCohortStatsMaf);
+        queryParams.putIfNotEmpty("cvCohortStatsRef", commandOptions.cvCohortStatsRef);
+        queryParams.putIfNotEmpty("cvCohortStatsPass", commandOptions.cvCohortStatsPass);
+        queryParams.putIfNotEmpty("cvScore", commandOptions.cvScore);
+        queryParams.putIfNotEmpty("cvAnnotGoGenes", commandOptions.cvAnnotGoGenes);
+        queryParams.putIfNotEmpty("cvAnnotExpressionGenes", commandOptions.cvAnnotExpressionGenes);
+        queryParams.putIfNotEmpty("cvGeneTraitId", commandOptions.cvGeneTraitId);
+        queryParams.putIfNotEmpty("cvTrait", commandOptions.cvTrait);
+        queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
+        queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
+        queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
+        queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
+        queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
+        queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
+        queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
+        queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
+        queryParams.putIfNotEmpty("cveDrugResponse", commandOptions.cveDrugResponse);
+        queryParams.putIfNotEmpty("cveTraitAssociation", commandOptions.cveTraitAssociation);
+        queryParams.putIfNotEmpty("cveFunctionalEffect", commandOptions.cveFunctionalEffect);
+        queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
+        queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
+        queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().aggregationStatsClinicalVariant(queryParams);
+    }
+
     private RestResponse<ClinicalVariant> queryClinicalVariant() throws Exception {
         logger.debug("Executing queryClinicalVariant in Cvdb command line");
 
@@ -257,7 +462,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
-        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
         queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
         queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
@@ -336,6 +541,104 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryClinicalVariant(queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStatsClinicalVariantEvidence() throws Exception {
+        logger.debug("Executing aggregationStatsClinicalVariantEvidence in Cvdb command line");
+
+        CvdbCommandOptions.AggregationStatsClinicalVariantEvidenceCommandOptions commandOptions = cvdbCommandOptions.aggregationStatsClinicalVariantEvidenceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("caId", commandOptions.caId);
+        queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
+        queryParams.putIfNotEmpty("caType", commandOptions.caType);
+        queryParams.putIfNotEmpty("caDisorderId", commandOptions.caDisorderId);
+        queryParams.putIfNotEmpty("caFilename", commandOptions.caFilename);
+        queryParams.putIfNotEmpty("caProbandId", commandOptions.caProbandId);
+        queryParams.putIfNotEmpty("caFamilyId", commandOptions.caFamilyId);
+        queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
+        queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
+        queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
+        queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
+        queryParams.putIfNotEmpty("ciDescription", commandOptions.ciDescription);
+        queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
+        queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
+        queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
+        queryParams.putIfNotEmpty("ciAnalystEmail", commandOptions.ciAnalystEmail);
+        queryParams.putIfNotEmpty("ciAnalystAssignedBy", commandOptions.ciAnalystAssignedBy);
+        queryParams.putIfNotEmpty("ciAnalystDate", commandOptions.ciAnalystDate);
+        queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
+        queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
+        queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotEmpty("ciMethodDependencies", commandOptions.ciMethodDependencies);
+        queryParams.putIfNotEmpty("ciComments", commandOptions.ciComments);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
+        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("ciStatusDescription", commandOptions.ciStatusDescription);
+        queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
+        queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
+        queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
+        queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
+        queryParams.putIfNotEmpty("cvComments", commandOptions.cvComments);
+        queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
+        queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
+        queryParams.putIfNotEmpty("cvDiscussionText", commandOptions.cvDiscussionText);
+        queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
+        queryParams.putIfNotEmpty("cvConfidenceAuthor", commandOptions.cvConfidenceAuthor);
+        queryParams.putIfNotEmpty("cvConfidenceDate", commandOptions.cvConfidenceDate);
+        queryParams.putIfNotEmpty("cvTag", commandOptions.cvTag);
+        queryParams.putIfNotEmpty("cvStatus", commandOptions.cvStatus);
+        queryParams.putIfNotEmpty("cvRegion", commandOptions.cvRegion);
+        queryParams.putIfNotEmpty("cvBiotype", commandOptions.cvBiotype);
+        queryParams.putIfNotEmpty("cvCt", commandOptions.cvCt);
+        queryParams.putIfNotEmpty("cvTranscriptFlag", commandOptions.cvTranscriptFlag);
+        queryParams.putIfNotEmpty("cvGene", commandOptions.cvGene);
+        queryParams.putIfNotEmpty("cvXref", commandOptions.cvXref);
+        queryParams.putIfNotEmpty("cvAnnotRoleInCancerGenes", commandOptions.cvAnnotRoleInCancerGenes);
+        queryParams.putIfNotEmpty("cvType", commandOptions.cvType);
+        queryParams.putIfNotEmpty("cvProteinSubstitution", commandOptions.cvProteinSubstitution);
+        queryParams.putIfNotEmpty("cvConservation", commandOptions.cvConservation);
+        queryParams.putIfNotEmpty("cvFunctionalScore", commandOptions.cvFunctionalScore);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyAlt", commandOptions.cvPopulationFrequencyAlt);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyMaf", commandOptions.cvPopulationFrequencyMaf);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyRef", commandOptions.cvPopulationFrequencyRef);
+        queryParams.putIfNotEmpty("cvCohortStatsAlt", commandOptions.cvCohortStatsAlt);
+        queryParams.putIfNotEmpty("cvCohortStatsMaf", commandOptions.cvCohortStatsMaf);
+        queryParams.putIfNotEmpty("cvCohortStatsRef", commandOptions.cvCohortStatsRef);
+        queryParams.putIfNotEmpty("cvCohortStatsPass", commandOptions.cvCohortStatsPass);
+        queryParams.putIfNotEmpty("cvScore", commandOptions.cvScore);
+        queryParams.putIfNotEmpty("cvAnnotGoGenes", commandOptions.cvAnnotGoGenes);
+        queryParams.putIfNotEmpty("cvAnnotExpressionGenes", commandOptions.cvAnnotExpressionGenes);
+        queryParams.putIfNotEmpty("cvGeneTraitId", commandOptions.cvGeneTraitId);
+        queryParams.putIfNotEmpty("cvTrait", commandOptions.cvTrait);
+        queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
+        queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
+        queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
+        queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
+        queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
+        queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
+        queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
+        queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
+        queryParams.putIfNotEmpty("cveDrugResponse", commandOptions.cveDrugResponse);
+        queryParams.putIfNotEmpty("cveTraitAssociation", commandOptions.cveTraitAssociation);
+        queryParams.putIfNotEmpty("cveFunctionalEffect", commandOptions.cveFunctionalEffect);
+        queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
+        queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
+        queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().aggregationStatsClinicalVariantEvidence(queryParams);
+    }
+
     private RestResponse<ClinicalVariantEvidence> queryClinicalVariantEvidence() throws Exception {
         logger.debug("Executing queryClinicalVariantEvidence in Cvdb command line");
 
@@ -355,7 +658,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
-        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
         queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
         queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
@@ -434,6 +737,104 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         return enterpriseOpenCGAClient.getEnterpriseCvdbClient().queryClinicalVariantEvidence(queryParams);
     }
 
+    private RestResponse<FacetField> aggregationStatsInterpretation() throws Exception {
+        logger.debug("Executing aggregationStatsInterpretation in Cvdb command line");
+
+        CvdbCommandOptions.AggregationStatsInterpretationCommandOptions commandOptions = cvdbCommandOptions.aggregationStatsInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("caId", commandOptions.caId);
+        queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
+        queryParams.putIfNotEmpty("caType", commandOptions.caType);
+        queryParams.putIfNotEmpty("caDisorderId", commandOptions.caDisorderId);
+        queryParams.putIfNotEmpty("caFilename", commandOptions.caFilename);
+        queryParams.putIfNotEmpty("caProbandId", commandOptions.caProbandId);
+        queryParams.putIfNotEmpty("caFamilyId", commandOptions.caFamilyId);
+        queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
+        queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
+        queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
+        queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
+        queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
+        queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
+        queryParams.putIfNotEmpty("ciDescription", commandOptions.ciDescription);
+        queryParams.putIfNotEmpty("ciPanelId", commandOptions.ciPanelId);
+        queryParams.putIfNotEmpty("ciAnalystId", commandOptions.ciAnalystId);
+        queryParams.putIfNotEmpty("ciAnalystName", commandOptions.ciAnalystName);
+        queryParams.putIfNotEmpty("ciAnalystEmail", commandOptions.ciAnalystEmail);
+        queryParams.putIfNotEmpty("ciAnalystAssignedBy", commandOptions.ciAnalystAssignedBy);
+        queryParams.putIfNotEmpty("ciAnalystDate", commandOptions.ciAnalystDate);
+        queryParams.putIfNotEmpty("ciMethodName", commandOptions.ciMethodName);
+        queryParams.putIfNotEmpty("ciMethodVersion", commandOptions.ciMethodVersion);
+        queryParams.putIfNotEmpty("ciMethodCommit", commandOptions.ciMethodCommit);
+        queryParams.putIfNotEmpty("ciMethodDependencies", commandOptions.ciMethodDependencies);
+        queryParams.putIfNotEmpty("ciComments", commandOptions.ciComments);
+        queryParams.putIfNotNull("ciLocked", commandOptions.ciLocked);
+        queryParams.putIfNotEmpty("ciStatusId", commandOptions.ciStatusId);
+        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("ciStatusDescription", commandOptions.ciStatusDescription);
+        queryParams.putIfNotEmpty("ciStatusDate", commandOptions.ciStatusDate);
+        queryParams.putIfNotEmpty("ciCreationDate", commandOptions.ciCreationDate);
+        queryParams.putIfNotEmpty("ciModificationDate", commandOptions.ciModificationDate);
+        queryParams.putIfNotNull("ciVersion", commandOptions.ciVersion);
+        queryParams.putIfNotEmpty("cvId", commandOptions.cvId);
+        queryParams.putIfNotNull("cvPrimary", commandOptions.cvPrimary);
+        queryParams.putIfNotEmpty("cvComments", commandOptions.cvComments);
+        queryParams.putIfNotEmpty("cvDiscussionAuthor", commandOptions.cvDiscussionAuthor);
+        queryParams.putIfNotEmpty("cvDiscussionDate", commandOptions.cvDiscussionDate);
+        queryParams.putIfNotEmpty("cvDiscussionText", commandOptions.cvDiscussionText);
+        queryParams.putIfNotEmpty("cvConfidenceValue", commandOptions.cvConfidenceValue);
+        queryParams.putIfNotEmpty("cvConfidenceAuthor", commandOptions.cvConfidenceAuthor);
+        queryParams.putIfNotEmpty("cvConfidenceDate", commandOptions.cvConfidenceDate);
+        queryParams.putIfNotEmpty("cvTag", commandOptions.cvTag);
+        queryParams.putIfNotEmpty("cvStatus", commandOptions.cvStatus);
+        queryParams.putIfNotEmpty("cvRegion", commandOptions.cvRegion);
+        queryParams.putIfNotEmpty("cvBiotype", commandOptions.cvBiotype);
+        queryParams.putIfNotEmpty("cvCt", commandOptions.cvCt);
+        queryParams.putIfNotEmpty("cvTranscriptFlag", commandOptions.cvTranscriptFlag);
+        queryParams.putIfNotEmpty("cvGene", commandOptions.cvGene);
+        queryParams.putIfNotEmpty("cvXref", commandOptions.cvXref);
+        queryParams.putIfNotEmpty("cvAnnotRoleInCancerGenes", commandOptions.cvAnnotRoleInCancerGenes);
+        queryParams.putIfNotEmpty("cvType", commandOptions.cvType);
+        queryParams.putIfNotEmpty("cvProteinSubstitution", commandOptions.cvProteinSubstitution);
+        queryParams.putIfNotEmpty("cvConservation", commandOptions.cvConservation);
+        queryParams.putIfNotEmpty("cvFunctionalScore", commandOptions.cvFunctionalScore);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyAlt", commandOptions.cvPopulationFrequencyAlt);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyMaf", commandOptions.cvPopulationFrequencyMaf);
+        queryParams.putIfNotEmpty("cvPopulationFrequencyRef", commandOptions.cvPopulationFrequencyRef);
+        queryParams.putIfNotEmpty("cvCohortStatsAlt", commandOptions.cvCohortStatsAlt);
+        queryParams.putIfNotEmpty("cvCohortStatsMaf", commandOptions.cvCohortStatsMaf);
+        queryParams.putIfNotEmpty("cvCohortStatsRef", commandOptions.cvCohortStatsRef);
+        queryParams.putIfNotEmpty("cvCohortStatsPass", commandOptions.cvCohortStatsPass);
+        queryParams.putIfNotEmpty("cvScore", commandOptions.cvScore);
+        queryParams.putIfNotEmpty("cvAnnotGoGenes", commandOptions.cvAnnotGoGenes);
+        queryParams.putIfNotEmpty("cvAnnotExpressionGenes", commandOptions.cvAnnotExpressionGenes);
+        queryParams.putIfNotEmpty("cvGeneTraitId", commandOptions.cvGeneTraitId);
+        queryParams.putIfNotEmpty("cvTrait", commandOptions.cvTrait);
+        queryParams.putIfNotEmpty("cvProteinKeyword", commandOptions.cvProteinKeyword);
+        queryParams.putIfNotEmpty("cvePhenotypeName", commandOptions.cvePhenotypeName);
+        queryParams.putIfNotEmpty("cveGeneName", commandOptions.cveGeneName);
+        queryParams.putIfNotEmpty("cveConsequenceTypeId", commandOptions.cveConsequenceTypeId);
+        queryParams.putIfNotEmpty("cveXrefId", commandOptions.cveXrefId);
+        queryParams.putIfNotEmpty("cvePanelId", commandOptions.cvePanelId);
+        queryParams.putIfNotEmpty("cveMoi", commandOptions.cveMoi);
+        queryParams.putIfNotEmpty("cvePenetrance", commandOptions.cvePenetrance);
+        queryParams.putIfNotEmpty("cveAcmg", commandOptions.cveAcmg);
+        queryParams.putIfNotEmpty("cveTier", commandOptions.cveTier);
+        queryParams.putIfNotEmpty("cveClinicalSignificance", commandOptions.cveClinicalSignificance);
+        queryParams.putIfNotEmpty("cveDrugResponse", commandOptions.cveDrugResponse);
+        queryParams.putIfNotEmpty("cveTraitAssociation", commandOptions.cveTraitAssociation);
+        queryParams.putIfNotEmpty("cveFunctionalEffect", commandOptions.cveFunctionalEffect);
+        queryParams.putIfNotEmpty("cveTumorigenesis", commandOptions.cveTumorigenesis);
+        queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
+        queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
+        queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+
+        return enterpriseOpenCGAClient.getEnterpriseCvdbClient().aggregationStatsInterpretation(queryParams);
+    }
+
     private RestResponse<Interpretation> queryInterpretation() throws Exception {
         logger.debug("Executing queryInterpretation in Cvdb command line");
 
@@ -453,7 +854,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         queryParams.putIfNotEmpty("caFamilyPhenotypeName", commandOptions.caFamilyPhenotypeName);
         queryParams.putIfNotEmpty("caFamilyMemberId", commandOptions.caFamilyMemberId);
         queryParams.putIfNotEmpty("caReport", commandOptions.caReport);
-        queryParams.putIfNotEmpty("ciStatusName", commandOptions.ciStatusName);
+        queryParams.putIfNotEmpty("caStatus", commandOptions.caStatus);
         queryParams.putIfNotNull("caLocked", commandOptions.caLocked);
         queryParams.putIfNotEmpty("ciId", commandOptions.ciId);
         queryParams.putIfNotNull("ciPrimary", commandOptions.ciPrimary);
