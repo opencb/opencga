@@ -36,7 +36,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("panelClient", "OpencgaR", function(OpencgaR, panels, members, endpointName, params=NULL, ...) {
+setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/panels/acl/{members}/update:

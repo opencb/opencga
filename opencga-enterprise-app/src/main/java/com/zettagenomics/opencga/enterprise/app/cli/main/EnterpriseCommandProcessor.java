@@ -32,12 +32,12 @@ import java.util.List;
 import static org.opencb.commons.utils.PrintUtils.printError;
 import static org.opencb.commons.utils.PrintUtils.printWarn;
 
-public class EnterpriseCommandProcessor {
+public class EnterpriseCommandProcessor extends CommandProcessor{
 
     private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
     public void process(String[] args) {
-        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+        EnterpriseCliOptionsParser cliOptionsParser = new EnterpriseCliOptionsParser();
         try {
             if (!ArrayUtils.isEmpty(args)) {
                 //2. Parse params of options files
@@ -182,7 +182,7 @@ public class EnterpriseCommandProcessor {
         logger.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
     }
 
-    private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
+    private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(EnterpriseCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         EnterpriseOpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
             case "users":

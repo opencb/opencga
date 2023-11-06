@@ -21,6 +21,7 @@
 <!--        <dep.jline.version>3.12.1</dep.jline.version>-->
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
@@ -68,6 +69,16 @@
     <build>
         <finalName>opencga-enterprise-app</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>enterprise-cli-usage.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/classes</targetPath>
+            </resource>
+        </resources>
 
         <plugins>
             <plugin>
@@ -131,6 +142,7 @@
                 </configuration>
             </plugin>
 
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -183,6 +195,7 @@
                                     <arg value="${opencga.build.dir}/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
+
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/cloud/docker/docker-build.py"/>
@@ -297,16 +310,17 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-<!--                                <exec executable="cp">-->
-<!--                                    <arg value="${build.dir}/bin/opencga.sh"/>-->
-<!--                                    <arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
-<!--                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>-->
-<!--                                </exec>-->
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/bin/opencga.sh"/>
+                                    <!--<arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                </exec>
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
                                 </exec>
+
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/enterprise-configuration.yml"/>

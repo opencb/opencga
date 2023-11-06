@@ -32,7 +32,7 @@ import org.opencb.opencga.app.cli.main.custom.CustomCliOptionsParser;
 */
 
 
-public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
+public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
 
     private final AnalysisVariantCommandOptions analysisVariantCommandOptions;
     private final ProjectsCommandOptions projectsCommandOptions;
@@ -54,7 +54,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-    public OpencgaCliOptionsParser() {
+    public EnterpriseCliOptionsParser() {
 
         jCommander.setExpandAtSign(false);
 
