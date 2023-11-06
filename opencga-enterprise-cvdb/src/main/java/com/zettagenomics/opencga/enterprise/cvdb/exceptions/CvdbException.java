@@ -15,5 +15,4 @@ public class CvdbException extends Exception {
     public static CvdbException noResultsMatching() {
         return new CvdbException(NO_RESULTS_FOUND);
     }
-
 }

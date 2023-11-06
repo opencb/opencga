@@ -101,28 +101,28 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
         return pipeline;
     }
 
-    @Override
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
-        logger.info("Running family index!");
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        int studyId = studyMetadata.getId();
-        for (int i = 0; i < trios.size(); i += 3) {
-            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
-            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
-            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
-            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, studyMetadata.getSampleIndexConfigurationLatest().getVersion());
-                if (father != null && father > 0) {
-                    sampleMetadata.setFather(father);
-                }
-                if (mother != null && mother > 0) {
-                    sampleMetadata.setMother(mother);
-                }
-            });
-        }
-        return new DataResult<List<String>>().setResults(trios);
-    }
+//    @Override
+//    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+//        logger.info("Running family index!");
+//        VariantStorageMetadataManager metadataManager = getMetadataManager();
+//        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+//        int studyId = studyMetadata.getId();
+//        for (int i = 0; i < trios.size(); i += 3) {
+//            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
+//            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
+//            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+//            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+//                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, studyMetadata.getSampleIndexConfigurationLatest().getVersion());
+//                if (father != null && father > 0) {
+//                    sampleMetadata.setFather(father);
+//                }
+//                if (mother != null && mother > 0) {
+//                    sampleMetadata.setMother(mother);
+//                }
+//            });
+//        }
+//        return new DataResult<List<String>>().setResults(trios);
+//    }
 
     @Override
     protected VariantImporter newVariantImporter() throws StorageEngineException {

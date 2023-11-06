@@ -556,6 +556,26 @@ public class ClinicalQueryParser {
     //  A G G R E G A T I O N      S T A T S     /     F A C E T
     //-------------------------------------------------------------------------
 
+    protected void parseFacet(Query query, QueryOptions queryOptions, SolrQuery solrQuery) throws CvdbException {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            try {
+                FacetQueryParser facetQueryParser = new FacetQueryParser();
+
+                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
+                String jsonFacet = facetQueryParser.parse(facetQuery);
+
+                solrQuery.set("json.facet", jsonFacet);
+                solrQuery.setRows(0);
+                solrQuery.setStart(0);
+                solrQuery.setFields();
+
+                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
+            } catch (Exception e) {
+                throw new CvdbException("Error parsing facet query", e);
+            }
+        }
+    }
+
     protected String parseFacet(String facetQuery) {
         StringBuilder sb = new StringBuilder();
         String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);

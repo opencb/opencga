@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -23,11 +24,13 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
+import javax.validation.constraints.AssertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -36,6 +39,8 @@ import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalRe
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR;
 
 public class ClinicalAggregationTest {
 
@@ -177,9 +182,52 @@ public class ClinicalAggregationTest {
         QueryOptions queryOptions = new QueryOptions();
 
         // Check existing type
-        queryOptions.put(QueryOptions.FACET, CA_STATUS_NAME);
+        queryOptions.put(QueryOptions.FACET, CA_DISORDER_ID_NAME);
         query = new Query(PROJECT_PARAM_NAME, projectId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
+        assertEquals(1, facetResult.getNumResults());
+        assertEquals(2, facetResult.first().getCount());
+        assertEquals(CA_DISORDER_ID_NAME, facetResult.first().getName());
+        for (FacetField result : facetResult.getResults()) {
+            System.out.println(result);
+        }
+    }
+
+    @Test
+    public void testMultipleFacetClinicalAnalyses() throws IOException, SolrServerException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        // Check existing type
+        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FACET_SEPARATOR + CA_DISORDER_ID_NAME);
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
+        assertEquals(2, facetResult.getNumResults());
+        Set<String> fieldNames = facetResult.getResults().stream().map(f -> f.getName()).collect(Collectors.toSet());
+        for (String name : queryOptions.getString(QueryOptions.FACET).split(FACET_SEPARATOR)) {
+            assertTrue(fieldNames.contains(name));
+        }
+        for (FacetField result : facetResult.getResults()) {
+            System.out.println(result);
+        }
+    }
+
+    @Test
+    public void testNestedFacetClinicalAnalyses() throws IOException, SolrServerException, CvdbException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        // Check existing type
+        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FacetQueryParser.NESTED_FACET_SEPARATOR + CA_DISORDER_ID_NAME);
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, null);
+        assertEquals(1, facetResult.getNumResults());
+        assertEquals(CA_TYPE_NAME, facetResult.first().getName());
+        assertEquals(CA_DISORDER_ID_NAME, facetResult.first().getBuckets().get(0).getFacetFields().get(0).getName());
         for (FacetField result : facetResult.getResults()) {
             System.out.println(result);
         }

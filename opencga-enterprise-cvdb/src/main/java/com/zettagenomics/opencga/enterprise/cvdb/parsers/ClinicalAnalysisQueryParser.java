@@ -41,23 +41,8 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
         SolrQuery solrQuery = new SolrQuery("*:*");
 
-        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            try {
-                FacetQueryParser facetQueryParser = new FacetQueryParser();
-
-                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
-                String jsonFacet = facetQueryParser.parse(facetQuery);
-
-                solrQuery.set("json.facet", jsonFacet);
-                solrQuery.setRows(0);
-                solrQuery.setStart(0);
-                solrQuery.setFields();
-
-                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
-            } catch (Exception e) {
-                throw new CvdbException("Error parsing facet query", e);
-            }
-        }
+        // Process facet, if necessary
+        parseFacet(query, queryOptions, solrQuery);
 
         List<String> filters;
         String join;

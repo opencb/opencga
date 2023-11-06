@@ -45,6 +45,9 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
         SolrQuery solrQuery = new SolrQuery("*:*");
 
+        // Process facet, if necessary
+        parseFacet(query, queryOptions, solrQuery);
+
         List<String> filters;
         String join;
 

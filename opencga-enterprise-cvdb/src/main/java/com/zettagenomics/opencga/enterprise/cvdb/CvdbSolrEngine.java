@@ -25,10 +25,8 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvide
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalInterpretationQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantEvidenceQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalVariantQueryParser;
+import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -38,12 +36,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -57,6 +57,8 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,6 +275,7 @@ public class CvdbSolrEngine {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
+            postProcessing(facetResult, new CaFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -342,6 +345,7 @@ public class CvdbSolrEngine {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), INTERPRETATIONS_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
+            postProcessing(facetResult, new CiFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -411,6 +415,7 @@ public class CvdbSolrEngine {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
+            postProcessing(facetResult, new CvFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -480,6 +485,7 @@ public class CvdbSolrEngine {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
+            postProcessing(facetResult, new CveFieldMapping());
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -513,12 +519,6 @@ public class CvdbSolrEngine {
 
         if (!queryOptions.containsKey(QueryOptions.FACET) || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             throw new CvdbException("Missing facet field to aggregation stats");
-        }
-
-        for (String field : queryOptions.getString(QueryOptions.FACET).split(";")) {
-            if (!fieldSet.contains(field)) {
-                throw new CvdbException("Invalid facet field '" + field + "'. Valid values are: " + StringUtils.join(fieldSet, ", "));
-            }
         }
     }
 
@@ -973,6 +973,30 @@ public class CvdbSolrEngine {
         QueryResponse response = solrClient.query(collectionName, solrQuery);
 
         return (response.getResults().getNumFound() == 1);
+    }
+
+    //----------------------------------------------------------------------
+
+    private void postProcessing(DataResult<FacetField> dataResult, FieldMapping fieldMapping) {
+        for (FacetField facetField : dataResult.getResults()) {
+            postProcessingRecursive(facetField, fieldMapping);
+        }
+    }
+
+    private void postProcessingRecursive(FacetField facetField, FieldMapping fieldMapping) {
+        try {
+            String newName = fieldMapping.toModelField(facetField.getName());
+            facetField.setName(newName);
+            for (FacetField.Bucket bucket : facetField.getBuckets()) {
+                if (CollectionUtils.isNotEmpty(bucket.getFacetFields())) {
+                    for (FacetField field : bucket.getFacetFields()) {
+                        postProcessingRecursive(field, fieldMapping);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Nothing to do
+        }
     }
 
     //----------------------------------------------------------------------
