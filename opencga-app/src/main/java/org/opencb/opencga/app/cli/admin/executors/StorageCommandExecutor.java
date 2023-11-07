@@ -225,7 +225,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      */
     protected final List<String> getVariantStorageStudies(CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
-        for (Study study : catalogManager.getStudyManager().search(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
+        for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList("fqn")), token).getResults()) {
             if (variantStorageManager.exists(study.getFqn(), token)) {
                 studies.add(study.getFqn());

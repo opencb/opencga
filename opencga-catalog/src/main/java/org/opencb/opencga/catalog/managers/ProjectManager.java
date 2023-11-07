@@ -75,6 +75,9 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
             ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
+    public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
+            ProjectDBAdaptor.QueryParams.FQN.key()));
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
@@ -142,28 +145,6 @@ public class ProjectManager extends AbstractManager {
                 .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         return getProjectDBAdaptor(organizationId).get(query, options);
-    }
-
-    /**
-     * Obtain the list of projects and studies that are shared with the user.
-     *
-     * @param organizationId Organization id.
-     * @param userId         user whose projects and studies are being shared with.
-     * @param queryOptions   QueryOptions object.
-     * @param sessionId      Session id which should correspond to userId.
-     * @return A OpenCGAResult object containing the list of projects and studies that are shared with the user.
-     * @throws CatalogException CatalogException
-     */
-    public OpenCGAResult<Project> getSharedProjects(String organizationId, String userId, QueryOptions queryOptions, String sessionId)
-            throws CatalogException {
-        OpenCGAResult<Project> result = search(organizationId, new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId),
-                queryOptions, sessionId);
-        for (Event event : result.getEvents()) {
-            if (event.getType() == Event.Type.ERROR) {
-                throw new CatalogAuthorizationException(event.getMessage());
-            }
-        }
-        return result;
     }
 
     @Deprecated
@@ -519,7 +500,7 @@ public class ProjectManager extends AbstractManager {
 
         Project project = resolveId(catalogFqn, null, tokenPayload).first();
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(organizationId, query,
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().searchInOrganization(organizationId, query,
                 new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), token);
 

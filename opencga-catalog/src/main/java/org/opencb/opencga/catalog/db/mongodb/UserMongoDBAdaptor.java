@@ -552,14 +552,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         // If we don't find the force parameter, we check first if the user does not have an active project.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+        if (!queryOptions.getBoolean(FORCE, false)) {
             checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            // Delete the active projects (if any)
-            query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), id);
-            dbAdaptorFactory.getCatalogProjectDBAdaptor().delete(query, queryOptions);
         }
 
         // Change the status of the user to deleted
@@ -570,16 +564,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
      * Checks whether the userId has any active project.
      *
      * @param userId user id.
-     * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
+     * @throws CatalogDBException when the user does not exist.
      */
     private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.READY);
-        Long count = dbAdaptorFactory.getCatalogProjectDBAdaptor().count(query).getNumMatches();
-        if (count > 0) {
-            throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
-        }
+        throw new UnsupportedOperationException("Delete user not yet supported");
     }
 
     @Override

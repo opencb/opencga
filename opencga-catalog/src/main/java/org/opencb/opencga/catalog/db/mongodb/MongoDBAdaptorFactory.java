@@ -180,7 +180,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationSummary.getId())) {
                     OrganizationMongoDBAdaptorFactory orgFactory = configureOrganizationMongoDBAdaptorFactory(organizationSummary.getId(),
                             catalogConfiguration);
-                    organizationDBAdaptorMap.put(organizationSummary.getId().toLowerCase(), orgFactory);
+                    organizationDBAdaptorMap.put(organizationSummary.getId(), orgFactory);
                 }
             }
         }
@@ -247,22 +247,22 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public OpenCGAResult<Organization> createOrganization(Organization organizationId, QueryOptions options, String userId)
+    public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organizationId.getId(), false);
+        OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
         if (orgFactory != null && orgFactory.isCatalogDBReady()) {
-            throw new CatalogDBException("Organization '" + organizationId.getId() + "' already exists.");
+            throw new CatalogDBException("Organization '" + organization.getId() + "' already exists.");
         }
 
         try {
             // Create organization
             OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(mongoManager,
-                    mongoDbConfiguration, organizationId.getId(), configuration);
-            organizationDBAdaptorMap.put(organizationId.getId().toLowerCase(), organizationDBAdaptorFactory);
+                    mongoDbConfiguration, organization.getId(), configuration);
+            organizationDBAdaptorMap.put(organization.getId(), organizationDBAdaptorFactory);
 
-            OrganizationSummary organizationSummary = new OrganizationSummary(organizationId.getId(),
+            OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), ORGANIZATION_TAGS.ACTIVE.name(), null);
-            SettingsCreateParams settingsCreateParams = new SettingsCreateParams(ORGANIZATION_PREFIX + organizationId.getId(),
+            SettingsCreateParams settingsCreateParams = new SettingsCreateParams(ORGANIZATION_PREFIX + organization.getId(),
                     Collections.singletonList(ORGANIZATION_TAGS.ACTIVE.name()), null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
@@ -281,13 +281,13 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
             // Create organization
             OpenCGAResult<Organization> result = organizationDBAdaptorFactory.getCatalogOrganizationDBAdaptor()
-                    .insert(organizationId, options);
+                    .insert(organization, options);
 
             // Keep track of current organization in the ADMIN organization
             getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getCatalogSettingsDBAdaptor().insert(settings);
             return result;
         } catch (Exception e) {
-            OrganizationMongoDBAdaptorFactory tmpOrgFactory = organizationDBAdaptorMap.remove(organizationId.getId().toLowerCase());
+            OrganizationMongoDBAdaptorFactory tmpOrgFactory = organizationDBAdaptorMap.remove(organization.getId());
             if (tmpOrgFactory != null) {
                 tmpOrgFactory.deleteCatalogDB();
             }

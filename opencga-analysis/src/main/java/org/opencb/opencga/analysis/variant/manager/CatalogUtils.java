@@ -120,7 +120,8 @@ public class CatalogUtils {
                         Collections.singleton(VariantField.STUDIES));
             } else {
                 // Get all studies from user.
-                return catalogManager.getStudyManager().search(null, new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId).getResults()
+                return catalogManager.getStudyManager().searchInOrganization(null, new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId)
+                        .getResults()
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());

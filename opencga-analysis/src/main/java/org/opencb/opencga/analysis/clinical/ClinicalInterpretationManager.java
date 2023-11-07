@@ -914,7 +914,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             // There must be one single owner for all the studies, we do nt allow to query multiple databases
             if (users.size() == 1) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds, ","));
-                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().search(organizationId, studyQuery, QueryOptions.empty(), token);
+                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().searchInOrganization(organizationId, studyQuery, QueryOptions.empty(), token);
 
                 // If the user is the owner we do not have to check anything else
                 List<String> studyAliases = new ArrayList<>(studyIds.size());

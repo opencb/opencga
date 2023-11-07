@@ -491,7 +491,7 @@ public class SampleMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
             for (int i = 0; i < numThreads; i++) {
                 threads.add(new Thread(() -> {
                     try {
-                        dbAdaptorFactory.getCatalogCohortDBAdaptor(organizationId).insert(studyUid, new Cohort(cohortName, "",
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor(organizationId).insert(studyUid2, new Cohort(cohortName, "",
                                 Enums.CohortType.COLLECTION, "", "", "", Collections.emptyList(), 1, null), null, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
@@ -510,7 +510,7 @@ public class SampleMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
         assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
         List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor(organizationId).get(
-                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid), null).getResults();
+                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid2), null).getResults();
         assertEquals(numCohorts, cohorts.size());
         Set<String> names = cohorts.stream().map(Cohort::getId).collect(Collectors.toSet());
         for (int c = 0; c < numCohorts; c++) {

@@ -671,17 +671,55 @@ public class StudyManager extends AbstractManager {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn projectFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
         String organizationId = projectFqn.getOrganizationId();
-
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        String userId = tokenPayload.getUserId(organizationId);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("projectStr", projectStr)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+        try {
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectFqn.getProjectId());
+            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectFqn.getProjectUuid());
+            fixQueryObject(query);
+
+            OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, qOptions, userId);
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.STUDY, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return filterResults(studyDataResult);
+        } catch (CatalogException e) {
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.STUDY, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Fetch all the study objects matching the query.
+     *
+     * @param organizationId Organization id..
+     * @param query          Query to catalog.
+     * @param options        Query options, like "include", "exclude", "limit" and "skip"
+     * @param token          token
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
+    public OpenCGAResult<Study> searchInOrganization(String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        organizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+
         try {
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectFqn.getProjectId());
-            query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_UUID.key(), projectFqn.getProjectUuid());
             fixQueryObject(query);
 
             OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, qOptions, userId);
@@ -1119,9 +1157,7 @@ public class StudyManager extends AbstractManager {
             }
 
             Query userQuery = new Query(UserDBAdaptor.QueryParams.ID.key(), new ArrayList<>(userIds));
-            QueryOptions userOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(
-                    UserDBAdaptor.QueryParams.PROJECTS.key(), UserDBAdaptor.QueryParams.SHARED_PROJECTS.key()
-            ));
+            QueryOptions userOptions = new QueryOptions();
             OpenCGAResult<User> userResult = getUserDBAdaptor(organizationId).get(userQuery, userOptions);
             Map<String, User> userMap = new HashMap<>();
             for (User user : userResult.getResults()) {
@@ -1207,6 +1243,13 @@ public class StudyManager extends AbstractManager {
                 case SET:
                     if (MEMBERS.equals(groupId)) {
                         throw new CatalogException("Operation not valid. Valid actions over the '@members' group are ADD or REMOVE.");
+                    } else if (ADMINS.equals(groupId)) {
+                        Set<String> admins = catalogManager.getOrganizationManager().getOrganizationOwnerAndAdmins(organizationId);
+                        if (!updateParams.getUsers().containsAll(admins)) {
+                            throw new CatalogException("Can't set the users provided to the " + ADMINS + " group. Organization owner "
+                                    + "and admins cannot be removed from that group. Please ensure these users are also added: "
+                                    + String.join(", ", admins));
+                        }
                     }
                     getStudyDBAdaptor(organizationId).setUsersToGroup(study.getUid(), groupId, updateParams.getUsers());
                     getStudyDBAdaptor(organizationId).addUsersToGroup(study.getUid(), MEMBERS, updateParams.getUsers());
@@ -1218,6 +1261,17 @@ public class StudyManager extends AbstractManager {
                     }
                     break;
                 case REMOVE:
+                    // Check is not one of the organization admins
+                    if (MEMBERS.equals(groupId) || ADMINS.equals(groupId)) {
+                        Set<String> admins = catalogManager.getOrganizationManager().getOrganizationOwnerAndAdmins(organizationId);
+                        for (String user : updateParams.getUsers()) {
+                            if (admins.contains(user)) {
+                                throw new CatalogException("Cannot remove user '" + user + "'. The user is either the organization owner "
+                                        + "or one of the organization administrators.");
+                            }
+                        }
+                    }
+
                     if (MEMBERS.equals(groupId)) {
                         // We remove the users from all the groups and acls
                         authorizationManager.resetPermissionsFromAllEntities(organizationId, study.getUid(), updateParams.getUsers());

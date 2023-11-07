@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,9 +31,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 public class OrganizationManager extends AbstractManager {
 
@@ -185,7 +184,7 @@ public class OrganizationManager extends AbstractManager {
         }
 
         try {
-            catalogIOManager.createOrganization(organization.getId().toLowerCase());
+            catalogIOManager.createOrganization(organization.getId());
         } catch (CatalogIOException e) {
             auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION, organization.getId(), "", "",
                     "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -278,5 +277,20 @@ public class OrganizationManager extends AbstractManager {
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }
 
+    Set<String> getOrganizationOwnerAndAdmins(String organizationId) throws CatalogException {
+        OpenCGAResult<Organization> result = getOrganizationDBAdaptor(organizationId).get(INCLUDE_ORGANIZATION_ADMINS);
+        if (result.getNumResults() == 0) {
+            throw new CatalogException("Could not get owner and admins of organization '" + organizationId + "'. Organization not found.");
+        }
+        Organization organization = result.first();
+        Set<String> users = new HashSet<>();
+        if (StringUtils.isNotEmpty(organization.getOwner())) {
+            users.add(organization.getOwner());
+        }
+        if (CollectionUtils.isNotEmpty(organization.getAdmins())) {
+            users.addAll(organization.getAdmins());
+        }
+        return users;
+    }
 
 }

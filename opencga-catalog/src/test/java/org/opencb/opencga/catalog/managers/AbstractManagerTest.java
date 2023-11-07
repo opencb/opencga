@@ -83,10 +83,12 @@ public class AbstractManagerTest extends GenericTest {
     protected String normalToken1;
     protected String normalUserId2 = "normalUser2";
     protected String normalToken2;
-    protected String normalUserId3 = "normalUser3"; //
+    protected String normalUserId3 = "normalUser3";
     protected String normalToken3;
+    protected String noAccessUserId1 = "noAccessUserId1";
+    protected String noAccessToken1;
 
-    protected String restrictedGroup = "@restrictedGroup";
+    protected String restrictedGroup = "@restrictedGroup"; // normalUserId2, normalUserId3
 
     protected final String project1 = "1000G";
     protected final String project2 = "pmp";
@@ -190,6 +192,7 @@ public class AbstractManagerTest extends GenericTest {
         normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
         normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
         normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
+        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
 
         Study study = catalogManager.getStudyManager().get(studyId, StudyManager.INCLUDE_STUDY_IDS, ownerToken).first();
         studyUid = study.getUid();
@@ -225,6 +228,7 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getUserManager().create(organizationId, normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
         catalogManager.getUserManager().create(organizationId, normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
         catalogManager.getUserManager().create(organizationId, normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, noAccessUserId1, "Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
 
         catalogManager.getOrganizationManager().update(organizationId, 
                 new OrganizationUpdateParams()
@@ -239,6 +243,7 @@ public class AbstractManagerTest extends GenericTest {
         normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
         normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
         normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
+        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(organizationId, project1, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken);

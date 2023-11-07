@@ -185,30 +185,30 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{user}/projects")
-    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
-            + " performing the query. This will not fetch shared projects. To get those, please use /projects/search web service.",
-            response = Project.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
-                    "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
-    })
-    public Response getAllProjects(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
-        try {
-            ParamUtils.checkIsSingleID(userId);
-            query.remove("user");
-            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            return createOkResponse(catalogManager.getProjectManager().search(organizationId, query, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{user}/projects")
+//    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
+//            + " performing the query. This will not fetch shared projects. To get those, please use /projects/search web service.",
+//            response = Project.class)
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+//                    dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+//                    dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+//                    "query"),
+//            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
+//    })
+//    public Response getAllProjects(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
+//        try {
+//            ParamUtils.checkIsSingleID(userId);
+//            query.remove("user");
+//            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+//            return createOkResponse(catalogManager.getProjectManager().search(organizationId, query, queryOptions, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{user}/update")

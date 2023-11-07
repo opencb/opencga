@@ -57,8 +57,8 @@ public class AuthorizationMongoDBUtils {
     private static final Pattern REGISTERED_USERS_PATTERN = Pattern.compile("^" + REGISTERED_USERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
-    public static boolean checkCanViewStudy(Document study, String user) {
-        if (OPENCGA.equals(user)) {
+    public static boolean checkCanViewStudy(String organizationId, Document study, String user) {
+        if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
             return true;
         }
         // If user does not exist in the members group, the user will not have any permission
@@ -68,11 +68,8 @@ public class AuthorizationMongoDBUtils {
         return false;
     }
 
-    public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
-        if (OPENCGA.equals(user)) {
-            return true;
-        }
-        if (getAdminUsers(study).contains(user)) {
+    public static boolean checkStudyPermission(String organizationId, Document study, String user, String studyPermission) {
+        if (isOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
             return true;
         }
 
@@ -92,6 +89,16 @@ public class AuthorizationMongoDBUtils {
         }
     }
 
+    public static boolean isOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
+        if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            return true;
+        }
+        if (getAdminUsers(study).contains(user)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Removes annotation sets from results if the user does not have the proper permissions.
      *
@@ -102,7 +109,7 @@ public class AuthorizationMongoDBUtils {
      * @param entryPermission entry permission to check.
      * @return the document modified.
      */
-    public static Document filterAnnotationSets(Document study, Document entry, String user, String studyPermission,
+    public static Document filterAnnotationSets(String organizationId, Document study, Document entry, String user, String studyPermission,
                                                 String entryPermission) {
         if (study == null || entry == null || user == null) {
             return entry;
@@ -125,8 +132,8 @@ public class AuthorizationMongoDBUtils {
             entry.put(ANNOTATION_SETS, Collections.emptyList());
         } else {
             // Check if the user has the CONFIDENTIAL PERMISSION
-            boolean confidential =
-                    checkStudyPermission(study, user, StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+            boolean confidential = checkStudyPermission(organizationId, study, user,
+                    StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
             if (!confidential) {
                 // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
                 // confidential variable sets

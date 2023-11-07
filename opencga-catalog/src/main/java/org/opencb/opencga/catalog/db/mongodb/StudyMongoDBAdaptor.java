@@ -332,7 +332,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Study " + studyId + " not found");
         }
 
-        return checkStudyPermission((Document) queryResult.first(), user, permission.name());
+        return checkStudyPermission(dbAdaptorFactory.getOrganizationId(), (Document) queryResult.first(), user, permission.name());
     }
 
     @Override
@@ -489,7 +489,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        if (members == null || members.size() == 0) {
+        if (CollectionUtils.isEmpty(members)) {
             throw new CatalogDBException("Unable to remove members from group. List of members is empty");
         }
 
@@ -1005,7 +1005,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (studyDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Variable set not found.");
         }
-        if (!checkCanViewStudy(studyDataResult.first(), user)) {
+        if (!checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), studyDataResult.first(), user)) {
             throw CatalogAuthorizationException.deny(user, "view", "VariableSet", variableSetId, "");
         }
         Study study = studyConverter.convertToDataModelType(studyDataResult.first());
@@ -1014,7 +1014,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
         // Check if it is confidential
         if (study.getVariableSets().get(0).isConfidential()) {
-            if (!checkStudyPermission(studyDataResult.first(), user,
+            if (!checkStudyPermission(dbAdaptorFactory.getOrganizationId(), studyDataResult.first(), user,
                     StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString())) {
                 throw CatalogAuthorizationException.deny(user, StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString(),
                         "VariableSet", variableSetId, "");
@@ -1161,11 +1161,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             return endQuery(startTime, Collections.emptyList());
         }
 
-        if (!checkCanViewStudy(queryResult.first(), user)) {
+        if (!checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), queryResult.first(), user)) {
             throw new CatalogAuthorizationException("Permission denied: " + user + " cannot see any variable set");
         }
 
-        boolean hasConfidentialPermission = checkStudyPermission(queryResult.first(), user,
+        boolean hasConfidentialPermission = checkStudyPermission(dbAdaptorFactory.getOrganizationId(), queryResult.first(), user,
                 StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
         List<VariableSet> variableSets = new ArrayList<>();
         for (Document studyDocument : queryResult.getResults()) {
@@ -1282,49 +1282,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-    @Override
-    public long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-        Bson query = Filters.eq("variableSets." + PRIVATE_UID, variableSetId);
-        Bson projection = Projections.include(PRIVATE_UID);
-
-//        DataResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject(PRIVATE_UID, true), null);
-        DataResult<Document> queryResult = studyCollection.find(query, projection, null);
-
-        if (!queryResult.getResults().isEmpty()) {
-            Object id = queryResult.getResults().get(0).get(PRIVATE_UID);
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
-        } else {
-            throw CatalogDBException.uidNotFound("VariableSet", variableSetId);
-        }
-    }
-
     /*
      * Helper methods
      ********************/
-
-    @Override
-    public OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
-        OpenCGAResult<Study> result = OpenCGAResult.empty();
-
-        OpenCGAResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(userId, new QueryOptions());
-        if (allProjects.getNumResults() == 0) {
-            return result;
-        }
-
-        for (Project project : allProjects.getResults()) {
-            OpenCGAResult<Study> allStudiesInProject = getAllStudiesInProject(project.getUid(), queryOptions);
-            if (allStudiesInProject.getNumResults() > 0) {
-                result.getResults().addAll(allStudiesInProject.getResults());
-                result.setTime(result.getTime() + allStudiesInProject.getTime());
-            }
-        }
-
-        result.setNumMatches(result.getResults().size());
-        result.setNumResults(result.getResults().size());
-
-        return result;
-    }
 
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         try {
@@ -1787,7 +1747,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public DBIterator<Study> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options);
-        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
+        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
         return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
 
@@ -1803,7 +1763,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
+        Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
         return new StudyCatalogMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
@@ -1972,7 +1932,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case VARIABLE_SET_ID:
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
-                    case OWNER:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

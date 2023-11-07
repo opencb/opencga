@@ -1502,11 +1502,13 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<JobTop> top(String organizationId, Query baseQuery, int limit, String token) throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
-        List<String> studies = studyManager.search(organizationId, new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
-                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
+        JwtPayload jwtPayload = userManager.validateToken(token);
+        String userId = jwtPayload.getUserId(organizationId);
+        authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        List<String> studies = studyManager.searchInOrganization(organizationId, new Query(), StudyManager.INCLUDE_STUDY_IDS, token)
+                .getResults()
                 .stream()
-                .map(Study::getUuid)
+                .map(Study::getFqn)
                 .collect(Collectors.toList());
         return top(organizationId, studies, baseQuery, limit, token);
     }

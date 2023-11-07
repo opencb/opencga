@@ -424,10 +424,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
-
-    OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
-
     void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
@@ -479,7 +475,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
 
-        OWNER("_ownerId", TEXT, ""),
         COHORTS("cohorts", TEXT_ARRAY, ""),
 
         DELETED("deleted", BOOLEAN, ""),

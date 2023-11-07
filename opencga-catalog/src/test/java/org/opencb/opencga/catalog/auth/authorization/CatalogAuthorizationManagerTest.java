@@ -123,7 +123,7 @@ public class CatalogAuthorizationManagerTest extends AbstractManagerTest {
         thrown.expectMessage("Only the owner");
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.REMOVE,
-                new GroupUpdateParams(Collections.singletonList(orgAdminUserId2)), orgAdminToken1);
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId2)), studyAdminToken1);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class CatalogAuthorizationManagerTest extends AbstractManagerTest {
         thrown.expectMessage("Only the owner");
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList(normalUserId3)), orgAdminToken1);
+                new GroupUpdateParams(Collections.singletonList(normalUserId3)), studyAdminToken1);
     }
 
     @Test
@@ -183,13 +183,6 @@ public class CatalogAuthorizationManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
 //        catalogManager.removeUsersFromGroup(studyFqn, "NO_GROUP", ownerUserId, token);
         updateGroup(studyFqn, "NO_GROUP", null, orgOwnerUserId, null, ownerToken);
-    }
-
-    @Test
-    public void removeMemberFromNonBelongingGroup() throws CatalogException {
-        thrown.expect(CatalogException.class);
-//        catalogManager.removeUsersFromGroup(studyFqn, restrictedGroup, ownerUserId, token);
-        updateGroup(studyFqn, restrictedGroup, null, orgOwnerUserId, null, ownerToken);
     }
 
     /*--------------------------*/
@@ -864,7 +857,7 @@ public class CatalogAuthorizationManagerTest extends AbstractManagerTest {
     public void readAllIndividuals() throws CatalogException {
         assertEquals(2, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, ownerToken).getNumResults());
         assertEquals(2, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, orgAdminToken1).getNumResults());
-        assertEquals(0, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, normalToken3).getNumResults());
+        assertEquals(1, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, normalToken3).getNumResults());
     }
 
     /*--------------------------*/

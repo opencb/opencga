@@ -6,14 +6,12 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.OrganizationConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.OrganizationCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -31,6 +29,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterMapParams;
@@ -122,7 +121,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                                                       QueryOptions queryOptions) throws CatalogParameterException, CatalogDBException {
         long tmpStartTime = startQuery();
 
-        UpdateDocument updateDocument = getValidatedUpdateParams(parameters, queryOptions);
+        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, parameters, queryOptions);
         Document organizationUpdate = updateDocument.toFinalUpdateDocument();
 
 //        Query tmpQuery = new Query(QueryParams.ID.key(), organization.getId());
@@ -154,7 +153,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    private UpdateDocument getValidatedUpdateParams(ObjectMap parameters, QueryOptions queryOptions)
+    private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogParameterException, CatalogDBException {
         checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
@@ -166,6 +165,16 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                 QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
         };
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        String owner = parameters.getString(QueryParams.OWNER.key(), null);
+        if (StringUtils.isNotEmpty(owner)) {
+            // Check user exists
+            OpenCGAResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(clientSession,
+                    new Query(UserDBAdaptor.QueryParams.ID.key(), owner));
+            if (count.getNumMatches() == 0) {
+                throw new CatalogDBException("Could not update owner. User not found.");
+            }
+        }
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
             String time = parameters.getString(QueryParams.CREATION_DATE.key());
@@ -180,9 +189,15 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        // Check admins exist.
         if (parameters.containsKey(QueryParams.ADMINS.key())) {
-            List<String> adminList = parameters.getAsStringList(QueryParams.ADMINS.key());
+            List<String> adminList = parameters.getAsStringList(QueryParams.ADMINS.key()).stream().distinct().collect(Collectors.toList());
+
+            // Check users exist
+            OpenCGAResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(clientSession,
+                    new Query(UserDBAdaptor.QueryParams.ID.key(), adminList));
+            if (count.getNumMatches() < adminList.size()) {
+                throw new CatalogDBException("Could not update admins. Some users were not found.");
+            }
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
             ParamUtils.AddRemoveAction operation = ParamUtils.AddRemoveAction.from(actionMap, QueryParams.ADMINS.key(),

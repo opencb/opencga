@@ -104,6 +104,15 @@ public class MongoBackupUtils {
                 }
             }
 
+            List<String> organizationIds = dbAdaptorFactory.getOrganizationIds();
+            for (String organizationId : organizationIds) {
+                // We need to completely remove databases that were not backed up so tests that attempt to create them again don't fail
+                if (!databaseNames.containsKey(organizationId)) {
+                    logger.info("Completely removing database for organization '{}'", organizationId);
+                    dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(organizationId).deleteCatalogDB();
+                }
+            }
+
             // First restore the main admin database
             String adminDBName = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
                     .getMongoDataStore().getDatabaseName();

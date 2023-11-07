@@ -258,7 +258,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
 
-        ClinicalComment comment = new ClinicalComment("user", "my comment", new ArrayList<>(), "");
+        ClinicalComment comment = new ClinicalComment(orgOwnerUserId, "my comment", new ArrayList<>(), "");
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.SINGLE)
@@ -271,7 +271,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.LOW, ca.getQualityControl().getSummary());
         assertEquals("my comment", ca.getQualityControl().getComments().get(0).getMessage());
-        assertEquals("user", ca.getQualityControl().getComments().get(0).getAuthor());
+        assertEquals(orgOwnerUserId, ca.getQualityControl().getComments().get(0).getAuthor());
         assertNotNull(ca.getQualityControl().getComments().get(0).getDate());
 
         String date = ca.getQualityControl().getComments().get(0).getDate();
@@ -288,7 +288,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.HIGH, ca.getQualityControl().getSummary());
         assertEquals("other", ca.getQualityControl().getComments().get(0).getMessage());
-        assertEquals("user", ca.getQualityControl().getComments().get(0).getAuthor());
+        assertEquals(orgOwnerUserId, ca.getQualityControl().getComments().get(0).getAuthor());
         assertNotNull(ca.getQualityControl().getComments().get(0).getDate());
         assertNotEquals(date, ca.getQualityControl().getComments().get(0).getDate());
     }
@@ -387,10 +387,10 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 INCLUDE_RESULT, ownerToken);
         assertEquals(1, clinical.getNumResults());
         assertEquals(2, clinical.first().getComments().size());
-        assertEquals("user", clinical.first().getComments().get(0).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(0).getAuthor());
         assertEquals("My first comment", clinical.first().getComments().get(0).getMessage());
         assertEquals(2, clinical.first().getComments().get(0).getTags().size());
-        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(1).getAuthor());
         assertEquals("My second comment", clinical.first().getComments().get(1).getMessage());
         assertEquals(2, clinical.first().getComments().get(1).getTags().size());
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(0).getDate()));
@@ -466,13 +466,13 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), ownerToken);
         assertEquals(1, clinical.getNumResults());
         assertEquals(3, clinical.first().getComments().size());
-        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(1).getAuthor());
         assertEquals("My second comment", clinical.first().getComments().get(1).getMessage());
         assertEquals(1, clinical.first().getComments().get(1).getTags().size());
         assertEquals("myTag", clinical.first().getComments().get(1).getTags().get(0));
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(1).getDate()));
 
-        assertEquals("user", clinical.first().getComments().get(2).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(2).getAuthor());
         assertEquals("My third comment", clinical.first().getComments().get(2).getMessage());
         assertEquals(1, clinical.first().getComments().get(2).getTags().size());
         assertEquals("myTag2", clinical.first().getComments().get(2).getTags().get(0));
@@ -493,14 +493,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         clinical = catalogManager.getClinicalAnalysisManager().get(studyFqn, clinicalAnalysis.getId(), QueryOptions.empty(), ownerToken);
         assertEquals(1, clinical.getNumResults());
         assertEquals(3, clinical.first().getComments().size());
-        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(1).getAuthor());
         assertEquals("My updated second comment", clinical.first().getComments().get(1).getMessage());
         assertEquals(2, clinical.first().getComments().get(1).getTags().size());
         assertEquals("myTag", clinical.first().getComments().get(1).getTags().get(0));
         assertEquals("myOtherTag", clinical.first().getComments().get(1).getTags().get(1));
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(1).getDate()));
 
-        assertEquals("user", clinical.first().getComments().get(2).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(2).getAuthor());
         assertEquals("My also updated third comment", clinical.first().getComments().get(2).getMessage());
         assertEquals(2, clinical.first().getComments().get(2).getTags().size());
         assertEquals("myTag2", clinical.first().getComments().get(2).getTags().get(0));
@@ -521,7 +521,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         clinical = catalogManager.getClinicalAnalysisManager().get(studyFqn, clinicalAnalysis.getId(), QueryOptions.empty(), ownerToken);
         assertEquals(1, clinical.getNumResults());
         assertEquals(1, clinical.first().getComments().size());
-        assertEquals("user", clinical.first().getComments().get(0).getAuthor());
+        assertEquals(orgOwnerUserId, clinical.first().getComments().get(0).getAuthor());
         assertEquals("My updated second comment", clinical.first().getComments().get(0).getMessage());
         assertEquals(2, clinical.first().getComments().get(0).getTags().size());
         assertEquals("myTag", clinical.first().getComments().get(0).getTags().get(0));
@@ -1016,13 +1016,13 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), ownerToken);
         assertEquals(1, interpretation.getNumResults());
         assertEquals(3, interpretation.first().getComments().size());
-        assertEquals("user", interpretation.first().getComments().get(1).getAuthor());
+        assertEquals(orgOwnerUserId, interpretation.first().getComments().get(1).getAuthor());
         assertEquals("My second comment", interpretation.first().getComments().get(1).getMessage());
         assertEquals(1, interpretation.first().getComments().get(1).getTags().size());
         assertEquals("myTag", interpretation.first().getComments().get(1).getTags().get(0));
         assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(1).getDate()));
 
-        assertEquals("user", interpretation.first().getComments().get(2).getAuthor());
+        assertEquals(orgOwnerUserId, interpretation.first().getComments().get(2).getAuthor());
         assertEquals("My third comment", interpretation.first().getComments().get(2).getMessage());
         assertEquals(1, interpretation.first().getComments().get(2).getTags().size());
         assertEquals("myTag2", interpretation.first().getComments().get(2).getTags().get(0));
@@ -1043,14 +1043,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         interpretation = catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(), ownerToken);
         assertEquals(1, interpretation.getNumResults());
         assertEquals(3, interpretation.first().getComments().size());
-        assertEquals("user", interpretation.first().getComments().get(1).getAuthor());
+        assertEquals(orgOwnerUserId, interpretation.first().getComments().get(1).getAuthor());
         assertEquals("My updated second comment", interpretation.first().getComments().get(1).getMessage());
         assertEquals(2, interpretation.first().getComments().get(1).getTags().size());
         assertEquals("myTag", interpretation.first().getComments().get(1).getTags().get(0));
         assertEquals("myOtherTag", interpretation.first().getComments().get(1).getTags().get(1));
         assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(1).getDate()));
 
-        assertEquals("user", interpretation.first().getComments().get(2).getAuthor());
+        assertEquals(orgOwnerUserId, interpretation.first().getComments().get(2).getAuthor());
         assertEquals("My also updated third comment", interpretation.first().getComments().get(2).getMessage());
         assertEquals(2, interpretation.first().getComments().get(2).getTags().size());
         assertEquals("myTag2", interpretation.first().getComments().get(2).getTags().get(0));
@@ -1071,7 +1071,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         interpretation = catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(), ownerToken);
         assertEquals(1, interpretation.getNumResults());
         assertEquals(1, interpretation.first().getComments().size());
-        assertEquals("user", interpretation.first().getComments().get(0).getAuthor());
+        assertEquals(orgOwnerUserId, interpretation.first().getComments().get(0).getAuthor());
         assertEquals("My updated second comment", interpretation.first().getComments().get(0).getMessage());
         assertEquals(2, interpretation.first().getComments().get(0).getTags().size());
         assertEquals("myTag", interpretation.first().getComments().get(0).getTags().get(0));
@@ -1700,7 +1700,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY,
                 QueryOptions.empty(), ownerToken);
 
-        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam(normalUserId2));
         OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1",
                 params, null, QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumUpdated());
@@ -1743,7 +1743,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), ownerToken);
 
         // version 2
-        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam(normalUserId2));
         catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, QueryOptions.empty(),
                 ownerToken);
 
@@ -1763,7 +1763,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         Interpretation interpretation =
                 catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
         assertEquals(4, interpretation.getVersion());
-        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
         assertEquals(2, interpretation.getComments().size());
         assertEquals(1, interpretation.getComments().get(0).getTags().size());
         assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
@@ -1790,7 +1790,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         interpretation =
                 catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
         assertEquals(5, interpretation.getVersion());
-        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
         assertEquals(0, interpretation.getComments().size());
 
         result = catalogManager.getInterpretationManager().revert(studyFqn, ca.getId(), ca.getId() + ".1", 3, ownerToken);
@@ -1799,7 +1799,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         interpretation =
                 catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
         assertEquals(6, interpretation.getVersion());
-        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
         assertEquals(1, interpretation.getComments().size());
         assertEquals(1, interpretation.getComments().get(0).getTags().size());
         assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
@@ -1810,7 +1810,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         interpretation =
                 catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
         assertEquals(7, interpretation.getVersion());
-        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
         assertEquals(2, interpretation.getComments().size());
         assertEquals(1, interpretation.getComments().get(0).getTags().size());
         assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
@@ -1854,7 +1854,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(ca.getId() + ".3", ca.getSecondaryInterpretations().get(1).getId());
         assertEquals(ca.getId() + ".4", ca.getSecondaryInterpretations().get(2).getId());
 
-        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam(normalUserId2));
         OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1",
                 params, null, QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumUpdated());
@@ -1863,7 +1863,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(6, ca.getAudit().size());
         assertEquals(ClinicalAudit.Action.UPDATE_INTERPRETATION, ca.getAudit().get(5).getAction());
         assertNotNull(ca.getInterpretation().getAnalyst());
-        assertEquals("user2", ca.getInterpretation().getAnalyst().getId());
+        assertEquals(normalUserId2, ca.getInterpretation().getAnalyst().getId());
         assertEquals(2, ca.getInterpretation().getVersion());
 
         // Update a secondary interpretation

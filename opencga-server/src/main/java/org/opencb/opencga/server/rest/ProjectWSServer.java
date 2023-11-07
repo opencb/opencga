@@ -107,7 +107,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
     public Response searchProjects(
-            @ApiParam(value = "Owner of the project") @QueryParam("owner") String owner,
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = "Project name") @QueryParam("name") String name,
             @ApiParam(value = "Project fqn") @QueryParam("fqn") String fqn,
@@ -121,11 +120,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
-            if (StringUtils.isNotEmpty(owner)) {
-                query.remove("owner");
-                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
-            }
-
             DataResult<Project> queryResult = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

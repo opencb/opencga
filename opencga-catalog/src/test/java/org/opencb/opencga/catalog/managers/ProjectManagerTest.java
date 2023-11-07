@@ -31,10 +31,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -66,52 +68,60 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void getOtherUsersProject() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("cannot view");
-        catalogManager.getProjectManager().get(project1, null, orgAdminToken2);
+        catalogManager.getProjectManager().get(project2, null, noAccessToken1);
     }
 
     @Test
     public void searchSampleNoPermissions() throws CatalogException {
-        // User3 looks for any sample without providing any project or study and he has not been granted permissions anywhere
+        // First, remove anonymous user access to the study
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID)), ownerToken);
+
+        // User1 looks for any sample without providing any project or study and he has not been granted permissions anywhere
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("cannot view any study");
-        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), orgAdminToken2);
+        catalogManager.getSampleManager().search("", new Query(), QueryOptions.empty(), noAccessToken1);
     }
 
     @Test
     public void searchProjects() throws CatalogException {
+        String org2 = "otherOrg";
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
+        Project p = catalogManager.getProjectManager().create(org2, new ProjectCreateParams()
+                        .setId("project")
+                        .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
+                INCLUDE_RESULT, opencgaToken).first();
+         Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, opencgaToken).first();
 
-        catalogManager.getUserManager().create(organizationId, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        String token = catalogManager.getUserManager().login(organizationId, "userid", TestParamConstants.PASSWORD).getToken();
-        OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(organizationId, new Query(), QueryOptions.empty(), token);
+        catalogManager.getUserManager().create(org2, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).getToken();
+        OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
-        catalogManager.getUserManager().create(organizationId, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        String otherUsertoken = catalogManager.getUserManager().login(organizationId, otherUser, TestParamConstants.PASSWORD).getToken();
+        catalogManager.getUserManager().create(org2, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
-                .search(organizationId, new Query(), QueryOptions.empty(), otherUsertoken);
+                .search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
         assertTrue(result.getResults().isEmpty());
         assertEquals(0, result.getEvents().size());
 
-        // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken1).first().getId();
-        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList(otherUser)), orgAdminToken1);
+        // Give some permissions to the user in the study
+        catalogManager.getStudyManager().updateGroup(study.getFqn(), "@members", ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(otherUser)), opencgaToken);
 
-        result = catalogManager.getProjectManager()
-                .search(organizationId, new Query(), QueryOptions.empty(), otherUsertoken);
+        result = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
         assertEquals(1, result.getNumResults());
-        assertEquals(project2, result.first().getId());
-        assertEquals("user2@pmp", result.first().getFqn());
-
+        assertEquals(p.getId(), result.first().getId());
+        assertEquals(p.getFqn(), result.first().getFqn());
     }
 
     @Test
     public void searchProjectsUsingInclude() throws CatalogException {
         OpenCGAResult<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(1, projects.getNumResults());
+        assertEquals(3, projects.getNumResults());
         for (Project project : projects.getResults()) {
             assertNotNull(project.getId());
             assertNull(project.getDescription());
@@ -122,66 +132,26 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
         projects = catalogManager.getProjectManager().search(organizationId, new Query(),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.STUDIES.key()), ownerToken);
-        assertEquals(1, projects.getNumResults());
+        assertEquals(3, projects.getNumResults());
         for (Project project : projects.getResults()) {
-            assertNull(project.getId());
             assertNull(project.getDescription());
             assertNull(project.getName());
             assertNotNull(project.getStudies());
-            assertTrue(CollectionUtils.isNotEmpty(project.getStudies()));
+            if ("p1".equals(project.getId())) {
+                assertTrue(CollectionUtils.isEmpty(project.getStudies()));
+            } else {
+                assertTrue(CollectionUtils.isNotEmpty(project.getStudies()));
+            }
         }
 
         projects = catalogManager.getProjectManager().search(organizationId, new Query(),
                 new QueryOptions(QueryOptions.EXCLUDE, ProjectDBAdaptor.QueryParams.NAME.key()), ownerToken);
-        assertEquals(1, projects.getNumResults());
+        assertEquals(3, projects.getNumResults());
         for (Project project : projects.getResults()) {
             assertNotNull(project.getId());
             assertNull(project.getName());
             assertNotNull(project.getDescription());
             assertNotNull(project.getStudies());
-            assertFalse(CollectionUtils.isEmpty(project.getStudies()));
-        }
-    }
-
-    @Test
-    public void getSharedProjects() throws CatalogException {
-        try {
-            OpenCGAResult<Project> user = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
-        } catch (CatalogAuthorizationException e) {
-            // Correct
-        }
-
-        // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken1).first().getId();
-        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user")), orgAdminToken1);
-
-        DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(1, queryResult.first().getStudies().size());
-        assertEquals("s2", queryResult.first().getStudies().get(0).getId());
-
-        // Add permissions to a group were user belongs
-        catalogManager.getStudyManager().createGroup(studyFqn3, "@member", Collections.singletonList("user"), orgAdminToken1);
-
-        queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(2, queryResult.first().getStudies().size());
-        assertEquals("user2@pmp", queryResult.first().getFqn());
-
-        // Add permissions to user in a study of user3
-        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, orgAdminToken2).first().getId();
-        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user")), orgAdminToken2);
-
-        queryResult = catalogManager.getProjectManager().getSharedProjects(organizationId, "user", null, ownerToken);
-        assertEquals(2, queryResult.getNumResults());
-        for (Project project : queryResult.getResults()) {
-            if (project.getId().equals(project2)) {
-                assertEquals(2, project.getStudies().size());
-            } else {
-                assertEquals(1, project.getStudies().size());
-            }
         }
     }
 
@@ -214,7 +184,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void createProjectCheckCellbase() throws CatalogException, JsonProcessingException {
+    public void createProjectCheckCellbase() throws CatalogException {
         Project pr = catalogManager.getProjectManager()
                 .create(organizationId, new ProjectCreateParams()
                                 .setId("Project_1")

@@ -130,6 +130,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        @Deprecated
         PROJECTS("projects", TEXT_ARRAY, ""),
         @Deprecated
         PROJECTS_ID("projects.id", INTEGER_ARRAY, ""),

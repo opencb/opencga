@@ -78,11 +78,11 @@ public class CatalogSampleAnnotationsLoaderTest extends AbstractManagerTest {
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.DOUBLE, null, true, false, Collections.<String>emptyList(), null, 0, null,
+        variables.add(new Variable("id", "", Variable.VariableType.DOUBLE, null, true, false, Collections.emptyList(), null, 0, null,
                 "", null, null));
-        variables.add(new Variable("name", "", Variable.VariableType.STRING, null, true, false, Collections.<String>emptyList(), null, 0, null,
+        variables.add(new Variable("name", "", Variable.VariableType.STRING, null, true, false, Collections.emptyList(), null, 0, null,
                 "", null, null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.DOUBLE, null, false, false, Collections.<String>emptyList(), null, 0,
+        variables.add(new Variable("fatherId", "", Variable.VariableType.DOUBLE, null, false, false, Collections.emptyList(), null, 0,
                 null, "", null, null));
         variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, null, 0, null, "",
                 null, null));

@@ -58,7 +58,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        USER_ID("userId", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
@@ -138,9 +137,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult<Project> insert(Project project, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    @Deprecated
-    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 

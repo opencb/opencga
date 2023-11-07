@@ -112,6 +112,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore mongoDataStore;
+    private final String organizationId;
     private final String database;
 
     private final SettingsMongoDBAdaptor settingsDBAdaptor;
@@ -142,6 +143,7 @@ public class OrganizationMongoDBAdaptorFactory {
                                              String organizationId, Configuration configuration) throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
+        this.organizationId = organizationId;
         this.database = getCatalogOrganizationDatabase(configuration.getDatabasePrefix(), organizationId);
 
         this.mongoDataStore = mongoManager.get(database, mongoDBConfiguration);
@@ -395,6 +397,10 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public void close() {
         mongoManager.close(database);
+    }
+
+    public String getOrganizationId() {
+        return organizationId;
     }
 
     public MigrationMongoDBAdaptor getMigrationDBAdaptor() {

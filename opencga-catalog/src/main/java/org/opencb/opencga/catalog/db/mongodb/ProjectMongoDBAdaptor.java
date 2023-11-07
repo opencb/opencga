@@ -500,13 +500,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        Query query = new Query(QueryParams.USER_ID.key(), userId);
-        return endQuery(startTime, get(query, options));
-    }
-
-    @Override
     public OpenCGAResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
         Query query = new Query(QueryParams.UID.key(), projectId);
@@ -724,6 +717,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                             .collect(Collectors.toList()));
         }
 
+        options = filterQueryOptions(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
+
         // 0. Check if the user is the owner or one of the organization admins
         boolean isOwnerOrAdmin = dbAdaptorFactory.getCatalogOrganizationDBAdaptor().isOwnerOrAdmin(clientSession, user);
 
@@ -834,9 +829,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 switch (queryParam) {
                     case UID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
-                    case USER_ID:
-                        addAutoOrQuery(ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
