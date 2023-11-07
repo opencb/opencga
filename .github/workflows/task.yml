@@ -37,3 +37,4 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Push in Docker Hub
         run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag ${{ github.ref_name }}
+
