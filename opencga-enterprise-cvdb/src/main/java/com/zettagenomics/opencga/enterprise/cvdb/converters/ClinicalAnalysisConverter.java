@@ -36,7 +36,7 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
 
     private ObjectReader clinicalAnalysisReader;
 
-    private Logger logger;
+    private static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
 
     public ClinicalAnalysisConverter() {
         this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);

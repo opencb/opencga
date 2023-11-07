@@ -257,27 +257,27 @@ public class CvdbSolrEngineQueryTest {
         assertTrue(result.first().getAnnotation() != null);
         System.out.println(result.first().toJson());
 
-        queryOptions.put(INCLUDE, "impl.type");
+        queryOptions.put(INCLUDE, "type");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() != null);
         assertTrue(result.first().getAnnotation() == null);
 
-        queryOptions.put(INCLUDE, "impl.annotation");
+        queryOptions.put(INCLUDE, "annotation");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() == null);
         assertTrue(result.first().getAnnotation() != null);
         assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
 
-        queryOptions.put(INCLUDE, "impl.annotation.start");
+        queryOptions.put(INCLUDE, "annotation.start");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() == null);
         assertTrue(result.first().getAnnotation() != null);
         assertTrue(result.first().getAnnotation().getConsequenceTypes() == null);
 
-        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes");
+        queryOptions.put(INCLUDE, "annotation.consequenceTypes");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() == null);
@@ -285,7 +285,7 @@ public class CvdbSolrEngineQueryTest {
         assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
         assertTrue(result.first().getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms() != null);
 
-        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes.geneName");
+        queryOptions.put(INCLUDE, "annotation.consequenceTypes.geneName");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() == null);
@@ -293,7 +293,7 @@ public class CvdbSolrEngineQueryTest {
         assertTrue(result.first().getAnnotation().getConsequenceTypes() != null);
         assertTrue(result.first().getAnnotation().getConsequenceTypes().get(0).getSequenceOntologyTerms() == null);
 
-        queryOptions.put(INCLUDE, "impl.annotation.consequenceTypes.sequenceOntologyTerms");
+        queryOptions.put(INCLUDE, "annotation.consequenceTypes.sequenceOntologyTerms");
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, null);
         assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
         assertTrue(result.first().getType() == null);

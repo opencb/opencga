@@ -23,7 +23,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
 
     private ObjectReader clinicalVariantEvidenceReader;
 
-    protected static Logger logger = LoggerFactory.getLogger(ClinicalVariantEvidenceConverter.class);
+    private static Logger logger = LoggerFactory.getLogger(ClinicalVariantEvidenceConverter.class);
 
     public ClinicalVariantEvidenceConverter() {
         this.clinicalVariantEvidenceReader = mapper.readerFor(ClinicalVariantEvidence.class);

@@ -18,8 +18,6 @@ public class SearchConverter<M, N> {
     public static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
     public static SimpleDateFormat solrDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    protected static Logger logger = LoggerFactory.getLogger(SearchConverter.class);
-
     public SearchConverter() {
         this.mapper = JacksonUtils.getDefaultObjectMapper();
         this.mapReader = mapper.readerFor(HashMap.class);

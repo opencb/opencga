@@ -16,18 +16,17 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalInterpretationSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -40,16 +39,12 @@ import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtil
 
 public class ClinicalInterpretationConverter extends SearchConverter<Interpretation, ClinicalInterpretationSearch> {
 
-    //    private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private ObjectReader interpretationReader;
-//    private ObjectReader clinicalAnalysisReader;
 
-//    protected static Logger logger = LoggerFactory.getLogger(InterpretationConverter.class);
+    private static Logger logger = LoggerFactory.getLogger(ClinicalInterpretationConverter.class);
 
     public ClinicalInterpretationConverter() {
-//        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
         this.interpretationReader = mapper.readerFor(Interpretation.class);
-//        this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
     }
 
     public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary) throws CvdbException {
@@ -86,7 +81,6 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
                     try {
                         String solrDate = solrDateFormat.format(simpleDateFormat.parse(analyst.getDate()));
                         clinicalInterpretationSearch.setAnalystDate(solrDateFormat.parse(solrDate));
-                        System.out.println("solrDate = " + solrDate + ", analysit date = " + clinicalInterpretationSearch.getAnalystDate());
                     } catch (ParseException e) {
                         logger.warn("Impossible to process interpretation analyst date {}: {}", analyst.getDate(), e.getMessage());
                     }

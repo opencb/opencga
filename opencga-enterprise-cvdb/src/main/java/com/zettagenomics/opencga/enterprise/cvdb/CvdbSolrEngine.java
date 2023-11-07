@@ -37,7 +37,10 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
@@ -386,7 +389,23 @@ public class CvdbSolrEngine {
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         List<String> includeList = new ArrayList<>();
         if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                switch (include) {
+                    case "evidences":
+                    case "comments":
+                    case "filters":
+                    case "discussion":
+                    case "confidence":
+                    case "tags":
+                    case "status":
+                    case "attributes":
+                        includeList.add(include);
+                        break;
+                    default:
+                        includeList.add("impl." + include);
+                        break;
+                }
+            }
         }
 
         // Execute query

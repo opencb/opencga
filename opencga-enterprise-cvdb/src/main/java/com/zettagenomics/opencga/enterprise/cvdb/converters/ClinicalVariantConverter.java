@@ -109,6 +109,7 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                 throw new CvdbException("Error when storing clinical variant JSON field", e);
             }
 
+            System.out.println(cvs.getId() + " >>>> " + StringUtils.join(cvs.getXrefs(), ", "));
             // Add clinical variant search into the list
             cvsList.add(cvs);
         }
