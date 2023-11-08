@@ -37,6 +37,7 @@
 
     <modules>
         <module>opencga-storage-hadoop-core</module>
+        <module>opencga-storage-hadoop-compat</module>
     </modules>
 
     <profiles>
