@@ -181,7 +181,7 @@ public class CvdbSolrEngineIndexTest {
 
     private void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
-            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
+            InputStream is = CvdbSolrEngineIndexTest.class.getClassLoader().getResourceAsStream(caFilename);
             GZIPInputStream gzipInputStream = new GZIPInputStream(is);
             ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
                     .readValue(gzipInputStream);

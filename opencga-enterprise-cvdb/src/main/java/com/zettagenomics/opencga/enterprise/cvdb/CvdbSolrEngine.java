@@ -148,20 +148,6 @@ public class CvdbSolrEngine {
         return "opencga_" + projectId + suffix;
     }
 
-    public CvdbIndexResult index(String projectId, String studyId, List<String> clinicalAnalysisIds, CatalogManager catalogManager,
-                                 boolean overwrite, String sessionIdUser) throws CatalogException, CvdbException {
-        if (StringUtils.isEmpty(studyId) && CollectionUtils.isEmpty(clinicalAnalysisIds)) {
-            // Index all clinical analyses of a given project
-            return indexProject(projectId, catalogManager, overwrite, sessionIdUser);
-        } else if (CollectionUtils.isEmpty(clinicalAnalysisIds)) {
-            // Index all clinical analyses of a given study (i.e., project:study)
-            return indexStudy(studyId, catalogManager, overwrite, sessionIdUser);
-        } else {
-            // Index the clinical analyses from the input list
-            return indexClinicalAnalyses(clinicalAnalysisIds, studyId, catalogManager, overwrite, sessionIdUser);
-        }
-    }
-
     public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
             throws CatalogException {
 

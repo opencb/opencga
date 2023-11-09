@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-11-06 OpenCB
+* Copyright 2015-2023-11-09 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -388,13 +388,12 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("cvdb", cvdbCommandOptions);
         JCommander cvdbSubCommands = jCommander.getCommands().get("cvdb");
         cvdbSubCommands.addCommand("case-aggregation-stats", cvdbCommandOptions.aggregationStatsCaseCommandOptions);
-        cvdbSubCommands.addCommand("case-index", cvdbCommandOptions.indexCaseCommandOptions);
-        cvdbSubCommands.addCommand("case-index-run", cvdbCommandOptions.runCaseIndexCommandOptions);
         cvdbSubCommands.addCommand("case-query", cvdbCommandOptions.queryCaseCommandOptions);
         cvdbSubCommands.addCommand("clinical-variant-aggregation-stats", cvdbCommandOptions.aggregationStatsClinicalVariantCommandOptions);
         cvdbSubCommands.addCommand("clinical-variant-query", cvdbCommandOptions.queryClinicalVariantCommandOptions);
         cvdbSubCommands.addCommand("clinical-variant-evidence-aggregation-stats", cvdbCommandOptions.aggregationStatsClinicalVariantEvidenceCommandOptions);
         cvdbSubCommands.addCommand("clinical-variant-evidence-query", cvdbCommandOptions.queryClinicalVariantEvidenceCommandOptions);
+        cvdbSubCommands.addCommand("index-run", cvdbCommandOptions.runIndexCommandOptions);
         cvdbSubCommands.addCommand("interpretation-aggregation-stats", cvdbCommandOptions.aggregationStatsInterpretationCommandOptions);
         cvdbSubCommands.addCommand("interpretation-query", cvdbCommandOptions.queryInterpretationCommandOptions);
     }

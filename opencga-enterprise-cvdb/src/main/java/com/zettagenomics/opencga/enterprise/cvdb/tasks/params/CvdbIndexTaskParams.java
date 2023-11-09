@@ -1,6 +1,8 @@
 package com.zettagenomics.opencga.enterprise.cvdb.tasks.params;
 
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -8,48 +10,33 @@ import java.util.List;
 public class CvdbIndexTaskParams extends ToolParams {
     public static final String DESCRIPTION = "Parameters: " + CvdbIndexTask.DESCRIPTION;
 
-    private String projectId;
-    private String studyId;
+    @DataField(id = "clinicalAnalysisIds", description = "List of clinical analyses, separated by commas, for a specific study. To index"
+            + " all clinical analyses for a given study, leave this parameter empty")
     private List<String> clinicalAnalysisIds;
+
+    @DataField(id = "allProject", description = "Index all the clinical analyses of the given project")
+    private boolean allProject;
+
+    @DataField(id = "overwrite", description = "Overwrite clinical analyses already indexed")
     private boolean overwrite;
 
     public CvdbIndexTaskParams() {
     }
 
-    public CvdbIndexTaskParams(String projectId, String studyId, List<String> clinicalAnalysisIds, boolean overwrite) {
-        this.projectId = projectId;
-        this.studyId = studyId;
+    public CvdbIndexTaskParams(List<String> clinicalAnalysisIds, boolean allProject, boolean overwrite) {
         this.clinicalAnalysisIds = clinicalAnalysisIds;
+        this.allProject = allProject;
         this.overwrite = overwrite;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CvdbIndexTaskParams{");
-        sb.append("projectId='").append(projectId).append('\'');
-        sb.append(", studyId='").append(studyId).append('\'');
-        sb.append(", clinicalAnalysisIds=").append(clinicalAnalysisIds);
+        sb.append("clinicalAnalysisIds=").append(clinicalAnalysisIds);
+        sb.append(", allProject=").append(allProject);
         sb.append(", overwrite=").append(overwrite);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getProjectId() {
-        return projectId;
-    }
-
-    public CvdbIndexTaskParams setProjectId(String projectId) {
-        this.projectId = projectId;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public CvdbIndexTaskParams setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
     }
 
     public List<String> getClinicalAnalysisIds() {
@@ -58,6 +45,15 @@ public class CvdbIndexTaskParams extends ToolParams {
 
     public CvdbIndexTaskParams setClinicalAnalysisIds(List<String> clinicalAnalysisIds) {
         this.clinicalAnalysisIds = clinicalAnalysisIds;
+        return this;
+    }
+
+    public boolean isAllProject() {
+        return allProject;
+    }
+
+    public CvdbIndexTaskParams setAllProject(boolean allProject) {
+        this.allProject = allProject;
         return this;
     }
 

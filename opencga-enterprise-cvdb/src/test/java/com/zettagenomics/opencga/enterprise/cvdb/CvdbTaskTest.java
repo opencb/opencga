@@ -99,7 +99,7 @@ public class CvdbTaskTest {
         System.out.println("Clinical analysis index task out dir = " + indexOutDir.toAbsolutePath());
 
         CvdbIndexTaskParams params = new CvdbIndexTaskParams();
-        params.setProjectId(projectId);
+        params.setAllProject(true);
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
@@ -116,7 +116,7 @@ public class CvdbTaskTest {
         System.out.println("Clinical analysis index task out dir = " + indexOutDir.toAbsolutePath());
 
         params = new CvdbIndexTaskParams();
-        params.setProjectId(projectId);
+        params.setAllProject(true);
         params.setOverwrite(false);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
@@ -142,7 +142,7 @@ public class CvdbTaskTest {
         System.out.println("Clinical analysis index task out dir = " + indexOutDir.toAbsolutePath());
 
         CvdbIndexTaskParams params = new CvdbIndexTaskParams();
-        params.setProjectId(projectId);
+        params.setAllProject(true);
         params.setOverwrite(true);
 
         toolRunner.execute(CvdbIndexTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, study.getId()), indexOutDir, null,
