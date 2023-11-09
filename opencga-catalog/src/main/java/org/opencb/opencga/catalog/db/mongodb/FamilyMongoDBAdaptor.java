@@ -97,7 +97,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         this.archiveFamilyCollection = archiveFamilyCollection;
         this.deletedFamilyCollection = deletedFamilyCollection;
         this.familyConverter = new FamilyConverter();
-        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(familyCollection, archiveFamilyCollection, deletedFamilyCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(familyCollection, archiveFamilyCollection,
+                deletedFamilyCollection);
     }
 
     /**

@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AuthenticationFactory {
+public final class AuthenticationFactory {
 
     // Map of organizationId -> authenticationOriginId -> AuthenticationManager
     private static Map<String, Map<String, AuthenticationManager>> authenticationManagerMap;

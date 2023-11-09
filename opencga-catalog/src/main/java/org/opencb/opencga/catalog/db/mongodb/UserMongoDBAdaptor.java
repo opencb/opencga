@@ -551,24 +551,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("The user {" + id + "} was already " + user.getInternal().getStatus().getId());
         }
 
-        // If we don't find the force parameter, we check first if the user does not have an active project.
-        if (!queryOptions.getBoolean(FORCE, false)) {
-            checkCanDelete(id);
-        }
-
         // Change the status of the user to deleted
         return setStatus(id, UserStatus.DELETED);
-    }
-
-    /**
-     * Checks whether the userId has any active project.
-     *
-     * @param userId user id.
-     * @throws CatalogDBException when the user does not exist.
-     */
-    private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        checkId(userId);
-        throw new UnsupportedOperationException("Delete user not yet supported");
     }
 
     @Override

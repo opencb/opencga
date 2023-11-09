@@ -102,6 +102,7 @@ public class AuthorizationMongoDBUtils {
     /**
      * Removes annotation sets from results if the user does not have the proper permissions.
      *
+     * @param organizationId  Organization id.
      * @param study           study document.
      * @param entry           Annotable document entry.
      * @param user            user.

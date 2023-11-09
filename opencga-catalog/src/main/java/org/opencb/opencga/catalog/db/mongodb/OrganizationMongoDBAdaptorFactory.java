@@ -344,7 +344,7 @@ public class OrganizationMongoDBAdaptorFactory {
     }
 
     private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {
-        MongoDBCollection mongoCollection = mongoDBCollectionMap.get(collection);;
+        MongoDBCollection mongoCollection = mongoDBCollectionMap.get(collection);
         List<Map<String, ObjectMap>> indexes = indexCollectionMap.get(collection);
 
         DataResult<Document> index = mongoCollection.getIndex();

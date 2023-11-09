@@ -19,11 +19,12 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -71,9 +72,9 @@ public class MigrationManager {
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
-    public MigrationRun runManualMigration(String organizationId, String version, String id, Path appHome, ObjectMap params, String token)
+    public List<MigrationRun> runManualMigration(String version, String id, Path appHome, ObjectMap params, String token)
             throws CatalogException {
-        return runManualMigration(organizationId, version, id, appHome, false, false, params, token);
+        return runManualMigration(version, id, appHome, false, false, params, token);
     }
 
     public MigrationRun runManualMigration(String organizationId, String version, String id, Path appHome, boolean force, boolean offline,
@@ -104,25 +105,52 @@ public class MigrationManager {
         throw new MigrationException("Unable to find migration '" + id + "'");
     }
 
-    public void runMigration(String organizationId, String version, Collection<Migration.MigrationDomain> domainsFilter,
+    public List<MigrationRun> runManualMigration(String version, String id, Path appHome, boolean force, boolean offline, ObjectMap params,
+                                           String token) throws CatalogException {
+        List<MigrationRun> migrationRunList = new LinkedList<>();
+        // Migrate all organizations
+        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                migrationRunList.add(runManualMigration(organizationId, version, id, appHome, force, offline, params, token));
+            }
+        }
+        // Lastly, migrate the admin organization
+        migrationRunList.add(runManualMigration(ParamConstants.ADMIN_ORGANIZATION, version, id, appHome, force, offline, params, token));
+        return migrationRunList;
+    }
+
+    public void runMigration(String version, Collection<Migration.MigrationDomain> domainsFilter,
                              Collection<Migration.MigrationLanguage> languageFilter, boolean offline, String appHome, String token)
             throws CatalogException, IOException {
-        runMigration(organizationId, version, domainsFilter, languageFilter, offline, appHome, new ObjectMap(), token);
+        runMigration(version, domainsFilter, languageFilter, offline, appHome, new ObjectMap(), token);
+    }
+
+    public void runMigration(String version, Collection<Migration.MigrationDomain> domains,
+                             Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
+                             String token) throws CatalogException, IOException {
+        // Migrate all organizations
+        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                runMigration(organizationId, version, domains, languages, offline, appHome, params, token);
+            }
+        }
+        // Lastly, migrate the admin organization
+        runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
     }
 
     public void runMigration(String organizationId, String version, Collection<Migration.MigrationDomain> domains,
-                             Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
-                             String token) throws CatalogException, IOException {
+                Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
+                String token) throws CatalogException, IOException {
 
-        logger.info("Run migrations");
+        logger.info("Running migrations for organization '{}'", organizationId);
         if (StringUtils.isNotEmpty(version)) {
-            logger.info(" - Version : " + version);
+            logger.info(" - Version : {}", version);
         }
         if (CollectionUtils.isNotEmpty(domains)) {
-            logger.info(" - Domains : " + domains);
+            logger.info(" - Domains : {}", domains);
         }
         if (CollectionUtils.isNotEmpty(languages)) {
-            logger.info(" - Languages : " + languages);
+            logger.info(" - Languages : {}", languages);
         }
 
         Path appHomePath = Paths.get(appHome);
@@ -189,15 +217,6 @@ public class MigrationManager {
         return filterPendingMigrations(organizationId, version, availableMigrations);
     }
 
-    private List<Migration> getMigrations() {
-        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
-        List<Migration> migrations = new ArrayList<>(availableMigrations.size());
-        for (Class<? extends MigrationTool> migrationClass : availableMigrations) {
-            migrations.add(getMigrationAnnotation(migrationClass));
-        }
-        return migrations;
-    }
-
     public MigrationSummary getMigrationSummary(String organizationId) throws CatalogException {
         List<Pair<Migration, MigrationRun>> runs = getMigrationRuns(organizationId, null, null, null);
 
@@ -233,6 +252,49 @@ public class MigrationManager {
         updateMigrationRuns(organizationId, token);
 
         return getMigrationRuns(organizationId, version, domain, status);
+    }
+
+    // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
+    public void skipPendingMigrations(String organizationId, String token) throws CatalogException {
+        validateAdmin(organizationId, token);
+
+        // 0. Fetch all migrations
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
+        // 1. Skip all available migrations
+        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
+            Migration annotation = getMigrationAnnotation(runnableMigration);
+
+            MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(),
+                    TimeUtils.getDate(), TimeUtils.getDate(), annotation.patch(), MigrationRun.MigrationStatus.REDUNDANT, "");
+            try {
+                dbAdaptorFactory.getMigrationDBAdaptor(organizationId).upsert(migrationRun);
+            } catch (CatalogDBException e) {
+                throw new MigrationException("Could not register migration in OpenCGA", e);
+            }
+        }
+    }
+
+    public void updateMigrationRuns(String organizationId, String token) throws CatalogException {
+        validateAdmin(organizationId, token);
+
+        // 0. Fetch all migrations
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
+        // 1. Update migration run status
+        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
+            updateMigrationRun(organizationId, getMigrationAnnotation(runnableMigration), token);
+        }
+
+    }
+
+    private List<Migration> getMigrations() {
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+        List<Migration> migrations = new ArrayList<>(availableMigrations.size());
+        for (Class<? extends MigrationTool> migrationClass : availableMigrations) {
+            migrations.add(getMigrationAnnotation(migrationClass));
+        }
+        return migrations;
     }
 
     private List<Pair<Migration, MigrationRun>> getMigrationRuns(String organizationId, String version,
@@ -277,40 +339,6 @@ public class MigrationManager {
         pairs.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p -> p.getKey().version())
                 .thenComparing(p -> p.getKey().date()));
         return pairs;
-    }
-
-    // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
-    public void skipPendingMigrations(String organizationId, String token) throws CatalogException {
-        validateAdmin(organizationId, token);
-
-        // 0. Fetch all migrations
-        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
-
-        // 1. Skip all available migrations
-        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
-            Migration annotation = getMigrationAnnotation(runnableMigration);
-
-            MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(),
-                    TimeUtils.getDate(), TimeUtils.getDate(), annotation.patch(), MigrationRun.MigrationStatus.REDUNDANT, "");
-            try {
-                dbAdaptorFactory.getMigrationDBAdaptor(organizationId).upsert(migrationRun);
-            } catch (CatalogDBException e) {
-                throw new MigrationException("Could not register migration in OpenCGA", e);
-            }
-        }
-    }
-
-    public void updateMigrationRuns(String organizationId, String token) throws CatalogException {
-        validateAdmin(organizationId, token);
-
-        // 0. Fetch all migrations
-        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
-
-        // 1. Update migration run status
-        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
-            updateMigrationRun(organizationId, getMigrationAnnotation(runnableMigration), token);
-        }
-
     }
 
     private MigrationRun updateMigrationRun(String organizationId, Migration migration, String token) throws CatalogException {
@@ -429,10 +457,12 @@ public class MigrationManager {
     }
 
     private String validateAdmin(String organizationId, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = jwtPayload.getUserId(organizationId);
         catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(organizationId, userId);
         // Extend token life
-        return catalogManager.getUserManager().getNonExpiringToken(organizationId, AbstractManager.OPENCGA, Collections.emptyMap(), token);
+        return catalogManager.getUserManager().getNonExpiringToken(jwtPayload.getOrganization(), jwtPayload.getUserId(),
+                Collections.emptyMap(), token);
     }
 
     private Set<Class<? extends MigrationTool>> getAvailableMigrations() {
@@ -597,7 +627,7 @@ public class MigrationManager {
         } catch (CatalogDBException e) {
             throw new MigrationException("Error reading migration run from catalog", e);
         }
-        migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, appHome, params, token);
+        migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, organizationId, appHome, params, token);
 
         StopWatch stopWatch = StopWatch.createStarted();
         String path = Paths.get("JOBS")

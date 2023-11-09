@@ -49,8 +49,8 @@ public final class CatalogDemo {
      */
     public static void createDemoDatabase(CatalogManager catalogManager, String organizationId, String adminPassword, boolean force)
             throws CatalogException {
-        catalogManager.installCatalogDB("HS256", catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword, "opencga@admin.com",
-                force);
+        catalogManager.installCatalogDB("HS256", catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword,
+                "opencga@admin.com", force);
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
         try {
             populateDatabase(catalogManager, organizationId, token);

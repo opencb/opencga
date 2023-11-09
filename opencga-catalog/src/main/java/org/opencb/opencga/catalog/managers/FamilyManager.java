@@ -1371,9 +1371,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } catch (CatalogException e) {
             if (familyList != null) {
                 for (Family family : familyList) {
-                    auditManager.audit(organizationId, operationUUID, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(), "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    e.getError()), new ObjectMap());
+                    auditManager.audit(organizationId, operationUUID, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY,
+                            family.getId(), "", study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
             }
             throw e;

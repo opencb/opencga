@@ -207,7 +207,7 @@ public abstract class AuthenticationManager {
     /**
      * Create a token for the user with no expiration time.
      *
-     * @param organizationId
+     * @param organizationId Organization id.
      * @param userId         user.
      * @param claims         claims.
      * @return A token.

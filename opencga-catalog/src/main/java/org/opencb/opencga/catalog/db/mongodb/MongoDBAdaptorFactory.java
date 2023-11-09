@@ -55,7 +55,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private final Configuration configuration;
 
     private static final String ORGANIZATION_PREFIX = "ORG_";
-    private enum ORGANIZATION_TAGS {
+    private enum OrganizationTag {
         ACTIVE,
         SUSPENDED, // owner action
         INACTIVE,  // ADMINISTRATOR
@@ -172,7 +172,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION.toLowerCase(), adminFactory);
 
             // Read organizations present in the installation
-            Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), ORGANIZATION_TAGS.ACTIVE.name());
+            Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
             OpenCGAResult<Settings> results = adminFactory.getCatalogSettingsDBAdaptor().get(query, new QueryOptions());
 
             for (Settings organizationSettings : results.getResults()) {
@@ -212,7 +212,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
 
                 // Read organizations present in the installation
-                Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), ORGANIZATION_TAGS.ACTIVE.name());
+                Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
                 OpenCGAResult<Settings> results = orgFactory.getCatalogSettingsDBAdaptor().get(query, new QueryOptions());
 
                 for (Settings organizationSettings : results.getResults()) {
@@ -261,9 +261,9 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             organizationDBAdaptorMap.put(organization.getId(), organizationDBAdaptorFactory);
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
-                    organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), ORGANIZATION_TAGS.ACTIVE.name(), null);
+                    organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), OrganizationTag.ACTIVE.name(), null);
             SettingsCreateParams settingsCreateParams = new SettingsCreateParams(ORGANIZATION_PREFIX + organization.getId(),
-                    Collections.singletonList(ORGANIZATION_TAGS.ACTIVE.name()), null);
+                    Collections.singletonList(OrganizationTag.ACTIVE.name()), null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
                 Map<String, Object> value = JacksonUtils.getDefaultObjectMapper().readerFor(Map.class).readValue(orgSummaryString);
