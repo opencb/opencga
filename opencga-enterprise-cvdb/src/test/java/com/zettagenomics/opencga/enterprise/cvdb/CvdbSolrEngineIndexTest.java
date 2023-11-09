@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -86,125 +87,12 @@ public class CvdbSolrEngineIndexTest {
                 sessionIdUser).first();
     }
 
-//    @Test
-//    public void testClinicalAnalsyisIndex() throws IOException, SolrServerException, CvdbException {
-//        loadClinicalAnalsysesInSolr();
-//
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setRows(100);
-//
-//        // Execute the Solr query
-//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-//        Assert.assertEquals(3, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical analysis #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println();
-//        }
-//
-//        // Execute the Solr query
-//        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of interpretations: " + response.getResults().getNumFound());
-//        Assert.assertEquals(9, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Interpretation #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println();
-//        }
-//
-//        // Execute the Solr query
-//        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), solrQuery);
-//        // Print out the results
-//        System.out.println("Number of clinical variants: " + response.getResults().getNumFound());
-//        Assert.assertEquals(54, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical variant #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println("\tvariant ID: " + response.getResults().get(i).getFieldValue("variantId"));
-//            System.out.println("\tInterpretation ID: " + response.getResults().get(i).getFieldValue("cvInterpretationId"));
-//            System.out.println();
-//        }
-//
-//        // Execute the Solr query
-//        response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), solrQuery);
-//        // Print out the results
-//        System.out.println("Number of clinical variant evidences: " + response.getResults().getNumFound());
-//        Assert.assertEquals(59, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical variant evidence #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println("\tvariant ID: " + response.getResults().get(i).getFieldValue("cveVariantId"));
-//            System.out.println();
-//        }
-//    }
-
-//    @Test
-//    public void testJoin() throws IOException, SolrServerException, CvdbException {
-//        loadClinicalAnalsyses();
-//
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setFields("id", "methodName");
-//
-//        String joinFilterQuery = "{!join from=ciId to=id fromIndex=" + getCollectionName(projectId,
-//                CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}variantId:\"6:31356248:G:C\"";
-//        solrQuery.addFilterQuery(joinFilterQuery);
-//        System.out.println("solr query = " + solrQuery.toQueryString());
-//
-//        // Execute the Solr query
-//        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of interpretations: " + response.getResults().getNumFound());
-//        Assert.assertEquals(1, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Interpretation #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println();
-//        }
-//    }
-
-//    @Test
-//    public void testClinicalVariantIndex() throws IOException, SolrServerException, CvdbException {
-//        loadClinicalVariants();
-//
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setFields("id");
-////
-////        String joinFilterQuery = "{!join from=ciId to=id fromIndex=" + getCollectionName(projectId,
-////                CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}variantId:\"6:31356248:G:C\"";
-////        solrQuery.addFilterQuery(joinFilterQuery);
-////        System.out.println("solr query = " + solrQuery.toQueryString());
-////
-//        // Execute the Solr query
-//        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        System.out.println("Number of clinical variants: " + response.getResults().getNumFound());
-//        Assert.assertEquals(2, response.getResults().getNumFound());
-//        for (int i = 0; i < response.getResults().size(); i++) {
-//            System.out.println("Clinical variant #" + i + ":");
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
-//            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("variantId"));
-//            System.out.println();
-//        }
-//    }
-
     @Test
-    public void testIndexClinicalAnalysesFromProject() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testIndexProject() throws CatalogException, IOException, CvdbException, SolrServerException {
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
 
-        // CVDB index from catalog
-        cvdbEngine.index(projectId, catalogManager, true, sessionIdUser);
+        // CVDB index from catalog project
+        cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
 
         // CVDB queries
         SolrQuery solrQuery = new SolrQuery("*:*");
@@ -225,18 +113,48 @@ public class CvdbSolrEngineIndexTest {
     }
 
     @Test
-    public void testIndexClinicalAnalysesFromIds() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testIndexStudy() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog study
+        cvdbEngine.indexStudy(study.getFqn(), catalogManager, true, sessionIdUser);
+
+        // CVDB queries
+        SolrQuery solrQuery = new SolrQuery("*:*");
+        solrQuery.setRows(100);
+
+        // Execute the Solr query
+        QueryResponse response = cvdbEngine.getSolrClient().query(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+                solrQuery);
+
+        // Print out the results
+        System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
+        Assert.assertEquals(2, response.getResults().getNumFound());
+        for (int i = 0; i < response.getResults().size(); i++) {
+            System.out.println("Clinical analysis #" + i + ":");
+            System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void testIndexClinicalAnalyses() throws CatalogException, IOException, CvdbException, SolrServerException {
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
 
         OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
                 QueryOptions.empty(), sessionIdUser);
 
         List<String> ids = caResults.getResults().stream().map(r -> r.getId()).collect(Collectors.toList());
-        CvdbIndexResult indexResult = cvdbEngine.index(ids, study.getFqn(), catalogManager, true, sessionIdUser);
+        CvdbIndexResult indexResult = cvdbEngine.indexClinicalAnalyses(Collections.singletonList(ids.get(0)), study.getFqn(),
+                catalogManager, true, sessionIdUser);
         System.out.println(indexResult);
-        Assert.assertEquals(2, indexResult.getNumIndexed());
+        Assert.assertEquals(1, indexResult.getNumIndexed());
 
-        indexResult = cvdbEngine.index(ids, study.getFqn(), catalogManager, false, sessionIdUser);
+        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, sessionIdUser);
+        System.out.println(indexResult);
+        Assert.assertEquals(1, indexResult.getNumIndexed());
+
+        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, sessionIdUser);
         System.out.println(indexResult);
         Assert.assertEquals(0, indexResult.getNumIndexed());
 

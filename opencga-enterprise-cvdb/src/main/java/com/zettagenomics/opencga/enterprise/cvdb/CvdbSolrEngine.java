@@ -148,8 +148,22 @@ public class CvdbSolrEngine {
         return "opencga_" + projectId + suffix;
     }
 
-    public CvdbIndexResult index(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
-            throws CatalogException, CvdbException {
+    public CvdbIndexResult index(String projectId, String studyId, List<String> clinicalAnalysisIds, CatalogManager catalogManager,
+                                 boolean overwrite, String sessionIdUser) throws CatalogException, CvdbException {
+        if (StringUtils.isEmpty(studyId) && CollectionUtils.isEmpty(clinicalAnalysisIds)) {
+            // Index all clinical analyses of a given project
+            return indexProject(projectId, catalogManager, overwrite, sessionIdUser);
+        } else if (CollectionUtils.isEmpty(clinicalAnalysisIds)) {
+            // Index all clinical analyses of a given study (i.e., project:study)
+            return indexStudy(studyId, catalogManager, overwrite, sessionIdUser);
+        } else {
+            // Index the clinical analyses from the input list
+            return indexClinicalAnalyses(clinicalAnalysisIds, studyId, catalogManager, overwrite, sessionIdUser);
+        }
+    }
+
+    public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
+            throws CatalogException {
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
@@ -180,9 +194,8 @@ public class CvdbSolrEngine {
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
-
-    public CvdbIndexResult index(List<String> clinicalAnalysisIds, String studyId, CatalogManager catalogManager, boolean overwrite,
-                                 String sessionIdUser) throws CvdbException, CatalogException {
+    public CvdbIndexResult indexStudy(String studyId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
+            throws CatalogException {
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
@@ -191,14 +204,52 @@ public class CvdbSolrEngine {
         OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), sessionIdUser);
         Study study = studyResult.first();
 
+        // Get project for that study
         Query projectQuery = new Query();
         projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
         OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), sessionIdUser);
         String projectId = projectResult.first().getId();
 
+        // Get all clinical analyses for that study
+        OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), sessionIdUser);
+        for (ClinicalAnalysis clinicalAnalysis : caResults.getResults()) {
+            try {
+                if (index(clinicalAnalysis, projectId, overwrite)) {
+                    numIndexed++;
+                } else {
+                    String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
+                    failures.put(key, "Skipping index (overwrite is set to false)");
+                }
+            } catch (Exception e) {
+                String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
+                failures.put(key, e.getMessage());
+            }
+        }
+        return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
+    }
+
+
+    public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyId, CatalogManager catalogManager,
+                                                 boolean overwrite, String sessionIdUser) throws CvdbException, CatalogException {
+
+        int numIndexed = 0;
+        Map<String, String> failures = new HashMap<>();
+        StopWatch stopWatch = StopWatch.createStarted();
+
+        OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), sessionIdUser);
+        Study study = studyResult.first();
+
+        // Get project for that study
+        Query projectQuery = new Query();
+        projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
+        OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), sessionIdUser);
+        String projectId = projectResult.first().getId();
+
+        // Get the input clinical analyses
         Query caQuery = new Query();
         caQuery.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), StringUtils.join(clinicalAnalysisIds, ","));
-        OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(studyId, caQuery,
+        OpenCGAResult<ClinicalAnalysis> caResults = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), caQuery,
                 QueryOptions.empty(), sessionIdUser);
         for (ClinicalAnalysis clinicalAnalysis : caResults.getResults()) {
             try {

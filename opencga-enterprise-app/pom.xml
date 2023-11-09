@@ -203,6 +203,13 @@
                                     <arg value="${build.dir}/cloud/docker"/>
                                 </exec>
 
+                                <echo>Update OpenCGA Enterprise configuration.yml analysis, adding com.zettagenomics.opencga.enterprise package</echo>
+                                <exec executable="sed">
+                                    <arg value='s/- "org.opencb.opencga"/- "org.opencb.opencga"\n    - "com.zettagenomics.opencga.enterprise"/'/>
+                                    <arg value="${build.dir}/conf/configuration.yml"/>
+                                    <arg value="-i"/>
+                                </exec>
+
                                 <echo>Copying OpenCGA Enterprise bin and libs folder to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>

@@ -61,7 +61,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/case/index/run")
+    @Path("/index/run")
     @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
     public Response indexProjectClinicalAnalyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -76,40 +76,6 @@ public class CvdbWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
         }
-    }
-
-    @GET
-    @Path("/case/index")
-    @ApiOperation(value = CLINICAL_ANALYSES_INDEX_DESCRIPTION, response = CvdbIndexResult.class)
-    public Response indexClinicalAnalsyses(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = CA_ID_DESCR) @QueryParam(CA_ID_NAME) String caseIdStr,
-            @ApiParam(value = INDEX_OVERWRITE_PARAM_DESCRIPTION) @QueryParam(INDEX_OVERWRITE_PARAM_NAME) boolean overwrite) {
-        if (StringUtils.isEmpty(studyStr)) {
-            return createErrorResponse("Invalid parameter", "Missing study ID");
-        }
-        if (StringUtils.isEmpty(caseIdStr)) {
-            return createErrorResponse("Invalid parameter", "Missing clinical analysis ID");
-        }
-
-        return run(() -> {
-            StopWatch stopWatch = StopWatch.createStarted();
-
-            // Get project ID form study
-            Query projectQuery = new Query();
-            projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr);
-            OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), token);
-            String projectId = projectResult.first().getId();
-            if (!cvdbEngine.existCollections(projectId)) {
-                cvdbEngine.createCollections(projectId);
-            }
-
-            List<String> clinicalAnalysisIds = Arrays.asList(StringUtils.split(caseIdStr, ','));
-            CvdbIndexResult indexResult = cvdbEngine.index(clinicalAnalysisIds, studyStr, catalogManager, overwrite, token);
-            int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
-
-            return new DataResult<>(dbTime, null, 1, Collections.singletonList(indexResult), 1);
-        });
     }
 
     //-------------------------------------------------------------------------
