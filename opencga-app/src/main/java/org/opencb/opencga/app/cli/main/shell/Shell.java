@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.OpenCgaCompleterImpl;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
@@ -36,13 +37,17 @@ public class Shell extends OpencgaCommandExecutor {
 
 
     // Create a command processor to process all the shell commands
-    private final CommandProcessor processor = new CommandProcessor();
+    private final CommandProcessor processor;
     private LineReader lineReader = null;
     private Terminal terminal = null;
     private String host = null;
 
-    public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
+    private Completer completer;
+
+    public Shell(GeneralCliOptions.CommonCommandOptions options, Completer completer, CommandProcessor processor) throws CatalogAuthenticationException {
         super(options);
+        this.completer=completer;
+        this.processor=processor;
         if (options.host != null) {
             host = options.host;
         }
@@ -104,7 +109,7 @@ public class Shell extends OpencgaCommandExecutor {
             reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .highlighter(new DefaultHighlighter())
-                    .history(defaultHistory).completer(new OpenCgaCompleterImpl())
+                    .history(defaultHistory).completer(this.completer)
                     .build();
         } catch (Exception e) {
             CommandLineUtils.error("Failed to create terminal ", e);
@@ -209,7 +214,7 @@ public class Shell extends OpencgaCommandExecutor {
                 return args;
             }
         }
-        return CommandLineUtils.processShortCuts(args);
+        return CommandLineUtils.processShortCuts(args, new OpencgaCliOptionsParser());
 
     }
 

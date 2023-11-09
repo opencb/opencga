@@ -592,7 +592,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         StringBuilder scriptParams = new StringBuilder("R CMD Rscript --vanilla ")
                 .append("/opt/opencga/signature.tools.lib/scripts/signatureFit")
                 .append(" --catalogues=/data/input/").append(cataloguesFile.getName())
-                .append(" --outdir=/data/output");
+                .append(" --outdir=/data/output")
+                .append(" --commonsigtier=T2");
+
         if (StringUtils.isNotEmpty(getFitMethod())) {
             scriptParams.append(" --fitmethod=").append(getFitMethod());
         }

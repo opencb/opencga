@@ -501,7 +501,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      */
     private void checkInUseInClinicalAnalysis(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        String sampleId = sample.getString(QueryParams.ID.key());
         long sampleUid = sample.getLong(QueryParams.UID.key());
         long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
 
@@ -510,8 +509,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid);
         OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Could not delete sample '" + sampleId + "'. Sample is in use in "
-                    + count.getNumMatches() + " cases");
+            throw new CatalogDBException("Sample is in use in " + count.getNumMatches() + " cases");
         }
     }
 
@@ -861,7 +859,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
-            throw new CatalogDBException("Could not delete sample " + sample.getId() + ": " + e.getMessage(), e.getCause());
+            throw new CatalogDBException("Could not delete sample " + sample.getId() + ": " + e.getMessage(), e);
         }
     }
 

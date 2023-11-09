@@ -22,6 +22,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -58,6 +59,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -69,6 +71,8 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -80,6 +84,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -126,6 +131,8 @@ public class VariantAnalysisTest {
     private static String cancer_sample = "AR2.10039966-01T";
     private static String germline_sample = "AR2.10039966-01G";
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
@@ -1054,6 +1061,16 @@ public class VariantAnalysisTest {
 
         assertTrue(family.getPedigreeGraph() != null);
         assertEquals(base64, family.getPedigreeGraph().getBase64());
+    }
+
+    @Test
+    public void testCellbaseConfigure() throws Exception {
+        String project = "Project_test_cellbase_configure";
+        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "grch38"), null, null), QueryOptions.empty(), token);
+
+        thrown.expect(StorageEngineException.class);
+        thrown.expectMessage("The storage engine is in mode=READ_ONLY");
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1", ""), false, null, token);
     }
 
     public void checkExecutionResult(ExecutionResult er) {

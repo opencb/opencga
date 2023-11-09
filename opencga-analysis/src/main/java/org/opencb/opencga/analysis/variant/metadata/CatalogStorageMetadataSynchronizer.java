@@ -508,6 +508,16 @@ public class CatalogStorageMetadataSynchronizer {
             }
             fileSamplesMap.put(fileMetadata.getName(), samples);
             allSamples.addAll(fileMetadata.getSamples());
+            if (samples.size() > 100) {
+                // Try to reuse value.
+                // If the file holds more than 100 samples, it's most likely this same set of samples is already present
+                for (Set<String> value : fileSamplesMap.values()) {
+                    if (value.equals(samples)) {
+                        fileSamplesMap.put(fileMetadata.getName(), value);
+                        break;
+                    }
+                }
+            }
         }
 
         if (!indexedFilesFromStorage.isEmpty()) {

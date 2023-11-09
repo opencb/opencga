@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantIndexParams extends ToolParams {
@@ -29,11 +31,14 @@ public class VariantIndexParams extends ToolParams {
                               boolean resume, String outdir,
                               boolean transform,
                               boolean gvcf,
-                              boolean normalizationSkip, String referenceGenome,
+                              boolean normalizationSkip,
+                              String referenceGenome,
                               String failOnMalformedLines,
                               boolean family,
                               boolean somatic,
-                              boolean load, String loadSplitData, boolean loadMultiFileData,
+                              boolean load,
+                              boolean forceReload,
+                              String loadSplitData, boolean loadMultiFileData,
                               String loadSampleIndex,
                               String loadArchive,
                               String loadHomRef,
@@ -53,6 +58,7 @@ public class VariantIndexParams extends ToolParams {
         this.family = family;
         this.somatic = somatic;
         this.load = load;
+        this.forceReload = forceReload;
         this.loadSplitData = loadSplitData;
         this.loadMultiFileData = loadMultiFileData;
         this.loadSampleIndex = loadSampleIndex;
@@ -73,43 +79,82 @@ public class VariantIndexParams extends ToolParams {
         this.skipIndexedFiles = skipIndexedFiles;
     }
 
+    @DataField(description = "List of files to be indexed.")
     private String file;
+    @DataField(description = "Resume a previously failed index operation")
     private boolean resume;
+    @DataField(description = "Output directory")
     private String outdir;
 
+    @DataField(description = "If present it only runs the transform stage, no load is executed")
     private boolean transform;
+    @DataField(description = "Hint to indicate that the input file is in gVCF format.")
     private boolean gvcf;
 
+    @DataField(description = "Do not execute the normalization process. WARN: INDELs will be stored with the context base")
     private boolean normalizationSkip;
+    @DataField(description = "Reference genome in FASTA format used during the normalization step "
+            + "for a complete left alignment")
     private String referenceGenome;
 
+    @DataField(description = "Fail when encountering malformed lines. (yes, no, auto) [auto]")
     private String failOnMalformedLines;
 
+    @DataField(description = "Indicate that the files to be loaded are part of a family. "
+            + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
     private boolean family;
+    @DataField(description = "Indicate that the files to be loaded contain somatic samples. "
+            + "This will set 'load-hom-ref' to YES if it was in AUTO.")
     private boolean somatic;
 
+    @DataField(description = "If present only the load stage is executed, transformation is skipped")
     private boolean load;
+    @DataField(description = "If the file is already loaded, force a file reload")
+    private boolean forceReload;
+    @DataField(description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
     private String loadSplitData;
+    @DataField(description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.")
     private boolean loadMultiFileData;
+    @DataField(description = "Build sample index while loading. (yes, no, auto) [auto]")
     private String loadSampleIndex;
+    @DataField(description = "Load archive data. (yes, no, auto) [auto]")
     private String loadArchive;
+    @DataField(description = "Load HOM_REF genotypes. (yes, no, auto) [auto]")
     private String loadHomRef;
+    @DataField(description = "Execute post load checks over the database. (yes, no, auto) [auto]")
     private String postLoadCheck;
+    @DataField(description = "Load the genotype data for the current file. "
+            + "This only applies to the GT field from the FORMAT. All the rest of fields from the INFO and FORMAT will be loaded. "
+            + "Use this parameter skip load data when the GT field is not reliable, or its only value across the file is \"./.\". "
+            + "If \"auto\", genotypes will be automatically excluded if all genotypes are either missing, ./. or 0/0. "
+            + "(yes, no, auto) [auto]")
     private String includeGenotypes;
+    @DataField(description = "Index including other sample data fields (i.e. FORMAT fields)."
+            + " Use \"" + ParamConstants.ALL + "\", \"" + ParamConstants.NONE + "\", or CSV with the fields to load.")
     private String includeSampleData;
+    @DataField(deprecated = true, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
     private String merge;
+    @DataField(description = "Specify how duplicated variants should be handled. Available policies: \"discard\", \"maxQual\"")
     private String deduplicationPolicy;
 
+    @DataField(description = "Calculate indexed variants statistics after the load step")
     private boolean calculateStats;
+    @DataField(description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC")
     private Aggregation aggregated;
+    @DataField(description = "File containing population names mapping in an aggregated VCF file")
     private String aggregationMappingFile;
 
+    @DataField(description = "Annotate indexed variants after the load step")
     private boolean annotate;
+    @DataField(description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
     private String annotator;
+    @DataField(description = "Overwrite annotations in variants already present")
     private boolean overwriteAnnotations;
 
+    @DataField(description = "Add files to the secondary search index")
     private boolean indexSearch;
 
+    @DataField(description = "Do not fail if any of the input files was already indexed.")
     private boolean skipIndexedFiles;
 
     public String getFile() {
@@ -208,6 +253,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setLoad(boolean load) {
         this.load = load;
+        return this;
+    }
+
+    public boolean isForceReload() {
+        return forceReload;
+    }
+
+    public VariantIndexParams setForceReload(boolean forceReload) {
+        this.forceReload = forceReload;
         return this;
     }
 

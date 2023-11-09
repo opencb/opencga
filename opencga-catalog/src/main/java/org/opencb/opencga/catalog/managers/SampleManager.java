@@ -79,14 +79,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
     private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
-    private UserManager userManager;
     private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-
-        userManager = catalogManager.getUserManager();
         studyManager = catalogManager.getStudyManager();
     }
 
@@ -813,9 +810,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
         return update(studyStr, sampleStr, sampleUpdateParams, options, token);
-
-
-
     }
 
     public OpenCGAResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet,
@@ -864,13 +858,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
-    public OpenCGAResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId,
-                                                  List<String> annotations, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
+                                                  QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId,
                 new ObjectMap("reset", StringUtils.join(annotations, ",")), ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
     private void checkSampleCanBeDeleted(String organizationId, long studyId, Sample sample, boolean force) throws CatalogException {
+        String msg = "Could not delete sample '" + sample.getId() + "'. ";
         // Look for files related with the sample
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
@@ -890,9 +885,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
         if (!errorFiles.isEmpty()) {
             if (force) {
-                throw new CatalogException("Associated files are used in storage: " + StringUtils.join(errorFiles, ", "));
+                throw new CatalogException(msg + "Associated files are used in storage: " + StringUtils.join(errorFiles, ", "));
             } else {
-                throw new CatalogException("Sample associated to the files: " + StringUtils.join(errorFiles, ", "));
+                throw new CatalogException(msg + "Sample associated to the files: " + StringUtils.join(errorFiles, ", "));
             }
         }
 
@@ -921,14 +916,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
         if (associatedToDefaultCohort) {
-            throw new CatalogException("Sample in cohort " + StudyEntry.DEFAULT_COHORT);
+            throw new CatalogException(msg + "Sample in cohort " + StudyEntry.DEFAULT_COHORT);
         }
         if (!errorCohorts.isEmpty()) {
             if (force) {
-                throw new CatalogException("Sample present in cohorts in the process of calculating the stats: "
+                throw new CatalogException(msg + "Sample present in cohorts in the process of calculating the stats: "
                         + StringUtils.join(errorCohorts, ", "));
             } else {
-                throw new CatalogException("Sample present in cohorts: " + StringUtils.join(errorCohorts, ", "));
+                throw new CatalogException(msg + "Sample present in cohorts: " + StringUtils.join(errorCohorts, ", "));
             }
         }
 
@@ -941,8 +936,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     new QueryOptions(QueryOptions.INCLUDE,
                             Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.ID.key())));
             if (individualDataResult.getNumResults() > 0) {
-                throw new CatalogException("Sample from individual " + individualDataResult.first().getName() + "("
-                        + individualDataResult.first().getUid() + ")");
+                throw new CatalogException(msg + "Sample is associated with individual '" + individualDataResult.first().getId() + "'.");
             }
         }
     }

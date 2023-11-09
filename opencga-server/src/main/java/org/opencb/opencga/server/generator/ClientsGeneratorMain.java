@@ -70,6 +70,7 @@ public class ClientsGeneratorMain {
             clientsGenerator.cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            System.exit(1);
         }
     }
 

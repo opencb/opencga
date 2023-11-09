@@ -53,6 +53,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
+import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -136,6 +137,8 @@ public class OpenCGAWSServer {
     protected static StorageConfiguration storageConfiguration;
     protected static StorageEngineFactory storageEngineFactory;
     protected static VariantStorageManager variantManager;
+
+    protected static OpenCGAHealthCheckMonitor healthCheckMonitor;
 
     private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
     private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
@@ -294,6 +297,8 @@ public class OpenCGAWSServer {
             catalogManager = new CatalogManager(configuration);
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+            healthCheckMonitor = new OpenCGAHealthCheckMonitor(configuration, catalogManager, storageEngineFactory, variantManager);
+            healthCheckMonitor.asyncUpdate();
 
             MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary(organizationId);
             if (migrationSummary.getMigrationsToBeApplied() > 0) {
@@ -304,7 +309,6 @@ public class OpenCGAWSServer {
                     }
                 }
             }
-
         } catch (Exception e) {
             errorMessage = e.getMessage();
 //            e.printStackTrace();

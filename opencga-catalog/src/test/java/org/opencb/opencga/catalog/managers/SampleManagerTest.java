@@ -20,8 +20,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
@@ -2754,8 +2757,9 @@ public class SampleManagerTest extends AbstractManagerTest {
         try {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, true), ownerToken);
+            fail("Expected CatalogException with message containing 'in use in 3 cases'");
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("in use in 3 cases"));
+            MatcherAssert.assertThat(e, ThrowableMessageMatcher.hasMessage(CoreMatchers.containsString("in use in 3 cases")));
         }
 
         // unlock case3
@@ -2765,8 +2769,9 @@ public class SampleManagerTest extends AbstractManagerTest {
         try {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, true), ownerToken);
+            fail("Expected CatalogException with message containing 'associated with individual'.");
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("in use in 3 cases"));
+            MatcherAssert.assertThat(e, ThrowableMessageMatcher.hasMessage(CoreMatchers.containsString("associated with individual")));
         }
     }
 

@@ -644,7 +644,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      */
     private void checkInUseInClinicalAnalysis(ClientSession clientSession, Document individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        String individualId = individual.getString(QueryParams.ID.key());
         long individualUid = individual.getLong(PRIVATE_UID);
         long studyUid = individual.getLong(PRIVATE_STUDY_UID);
 
@@ -653,8 +652,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individualUid);
         OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Could not delete individual '" + individualId + "'. Individual is in use in "
-                    + count.getNumMatches() + " cases");
+            throw new CatalogDBException("Individual is in use in " + count.getNumMatches() + " cases");
         }
     }
 
@@ -940,7 +938,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete individual {}: {}", individual.getId(), e.getMessage(), e);
-            throw new CatalogDBException("Could not delete individual " + individual.getId() + ": " + e.getMessage(), e.getCause());
+            throw new CatalogDBException("Could not delete individual " + individual.getId() + ": " + e.getMessage(), e);
         }
     }
 
@@ -976,7 +974,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         checkInUseInClinicalAnalysis(clientSession, individualDocument);
 
         logger.debug("Deleting individual {} ({})", individualId, individualUid);
-        // Look for all the different family versions
+        // Look for all the different individual versions
         Query individualQuery = new Query()
                 .append(QueryParams.UID.key(), individualUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);

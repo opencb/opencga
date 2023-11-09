@@ -550,7 +550,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
         if (result.getNumResults() > 0) {
             String clinicalIds = result.getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.joining(", "));
-            throw new CatalogException("Family {" + family.getId() + "} in use in Clinical Analyses: {" + clinicalIds + "}");
+            throw new CatalogException("Could not delete family '" + family.getId() + "'. Family is in use in Clinical Analyses: '"
+                    + clinicalIds + "'");
         }
     }
 
