@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
-@Tool(id = ClinicalAnalysisLoadTask.ID, resource = Enums.Resource.DISEASE_PANEL, description = ClinicalAnalysisLoadTask.DESCRIPTION)
+@Tool(id = ClinicalAnalysisLoadTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = ClinicalAnalysisLoadTask.DESCRIPTION)
 public class ClinicalAnalysisLoadTask extends OpenCgaToolScopeStudy {
     public final static String ID = "load";
     public static final String DESCRIPTION = "Load clinical analyses from a file";

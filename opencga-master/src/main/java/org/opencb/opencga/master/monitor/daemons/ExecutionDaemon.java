@@ -148,6 +148,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
+    private List<String> packages;
+
     private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
@@ -249,9 +251,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token,
-                           CatalogManager catalogManager, StorageConfiguration storageConfiguration, String appHome)
-            throws CatalogDBException {
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, StorageConfiguration storageConfiguration,
+                           String appHome) throws CatalogDBException {
+        this(interval, token, catalogManager, storageConfiguration, appHome, Collections.singletonList(ToolFactory.DEFAULT_PACKAGE));
+    }
+
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, StorageConfiguration storageConfiguration,
+                           String appHome, List<String> packages) throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
@@ -269,6 +275,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        if (CollectionUtils.isEmpty(packages)) {
+            this.packages = Collections.singletonList(ToolFactory.DEFAULT_PACKAGE);
+        } else {
+            this.packages = packages;
+        }
+        logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
     @Override
@@ -304,7 +317,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkJobs() {
+    public void checkJobs() {
         long pendingJobs = -1;
         long queuedJobs = -1;
         long runningJobs = -1;
@@ -482,7 +495,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool().getId());
+            tool = new ToolFactory().getTool(job.getTool().getId(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
@@ -592,7 +605,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     protected void checkToolExecutionPermission(Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool().getId());
+        Tool tool = new ToolFactory().getTool(job.getTool().getId(), packages);
 
         if (catalogManager.getAuthorizationManager().isInstallationAdministrator(job.getUserId())) {
             // Installation administrator user can run everything
