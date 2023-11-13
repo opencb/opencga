@@ -592,7 +592,7 @@ public class CvdbSolrEngine {
                 return true;
             }
         } catch (SolrServerException | IOException e) {
-            logger.warn("Clinical analysis {}: {}", clinicalAnalysis.getInterpretation(), e.getMessage());
+            logger.warn("Error indexing clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
             rollback(solrClient, e);
             return false;
         }
@@ -602,6 +602,7 @@ public class CvdbSolrEngine {
     private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite, SolrClient solrClient)
             throws CvdbException {
         try {
+            logger.info("Indexing clinical analysis {} ...", clinicalAnalysis.getId());
             UpdateResponse updateResponse;
 
             // Clinical analysis
@@ -615,7 +616,7 @@ public class CvdbSolrEngine {
                     exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX),
                             solrClient);
                 } catch (SolrServerException | IOException e) {
-                    logger.warn("Could not index clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
+                    logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(), e.getMessage());
                     return false;
                 }
             }
@@ -638,11 +639,13 @@ public class CvdbSolrEngine {
                         index(secondaryInterpretation, false, projectId, solrClient);
                     }
                 }
+                logger.info("Done! Indexed clinical analysis {}", clinicalAnalysis.getId());
             } else {
-                logger.warn("Skipping clinical analysis {}, it was already indexed", clinicalAnalysis.getId());
+                logger.warn("Skipping clinical analysis {}: it was already indexed", clinicalAnalysis.getId());
                 return false;
             }
         } catch (SolrServerException | IOException e) {
+            logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(), e.getMessage());
             rollback(solrClient, e);
             return false;
         }
