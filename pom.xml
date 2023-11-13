@@ -481,7 +481,11 @@
                 <artifactId>jersey-server</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.jasig.cas.client</groupId>
+                <artifactId>cas-client-support-saml</artifactId>
+                <version>${cas.version}</version>
+            </dependency>
             <!-- Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>
@@ -532,12 +536,6 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.jasig.cas.client</groupId>
-                <artifactId>cas-client-support-saml</artifactId>
-                <version>${cas.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -656,6 +654,11 @@
                                     jakarta.ws.rs:jakarta.ws.rs-api*
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
+                            <ignoredNonTestScopedDependencies>
+                                <ignoredNonTestScopedDependency>
+                                    commons-io:commons-io*
+                                </ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>
