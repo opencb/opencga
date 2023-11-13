@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +81,7 @@ public class VariantSecondarySampleIndexOperationTool extends OperationTool {
         }
         if (sampleIndexParams.isFamilyIndex()) {
             step("familyIndex", () -> {
-                DataResult<List<String>> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params,
+                DataResult<Trio> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params,
                         getToken());
                 if (result.getEvents() != null) {
                     for (Event event : result.getEvents()) {

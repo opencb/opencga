@@ -21,3 +21,4 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
     secrets: inherit
+

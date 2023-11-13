@@ -1,39 +1,23 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
-
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
-import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import java.util.List;
 import java.util.Map;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -44,6 +28,8 @@ import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -105,6 +91,12 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
+            case "logout":
+                CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(
+                        new ObjectMap(usersCommandOptions.commonCommandOptions.params), token,
+                        clientConfiguration, getSessionManager(), appHome, getLogger());
+                queryResponse = customUsersCommandExecutor.logout(usersCommandOptions.logoutCommandOptions);
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -123,7 +115,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
         CustomUsersCommandExecutor customUsersCommandExecutor = new CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
-        return customUsersCommandExecutor.login();
+        return customUsersCommandExecutor.login(commandOptions);
     }
 
     private RestResponse<User> password() throws Exception {
