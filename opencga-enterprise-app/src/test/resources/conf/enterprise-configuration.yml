@@ -4,3 +4,10 @@ sso:
   casServerPrefixUrl: "https://reports.test.zettagenomics.com:8443/cas"
   serverName: "http://localhost:9090"
   pythonBin: "/home/pfurio/venv/cas/bin/python3"
+cvdb:
+  active: true
+  database:
+    hosts:
+      - http://localhost:8983/solr/    # URL containing host and port, e.g. http://localhost:8983/solr/
+    mode: "cloud"
+    timeout: 30000

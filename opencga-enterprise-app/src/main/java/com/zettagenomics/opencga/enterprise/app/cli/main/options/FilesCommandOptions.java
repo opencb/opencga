@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+import org.opencb.opencga.app.cli.main.custom.CustomFilesCommandOptions;
+
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 
@@ -28,7 +30,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/files
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
-public class FilesCommandOptions extends org.opencb.opencga.app.cli.main.options.FilesCommandOptions {
+public class FilesCommandOptions extends CustomFilesCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;
@@ -325,19 +327,19 @@ public class FilesCommandOptions extends org.opencb.opencga.app.cli.main.options
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list file UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
-        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris", required = false, arity = 1)
+        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String uri; 
     
         @Parameter(names = {"--type"}, description = "File type, either FILE or DIRECTORY", required = false, arity = 1)
@@ -376,7 +378,7 @@ public class FilesCommandOptions extends org.opencb.opencga.app.cli.main.options
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description; 
     
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String tags; 
     
         @Parameter(names = {"--size"}, description = "File size", required = false, arity = 1)
@@ -607,19 +609,19 @@ public class FilesCommandOptions extends org.opencb.opencga.app.cli.main.options
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list file UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String name; 
     
-        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String path; 
     
-        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris", required = false, arity = 1)
+        @Parameter(names = {"--uri", "--input", "-i"}, description = "Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String uri; 
     
         @Parameter(names = {"--type"}, description = "File type, either FILE or DIRECTORY", required = false, arity = 1)
@@ -658,7 +660,7 @@ public class FilesCommandOptions extends org.opencb.opencga.app.cli.main.options
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description; 
     
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String tags; 
     
         @Parameter(names = {"--size"}, description = "File size", required = false, arity = 1)

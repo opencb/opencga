@@ -19,6 +19,7 @@ package com.zettagenomics.opencga.enterprise.app.cli.main;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.config.CliConfiguration;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.shell.Shell;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
@@ -36,20 +37,14 @@ import java.util.logging.Level;
  */
 public class OpencgaEnterpriseMain {
 
+    private static final String CLI_USAGE_FILE_NAME = "enterprise-cli-usage.yml";
     private static final Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
     public static Mode mode = Mode.CLI;
     public static Shell shell;
     public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
-
-        if (args.length == 0) {
-            CliOptionsParser parser = new OpencgaCliOptionsParser();
-            parser.printUsage();
-            System.exit(0);
-        }
-        checkLogLevel(args);
-        checkMode(args);
+        init(args);
         logger.debug(Arrays.toString(args));
         try {
             if (Mode.SHELL.equals(getMode())) {
@@ -61,6 +56,18 @@ public class OpencgaEnterpriseMain {
             CommandLineUtils.error("Failed to initialize OpenCGA CLI", e);
             logger.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
         }
+    }
+
+    private static void init(String[] args) {
+
+        CliConfiguration.getInstance().setCliUsageFileName(CLI_USAGE_FILE_NAME);
+        if (args.length == 0) {
+            CliOptionsParser parser = new EnterpriseCliOptionsParser();
+            parser.printUsage();
+            System.exit(0);
+        }
+        checkLogLevel(args);
+        checkMode(args);
     }
 
     private static void checkMode(String[] args) {
@@ -128,7 +135,7 @@ public class OpencgaEnterpriseMain {
             }
             Shell.printShellHeaderMessage();
             // Create a shell executor instance
-            shell = new Shell(options);
+            shell = new Shell(options, new EnterpriseOpenCgaCompleterImpl(), new EnterpriseCommandProcessor());
             logger.debug("Shell created ");
             // Launch execute command to begin the execution
             shell.execute();
@@ -160,7 +167,7 @@ public class OpencgaEnterpriseMain {
         }
         logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
-        args = CommandLineUtils.processShortCuts(args);
+        args = CommandLineUtils.processShortCuts(args, new EnterpriseCliOptionsParser());
         if (args != null) {
             logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
         } else {

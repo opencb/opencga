@@ -1,25 +1,20 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
+import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.MetaCommandOptions;
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 
 /*
@@ -69,8 +64,11 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "ping":
                 queryResponse = ping();
                 break;
-            case "sso":
-                queryResponse = sso();
+            case "sso-login":
+                queryResponse = loginSso();
+                break;
+            case "sso-logout":
+                queryResponse = logoutSso();
                 break;
             case "status":
                 queryResponse = status();
@@ -123,15 +121,26 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().ping();
     }
 
-    private RestResponse<ObjectMap> sso() throws Exception {
-        logger.debug("Executing sso in Meta command line");
+    private RestResponse<ObjectMap> loginSso() throws Exception {
+        logger.debug("Executing loginSso in Meta command line");
 
-        MetaCommandOptions.SsoCommandOptions commandOptions = metaCommandOptions.ssoCommandOptions;
+        MetaCommandOptions.LoginSsoCommandOptions commandOptions = metaCommandOptions.loginSsoCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("url", commandOptions.url);
 
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().sso(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseMetaClient().loginSso(queryParams);
+    }
+
+    private RestResponse<ObjectMap> logoutSso() throws Exception {
+        logger.debug("Executing logoutSso in Meta command line");
+
+        MetaCommandOptions.LogoutSsoCommandOptions commandOptions = metaCommandOptions.logoutSsoCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("url", commandOptions.url);
+
+        return enterpriseOpenCGAClient.getEnterpriseMetaClient().logoutSso(queryParams);
     }
 
     private RestResponse<ObjectMap> status() throws Exception {
