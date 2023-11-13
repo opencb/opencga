@@ -655,9 +655,7 @@
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredNonTestScopedDependencies>
-                                <ignoredNonTestScopedDependency>
-                                    commons-io:commons-io*
-                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>*</ignoredNonTestScopedDependency>
                             </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
