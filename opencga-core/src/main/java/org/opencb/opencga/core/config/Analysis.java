@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@JsonIgnoreProperties({"packages"})
 public class Analysis {
 
     private List<String> packages;
