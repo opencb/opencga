@@ -16,11 +16,8 @@
 
 package org.opencb.opencga.core.config;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class Analysis {
 
