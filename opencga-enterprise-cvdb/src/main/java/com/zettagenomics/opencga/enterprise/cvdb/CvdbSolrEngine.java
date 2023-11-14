@@ -224,7 +224,6 @@ public class CvdbSolrEngine {
 
     public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyId, CatalogManager catalogManager,
                                                  boolean overwrite, String sessionIdUser) throws CatalogException {
-
         logger.info("Loading {} clinical analyses from the input list", clinicalAnalysisIds.size());
 
         int numIndexed = 0;
@@ -242,23 +241,29 @@ public class CvdbSolrEngine {
 
         // Get the input clinical analyses
         Query caQuery = new Query();
-        caQuery.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), StringUtils.join(clinicalAnalysisIds, ","));
-        DBIterator<ClinicalAnalysis> iterator = catalogManager.getClinicalAnalysisManager().iterator(study.getFqn(), caQuery,
-                QueryOptions.empty(), sessionIdUser);
-        while (iterator.hasNext()) {
-            ClinicalAnalysis clinicalAnalysis = iterator.next();
-            try {
-                if (index(clinicalAnalysis, projectId, overwrite)) {
-                    numIndexed++;
-                } else {
-                    String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
-                    failures.put(key, "Skipping index (overwrite is set to false)");
+        for (String caId : clinicalAnalysisIds) {
+            caQuery.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), caId);
+            OpenCGAResult<ClinicalAnalysis> caResult = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), caQuery,
+                    QueryOptions.empty(), sessionIdUser);
+            if (caResult.getNumResults() == 1) {
+                ClinicalAnalysis clinicalAnalysis = caResult.first();
+                try {
+                    if (index(clinicalAnalysis, projectId, overwrite)) {
+                        numIndexed++;
+                    } else {
+                        String key = caId + " (" + study.getFqn() + ")";
+                        failures.put(key, "Skipping index (overwrite is set to false)");
+                    }
+                } catch (Exception e) {
+                    String key = caId + " (" + study.getFqn() + ")";
+                    failures.put(key, e.getMessage());
                 }
-            } catch (Exception e) {
-                String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
-                failures.put(key, e.getMessage());
+            } else {
+                String key = caId + " (" + study.getFqn() + ")";
+                failures.put(key, "Num. results = " + caResult.getNumResults() + " when searching for clinical analysis: " + caId);
             }
         }
+
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
