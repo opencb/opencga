@@ -149,79 +149,83 @@ public class CvdbSolrEngine {
             throws CatalogException {
         logger.info("Loading all clinical analyses from project: '{}'", projectId);
 
-        int numIndexed = 0;
-        Map<String, String> failures = new HashMap<>();
+        CvdbIndexResult result = new CvdbIndexResult();
+
+        // Start time
         StopWatch stopWatch = StopWatch.createStarted();
 
+        // Main loop
         OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(projectId, new Query(), QueryOptions.empty(),
                 sessionIdUser);
         List<String> studyFqns = studyResults.getResults().stream().map(s -> s.getFqn()).collect(Collectors.toList());
         for (String studyFqn : studyFqns) {
-            DBIterator<ClinicalAnalysis> iterator = catalogManager.getClinicalAnalysisManager().iterator(studyFqn, new Query(),
-                    QueryOptions.empty(), sessionIdUser);
-            while (iterator.hasNext()) {
-                ClinicalAnalysis clinicalAnalysis = iterator.next();
-                try {
-                    if (index(clinicalAnalysis, projectId, overwrite)) {
-                        numIndexed++;
-                    } else {
-                        String key = clinicalAnalysis.getId() + "(" + studyFqn + ")";
-                        failures.put(key, "Skipping index (overwrite is set to false)");
-                    }
-                } catch (Exception e) {
-                    String key = clinicalAnalysis.getId() + "(" + studyFqn + ")";
-                    failures.put(key, e.getMessage());
-                }
-            }
+            CvdbIndexResult tmpResult = indexStudy(studyFqn, catalogManager, overwrite, sessionIdUser);
+            result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
+            result.getFailures().putAll(tmpResult.getFailures());
         }
-        stopWatch.stop();
 
-        return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
+        // Stop time
+        stopWatch.stop();
+        result.setTime((int) stopWatch.getTime(TimeUnit.SECONDS));
+
+        return result;
     }
 
     public CvdbIndexResult indexStudy(String studyId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
             throws CatalogException {
         logger.info("Loading all clinical analyses from study: '{}'", studyId);
 
-        int numIndexed = 0;
-        Map<String, String> failures = new HashMap<>();
+        CvdbIndexResult result = new CvdbIndexResult();
+
+        // Start time
         StopWatch stopWatch = StopWatch.createStarted();
 
+        // Get project for that study
         OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), sessionIdUser);
         Study study = studyResult.first();
 
-        // Get project for that study
         Query projectQuery = new Query();
         projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
         OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), sessionIdUser);
         String projectId = projectResult.first().getId();
 
         // Get all clinical analyses for that study
+        QueryOptions queryOptions = new QueryOptions(INCLUDE, "id");
         DBIterator<ClinicalAnalysis> iterator = catalogManager.getClinicalAnalysisManager().iterator(study.getFqn(), new Query(),
-                QueryOptions.empty(), sessionIdUser);
+                queryOptions, sessionIdUser);
+
+        int listSize = 100;
+        List<String> caIds = new ArrayList<>(listSize);
         while (iterator.hasNext()) {
-            ClinicalAnalysis clinicalAnalysis = iterator.next();
-            try {
-                if (index(clinicalAnalysis, projectId, overwrite)) {
-                    numIndexed++;
-                } else {
-                    String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
-                    failures.put(key, "Skipping index (overwrite is set to false)");
-                }
-            } catch (Exception e) {
-                String key = clinicalAnalysis.getId() + "(" + study.getFqn() + ")";
-                failures.put(key, e.getMessage());
+            caIds.add(iterator.next().getId());
+            if (caIds.size() == listSize) {
+                CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyId, catalogManager, overwrite, sessionIdUser);
+                result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
+                result.getFailures().putAll(tmpResult.getFailures());
+
+                // Reset list
+                caIds.clear();
             }
         }
-        return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
+
+        // Check if there are still clinical analyses to index
+        if (caIds.size() > 0) {
+            CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyId, catalogManager, overwrite, sessionIdUser);
+            result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
+            result.getFailures().putAll(tmpResult.getFailures());
+        }
+
+        // Stop time
+        stopWatch.stop();
+        result.setTime((int) stopWatch.getTime(TimeUnit.SECONDS));
+
+        return result;
     }
 
-
     public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyId, CatalogManager catalogManager,
-                                                 boolean overwrite, String sessionIdUser) throws CvdbException, CatalogException {
+                                                 boolean overwrite, String sessionIdUser) throws CatalogException {
 
-        logger.info("Loading {} clinical analyses from the input list: {}", clinicalAnalysisIds.size(),
-                StringUtils.join(clinicalAnalysisIds, ", "));
+        logger.info("Loading {} clinical analyses from the input list", clinicalAnalysisIds.size());
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
