@@ -110,70 +110,6 @@ public class ClinicalAggregationTest {
     // T E S T S
     //-----------------------------------------------------------------------
 
-//    @Test
-//    public void testAggregationWithFacetPivot() throws IOException, SolrServerException {
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setFacet(true);
-//        solrQuery.addFacetPivotField("ciId,cvId,geneName,panelId");
-//
-//        // Execute the Solr query
-//        System.out.println("solr query = " + solrQuery.toQueryString());
-//        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-//                solrQuery);
-//
-//        // Print out the results
-//        int count = 0;
-//        NamedList<List<PivotField>> pivotFacets = response.getFacetPivot();
-//        for (Map.Entry<String, List<PivotField>> entry : pivotFacets) {
-//            System.out.println("key = " + entry.getKey());
-//            for (PivotField pivotField1 : entry.getValue()) {
-//                System.out.println("\tvalue = " + pivotField1.getValue() + ", count = " + pivotField1.getCount());
-//                for (PivotField pivotField2 : pivotField1.getPivot()) {
-//                    System.out.println("\t\tvalue = " + pivotField2.getValue() + ", count = " + pivotField2.getCount());
-//                    for (PivotField pivotField3 : pivotField2.getPivot()) {
-//                        System.out.println("\t\t\tvalue = " + pivotField3.getValue() + ", count = " + pivotField3.getCount());
-//                        for (PivotField pivotField4 : pivotField3.getPivot()) {
-//                            System.out.println("\t\t\t\tvalue = " + pivotField4.getValue() + ", count = " + pivotField4.getCount());
-//                            count++;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        Assert.assertEquals(8, count);
-//    }
-//
-//    @Test
-//    public void testAggregationWithFacetField() throws IOException, SolrServerException {
-//        String fieldName = "panelId";
-//        SolrQuery solrQuery = new SolrQuery("*:*");
-//        solrQuery.setFacet(true);
-//        solrQuery.addFacetField(fieldName);
-//
-//        // Execute the Solr query
-//        System.out.println("solr query = " + solrQuery.toQueryString());
-//        solrQuery.setShowDebugInfo(true);
-//        QueryResponse response = cvdbEngine.getSolrClient().query(CvdbSolrEngine.getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-//                solrQuery);
-//        FacetField facetField = response.getFacetField(fieldName);
-//
-//        // Print out the results
-//        Assert.assertEquals(3, facetField.getValues().stream().count());
-//        System.out.println("name = " + facetField.getName());
-//        for (FacetField.Count facetCount : facetField.getValues()) {
-//            System.out.println("\tvalue = " + facetCount.getName() + ", count = " + facetCount.getCount());
-//            switch (facetCount.getName() + ":" + facetCount.getCount()) {
-//                case "VACTERL-like_phenotypes-PanelAppId-101:5":
-//                case "Periodic_fever_syndromes-PanelAppId-60:0":
-//                case "Severe_multi-system_atopic_disease_with_high_IgE-PanelAppId-62:3":
-//                    break;
-//                default:
-//                    Assert.fail();
-//            }
-//        }
-//    }
-
     @Test
     public void testFacetClinicalAnalyses() throws IOException, SolrServerException, CvdbException {
         // CVDB query
@@ -273,5 +209,3 @@ public class ClinicalAggregationTest {
         }
     }
 }
-
-
