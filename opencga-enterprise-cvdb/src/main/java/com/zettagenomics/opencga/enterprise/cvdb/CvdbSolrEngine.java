@@ -147,6 +147,7 @@ public class CvdbSolrEngine {
 
     public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
             throws CatalogException {
+        logger.info("Loading all clinical analyses from project: '{}'", projectId);
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
@@ -180,6 +181,7 @@ public class CvdbSolrEngine {
 
     public CvdbIndexResult indexStudy(String studyId, CatalogManager catalogManager, boolean overwrite, String sessionIdUser)
             throws CatalogException {
+        logger.info("Loading all clinical analyses from study: '{}'", studyId);
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
@@ -217,6 +219,9 @@ public class CvdbSolrEngine {
 
     public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyId, CatalogManager catalogManager,
                                                  boolean overwrite, String sessionIdUser) throws CvdbException, CatalogException {
+
+        logger.info("Loading {} clinical analyses from the input list: {}", clinicalAnalysisIds.size(),
+                StringUtils.join(clinicalAnalysisIds, ", "));
 
         int numIndexed = 0;
         Map<String, String> failures = new HashMap<>();
