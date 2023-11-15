@@ -927,6 +927,32 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>false</failOnWarning>
+<!--                            <ignoredUnusedDeclaredDependencies>-->
+<!--                                <ignoredUnusedDeclaredDependency>org.opencb.opencga:opencga-storage-hadoop*-->
+<!--                                </ignoredUnusedDeclaredDependency>-->
+<!--                                <ignoredUnusedDeclaredDependency>javax.servlet:javax.servlet-api:jar:3.1.0-->
+<!--                                </ignoredUnusedDeclaredDependency>-->
+<!--                                <ignoredUnusedDeclaredDependency>org.eclipse.jetty:*-->
+<!--                                </ignoredUnusedDeclaredDependency>-->
+<!--                                <ignoredUnusedDeclaredDependency>jakarta.ws.rs:jakarta.ws.rs-api:jar:2.1.6-->
+<!--                                </ignoredUnusedDeclaredDependency>-->
+<!--                            </ignoredUnusedDeclaredDependencies>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
