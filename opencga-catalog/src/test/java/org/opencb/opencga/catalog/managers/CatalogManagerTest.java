@@ -1847,7 +1847,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
-
     @Test
     public void generateCohortFromSampleQuery() throws CatalogException, IOException {
         String studyId = "user@1000G:phase1";
@@ -1869,5 +1868,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("custom", myCohort.getStatus().getName());
         assertEquals("description", myCohort.getStatus().getDescription());
     }
+
+    // Effective permissions testing
 
 }

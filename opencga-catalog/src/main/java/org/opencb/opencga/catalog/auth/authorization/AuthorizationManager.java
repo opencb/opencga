@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
@@ -137,6 +138,27 @@ public interface AuthorizationManager {
 
     void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
+
+    default List<Acl> getEffectivePermissions(long studyUid, String resourceId, Enums.Resource resource) throws CatalogException {
+        return getEffectivePermissions(studyUid, Collections.singletonList(resourceId), Collections.emptyList(), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(long studyUid, List<String> resourceIdList, Enums.Resource resource) throws CatalogException {
+        return getEffectivePermissions(studyUid, resourceIdList, Collections.emptyList(), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(long studyUid, String resourceId, String permission, Enums.Resource resource)
+            throws CatalogException {
+        return getEffectivePermissions(studyUid, Collections.singletonList(resourceId), Collections.singletonList(permission), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(long studyUid, List<String> resourceIdList, String permission, Enums.Resource resource)
+            throws CatalogException {
+        return getEffectivePermissions(studyUid, resourceIdList, Collections.singletonList(permission), resource);
+    }
+
+    List<Acl> getEffectivePermissions(long studyUid, List<String> resourceIdList, List<String> permission, Enums.Resource resource)
+            throws CatalogException;
 
     //------------------------- Study ACL -----------------------------
 

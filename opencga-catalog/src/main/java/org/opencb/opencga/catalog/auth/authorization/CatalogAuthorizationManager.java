@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
@@ -432,6 +433,25 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
+    }
+
+    @Override
+    public List<Acl> getEffectivePermissions(long studyUid, List<String> resourceIdList, List<String> permissions, Enums.Resource resource)
+            throws CatalogException {
+        List<Acl> acls = aclDBAdaptor.effectivePermissions(studyUid, resourceIdList, resource);
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            // Filter out other permissions
+            for (Acl acl : acls) {
+                List<Acl.Permission> permissionList = new ArrayList<>(permissions.size());
+                for (Acl.Permission aclPermission : acl.getPermissions()) {
+                    if (permissions.contains(aclPermission.getId())) {
+                        permissionList.add(aclPermission);
+                    }
+                }
+                acl.setPermissions(permissionList);
+            }
+        }
+        return acls;
     }
 
     @Override
