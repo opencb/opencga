@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -176,6 +178,11 @@ public class AdminManager extends AbstractManager {
         }
     }
 
+    public OpenCGAResult<Acl> getEffectivePermissions(String studyStr, List<String> entryIdList,  String category, String token)
+            throws CatalogException {
+        return getEffectivePermissions(studyStr, entryIdList, Collections.emptyList(), category, token);
+    }
+
     public OpenCGAResult<Acl> getEffectivePermissions(String studyStr, List<String> entryIdList, List<String> permissionList,
                                                       String category, String token) throws CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
@@ -191,14 +198,15 @@ public class AdminManager extends AbstractManager {
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
             ParamUtils.checkParameter(category, "category");
-            ParamUtils.checkObj(entryIdList, "entry id list");
+            ParamUtils.checkNotEmptyArray(entryIdList, "entry id list");
 
             Enums.Resource resource;
             try {
                 resource = Enums.Resource.valueOf(category.toUpperCase());
             } catch (IllegalArgumentException e) {
                 String allowedResources = Arrays.stream(Enums.Resource.values()).map(Enum::name).collect(Collectors.joining(", "));
-                throw new CatalogException("Unexpected category '" + category + "' passed. Allowed categories are: " + allowedResources);
+                throw new CatalogParameterException("Unexpected category '" + category + "' passed. Allowed categories are: "
+                        + allowedResources);
             }
             List<Acl> effectivePermissions = authorizationManager.getEffectivePermissions(study.getUid(), entryIdList, permissionList,
                     resource);
