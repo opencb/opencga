@@ -684,33 +684,30 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        List<Interpretation> interpretationList = clinicalAnalysis.getSecondaryInterpretations();
-        clinicalAnalysis.setSecondaryInterpretations(null);
-
-        Interpretation interpretation = clinicalAnalysis.getInterpretation();
+        // Save primary and secondary interpretations for creating later
+        Interpretation primaryInterpretation = clinicalAnalysis.getInterpretation();
         clinicalAnalysis.setInterpretation(null);
 
-        // Create Clinical Analysis
+        List<Interpretation> secondaryInterpretations = clinicalAnalysis.getSecondaryInterpretations();
+        clinicalAnalysis.setSecondaryInterpretations(null);
+
+
+        // Create clinical analysis
         ClinicalAnalysis caToCreate = ClinicalAnalysisCreateParams.of(clinicalAnalysis).toClinicalAnalysis();
         caToCreate.setAnalyst(new ClinicalAnalyst());
         catalogManager.getClinicalAnalysisManager().create(study, caToCreate, QueryOptions.empty(), token);
 
-        if (interpretation == null) {
-            interpretation = interpretationList.get(0);
-            interpretationList = interpretationList.subList(1, interpretationList.size());
+        // Create primary interpretation
+        if (primaryInterpretation != null) {
+            primaryInterpretation.setId(null);
+            catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), primaryInterpretation, PRIMARY,
+                    QueryOptions.empty(), token);
         }
 
-        // Add interpretations
-        interpretation.setId(null);
-        interpretation.setAnalyst(new ClinicalAnalyst());
-        catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), interpretation, PRIMARY, QueryOptions.empty(),
-                token);
-
-        for (int i = 0, interpretationListSize = interpretationList.size(); i < interpretationListSize; i++) {
-            Interpretation tmpInterpretation = interpretationList.get(i);
-            tmpInterpretation.setId(null);
-            tmpInterpretation.setAnalyst(new ClinicalAnalyst());
-            catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), tmpInterpretation, SECONDARY,
+        // Create secondary interpretations
+        for (Interpretation secondaryInterpretation : secondaryInterpretations) {
+            secondaryInterpretation.setId(null);
+            catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), secondaryInterpretation, SECONDARY,
                     QueryOptions.empty(), token);
         }
     }
