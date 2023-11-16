@@ -123,6 +123,8 @@ public class ClinicalQueryParser {
     public List<String> clinicalAnalysisFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
+        addStringFilters("viewers", query.getString(ClinicalQueryParam.CA_VIEWER_NAME), filters);
+
         // <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
         addStringFilters("id", query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
 

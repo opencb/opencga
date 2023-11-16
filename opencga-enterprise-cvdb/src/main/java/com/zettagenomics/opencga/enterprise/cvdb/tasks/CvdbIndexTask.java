@@ -58,7 +58,7 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
 
         // Get enterprise configuration to set the CVDB engine
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
-        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null);
+        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
             if (!cvdbEngine.existCollections(project.getId())) {
                 cvdbEngine.createCollections(project.getId());

@@ -52,7 +52,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
 
         // Get enterprise configuration to set the CVDB engine
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), new VariantStorageMetadataManager(
+        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
                 new DummyVariantStorageMetadataDBAdaptorFactory()));
     }
 

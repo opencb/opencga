@@ -172,7 +172,7 @@ public class CvdbTaskTest {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(CvdbIndexTask.class.getClassLoader()
                 .getResource("enterprise-configuration.yml").openStream());
 
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null);
+        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), null, null);
         return cvdbEngine.getSolrManager().isAlive();
     }
 

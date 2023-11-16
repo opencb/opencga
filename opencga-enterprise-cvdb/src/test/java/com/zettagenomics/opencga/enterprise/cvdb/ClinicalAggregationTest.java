@@ -16,21 +16,24 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.validation.constraints.AssertTrue;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -74,6 +77,7 @@ public class ClinicalAggregationTest {
 
         // CVDB
         cvdbEngine = cvdbSolrExternalResource.configure();
+        cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(projectId)) {
@@ -174,38 +178,16 @@ public class ClinicalAggregationTest {
 
     private static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
-            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(caFilename);
-            GZIPInputStream gzipInputStream = new GZIPInputStream(is);
-            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
-                    .readValue(gzipInputStream);
-
-            // Import panels
-            try {
-                List<String> panelIds = new ArrayList<>();
-                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
-                    panelIds = clinicalAnalysis.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList());
-                }
-                catalogManager.getPanelManager().importFromSource(studyId, "panelapp", StringUtils.join(panelIds, ","), sessionIdUser);
-            } catch (CatalogException e) {
-                System.out.println("---------------------------------------------------------------------------------");
-                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
-                System.out.println("---------------------------------------------------------------------------------");
-                continue;
-            }
-
-            // Create family
-            if (clinicalAnalysis.getFamily() != null) {
-                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), INCLUDE_RESULT, sessionIdUser);
-            }
-
-            // Create clinical analysis
-            clinicalAnalysis.getInterpretation().setId(null);
-            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                    secondaryInterpretation.setId(null);
-                }
-            }
-            catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
+            URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
+            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
+                    sessionIdUser);
+            System.out.println(loadResult);
+        }
+        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), opencgaToken);
+        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
+            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
+                    "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, opencgaToken);
         }
     }
 }

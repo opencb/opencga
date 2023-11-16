@@ -560,6 +560,9 @@ public final class ClinicalQueryParam implements QueryParam {
 
     // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
+    // Internal filter
+    public static final String CA_VIEWER_NAME = "caViewer";
+
     // Constructor
     private ClinicalQueryParam(String key, Type type, String description) {
         this.key = key;

@@ -70,6 +70,9 @@ public class ClinicalAnalysisSearch {
     @Field("locked")
     private boolean locked;
 
+    @Field("viewers")
+    private List<String> viewers;
+
     @Field("json")
     private String json;
 
@@ -90,6 +93,7 @@ public class ClinicalAnalysisSearch {
         sb.append(", report='").append(report).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", locked=").append(locked);
+        sb.append(", viewers=").append(viewers);
         sb.append(", json='").append(json).append('\'');
         sb.append('}');
         return sb.toString();
@@ -218,6 +222,15 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setLocked(boolean locked) {
         this.locked = locked;
+        return this;
+    }
+
+    public List<String> getViewers() {
+        return viewers;
+    }
+
+    public ClinicalAnalysisSearch setViewers(List<String> viewers) {
+        this.viewers = viewers;
         return this;
     }
 

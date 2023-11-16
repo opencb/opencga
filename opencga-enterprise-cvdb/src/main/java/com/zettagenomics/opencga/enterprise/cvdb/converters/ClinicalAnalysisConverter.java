@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
 public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis, ClinicalAnalysisSearch> {
+
+    public static final String CVDB_CA_VIEWERS_KEY = "OPENCGA_CA_VIEWERS";
 
     private ObjectReader clinicalAnalysisReader;
 
@@ -92,6 +95,12 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             }
 
             cas.setLocked(ca.isLocked());
+
+            // Finally, process internally viewers, i.e., users that can view that clinical analysis
+            if (MapUtils.isNotEmpty(ca.getAttributes()) && ca.getAttributes().containsKey(CVDB_CA_VIEWERS_KEY)) {
+                cas.setViewers((List<String>) ca.getAttributes().get(CVDB_CA_VIEWERS_KEY));
+                ca.getAttributes().remove(CVDB_CA_VIEWERS_KEY);
+            }
 
             try {
                 String json = mapper.writeValueAsString(ca);
