@@ -51,7 +51,7 @@ public class HadoopVariantStatisticsManagerMultiFilesTest extends VariantStatist
     public void calculateStatsMultiCohortsAfterFillMissingTest() throws Exception {
         VariantStorageEngine storageEngine = getVariantStorageEngine();
         storageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), new ObjectMap());
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         calculateStatsMultiCohortsTest();
     }
 

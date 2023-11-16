@@ -1,6 +1,8 @@
 package org.opencb.opencga.server.generator.config;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CategoryConfig {
 
@@ -184,6 +186,21 @@ public class CategoryConfig {
             }
         }
         return true;
+    }
+
+    public Command getCommandOrFail(String commandName) {
+        Command command = getCommand(commandName);
+        if (command == null) {
+            List<String> availableCommands;
+            if (commands == null) {
+                availableCommands = Collections.emptyList();
+            } else {
+                availableCommands = commands.stream().map(Command::getName).collect(Collectors.toList());
+            }
+            throw new IllegalArgumentException("Command '" + commandName + "' not found. Given category '" + name + "'" +
+                    ", available sub-commands are: " + availableCommands + ".");
+        }
+        return command;
     }
 
     public Command getCommand(String commandName) {
