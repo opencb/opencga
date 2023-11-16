@@ -1964,6 +1964,24 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
                 Arrays.asList("user", "user2", "user3", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
                 Arrays.asList("user", "user2", "user3", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user4", "user7"), aclList.getResults().get(2));
+
+        catalogManager.getConfiguration().getOptimizations().setSimplifyPermissions(true);
+        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_1, s_2, s_3),
+                Enums.Resource.SAMPLE.name(), token);
+        assertEquals(3, aclList.getNumResults());
+        assertPermissions("s_1", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
+                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
+                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.emptyList(), aclList.getResults().get(0));
+        assertPermissions("s_2", Arrays.asList("user", "user2", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
+                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
+                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.singletonList("user3"), aclList.getResults().get(1));
+        assertPermissions("s_3", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
+                Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
+                Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID), Collections.emptyList(), aclList.getResults().get(2));
+
     }
 
     private void assertPermissions(String id, List<String> view, List<String> write, List<String> delete, List<String> viewAnnots,
