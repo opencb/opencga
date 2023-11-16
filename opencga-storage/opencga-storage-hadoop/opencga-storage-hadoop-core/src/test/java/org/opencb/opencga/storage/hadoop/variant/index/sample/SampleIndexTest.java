@@ -105,6 +105,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_5, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_6, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
