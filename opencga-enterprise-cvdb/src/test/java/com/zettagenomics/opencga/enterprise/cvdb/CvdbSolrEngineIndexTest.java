@@ -1,5 +1,8 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
@@ -12,16 +15,23 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -30,18 +40,23 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.getCollectionName;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_ID_NAME;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 public class CvdbSolrEngineIndexTest {
 
@@ -112,7 +127,7 @@ public class CvdbSolrEngineIndexTest {
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-        Assert.assertEquals(2, response.getResults().getNumFound());
+        Assert.assertEquals(3, response.getResults().getNumFound());
         for (int i = 0; i < response.getResults().size(); i++) {
             System.out.println("Clinical analysis #" + i + ":");
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
@@ -137,7 +152,7 @@ public class CvdbSolrEngineIndexTest {
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-        Assert.assertEquals(2, response.getResults().getNumFound());
+        Assert.assertEquals(3, response.getResults().getNumFound());
         for (int i = 0; i < response.getResults().size(); i++) {
             System.out.println("Clinical analysis #" + i + ":");
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
@@ -160,7 +175,7 @@ public class CvdbSolrEngineIndexTest {
 
         indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, sessionIdUser);
         System.out.println(indexResult);
-        Assert.assertEquals(1, indexResult.getNumIndexed());
+        Assert.assertEquals(2, indexResult.getNumIndexed());
 
         indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, sessionIdUser);
         System.out.println(indexResult);
@@ -176,7 +191,7 @@ public class CvdbSolrEngineIndexTest {
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
-        Assert.assertEquals(2, response.getResults().getNumFound());
+        Assert.assertEquals(3, response.getResults().getNumFound());
         for (int i = 0; i < response.getResults().size(); i++) {
             System.out.println("Clinical analysis #" + i + ":");
             System.out.println("\tID: " + response.getResults().get(i).getFieldValue("id"));
@@ -184,78 +199,99 @@ public class CvdbSolrEngineIndexTest {
         }
     }
 
+    @Test
+    public void testOverwriteTrue() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog project
+        cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
+
+        // CVDB query
+        String caId = "OPA-6522-1";
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_ID_NAME, caId);
+
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        ClinicalAnalysis clinicalAnalysis = result.first();
+        assertTrue(StringUtils.isEmpty(clinicalAnalysis.getDescription()));
+
+        // Update clinical analysis in catalog
+        String newDescription = "This analysis is for testing the overwrite functionality";
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams();
+        updateParams.setDescription(newDescription);
+        catalogManager.getClinicalAnalysisManager().update(study.getFqn(), caId, updateParams, QueryOptions.empty(), sessionIdUser);
+
+        // CVDB index the given clinical analysis from catalog
+        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), catalogManager,
+                true, sessionIdUser);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        ClinicalAnalysis updatedClinicalAnalysis = result.first();
+        assertEquals(newDescription, updatedClinicalAnalysis.getDescription());
+    }
+
+    @Test
+    public void testOverwriteFalse() throws CatalogException, IOException, CvdbException, SolrServerException {
+        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId());
+
+        // CVDB index from catalog project
+        cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
+
+        // CVDB query
+        String caId = "OPA-6522-1";
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_ID_NAME, caId);
+
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        ClinicalAnalysis clinicalAnalysis = result.first();
+        assertTrue(StringUtils.isEmpty(clinicalAnalysis.getDescription()));
+
+        // Update clinical analysis in catalog
+        String newDescription = "This analysis is for testing the overwrite functionality";
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams();
+        updateParams.setDescription(newDescription);
+        catalogManager.getClinicalAnalysisManager().update(study.getFqn(), caId, updateParams, QueryOptions.empty(), sessionIdUser);
+
+        // CVDB index the given clinical analysis from catalog but overwrite to FALSE (i.e., no index is performed)
+        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), catalogManager,
+                false, sessionIdUser);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        ClinicalAnalysis updatedClinicalAnalysis = result.first();
+        assertTrue(StringUtils.isEmpty(updatedClinicalAnalysis.getDescription()));
+    }
+
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
     private void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
         for (String caFilename : caFilenames) {
-            InputStream is = CvdbSolrEngineIndexTest.class.getClassLoader().getResourceAsStream(caFilename);
-            GZIPInputStream gzipInputStream = new GZIPInputStream(is);
-            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
-                    .readValue(gzipInputStream);
-
-            // Import panels
-            try {
-                List<String> panelIds = new ArrayList<>();
-                if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
-                    panelIds = clinicalAnalysis.getPanels().stream().map(p -> p.getId()).collect(Collectors.toList());
-                }
-                catalogManager.getPanelManager().importFromSource(studyId, "panelapp", StringUtils.join(panelIds, ","), sessionIdUser);
-            } catch (CatalogException e) {
-                System.out.println("Error importing panel for clinical analysis file " + caFilename + ": " + e.getMessage());
-            }
-
-            // Create family
-            if (clinicalAnalysis.getFamily() != null) {
-                catalogManager.getFamilyManager().create(studyId, clinicalAnalysis.getFamily(), INCLUDE_RESULT, sessionIdUser);
-            }
-
-            // Create clinical analysis
-            clinicalAnalysis.getInterpretation().setId(null);
-            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                    secondaryInterpretation.setId(null);
-                }
-            }
-            try {
-                catalogManager.getClinicalAnalysisManager().create(studyId, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
-            } catch (CatalogException e) {
-                System.out.println("---------------------------------------------------------------------------------");
-                System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
-                System.out.println("---------------------------------------------------------------------------------");
-            }
+            URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
+            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
+                    sessionIdUser);
+            System.out.println(loadResult);
+        }
+        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), opencgaToken);
+        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
+            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
+                    "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, opencgaToken);
         }
     }
-
-//    private void loadClinicalAnalsysesInSolr() throws IOException, CvdbException {
-//        List<String> names = Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz");
-//        for (String name : names) {
-//            InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(name);
-//            GZIPInputStream gzipInputStream = new GZIPInputStream(is);
-//            ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
-//                    .readValue(gzipInputStream);
-//
-//            cvdbEngine.index(clinicalAnalysis, projectId, true);
-//            System.out.println("Clinical analysis " + clinicalAnalysis.getId() + " loaded !");
-//        }
-//    }
-
-//    private void loadClinicalVariants() throws IOException, CvdbException {
-//        String name = "ca1.json.gz";
-//        InputStream is = ClinicalInterpretationConverterTest.class.getClassLoader().getResourceAsStream(name);
-//        GZIPInputStream gzipInputStream = new GZIPInputStream(is);
-//        ClinicalAnalysis clinicalAnalysis = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class)
-//                .readValue(gzipInputStream);
-//
-//        List<ClinicalVariant> primaryFindings = clinicalAnalysis.getInterpretation().getPrimaryFindings();
-//        System.out.println(primaryFindings.size());
-//
-//        List<ClinicalVariant> clinicalVariantList = new ArrayList<>();
-//        clinicalVariantList.add(primaryFindings.get(0));
-//        clinicalVariantList.add(primaryFindings.get(1));
-//
-//        cvdbEngine.index(clinicalVariantList, false, projectId);
-//    }
 }
 
 
