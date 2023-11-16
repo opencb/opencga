@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -61,6 +62,7 @@ public class ClinicalAnalysisCreateParams {
     private PriorityParam priority;
     private List<FlagValueParam> flags;
 
+    private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
     private StatusParam status;
 
@@ -74,7 +76,8 @@ public class ClinicalAnalysisCreateParams {
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
                                         String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
-                                        List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
+                                        List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
+                                        StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -95,6 +98,7 @@ public class ClinicalAnalysisCreateParams {
         this.qualityControl = qualityControl;
         this.priority = priority;
         this.flags = flags;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
     }
@@ -128,6 +132,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getFlags() != null
                         ? clinicalAnalysis.getFlags().stream().map(FlagValueParam::of).collect(Collectors.toList())
                         : null,
+                clinicalAnalysis.getAnnotationSets(),
                 clinicalAnalysis.getAttributes(), StatusParam.of(clinicalAnalysis.getStatus()));
     }
 
@@ -154,6 +159,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -216,7 +222,7 @@ public class ClinicalAnalysisCreateParams {
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null, qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
-                attributes, status != null ? status.toStatus() : null);
+                annotationSets, attributes, status != null ? status.toStatus() : null);
     }
 
     public String getId() {
@@ -396,6 +402,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public ClinicalAnalysisCreateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 

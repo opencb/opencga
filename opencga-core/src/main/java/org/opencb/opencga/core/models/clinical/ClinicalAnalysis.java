@@ -24,7 +24,8 @@ import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.Annotable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -41,7 +42,7 @@ import java.util.Map;
  */
 @DataClass(id = "ClinicalAnalysis", since = "1.0",
         description = "ClinicalAnalysis data model hosts information about any analysis.")
-public class ClinicalAnalysis extends PrivateStudyUid {
+public class ClinicalAnalysis extends Annotable {
 
     /**
      * ClinicalAnalysis ID is a mandatory parameter when creating a new ClinicalAnalysis, this ID cannot be changed at the moment.
@@ -212,7 +213,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
                             ClinicalReport report, ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate,
                             String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
                             ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
-                            Map<String, Object> attributes, Status status) {
+                            List<AnnotationSet> annotationSets, Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -238,6 +239,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.comments = comments;
         this.audit = audit;
         this.internal = internal;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
     }
@@ -271,6 +273,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
         sb.append(", internal=").append(internal);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -511,6 +514,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
         this.internal = internal;
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setAnnotationSets(List<AnnotationSet> annotationSets) {
+        super.setAnnotationSets(annotationSets);
         return this;
     }
 

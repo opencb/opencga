@@ -48,6 +48,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -56,22 +57,27 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements ClinicalAnalysisDBAdaptor {
+public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<ClinicalAnalysis> implements ClinicalAnalysisDBAdaptor {
 
     private static final String PRIVATE_DUE_DATE = "_dueDate";
     private final MongoDBCollection clinicalCollection;
@@ -85,6 +91,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         this.clinicalCollection = clinicalCollection;
         this.deletedClinicalCollection = deletedClinicalCollection;
         this.clinicalConverter = new ClinicalAnalysisConverter();
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return clinicalCollection;
     }
 
     static void fixCommentsForRemoval(ObjectMap parameters) {
@@ -144,8 +155,27 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         parameters.put(FILES.key(), fileParamList);
     }
 
-    public MongoDBCollection getClinicalCollection() {
-        return clinicalCollection;
+    @Override
+    public OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        QueryOptions queryOptions = new QueryOptions();
+        List<String> includeList = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(annotationSetName)) {
+            includeList.add(Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+        } else {
+            includeList.add(QueryParams.ANNOTATION_SETS.key());
+        }
+        queryOptions.put(QueryOptions.INCLUDE, includeList);
+
+        OpenCGAResult<ClinicalAnalysis> clinicalDataResult = get(id, queryOptions);
+        if (CollectionUtils.isEmpty(clinicalDataResult.first().getAnnotationSets())) {
+            return new OpenCGAResult<>(clinicalDataResult.getTime(), clinicalDataResult.getEvents(), 0, Collections.emptyList(), 0);
+        } else {
+            List<AnnotationSet> annotationSets = clinicalDataResult.first().getAnnotationSets();
+            int size = annotationSets.size();
+            return new OpenCGAResult<>(clinicalDataResult.getTime(), clinicalDataResult.getEvents(), size, annotationSets, size);
+        }
     }
 
     @Override
@@ -190,7 +220,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult update(long uid, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    public OpenCGAResult update(long uid, ObjectMap parameters, List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList,
+                                QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
         QueryOptions options = new QueryOptions()
@@ -203,7 +234,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String clinicalAnalysisId = result.first().getId();
 
         try {
-            return runTransaction(clientSession -> update(clientSession, result.first(), parameters, clinicalAuditList, queryOptions));
+            return runTransaction(clientSession -> privateUpdate(clientSession, result.first(), parameters, variableSetList,
+                    clinicalAuditList, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
             throw new CatalogDBException("Could not update clinical analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
@@ -211,26 +243,40 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        return null;
+    public OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList,
+                                QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException("Not possible updating Clinical Analyses based on a query");
     }
 
-    OpenCGAResult update(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
-                         List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    @Override
+    public OpenCGAResult update(long uid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Use other update method passing the ClinicalAuditList");
+    }
+
+    @Override
+    public OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Use other update method passing the ClinicalAuditList");
+    }
+
+    OpenCGAResult privateUpdate(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
+                                List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         String clinicalAnalysisId = clinical.getId();
         long clinicalAnalysisUid = clinical.getUid();
 
+        DataResult<?> result = updateAnnotationSets(clientSession, clinicalAnalysisUid, parameters, variableSetList, queryOptions, false);
+
+        // Perform the update
         Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, clinicalAuditList, query, queryOptions);
 
         Document updateOperation = updateDocument.toFinalUpdateDocument();
-
         List<Event> events = new ArrayList<>();
         if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
-            DataResult update;
+            DataResult<?> update;
 
             if (!updateOperation.isEmpty()) {
                 Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
@@ -270,7 +316,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 }
             }
 
-        } else {
+        } else if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Nothing to update");
         }
 
@@ -679,7 +725,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public DBIterator<ClinicalAnalysis> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, null);
-        return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clientSession, clinicalConverter, dbAdaptorFactory, options);
+        return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clientSession, clinicalConverter, null, dbAdaptorFactory, options);
     }
 
     @Override
@@ -694,7 +740,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, clientSession, null, dbAdaptorFactory, queryOptions);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, clientSession, null, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override
@@ -702,7 +748,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, clinicalConverter, dbAdaptorFactory, studyUid, user, options);
+        Document studyDocument = getStudyDocument(null, studyUid);
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
+                ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, clinicalConverter, iteratorFilter, dbAdaptorFactory, studyUid,
+                user, options);
     }
 
     @Override
@@ -710,10 +761,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, studyUid, user, options);
+        Document studyDocument = getStudyDocument(null, studyUid);
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+                StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
+                ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
+                options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
@@ -823,14 +878,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList,
-                                QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
+                                List<ClinicalAudit> clinicalAuditList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting ClinicalAnalysis insert transaction for ClinicalAnalysis id '{}'", clinicalAnalysis.getId());
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-                insert(clientSession, studyId, clinicalAnalysis, clinicalAuditList);
+                insert(clientSession, studyId, clinicalAnalysis, variableSetList, clinicalAuditList);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
@@ -839,7 +895,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
     }
 
-    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAudit)
+    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
+                            List<ClinicalAudit> clinicalAudit)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (clinicalAnalysis.getInterpretation() != null) {
             InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
@@ -865,7 +922,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
 
-        Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);
+        Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis, variableSetList);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
             clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
         } else {
@@ -1001,8 +1058,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 }
 
                 ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), familyCopy);
-                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params,
-                        null, QueryOptions.empty());
+                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().privateUpdate(clientSession, clinicalAnalysis,
+                        params, Collections.emptyList(), null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {
                     throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
                             + "family version of '" + family.getId() + "'");
@@ -1059,7 +1116,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             actionMap.put(PANELS.key(), ParamUtils.BasicUpdateAction.SET);
             QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
             ObjectMap params = new ObjectMap(PANELS.key(), panelList);
-            update(clientSession, clinicalAnalysis, params, null, updateOptions);
+            privateUpdate(clientSession, clinicalAnalysis, params, Collections.emptyList(), null, updateOptions);
 
             // Update references from Interpretations
             dbAdaptorFactory.getInterpretationDBAdaptor().updateInterpretationPanelReferences(clientSession, clinicalAnalysis, panel);
@@ -1082,6 +1139,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     private Bson parseQuery(Query query, Document extraQuery, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Bson> andBsonList = new ArrayList<>();
+        Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
@@ -1094,9 +1152,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
                         configuration));
             } else {
-                // Get the document query needed to check the permissions as well
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ClinicalAnalysisPermissions.VIEW.name(),
+                            Enums.Resource.CLINICAL_ANALYSIS, configuration));
+                }
             }
 
             queryCopy.remove(ParamConstants.ACL_PARAM);
@@ -1107,6 +1169,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
+                if (Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
+                    continue;
+                }
                 throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
                         + "queried for.");
             }
@@ -1154,6 +1219,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                                 queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
+                    case ANNOTATION:
+                        if (annotationDocument == null) {
+                            annotationDocument = createAnnotationQuery(queryCopy.getString(QueryParams.ANNOTATION.key()),
+                                    queryCopy.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+                        }
+                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
@@ -1179,11 +1250,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
                 }
             } catch (Exception e) {
-                logger.error("Error with " + entry.getKey() + " " + entry.getValue());
+                logger.error("Error with {}: {}", entry.getKey(), entry.getValue());
                 throw new CatalogDBException(e);
             }
         }
 
+        if (annotationDocument != null && !annotationDocument.isEmpty()) {
+            andBsonList.add(annotationDocument);
+        }
         if (extraQuery != null && !extraQuery.isEmpty()) {
             andBsonList.add(extraQuery);
         }

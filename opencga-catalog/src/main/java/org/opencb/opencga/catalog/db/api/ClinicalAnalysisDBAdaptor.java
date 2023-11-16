@@ -26,8 +26,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
@@ -38,7 +40,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 05/06/17.
  */
-public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysis> {
+public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -109,7 +111,11 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
+        ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
 
@@ -170,14 +176,16 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList, QueryOptions options)
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
+                         List<ClinicalAudit> clinicalAuditList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<VariableSet> variableSetList,
+                                           List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
-                                           QueryOptions queryOptions)
+    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList,
+                                           List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAnalysis> {
+public class ClinicalAnalysisConverter extends AnnotableConverter<ClinicalAnalysis> {
 
     public ClinicalAnalysisConverter() {
         super(ClinicalAnalysis.class);
