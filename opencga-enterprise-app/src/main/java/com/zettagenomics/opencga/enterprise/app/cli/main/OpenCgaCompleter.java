@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-11-09 OpenCB
+* Copyright 2015-2023-11-16 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -125,7 +125,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> cvdbList = asList( "case-aggregation-stats","case-query","clinical-variant-aggregation-stats","clinical-variant-query","clinical-variant-evidence-aggregation-stats","clinical-variant-evidence-query","index-run","interpretation-aggregation-stats","interpretation-query")
+    private List<Candidate> cvdbList = asList( "case-aggregation-stats","case-query","index-run","interpretation-aggregation-stats","interpretation-query","variant-aggregation-stats","variant-query","variant-evidence-aggregation-stats","variant-evidence-query")
             .stream()
             .map(Candidate::new)
             .collect(toList());

@@ -388,7 +388,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/clinicalVariant/query")
+    @Path("/variant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -540,7 +540,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/clinicalVariantEvidence/query")
+    @Path("/variantEvidence/query")
     @ApiOperation(value = CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION, response = ClinicalVariantEvidence.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -986,7 +986,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/clinicalVariant/aggregationStats")
+    @Path("/variant/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1131,7 +1131,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/clinicalVariantEvidence/aggregationStats")
+    @Path("/variantEvidence/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),

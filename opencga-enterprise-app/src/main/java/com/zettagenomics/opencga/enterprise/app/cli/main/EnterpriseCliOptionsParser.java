@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-11-09 OpenCB
+* Copyright 2015-2023-11-16 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -188,6 +188,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
+        adminSubCommands.addCommand("users-permissions", adminCommandOptions.permissionsUsersCommandOptions);
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
         adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
@@ -389,13 +390,13 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         JCommander cvdbSubCommands = jCommander.getCommands().get("cvdb");
         cvdbSubCommands.addCommand("case-aggregation-stats", cvdbCommandOptions.aggregationStatsCaseCommandOptions);
         cvdbSubCommands.addCommand("case-query", cvdbCommandOptions.queryCaseCommandOptions);
-        cvdbSubCommands.addCommand("clinical-variant-aggregation-stats", cvdbCommandOptions.aggregationStatsClinicalVariantCommandOptions);
-        cvdbSubCommands.addCommand("clinical-variant-query", cvdbCommandOptions.queryClinicalVariantCommandOptions);
-        cvdbSubCommands.addCommand("clinical-variant-evidence-aggregation-stats", cvdbCommandOptions.aggregationStatsClinicalVariantEvidenceCommandOptions);
-        cvdbSubCommands.addCommand("clinical-variant-evidence-query", cvdbCommandOptions.queryClinicalVariantEvidenceCommandOptions);
         cvdbSubCommands.addCommand("index-run", cvdbCommandOptions.runIndexCommandOptions);
         cvdbSubCommands.addCommand("interpretation-aggregation-stats", cvdbCommandOptions.aggregationStatsInterpretationCommandOptions);
         cvdbSubCommands.addCommand("interpretation-query", cvdbCommandOptions.queryInterpretationCommandOptions);
+        cvdbSubCommands.addCommand("variant-aggregation-stats", cvdbCommandOptions.aggregationStatsVariantCommandOptions);
+        cvdbSubCommands.addCommand("variant-query", cvdbCommandOptions.queryVariantCommandOptions);
+        cvdbSubCommands.addCommand("variant-evidence-aggregation-stats", cvdbCommandOptions.aggregationStatsVariantEvidenceCommandOptions);
+        cvdbSubCommands.addCommand("variant-evidence-query", cvdbCommandOptions.queryVariantEvidenceCommandOptions);
     }
     
     public AnalysisVariantCommandOptions getAnalysisVariantCommandOptions() {
