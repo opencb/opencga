@@ -46,10 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
@@ -125,10 +122,18 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                     .toAbsolutePath().toString(), DOCKER_OUTPUT_PATH);
+
+            // Get genome version
+            String genomeVersion = "hg38";
+            if (StringUtils.isNotEmpty(getAssembly()) && getAssembly().toUpperCase(Locale.ROOT).equals("GRCH37")) {
+                genomeVersion = "hg19";
+            }
+
             String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
                     + (plotCopynumber ? "" : " --no_copynumber")
                     + (plotIndels ? "" : " --no_indels")
                     + (plotRearrangements ? "" : " --no_rearrangements")
+                    + " --genome_version " + genomeVersion
                     + " --out_path " + DOCKER_OUTPUT_PATH
                     + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()

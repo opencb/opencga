@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.GenomePlotConfig;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -51,6 +52,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
     private GenomePlotAnalysisParams genomePlotParams = new GenomePlotAnalysisParams();
 
     private java.io.File configFile;
+    private String assembly;
 
     @Override
     protected void check() throws Exception {
@@ -71,6 +73,8 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         if (!configFile.exists()) {
             throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + configFile + ")");
         }
+
+        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
     }
 
     @Override
@@ -78,6 +82,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         step(getId(), () -> {
             getToolExecutor(GenomePlotAnalysisExecutor.class)
                     .setStudy(study)
+                    .setAssembly(assembly)
                     .setConfigFile(configFile)
                     .execute();
 

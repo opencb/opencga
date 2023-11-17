@@ -138,10 +138,18 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                     .toAbsolutePath().toString(),
                     DOCKER_OUTPUT_PATH);
+
+            // Get genome version
+            String genomeVersion = "hg38";
+            if (StringUtils.isNotEmpty(getAssembly()) && getAssembly().toUpperCase(Locale.ROOT).equals("GRCH37")) {
+                    genomeVersion = "hg19";
+            }
+
             String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
                     + (plotCopynumber ? "" : " --no_copynumber")
                     + (plotIndels ? "" : " --no_indels")
                     + (plotRearrangements ? "" : " --no_rearrangements")
+                    + " --genome_version " + genomeVersion
                     + " --out_path " + DOCKER_OUTPUT_PATH
                     + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()

@@ -23,13 +23,15 @@ import java.io.File;
 public abstract class GenomePlotAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
+    private String assembly;
     private File configFile;
 
     public GenomePlotAnalysisExecutor() {
     }
 
-    public GenomePlotAnalysisExecutor(String study, File configFile) {
+    public GenomePlotAnalysisExecutor(String study, String assembly, File configFile) {
         this.study = study;
+        this.assembly = assembly;
         this.configFile = configFile;
     }
 
@@ -37,6 +39,7 @@ public abstract class GenomePlotAnalysisExecutor extends OpenCgaToolExecutor {
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenomePlotAnalysisExecutor{");
         sb.append("study='").append(study).append('\'');
+        sb.append("assembly='").append(assembly).append('\'');
         sb.append(", configFile=").append(configFile);
         sb.append('}');
         return sb.toString();
@@ -48,6 +51,15 @@ public abstract class GenomePlotAnalysisExecutor extends OpenCgaToolExecutor {
 
     public GenomePlotAnalysisExecutor setStudy(String study) {
         this.study = study;
+        return this;
+    }
+
+    public String getAssembly() {
+        return assembly;
+    }
+
+    public GenomePlotAnalysisExecutor setAssembly(String assembly) {
+        this.assembly = assembly;
         return this;
     }
 
