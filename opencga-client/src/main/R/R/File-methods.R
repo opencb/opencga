@@ -54,7 +54,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("fileClient", "OpencgaR", function(OpencgaR, members, files, file, annotationSet, folder, endpointName, params=NULL, ...) {
+setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, files, folder, members, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/files/acl/{members}/update:

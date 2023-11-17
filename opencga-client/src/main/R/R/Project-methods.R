@@ -34,7 +34,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("projectClient", "OpencgaR", function(OpencgaR, projects, project, endpointName, params=NULL, ...) {
+setMethod("projectClient", "OpencgaR", function(OpencgaR, project, projects, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/projects/create:
