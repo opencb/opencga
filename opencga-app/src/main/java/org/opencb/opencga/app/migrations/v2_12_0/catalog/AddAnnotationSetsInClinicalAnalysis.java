@@ -3,6 +3,7 @@ package org.opencb.opencga.app.migrations.v2_12_0.catalog;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
@@ -35,7 +36,8 @@ public class AddAnnotationSetsInClinicalAnalysis extends MigrationTool {
         for (String collection : Arrays.asList(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION,
                 MongoDBAdaptorFactory.DELETED_CLINICAL_ANALYSIS_COLLECTION)) {
             MongoCollection<Document> mongoCollection = getMongoCollection(collection);
-            mongoCollection.updateMany(query, update);
+            UpdateResult updateResult = mongoCollection.updateMany(query, update);
+            logger.info("{} clinical analysis documents updated from the {} collection", updateResult.getModifiedCount(), collection);
         }
     }
 }
