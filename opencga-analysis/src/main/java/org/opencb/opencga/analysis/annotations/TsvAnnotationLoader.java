@@ -26,9 +26,11 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
@@ -71,7 +73,9 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
 
     @Override
     protected void check() throws Exception {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+        String userId = jwtPayload.getUserId(studyFqn.getOrganizationId());
 
         OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(study, path, FileManager.INCLUDE_FILE_URI_PATH, token);
         if (fileResult.getNumResults() == 0) {

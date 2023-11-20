@@ -50,9 +50,11 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -818,9 +820,13 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariants;
     }
 
-    public ClinicalAnalyst getAnalyst(String token) throws ToolException {
+    public ClinicalAnalyst getAnalyst(String studyId, String token) throws ToolException {
         try {
-            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(studyFqn.getOrganizationId());
+
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
             User user = userQueryResult.first();
@@ -831,6 +837,10 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public String getAssembly(String studyId, String sessionId) throws CatalogException {
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
+
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
         projectQueryResult = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
@@ -877,7 +887,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Get userId from token and Study numeric IDs from the query
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = jwtPayload.getOrganization();
+        String userId = jwtPayload.getUserId();
         List<String> studyIds = getStudyIds(userId, query);
 
         // If one specific clinical analysis, sample or individual is provided we expect a single valid study as well

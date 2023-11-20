@@ -239,7 +239,7 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
                 qc.getVariant().setHrDetects(new ArrayList<>());
             }
             qc.getVariant().getHrDetects().add(hrDetect);
-            catalogManager.getSampleManager().update(organizationId, getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+            catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());
         });
     }

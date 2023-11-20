@@ -45,6 +45,6 @@ public class FileTsvAnnotationLoader extends TsvAnnotationLoader {
     public void addAnnotationSet(String entryId, AnnotationSet annotationSet, QueryOptions options) throws CatalogException {
         FileUpdateParams fileUpdateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD));
-        catalogManager.getFileManager().update(organizationId, study, entryId, fileUpdateParams, options, token);
+        catalogManager.getFileManager().update(study, entryId, fileUpdateParams, options, token);
     }
 }

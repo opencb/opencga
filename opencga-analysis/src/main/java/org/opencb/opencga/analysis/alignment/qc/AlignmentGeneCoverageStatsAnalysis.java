@@ -117,7 +117,7 @@ public class AlignmentGeneCoverageStatsAnalysis extends OpenCgaToolScopeStudy {
                 }
                 qc.getCoverage().setGeneCoverageStats(geneCoverageStats);
 
-                catalogManager.getFileManager().update(organizationId, getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
+                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());
             }
         });

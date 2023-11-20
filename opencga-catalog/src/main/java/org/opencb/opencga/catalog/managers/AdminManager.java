@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Group;
@@ -42,12 +43,13 @@ public class AdminManager extends AbstractManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(organizationId, userId);
+            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
 
             // Fix query object
             if (query.containsKey(ParamConstants.USER)) {
@@ -68,11 +70,11 @@ public class AdminManager extends AbstractManager {
             }
 
             OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.USER, "", "", auditParams,
+            auditManager.auditSearch(organizationId, jwtPayload.getUserId(organizationId), Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return userDataResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.USER, "", "", auditParams,
+            auditManager.auditSearch(organizationId, jwtPayload.getUserId(organizationId), Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -87,9 +89,9 @@ public class AdminManager extends AbstractManager {
                 .append("groupIds", groupIds)
                 .append("action", action)
                 .append("token", token);
-        String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUser);
+            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -107,7 +109,8 @@ public class AdminManager extends AbstractManager {
             }
 
             // Check studyIds exist
-            List<Study> studies = catalogManager.getStudyManager().resolveIds(studyIds, authenticatedUser, organizationId);
+            List<Study> studies = catalogManager.getStudyManager().resolveIds(studyIds, jwtPayload.getUserId(organizationId),
+                    organizationId);
             List<Long> studyUids = new ArrayList<>(studies.size());
             for (Study study : studies) {
                 if (ParamConstants.ADMIN_STUDY_FQN.equals(study.getFqn())) {
@@ -122,14 +125,33 @@ public class AdminManager extends AbstractManager {
 
             OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).updateUserFromGroups(userId, studyUids, groupIds, action);
 
-            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.audit(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP,
+                    Enums.Resource.STUDY, "", "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.audit(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP,
+                    Enums.Resource.STUDY, "", "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    public List<String> getOrganizationIds(String token) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        try {
+            authorizationManager.checkIsInstallationAdministrator(payload);
+            List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+
+            auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, payload.getUserId(), Enums.Action.FETCH_ORGANIZATION_IDS,
+                    Enums.Resource.STUDY, "", "", "", "", new ObjectMap(), new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return organizationIds;
+        } catch (CatalogException e) {
+            auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, payload.getUserId(), Enums.Action.FETCH_ORGANIZATION_IDS,
+                    Enums.Resource.STUDY, "", "", "", "", new ObjectMap(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
     }
 
     /**
@@ -147,13 +169,14 @@ public class AdminManager extends AbstractManager {
     public OpenCGAResult<Group> syncRemoteGroups(String organizationId, String userId, List<String> remoteGroupIds,
                                                  String authenticationOriginId, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
                 .append("userId", userId)
                 .append("remoteGroupIds", remoteGroupIds)
                 .append("authenticationOriginId", authenticationOriginId)
                 .append("token", token);
-        String authenticatedUser = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUser);
+            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -164,12 +187,13 @@ public class AdminManager extends AbstractManager {
             OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroupIds,
                     authenticationOriginId);
 
-            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            auditManager.audit(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP,
+                    Enums.Resource.STUDY, "", "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, "", "", "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.audit(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP,
+                    Enums.Resource.STUDY, "", "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

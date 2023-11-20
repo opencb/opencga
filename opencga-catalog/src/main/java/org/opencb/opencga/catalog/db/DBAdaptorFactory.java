@@ -79,7 +79,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     void createIndexes(String organization) throws CatalogDBException;
 
-    List<String> getOrganizationIds();
+    List<String> getOrganizationIds() throws CatalogDBException;
 
     MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException;
 

@@ -153,7 +153,9 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public List<String> getOrganizationIds() {
+    public List<String> getOrganizationIds() throws CatalogDBException {
+        // Recheck in case there are new organizations
+        initOrganizations(configuration);
         return new ArrayList<>(organizationDBAdaptorMap.keySet());
     }
 
@@ -164,20 +166,27 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private void connect(Configuration catalogConfiguration) throws CatalogDBException {
         // Init map of organization db adaptor factories
         organizationDBAdaptorMap = new HashMap<>();
+        initOrganizations(catalogConfiguration);
+    }
 
+    private void initOrganizations(Configuration catalogConfiguration) throws CatalogDBException {
         // Configure admin organization first
-        OrganizationMongoDBAdaptorFactory adminFactory = configureOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION,
-                catalogConfiguration);
+        OrganizationMongoDBAdaptorFactory adminFactory;
+        if (organizationDBAdaptorMap.containsKey(ParamConstants.ADMIN_ORGANIZATION)) {
+            adminFactory = organizationDBAdaptorMap.get(ParamConstants.ADMIN_ORGANIZATION);
+        } else {
+            adminFactory = configureOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION, catalogConfiguration);
+            organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION, adminFactory);
+        }
         if (adminFactory.isCatalogDBReady()) {
-            organizationDBAdaptorMap.put(ParamConstants.ADMIN_ORGANIZATION.toLowerCase(), adminFactory);
-
             // Read organizations present in the installation
             Query query = new Query(SettingsDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
             OpenCGAResult<Settings> results = adminFactory.getCatalogSettingsDBAdaptor().get(query, new QueryOptions());
 
             for (Settings organizationSettings : results.getResults()) {
                 OrganizationSummary organizationSummary = getOrganizationSummary(organizationSettings);
-                if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationSummary.getId())) {
+                if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationSummary.getId())
+                        && (!organizationDBAdaptorMap.containsKey(organizationSummary.getId()))) {
                     OrganizationMongoDBAdaptorFactory orgFactory = configureOrganizationMongoDBAdaptorFactory(organizationSummary.getId(),
                             catalogConfiguration);
                     organizationDBAdaptorMap.put(organizationSummary.getId(), orgFactory);

@@ -58,6 +58,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
+        @Parameter(names = {"--organization"}, description = "Organization id")
+        public String organizationId;
+
         @Parameter(names = {"--status"}, description = "Filter migrations by status. PENDING, ERROR, DONE")
         public List<String> status;
 

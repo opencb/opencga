@@ -58,8 +58,6 @@ public class MigrationManager {
 
     private final CatalogManager catalogManager;
     private final Configuration configuration;
-//    private final StorageConfiguration storageConfiguration;
-//    private final MigrationDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
     private final MongoDBAdaptorFactory dbAdaptorFactory;
@@ -67,7 +65,6 @@ public class MigrationManager {
     public MigrationManager(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         this.catalogManager = catalogManager;
         this.configuration = configuration;
-//        this.migrationDBAdaptor = dbAdaptorFactory.getMigrationDBAdaptor();
         this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbAdaptorFactory;
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
@@ -79,7 +76,7 @@ public class MigrationManager {
 
     public MigrationRun runManualMigration(String organizationId, String version, String id, Path appHome, boolean force, boolean offline,
                                            ObjectMap params, String token) throws CatalogException {
-        token = validateAdmin(organizationId, token);
+        token = validateAdmin(token);
         for (Class<? extends MigrationTool> c : getAvailableMigrations()) {
             Migration migration = getMigrationAnnotation(c);
             if (migration.id().equals(id) && migration.version().equals(version)) {
@@ -156,7 +153,7 @@ public class MigrationManager {
         Path appHomePath = Paths.get(appHome);
         FileUtils.checkDirectory(appHomePath);
 
-        token = validateAdmin(organizationId, token);
+        token = validateAdmin(token);
 
         // 0. Fetch all migrations
         updateMigrationRuns(organizationId, token);
@@ -211,13 +208,24 @@ public class MigrationManager {
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String organizationId, String version, String token)
             throws CatalogException {
-        validateAdmin(organizationId, token);
+        token = validateAdmin(token);
         updateMigrationRuns(organizationId, token);
         Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
         return filterPendingMigrations(organizationId, version, availableMigrations);
     }
 
-    public MigrationSummary getMigrationSummary(String organizationId) throws CatalogException {
+    public Map<String, MigrationSummary> getMigrationSummary() throws CatalogException {
+        Map<String, MigrationSummary> migrationSummaryMap = new HashMap<>();
+        // Loop over organizations
+        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+            MigrationSummary migrationSummary = getMigrationSummary(organizationId);
+            migrationSummaryMap.put(organizationId, migrationSummary);
+        }
+        return migrationSummaryMap;
+    }
+
+    private MigrationSummary getMigrationSummary(String organizationId) throws CatalogException {
+        logger.info("Fetching migration summary for organization '{}'", organizationId);
         List<Pair<Migration, MigrationRun>> runs = getMigrationRuns(organizationId, null, null, null);
 
         MigrationSummary migrationSummary = new MigrationSummary()
@@ -246,7 +254,7 @@ public class MigrationManager {
     public List<Pair<Migration, MigrationRun>> getMigrationRuns(String organizationId, String version,
                                                                 List<Migration.MigrationDomain> domain, List<String> status, String token)
             throws CatalogException {
-        validateAdmin(organizationId, token);
+        token = validateAdmin(token);
 
         // 0. Update migration runs
         updateMigrationRuns(organizationId, token);
@@ -256,7 +264,7 @@ public class MigrationManager {
 
     // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
     public void skipPendingMigrations(String organizationId, String token) throws CatalogException {
-        validateAdmin(organizationId, token);
+        validateAdmin(token);
 
         // 0. Fetch all migrations
         Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
@@ -275,17 +283,28 @@ public class MigrationManager {
         }
     }
 
+    public void updateMigrationRuns(String token) throws CatalogException {
+        // Loop over all organizations
+        for (String organizationId : dbAdaptorFactory.getOrganizationIds()) {
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                updateMigrationRuns(organizationId, token);
+            }
+        }
+        // Lastly, migrate the admin organization
+        updateMigrationRuns(ParamConstants.ADMIN_ORGANIZATION, token);
+    }
+
     public void updateMigrationRuns(String organizationId, String token) throws CatalogException {
-        validateAdmin(organizationId, token);
+        token = validateAdmin(token);
 
         // 0. Fetch all migrations
         Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
 
+        logger.info("Updating migration runs for organization '{}'", organizationId);
         // 1. Update migration run status
         for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
             updateMigrationRun(organizationId, getMigrationAnnotation(runnableMigration), token);
         }
-
     }
 
     private List<Migration> getMigrations() {
@@ -456,10 +475,9 @@ public class MigrationManager {
         return migrations;
     }
 
-    private String validateAdmin(String organizationId, String token) throws CatalogException {
+    private String validateAdmin(String token) throws CatalogException {
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
-        String userId = jwtPayload.getUserId(organizationId);
-        catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(organizationId, userId);
+        catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(jwtPayload);
         // Extend token life
         return catalogManager.getUserManager().getNonExpiringToken(jwtPayload.getOrganization(), jwtPayload.getUserId(),
                 Collections.emptyMap(), token);

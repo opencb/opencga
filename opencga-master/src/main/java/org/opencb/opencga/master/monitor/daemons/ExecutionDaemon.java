@@ -250,9 +250,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token,
-                           CatalogManager catalogManager, StorageConfiguration storageConfiguration, String appHome)
-            throws CatalogDBException {
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, StorageConfiguration storageConfiguration,
+                           String appHome) throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
@@ -305,48 +304,54 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkJobs() {
-        long pendingJobs = -1;
-        long queuedJobs = -1;
-        long runningJobs = -1;
-        try {
-            pendingJobs = jobManager.count(organizationId, pendingJobsQuery, token).getNumMatches();
-            queuedJobs = jobManager.count(organizationId, queuedJobsQuery, token).getNumMatches();
-            runningJobs = jobManager.count(organizationId, runningJobsQuery, token).getNumMatches();
-        } catch (CatalogException e) {
-            logger.error("{}", e.getMessage(), e);
+    protected void checkJobs() throws CatalogException {
+        List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
+        for (String organizationId : organizationIds) {
+            long pendingJobs = -1;
+            long queuedJobs = -1;
+            long runningJobs = -1;
+            try {
+                pendingJobs = jobManager.count(organizationId, pendingJobsQuery, token).getNumMatches();
+                queuedJobs = jobManager.count(organizationId, queuedJobsQuery, token).getNumMatches();
+                runningJobs = jobManager.count(organizationId, runningJobsQuery, token).getNumMatches();
+            } catch (CatalogException e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+            logger.info("----- EXECUTION DAEMON  ----- Organization={} --> pending={}, queued={}, running={}", organizationId, pendingJobs,
+                    queuedJobs, runningJobs);
         }
-        logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
 
-            /*
-            PENDING JOBS
-             */
-        checkPendingJobs();
+        /*
+        PENDING JOBS
+        */
+        checkPendingJobs(organizationIds);
 
-            /*
-            QUEUED JOBS
-             */
-        checkQueuedJobs();
+        /*
+        QUEUED JOBS
+        */
+        checkQueuedJobs(organizationIds);
 
-            /*
-            RUNNING JOBS
-             */
-        checkRunningJobs();
+        /*
+        RUNNING JOBS
+        */
+        checkRunningJobs(organizationIds);
     }
 
-    protected void checkRunningJobs() {
-        int handledRunningJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(organizationId, runningJobsQuery, queryOptions, token)) {
-            while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledRunningJobs += checkRunningJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+    protected void checkRunningJobs(List<String> organizationIds) {
+        for (String organizationId : organizationIds) {
+            int handledRunningJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, runningJobsQuery, queryOptions, token)) {
+                while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledRunningJobs += checkRunningJob(job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
@@ -365,7 +370,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     // Update the result of the job
                     PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
-                        jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+                        jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
                         logger.error("[{}] - Could not update result information: {}", job.getId(), e.getMessage(), e);
                         return 0;
@@ -391,19 +396,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkQueuedJobs() {
-        int handledQueuedJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(organizationId, queuedJobsQuery, queryOptions, token)) {
-            while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledQueuedJobs += checkQueuedJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+    protected void checkQueuedJobs(List<String> organizationIds) {
+        for (String organizationId : organizationIds) {
+            int handledQueuedJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, queuedJobsQuery, queryOptions, token)) {
+                while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledQueuedJobs += checkQueuedJob(job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
@@ -443,22 +450,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkPendingJobs() {
+    protected void checkPendingJobs(List<String> organizationIds) {
         // Clear job counts each cycle
         jobsCountByType.clear();
 
-        int handledPendingJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(organizationId, pendingJobsQuery, queryOptions, token)) {
-            while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledPendingJobs += checkPendingJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+        for (String organizationId : organizationIds) {
+            int handledPendingJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, pendingJobsQuery, queryOptions, token)) {
+                while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledPendingJobs += checkPendingJob(organizationId, job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
@@ -468,7 +477,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    protected int checkPendingJob(Job job) {
+    protected int checkPendingJob(String organizationId, Job job) {
         if (StringUtils.isEmpty(job.getStudy().getId())) {
             return abortJob(job, "Missing mandatory 'studyUuid' field");
         }
@@ -477,7 +486,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
         }
 
-        if (!canBeQueued(job)) {
+        if (!canBeQueued(organizationId, job)) {
             return 0;
         }
 
@@ -490,7 +499,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         try {
-            checkToolExecutionPermission(job);
+            checkToolExecutionPermission(organizationId, job);
         } catch (Exception e) {
             return abortJob(job, e);
         }
@@ -534,7 +543,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-
         Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
@@ -547,8 +555,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         } else {
             try {
-                // JOBS/user/job_id/
-                updateParams.setOutDir(getValidDefaultOutDir(job));
+                // JOBS/organizationId/user/job_id/
+                updateParams.setOutDir(getValidDefaultOutDir(organizationId, job));
             } catch (CatalogException e) {
                 return abortJob(job, "Cannot create output directory.", e);
             }
@@ -572,7 +580,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
         updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)));
         try {
-            jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
             return 0;
@@ -592,7 +600,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return 1;
     }
 
-    protected void checkToolExecutionPermission(Job job) throws Exception {
+    protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
         Tool tool = new ToolFactory().getTool(job.getTool().getId());
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
@@ -721,9 +729,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return outDir;
     }
 
-    private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
+    private File getValidDefaultOutDir(String organizationId, Job job) throws CatalogException {
+        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + organizationId + "/" + job.getUserId() + "/"
+                + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token)
+                .first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -740,7 +749,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check if the user already has permissions set in his folder
         OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
-                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
+                Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"), job.getUserId(), true, token);
         if (result.getNumResults() == 0 || result.first().getAcl().isEmpty()
                 || CollectionUtils.isEmpty(result.first().getAcl().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
@@ -748,10 +757,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .stream()
                     .map(FilePermissions::toString)
                     .collect(Collectors.joining(","));
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new FileAclParams(null, allFilePermissions), SET, token);
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"),
+                    job.getUserId(), new FileAclParams(null, allFilePermissions), SET, token);
             // Remove permissions to the @members group
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"),
                     StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
         }
 
@@ -831,7 +840,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    private boolean canBeQueued(Job job) {
+    private boolean canBeQueued(String organizationId, Job job) {
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
                 if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getId())) {
@@ -853,18 +862,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             // No limit for this tool
             return true;
         } else {
-            return canBeQueued(job.getTool().getId(), maxJobs);
+            return canBeQueued(organizationId, job.getTool().getId(), maxJobs);
         }
     }
 
-    private boolean canBeQueued(String toolId, int maxJobs) {
+    private boolean canBeQueued(String organizationId, String toolId, int maxJobs) {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED + ","
                         + Enums.ExecutionStatus.RUNNING)
                 .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
         long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
             try {
-                return catalogManager.getJobManager().count(organizationId, query, token).getNumMatches();
+                return catalogManager.getJobManager().countInOrganization(organizationId, query, token).getNumMatches();
             } catch (CatalogException e) {
                 logger.error("Error counting the current number of running and queued \"" + toolId + "\" jobs", e);
                 return 0L;
@@ -908,7 +917,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setInternal(new JobInternal(status));
 
         try {
-            jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(),
                     updateParams.getInternal().getStatus().getId(), e.getMessage(), e);
@@ -973,7 +982,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
             PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
             try {
-                jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+                jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
             } catch (CatalogException e) {
                 logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                         updateParams.toString(), e.getMessage(), e);
@@ -1058,7 +1067,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
         try {
-            jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                     updateParams.toString(), e.getMessage(), e);
@@ -1131,7 +1140,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
                     + e.getMessage())));
 
-            jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, options, token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
 
             return;
         }
@@ -1143,7 +1152,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     + "code: " + post.getStatus())));
         }
 
-        jobManager.update(organizationId, job.getStudy().getId(), job.getId(), updateParams, options, token);
+        jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
     }
 
     private String getErrorLogFileName(Job job) {

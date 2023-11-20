@@ -217,8 +217,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkIsInstallationAdministrator(String organizationId, String user) throws CatalogException {
-        if (!isOpencga(user) && !isOrganizationOwnerOrAdmin(organizationId, user)) {
+    public void checkIsInstallationAdministrator(JwtPayload payload) throws CatalogException {
+        if (!isInstallationAdministrator(payload)) {
             throw new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
         }
     }

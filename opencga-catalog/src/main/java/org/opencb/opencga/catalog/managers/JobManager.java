@@ -746,6 +746,12 @@ public class JobManager extends ResourceManager<Job> {
         return getJobDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
     }
 
+    public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {
+        JwtPayload jwtPayload = userManager.validateToken(token);
+        authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+        return catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organizationId).count(query);
+    }
+
     @Override
     public OpenCGAResult<Job> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);

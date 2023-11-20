@@ -126,7 +126,7 @@ public interface AuthorizationManager {
 
     boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException;
 
-    void checkIsInstallationAdministrator(String organizationId, String user) throws CatalogException;
+    void checkIsInstallationAdministrator(JwtPayload payload) throws CatalogException;
 
     void checkIsOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
 

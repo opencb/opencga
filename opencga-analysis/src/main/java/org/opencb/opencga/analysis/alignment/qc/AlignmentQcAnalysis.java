@@ -230,7 +230,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             }
 
             if (saveQc) {
-                catalogManager.getFileManager().update(organizationId, getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
+                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());
             }
         });

@@ -175,6 +175,7 @@ public final class Enums {
 
         IMPORT,
 
+        FETCH_ORGANIZATION_IDS,
         IMPORT_EXTERNAL_USERS,
         IMPORT_EXTERNAL_GROUP_OF_USERS,
         SYNC_EXTERNAL_GROUP_OF_USERS,

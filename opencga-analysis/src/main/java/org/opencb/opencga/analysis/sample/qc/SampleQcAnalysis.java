@@ -18,7 +18,9 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.*;
+import org.opencb.biodata.models.clinical.qc.GenomePlot;
+import org.opencb.biodata.models.clinical.qc.GenomePlotConfig;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,9 +31,11 @@ import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -80,8 +84,12 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Check permissions
         try {
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(organizationId);
+
             long studyUid = catalogManager.getStudyManager().get(getStudy(), QueryOptions.empty(), token).first().getUid();
-            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
             catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, studyUid, userId, WRITE_SAMPLES);
         } catch (CatalogException e) {
             throw new ToolException(e);
@@ -350,7 +358,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             if (genomePlot != null) {
                 qc.getVariant().setGenomePlot(genomePlot);
 
-                catalogManager.getSampleManager().update(organizationId, getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());
                 logger.info("Quality control saved for sample {}", sample.getId());
             }

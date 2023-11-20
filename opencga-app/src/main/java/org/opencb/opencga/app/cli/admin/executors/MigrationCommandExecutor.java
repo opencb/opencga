@@ -10,16 +10,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationManager;
-import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 08/09/17.
@@ -65,11 +67,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
-            catalogManager.getMigrationManager().updateMigrationRuns(organizationId, token);
-            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary(organizationId);
-            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationSummary));
+            catalogManager.getMigrationManager().updateMigrationRuns(token);
+            Map<String, MigrationSummary> migrationSummaryMap = catalogManager.getMigrationManager().getMigrationSummary();
+            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(migrationSummaryMap));
         }
-
     }
 
     private void search() throws Exception {
@@ -79,44 +81,54 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            List<Pair<Migration, MigrationRun>> rows = catalogManager.getMigrationManager()
-                    .getMigrationRuns(organizationId, options.version, options.domain, options.status, token);
-
-            if (options.commonOptions.commonOptions.outputFormat.toLowerCase().contains("json")) {
-                for (Pair<Migration, MigrationRun> pair : rows) {
-                    System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(pair));
-                }
+            List<String> organizationIds;
+            if (StringUtils.isNotEmpty(options.organizationId)) {
+                organizationIds = Collections.singletonList(options.organizationId);
             } else {
-                Table<Pair<Migration, MigrationRun>> table = new Table<Pair<Migration, MigrationRun>>(Table.PrinterType.JANSI)
-                        .addColumn("ID", p -> p.getKey().id(), 50)
-                        .addColumn("Description", p -> p.getKey().description(), 50)
-                        .addColumnEnum("Domain", p -> p.getKey().domain())
-                        .addColumn("Version", p -> p.getKey().version())
-                        .addColumnEnum("Language", p -> p.getKey().language())
-                        .addColumn("Manual", p -> Boolean.toString(p.getKey().manual()))
-                        .addColumn("Offline", p -> Boolean.toString(p.getKey().offline()))
-                        .addColumnNumber("Patch", p -> p.getKey().patch())
-                        .addColumn("Status", MigrationCommandExecutor::getMigrationStatus)
-                        .addColumnNumber("RunPatch", p -> p.getValue().getPatch())
-                        .addColumn("ExecutionTime", p -> p.getValue().getStart() + " " + TimeUtils.durationToString(ChronoUnit.MILLIS.between(
-                                p.getValue().getStart().toInstant(),
-                                p.getValue().getEnd().toInstant())))
-                        .addColumn("Events", p -> {
-                            StringBuilder v = new StringBuilder();
-                            if (StringUtils.isNotEmpty(p.getValue().getException())) {
-                                v.append("Exception: ").append(p.getValue().getException());
-                            }
-                            if (p.getValue().getEvents() != null) {
-                                for (Event event : p.getValue().getEvents()) {
-                                    if (v.length() > 0) {
-                                        v.append("\n");
-                                    }
-                                    v.append(event.getType()).append(": ").append(event.getMessage());
+                organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
+            }
+
+            for (String organizationId : organizationIds) {
+                System.out.println("Organization '" + organizationId + "'");
+                List<Pair<Migration, MigrationRun>> rows = catalogManager.getMigrationManager()
+                        .getMigrationRuns(organizationId, options.version, options.domain, options.status, token);
+
+                if (options.commonOptions.commonOptions.outputFormat.toLowerCase().contains("json")) {
+                    for (Pair<Migration, MigrationRun> pair : rows) {
+                        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(pair));
+                    }
+                } else {
+                    Table<Pair<Migration, MigrationRun>> table = new Table<Pair<Migration, MigrationRun>>(Table.PrinterType.JANSI)
+                            .addColumn("ID", p -> p.getKey().id(), 50)
+                            .addColumn("Description", p -> p.getKey().description(), 50)
+                            .addColumnEnum("Domain", p -> p.getKey().domain())
+                            .addColumn("Version", p -> p.getKey().version())
+                            .addColumnEnum("Language", p -> p.getKey().language())
+                            .addColumn("Manual", p -> Boolean.toString(p.getKey().manual()))
+                            .addColumn("Offline", p -> Boolean.toString(p.getKey().offline()))
+                            .addColumnNumber("Patch", p -> p.getKey().patch())
+                            .addColumn("Status", MigrationCommandExecutor::getMigrationStatus)
+                            .addColumnNumber("RunPatch", p -> p.getValue().getPatch())
+                            .addColumn("ExecutionTime", p -> p.getValue().getStart() + " " + TimeUtils.durationToString(ChronoUnit.MILLIS.between(
+                                    p.getValue().getStart().toInstant(),
+                                    p.getValue().getEnd().toInstant())))
+                            .addColumn("Events", p -> {
+                                StringBuilder v = new StringBuilder();
+                                if (StringUtils.isNotEmpty(p.getValue().getException())) {
+                                    v.append("Exception: ").append(p.getValue().getException());
                                 }
-                            }
-                            return v.toString();
-                        });
-                table.printTable(rows);
+                                if (p.getValue().getEvents() != null) {
+                                    for (Event event : p.getValue().getEvents()) {
+                                        if (v.length() > 0) {
+                                            v.append("\n");
+                                        }
+                                        v.append(event.getType()).append(": ").append(event.getMessage());
+                                    }
+                                }
+                                return v.toString();
+                            });
+                    table.printTable(rows);
+                }
             }
         }
     }
@@ -139,7 +151,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String version = parseVersion(options.version);
 
             MigrationManager migrationManager = catalogManager.getMigrationManager();
-            migrationManager.runMigration(organizationId, version, options.domain, options.language, options.offline, appHome, token);
+            migrationManager.runMigration(version, options.domain, options.language, options.offline, appHome, token);
         }
     }
 
@@ -150,7 +162,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            catalogManager.getMigrationManager().runManualMigration(organizationId, parseVersion(options.version), options.id, Paths.get(appHome),
+            catalogManager.getMigrationManager().runManualMigration(parseVersion(options.version), options.id, Paths.get(appHome),
                     options.force, options.offline, new ObjectMap(options.commonOptions.commonOptions.params), token);
         }
     }

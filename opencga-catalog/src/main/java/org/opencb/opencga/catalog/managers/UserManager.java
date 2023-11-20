@@ -700,17 +700,17 @@ public class UserManager extends AbstractManager {
     public OpenCGAResult resetPassword(String organizationId, String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
+        JwtPayload jwtPayload = validateToken(token);
         try {
-            String authenticatedUserId = getUserId(organizationId, token);
-            authorizationManager.checkIsInstallationAdministrator(organizationId, authenticatedUserId);
+            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
             OpenCGAResult writeResult = AuthenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
-            auditManager.auditUser(organizationId, userId, Enums.Action.RESET_USER_PASSWORD, userId,
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return writeResult;
         } catch (CatalogException e) {
-            auditManager.auditUser(organizationId, userId, Enums.Action.RESET_USER_PASSWORD, userId,
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

@@ -226,7 +226,7 @@ public class StudyManager extends AbstractManager {
         OpenCGAResult<Study> studyDataResult;
         if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
             // If it is the administrator, we allow it without checking the user anymore
-            authorizationManager.checkIsInstallationAdministrator(payload.getOrganization(), payload.getUserId());
+            authorizationManager.checkIsInstallationAdministrator(payload);
             studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
         } else {
             studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);

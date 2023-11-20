@@ -23,8 +23,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -83,7 +85,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         // Check permissions
         try {
             Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
-            String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(organizationId);
             catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId, WRITE_INDIVIDUALS);
         } catch (CatalogException e) {
             throw new ToolException(e);
@@ -183,7 +189,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             qualityControl = executor.getQualityControl();
             if (qualityControl != null) {
                 IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setQualityControl(qualityControl);
-                catalogManager.getIndividualManager().update(organizationId, getStudyId(), individualId, individualUpdateParams, QueryOptions.empty(),
+                catalogManager.getIndividualManager().update(getStudyId(), individualId, individualUpdateParams, QueryOptions.empty(),
                         token);
             }
         } catch (CatalogException e) {
