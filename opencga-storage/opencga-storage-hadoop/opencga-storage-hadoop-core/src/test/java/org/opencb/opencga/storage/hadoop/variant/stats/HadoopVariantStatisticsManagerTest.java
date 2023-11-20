@@ -82,14 +82,14 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
     public void calculateStatsMultiCohortsTest() throws Exception {
         super.calculateStatsMultiCohortsTest();
 
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         //delete all stats
         List<String> cohorts = new ArrayList<>();
         metadataManager.getCalculatedCohorts(studyMetadata.getId()).forEach(c -> cohorts.add(c.getName()));
         variantStorageEngine.deleteStats(studyMetadata.getName(), cohorts, new ObjectMap());
 
         checkCohorts(dbAdaptor, studyMetadata);
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
 
         super.calculateStatsMultiCohortsTest();
     }
@@ -98,14 +98,14 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         super.calculateStatsSeparatedCohortsTest();
 
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         //delete all stats
         List<String> cohorts = new ArrayList<>();
         metadataManager.getCalculatedCohorts(studyMetadata.getId()).forEach(c -> cohorts.add(c.getName()));
         variantStorageEngine.deleteStats(studyMetadata.getName(), cohorts, new ObjectMap());
 
         checkCohorts(dbAdaptor, studyMetadata);
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
 
         super.calculateStatsSeparatedCohortsTest();
     }

@@ -535,8 +535,12 @@ public class SampleIndexQueryParser {
         int extendedFilteringRegion = 0;
         for (String sample : sampleGenotypeQuery.keySet()) {
             SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sample, studyId);
-            extendedFilteringRegion = Math.max(extendedFilteringRegion, sampleMetadata.getAttributes()
-                    .getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, -1));
+            if (sampleMetadata.getAttributes().getBoolean(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH)) {
+                extendedFilteringRegion = extendedFilteringRegionDefault;
+            } else {
+                extendedFilteringRegion = Math.max(extendedFilteringRegion, sampleMetadata.getAttributes()
+                        .getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, -1));
+            }
         }
         if (extendedFilteringRegion <= 0) {
             extendedFilteringRegion = extendedFilteringRegionDefault;

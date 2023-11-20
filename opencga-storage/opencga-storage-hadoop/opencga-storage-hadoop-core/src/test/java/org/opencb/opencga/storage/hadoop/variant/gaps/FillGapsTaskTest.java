@@ -159,17 +159,30 @@ public class FillGapsTaskTest {
 
     @Test
     public void testIsRegionAfterVariantStart() {
-        assertTrue(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:-:T")));
-        assertFalse(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:A:T")));
-        assertTrue(FillGapsTask.isRegionAfterVariantStart(101, 101, new Variant("1:100:A:T")));
+        isRegionAfterVariantStart(100, 100, "1:100:-:T", true, false);
+        isRegionAfterVariantStart(101, 101, "1:100:A:T", true, false);
 
-        assertFalse(FillGapsTask.isRegionAfterVariantStart(99, 99, new Variant("1:100:AAA:GGG")));
-        assertFalse(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:AAA:GGG")));
-        assertFalse(FillGapsTask.isRegionAfterVariantStart(101, 100, new Variant("1:100:AAA:GGG")));
-        assertTrue(FillGapsTask.isRegionAfterVariantStart(101, 101, new Variant("1:100:AAA:GGG")));
-        assertTrue(FillGapsTask.isRegionAfterVariantStart(102, 102, new Variant("1:100:AAA:GGG")));
-        assertTrue(FillGapsTask.isRegionAfterVariantStart(103, 103, new Variant("1:100:AAA:GGG")));
+        isRegionAfterVariantStart(99, 99, "1:100:AAA:GGG", false, false);
+        isRegionAfterVariantStart(100, 100, "1:100:AAA:GGG", false, true);
+        isRegionAfterVariantStart(101, 100, "1:100:AAA:GGG", true, true);
+        isRegionAfterVariantStart(101, 101, "1:100:AAA:GGG", true, true);
+        isRegionAfterVariantStart(102, 102, "1:100:AAA:GGG", true, true);
+        isRegionAfterVariantStart(103, 103, "1:100:AAA:GGG", true, false);
+
+        isRegionAfterVariantStart(100, 100, "1:101:-:TTT", false, false);
+        isRegionAfterVariantStart(101, 100, "1:100:A:T", true, false);
+
+        // Overlapping positions
+        isRegionAfterVariantStart(100, 110, "1:105:A:T", true, true);
+        isRegionAfterVariantStart(100, 100, "1:100:A:T", false, true);
     }
+
+    private void isRegionAfterVariantStart(int start, int end, String variantString, boolean afterVariant, boolean overlaps) {
+        Variant variant = new Variant(variantString);
+        assertEquals("isRegionAfterVariantStart", afterVariant, FillGapsTask.isRegionAfterVariantStart(start, end, variant));
+        assertEquals("overlapsWith", overlaps, FillGapsTask.overlapsWith(variant, variant.getChromosome(), start, end));
+    }
+
 
     @Test
     public void fillGapsAlreadyPresent() {
