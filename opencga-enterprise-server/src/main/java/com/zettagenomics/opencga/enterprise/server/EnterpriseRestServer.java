@@ -20,6 +20,7 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.jasig.cas.client.configuration.ConfigurationKeys;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.server.AbstractStorageServer;
 
@@ -127,8 +128,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     casValidationFilterHolder.setName("CAS Validation Filter");
                     casValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
                     Map<String, String> casInitParameters = new HashMap<>();
-                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
                     casValidationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -136,8 +137,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     casAuthenticationFilterHolder.setName("CAS Authentication Filter");
                     casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
                     casInitParameters = new HashMap<>();
-                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
                     casAuthenticationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -145,8 +146,9 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
                     requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
                     casInitParameters = new HashMap<>();
-                    casInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    requestWrapperFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of CAS configuration
                     break;
@@ -157,8 +159,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     samlValidationFilterHolder.setName("CAS Validation Filter");
                     samlValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Saml11TicketValidationFilter");
                     Map<String, String> samlInitParameters = new HashMap<>();
-                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
                     samlValidationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -166,8 +168,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     samlAuthenticationFilterHolder.setName("CAS Authentication Filter");
                     samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
                     samlInitParameters = new HashMap<>();
-                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
                     samlAuthenticationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -175,8 +177,9 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     saml1RequestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
                     saml1RequestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
                     samlInitParameters = new HashMap<>();
-                    samlInitParameters.put("casServerUrlPrefix", enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put("serverName", enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    saml1RequestWrapperFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(saml1RequestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of SAML1 configuration
                     break;

@@ -275,7 +275,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -284,7 +284,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
         public String type; 
     
-        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder", required = false, arity = 1)
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorder; 
     
         @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
@@ -364,7 +364,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -376,7 +376,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
         public String analystId; 
     
-        @Parameter(names = {"--method-name"}, description = "Interpretation method name", required = false, arity = 1)
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String methodName; 
     
         @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
@@ -432,7 +432,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Interpretation UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -444,7 +444,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "Analyst ID", required = false, arity = 1)
         public String analystId; 
     
-        @Parameter(names = {"--method-name"}, description = "Interpretation method name", required = false, arity = 1)
+        @Parameter(names = {"--method-name"}, description = "Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String methodName; 
     
         @Parameter(names = {"--panels"}, description = "Interpretation panels", required = false, arity = 1)
@@ -1488,7 +1488,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--uuid"}, description = "Comma separated list of Clinical Analysis UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -1497,7 +1497,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--type"}, description = "Clinical Analysis type", required = false, arity = 1)
         public String type; 
     
-        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder", required = false, arity = 1)
+        @Parameter(names = {"--disorder"}, description = "Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String disorder; 
     
         @Parameter(names = {"--files"}, description = "Clinical Analysis files", required = false, arity = 1)
