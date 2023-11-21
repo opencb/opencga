@@ -611,8 +611,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "family",commandOptions.family, true);
-            putNestedIfNotEmpty(beanParams, "relatednessMethod",commandOptions.relatednessMethod, true);
             putNestedIfNotEmpty(beanParams, "relatednessMaf",commandOptions.relatednessMaf, true);
+            putNestedIfNotEmpty(beanParams, "haploidCallMode",commandOptions.haploidCallMode, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
             familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1348,7 +1348,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "individuals",commandOptions.individuals, true);
             putNestedIfNotNull(beanParams, "samples",commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "minorAlleleFreq",commandOptions.minorAlleleFreq, true);
-            putNestedIfNotEmpty(beanParams, "method",commandOptions.method, true);
+            putNestedIfNotEmpty(beanParams, "haploidCallMode",commandOptions.haploidCallMode, true);
             putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
 
             relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
