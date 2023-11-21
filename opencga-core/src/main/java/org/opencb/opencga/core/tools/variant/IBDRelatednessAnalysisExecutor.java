@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.nio.file.Path;
@@ -30,6 +29,7 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
     private Family family;
     private List<String> sampleIds;
     private String minorAlleleFreq;
+    private String haploidCallMode;
     private Map<String, Map<String, Float>> thresholds;
     private Path resourcePath;
 
@@ -69,6 +69,15 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
 
     public IBDRelatednessAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
         this.minorAlleleFreq = minorAlleleFreq;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public IBDRelatednessAnalysisExecutor setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

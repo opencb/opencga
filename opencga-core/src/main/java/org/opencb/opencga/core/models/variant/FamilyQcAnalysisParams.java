@@ -26,16 +26,18 @@ public class FamilyQcAnalysisParams extends ToolParams {
     private String family;
     private String relatednessMethod;
     private String relatednessMaf;
+    private String haploidCallMode;
 
     private String outdir;
 
     public FamilyQcAnalysisParams() {
     }
 
-    public FamilyQcAnalysisParams(String family, String relatednessMethod, String relatednessMaf, String outdir) {
+    public FamilyQcAnalysisParams(String family, String relatednessMethod, String relatednessMaf, String haploidCallMode, String outdir) {
         this.family = family;
         this.relatednessMethod = relatednessMethod;
         this.relatednessMaf = relatednessMaf;
+        this.haploidCallMode = haploidCallMode;
         this.outdir = outdir;
     }
 
@@ -45,6 +47,7 @@ public class FamilyQcAnalysisParams extends ToolParams {
         sb.append("family='").append(family).append('\'');
         sb.append(", relatednessMethod='").append(relatednessMethod).append('\'');
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
+        sb.append(", haploidCallMode='").append(haploidCallMode).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -74,6 +77,15 @@ public class FamilyQcAnalysisParams extends ToolParams {
 
     public FamilyQcAnalysisParams setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public FamilyQcAnalysisParams setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

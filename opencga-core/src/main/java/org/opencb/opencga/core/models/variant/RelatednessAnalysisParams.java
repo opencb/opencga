@@ -25,18 +25,34 @@ public class RelatednessAnalysisParams extends ToolParams {
     private List<String> individuals;
     private List<String> samples;
     private String minorAlleleFreq;
+    private String haploidCallMode;
     private String method;
     private String outdir;
 
     public RelatednessAnalysisParams() {
     }
 
-    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String method, String outdir) {
+    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String haploidCallMode,
+                                     String method, String outdir) {
         this.individuals = individuals;
         this.samples = samples;
         this.minorAlleleFreq = minorAlleleFreq;
+        this.haploidCallMode = haploidCallMode;
         this.method = method;
         this.outdir = outdir;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RelatednessAnalysisParams{");
+        sb.append("individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", minorAlleleFreq='").append(minorAlleleFreq).append('\'');
+        sb.append(", haploidCallMode='").append(haploidCallMode).append('\'');
+        sb.append(", method='").append(method).append('\'');
+        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getIndividuals() {
@@ -63,6 +79,15 @@ public class RelatednessAnalysisParams extends ToolParams {
 
     public RelatednessAnalysisParams setMinorAlleleFreq(String minorAlleleFreq) {
         this.minorAlleleFreq = minorAlleleFreq;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public RelatednessAnalysisParams setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

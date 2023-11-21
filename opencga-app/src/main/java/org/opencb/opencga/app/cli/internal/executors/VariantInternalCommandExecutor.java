@@ -902,6 +902,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setIndividualIds(cliOptions.individuals)
                 .setSampleIds(cliOptions.samples)
                 .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
+                .setHaploidCallMode(cliOptions.haploidCallMode)
                 .setMethod(cliOptions.method)
                 .start();
     }
@@ -918,6 +919,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setFamilyId(cliOptions.family)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
                 .setRelatednessMaf(cliOptions.relatednessMaf)
+                .setHaploidCallMode(cliOptions.haploidCallMode)
                 .start();
     }
 

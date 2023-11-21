@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.family.qc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
@@ -48,7 +49,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
 
     public static final String ID = "family-qc";
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
-    + " family members";
+            + " family members";
 
     public  static final String RELATEDNESS_STEP = "relatedness";
 
@@ -56,6 +57,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
     private String familyId;
     private String relatednessMethod;
     private String relatednessMaf;
+    private String haploidCallMode;
     private Map<String, Map<String, Float>> relatednessThresholds;
 
     private Family family;
@@ -95,6 +97,20 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         if (StringUtils.isEmpty(relatednessMaf)) {
             relatednessMaf = RelatednessAnalysis.MAF_DEFAULT_VALUE;
         }
+        if (StringUtils.isEmpty(haploidCallMode)) {
+            haploidCallMode = RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE;
+        } else {
+            switch (haploidCallMode) {
+                case RelatednessReport.HAPLOID_CALL_MODE_HAPLOID_VALUE:
+                case RelatednessReport.HAPLOID_CALL_MODE_MISSING_VALUE:
+                case RelatednessReport.HAPLOID_CALL_MODE_REF_VALUE:
+                    break;
+                default:
+                    throw new ToolException("Invalid haploid call value '" + haploidCallMode + "', accepted values are: "
+                            + RelatednessReport.HAPLOID_CALL_MODE_HAPLOID_VALUE + ", " + RelatednessReport.HAPLOID_CALL_MODE_MISSING_VALUE
+                            + " and " + RelatednessReport.HAPLOID_CALL_MODE_REF_VALUE);
+            }
+        }
 
         Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
         relatednessThresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
@@ -121,6 +137,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setFamily(family)
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
+                .setHaploidCallMode(haploidCallMode)
                 .setRelatednessThresholds(relatednessThresholds)
                 .setRelatednesResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(RelatednessAnalysis.ID))
                 .setQualityControl(qualityControl);
@@ -173,6 +190,15 @@ public class FamilyQcAnalysis extends OpenCgaTool {
 
     public FamilyQcAnalysis setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public FamilyQcAnalysis setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 

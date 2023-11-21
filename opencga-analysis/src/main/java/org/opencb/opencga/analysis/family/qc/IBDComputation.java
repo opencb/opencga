@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -34,19 +32,16 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,7 +54,7 @@ public class IBDComputation {
     private static final String FREQ_FILENAME = BASENAME + ".frq";
     private static final String PRUNE_IN_FILENAME = BASENAME + ".prune.in";
 
-    public static RelatednessReport compute(String study, Family family, List<String> samples, String maf,
+    public static RelatednessReport compute(String study, Family family, List<String> samples, String maf, String haploidCallMode,
                                             Map<String, Map<String, Float>> thresholds, Path resourcesPath, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
         // Check resource (variants.frq and variants.prune.in) and download if necessary
@@ -122,7 +117,7 @@ public class IBDComputation {
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
         }
-        File outFile = runIBD(FILTERED_BASENAME, freqPath, outDir);
+        File outFile = runIBD(FILTERED_BASENAME, freqPath, haploidCallMode, outDir);
 
         if (!outFile.exists()) {
             throw new ToolException("Something wrong happened executing relatedness analysis");
@@ -131,6 +126,7 @@ public class IBDComputation {
         RelatednessReport relatedness = new RelatednessReport()
                 .setMethod("PLINK/IBD")
                 .setMaf(maf)
+                .setHaploidCallMode(haploidCallMode)
                 .setScores(parseRelatednessScores(outFile, family, thresholds));
 
         return relatedness;
@@ -303,7 +299,7 @@ public class IBDComputation {
         bw.close();
     }
 
-    private static File runIBD(String basename, Path freqPath, Path outDir) throws ToolException {
+    private static File runIBD(String basename, Path freqPath, String haploidCallMode, Path outDir) throws ToolException {
         // Input bindings
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(freqPath.getParent().toString(), "/input"));
@@ -313,7 +309,11 @@ public class IBDComputation {
                 "/output");
 
         // Run IBD using PLINK in docker
-        String plinkParams = "plink1.9 --tfile /output/" + basename + " --genome rel-check --read-freq /input/" + FREQ_FILENAME
+        String plinkParams = "plink1.9"
+                + " --tfile /output/" + basename
+                + " --genome rel-check"
+                + " --vcf-half-call " + haploidCallMode
+                + " --read-freq /input/" + FREQ_FILENAME
                 + " --out /output/" + basename;
         try {
             PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
