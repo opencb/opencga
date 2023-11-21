@@ -128,8 +128,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--data-release"}, description = "CellBase data release version to be used. If empty, will use the active one", required = false, arity = 1)
         public String dataRelease;
     
-        @Parameter(names = {"--token"}, description = "CellBase token to access to the licensed/restricted data sources such as COSMIC, HGMD,...", required = false, arity = 1)
-        public String token;
+        @Parameter(names = {"--api-key"}, description = "API key to access to the licensed/restricted data sources (COSMIC, HGMD,...) and to manage quota.", required = false, arity = 1)
+        public String apiKey;
     
     }
 

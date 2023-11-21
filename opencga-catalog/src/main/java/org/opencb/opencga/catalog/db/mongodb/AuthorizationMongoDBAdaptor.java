@@ -522,8 +522,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().addUsersToGroup(studyId, CatalogAuthorizationManager.MEMBERS_GROUP,
-                    userList, clientSession);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().addUsersToGroup(clientSession, studyId, CatalogAuthorizationManager.MEMBERS_GROUP,
+                    userList);
         }
     }
 

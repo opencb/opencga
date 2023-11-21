@@ -71,6 +71,7 @@ public enum VariantField {
     ANNOTATION_CONSERVATION(ANNOTATION, "annotation.conservation"),
     ANNOTATION_CANCER_HOTSPOTS(ANNOTATION, "annotation.cancerHotspots"),
     ANNOTATION_GENE_EXPRESSION(ANNOTATION, "annotation.geneExpression"),
+    ANNOTATION_PHARMACOGENOMICS(ANNOTATION, "annotation.pharmacogenomics"),
     ANNOTATION_GENE_TRAIT_ASSOCIATION(ANNOTATION, "annotation.geneTraitAssociation"),
     ANNOTATION_GENE_DRUG_INTERACTION(ANNOTATION, "annotation.geneDrugInteraction"),
     ANNOTATION_GENE_CANCER_ASSOCIATIONS(ANNOTATION, "annotation.geneCancerAssociations"),
