@@ -16,16 +16,18 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -40,12 +42,16 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
 
 public class IBDComputation {
 
@@ -106,17 +112,32 @@ public class IBDComputation {
 
         // Filter by prune-in variants
         try {
-            filterFamilyTpedFile(outDir.resolve(BASENAME + ".tped"), outDir.resolve(FILTERED_BASENAME + ".tped"), pruneInPath);
+            filterFamilyVcfFile(outDir.resolve(BASENAME + ".vcf"), outDir.resolve(FILTERED_BASENAME + ".vcf"), pruneInPath);
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when filtering variants during the relatedness analysis execution");
         }
 
-        // Run IBD and return the result file (now autosome-file comprises X chromosome too)
-        try {
-            FileUtils.copyFile(outDir.resolve(BASENAME + ".tfam").toFile(), outDir.resolve(FILTERED_BASENAME + ".tfam").toFile());
-        } catch (IOException e) {
-            throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
+        // Create FAM file
+        File metaFile = outDir.toAbsolutePath().resolve(BASENAME + ".vcf.meta.json.gz").toFile();
+        if (metaFile.exists()) {
+            try {
+                BufferedReader br = FileUtils.newBufferedReader(metaFile.toPath());
+                String metaJson = StringUtils.join(br.lines().collect(Collectors.toList()), "");
+                VariantMetadata metadata = new ObjectMapper().readerFor(VariantMetadata.class).readValue(metaJson);
+                writeFamFile(metadata, outDir.toAbsolutePath().resolve(BASENAME + ".fam"));
+            } catch (IOException e) {
+                throw new ToolException(e);
+            }
+        } else {
+            throw new ToolException("It could not create the FAM file, the meta file " + metaFile.getName() + " is missing");
         }
+
+        // Run IBD and return the result file (now autosome-file comprises X chromosome too)
+//        try {
+//            FileUtils.copyFile(outDir.resolve(BASENAME + ".tfam").toFile(), outDir.resolve(FILTERED_BASENAME + ".tfam").toFile());
+//        } catch (IOException e) {
+//            throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
+//        }
         File outFile = runIBD(FILTERED_BASENAME, freqPath, haploidCallMode, outDir);
 
         if (!outFile.exists()) {
@@ -170,7 +191,8 @@ public class IBDComputation {
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                 .append(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22"
-                        .split(",")));
+                        .split(",")))
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
 
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
@@ -200,6 +222,7 @@ public class IBDComputation {
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
         query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
 
         // MAF parameter:
         //    - For annotated population studies, e.g.: 1000G:ALL>0.3
@@ -222,23 +245,23 @@ public class IBDComputation {
         System.out.println(">>>> export, query = " + query.toJson());
         System.out.println(">>>> export, query options = " + queryOptions.toJson());
 
-        File tpedFile = outDir.resolve(basename + ".tped").toFile();
-        File tfamFile = outDir.resolve(basename + ".tfam").toFile();
+        File vcfFile = outDir.resolve(basename + ".vcf").toFile();
+//        File tfamFile = outDir.resolve(basename + ".tfam").toFile();
 
         // Export data
         try {
-            storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, queryOptions, token);
+            storageManager.exportData(vcfFile.getAbsolutePath(), VCF, null, query, queryOptions, token);
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
         }
 
         // Sanity check
-        if (!tpedFile.exists() || tpedFile.length() == 0) {
-            throw new ToolException("No variants found when exporting data to TPED/TFAM format");
+        if (!vcfFile.exists() || vcfFile.length() == 0) {
+            throw new ToolException("No variants found when exporting data to VCF format");
         }
-        if (!tfamFile.exists()) {
-            throw new ToolException("Something wrong exporting data to TPED/TFAM format");
-        }
+//        if (!tfamFile.exists()) {
+//            throw new ToolException("Something wrong exporting data to TPED/TFAM format");
+//        }
     }
 
     public static void filterFamilyTpedFile(Path tPedPath, Path tPedFilteredPath, Path pruneInPath) throws IOException {
@@ -299,6 +322,86 @@ public class IBDComputation {
         bw.close();
     }
 
+    public static void filterFamilyVcfFile(Path vcfPath, Path vcfFilteredPath, Path pruneInPath) throws IOException, ToolException {
+        // Init map with prune-in variants
+        Map<String, Integer> pruneInMap = new HashMap<>();
+        BufferedReader br = org.opencb.commons.utils.FileUtils.newBufferedReader(pruneInPath);
+        String line = br.readLine();
+        if (line != null) {
+            pruneInMap.put(line, 0);
+        }
+        while (line != null) {
+            pruneInMap.put(line, 0);
+            line = br.readLine();
+        }
+        br.close();
+
+        BufferedWriter bw = org.opencb.commons.utils.FileUtils.newBufferedWriter(vcfFilteredPath);
+
+        // Get number of GT
+        int numGT;
+        String[] split;
+        br = org.opencb.commons.utils.FileUtils.newBufferedReader(vcfPath);
+        do {
+            line = br.readLine();
+
+            // Write header lines
+            split = line.split("\t");
+            for (int i = 0; i < split.length; i++) {
+                if (i > 0) {
+                    bw.write("\t");
+                }
+                if (i == 2 && split[2].equals(".")) {
+                    bw.write(split[0] + ":" + split[1] + ":" + split[3] + ":" + split[4]);
+                } else {
+                    bw.write(split[i]);
+                }
+            }
+            bw.write("\n");
+        } while (line.startsWith("##"));
+
+        // Sanity check
+        if (line.startsWith("#CHROM")) {
+            split = line.split("\t");
+            numGT = split.length - 9;
+        } else {
+            throw new ToolException("Error filtering VCF file");
+        }
+
+        // Filter TPED file using prune-in map
+        String key;
+        line = br.readLine();
+        while (line != null) {
+            split = line.split("\t");
+            key = split[0] + ":" + split[1] + ":" + split[3] + ":" + split[4];
+            if (pruneInMap.containsKey(key)) {
+                bw.write(line);
+                bw.write("\n");
+
+                // Mark in map as written !!
+                pruneInMap.put(split[1], 1);
+            }
+
+            line = br.readLine();
+        }
+        br.close();
+
+        // Write remaining prune-in variants
+        String strGT = "";
+        for (int i = 0; i < numGT; i++) {
+            strGT += ("\t0|0");
+        }
+        for (Map.Entry<String, Integer> entry : pruneInMap.entrySet()) {
+            if (entry.getValue() == 0) {
+                split = entry.getKey().split(":");
+                line = split[0] + "\t" + split[1] + "\t" + entry.getKey() + "\t" + split[2] + "\t" + split[3] + "\t.\t.\t.\tGT" + strGT;
+                bw.write(line);
+                bw.write("\n");
+            }
+        }
+        bw.close();
+    }
+
     private static File runIBD(String basename, Path freqPath, String haploidCallMode, Path outDir) throws ToolException {
         // Input bindings
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -308,11 +411,31 @@ public class IBDComputation {
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
                 "/output");
 
-        // Run IBD using PLINK in docker
+        // Convert VCF to PLINK binary format (BED/BIM/FAM)
         String plinkParams = "plink1.9"
-                + " --tfile /output/" + basename
-                + " --genome rel-check"
+                + " --vcf /output/" + basename + ".vcf"
+                + " --make-bed"
                 + " --vcf-half-call " + haploidCallMode
+                + " --out /output/" + basename;
+
+        try {
+            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
+            DockerUtils.run(plinkExecutor.getDockerImageName(), inputBindings, outputBinding, plinkParams, null);
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+
+        try {
+            org.apache.commons.io.FileUtils.copyFile(outDir.resolve(BASENAME + ".fam").toFile(),
+                    outDir.resolve(FILTERED_BASENAME + ".fam").toFile());
+        } catch (IOException e) {
+            throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
+        }
+
+        // Run IBD using PLINK in docker
+        plinkParams = "plink1.9"
+                + " --bfile /output/" + basename
+                + " --genome rel-check"
                 + " --read-freq /input/" + FREQ_FILENAME
                 + " --out /output/" + basename;
         try {
@@ -489,5 +612,41 @@ public class IBDComputation {
         }
 
         return CollectionUtils.isEmpty(result) ? Collections.singletonList(Family.FamiliarRelationship.UNKNOWN) : result;
+    }
+
+    private static void writeFamFile(VariantMetadata metadata, Path famPath) throws IOException {
+        BufferedWriter bw = Files.newBufferedWriter(famPath);
+        for (org.opencb.biodata.models.metadata.Individual individual : metadata.getStudies().get(0).getIndividuals()) {
+            // Sex code: '1' = male, '2' = female, '0' = unknown
+            int sex = 0;
+            if (individual.getSex() != null) {
+                switch (individual.getSex()) {
+                    case "MALE": {
+                        sex = 1;
+                        break;
+                    }
+                    case "FEMALE": {
+                        sex = 2;
+                        break;
+                    }
+                    default: {
+                        sex = 0;
+                        break;
+                    }
+                }
+            }
+            // Phenotype value: '1' = control, '2' = case, '-9'/'0'/non-numeric = missing data if case/control
+            int phenotype = 0;
+
+            bw.write((individual.getFamily() == null ? "0" : individual.getFamily())
+                    + "\t" + individual.getId()
+                    + "\t" + (individual.getFather() == null ? "0" : individual.getFather())
+                    + "\t" + (individual.getMother() == null ? "0" : individual.getMother())
+                    + "\t" + sex
+                    + "\t" + phenotype
+                    + "\n");
+
+        }
+        bw.close();
     }
 }

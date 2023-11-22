@@ -24,12 +24,16 @@ import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
 import java.io.BufferedReader;
@@ -37,129 +41,72 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
-public class RelatednessAnalysis extends OpenCgaTool {
+public class RelatednessAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "relatedness";
     public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
     public static final String MAF_DEFAULT_VALUE = "1000G:ALL>0.3";
 
+//    private String familyId;
+//    private List<String> individualIds;
+//    private String method;
+//    private String minorAlleleFreq;
+//    private String haploidCallMode;
+//    private Map<String, Map<String, Float>> thresholds;
+//
+//    private Family family;
+
+    @ToolParams
+    private RelatednessAnalysisParams relatednessParams = new RelatednessAnalysisParams();
+
     private String studyId;
-    private String familyId;
-    private List<String> individualIds;
     private List<String> sampleIds;
-    private String method;
     private String minorAlleleFreq;
     private String haploidCallMode;
-    private Map<String, Map<String, Float>> thresholds;
+    private Map<String, Map<String, Float>> relatednessThresholds;
 
     private Family family;
 
     public RelatednessAnalysis() {
     }
 
-    /**
-     * Study of the samples.
-     * @param studyId Study id
-     * @return this
-     */
-    public RelatednessAnalysis setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getFamilyId() {
-        return familyId;
-    }
-
-    public RelatednessAnalysis setFamilyId(String familyId) {
-        this.familyId = familyId;
-        return this;
-    }
-
-    public List<String> getIndividualIds() {
-        return individualIds;
-    }
-
-    public RelatednessAnalysis setIndividualIds(List<String> individualIds) {
-        this.individualIds = individualIds;
-        return this;
-    }
-
-    public List<String> getSampleIds() {
-        return sampleIds;
-    }
-
-    public RelatednessAnalysis setSampleIds(List<String> sampleIds) {
-        this.sampleIds = sampleIds;
-        return this;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public RelatednessAnalysis setMethod(String method) {
-        this.method = method;
-        return this;
-    }
-
-    public String getMinorAlleleFreq() {
-        return minorAlleleFreq;
-    }
-
-    public RelatednessAnalysis setMinorAlleleFreq(String maf) {
-        this.minorAlleleFreq = maf;
-        return this;
-    }
-
-    public String getHaploidCallMode() {
-        return haploidCallMode;
-    }
-
-    public RelatednessAnalysis setHaploidCallMode(String haploidCallMode) {
-        this.haploidCallMode = haploidCallMode;
-        return this;
-    }
-
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(studyId);
+        setUpStorageEngineExecutor(study);
 
-        if (StringUtils.isEmpty(studyId)) {
+        if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study.");
         }
 
         try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            studyId = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // Check family
-        if (StringUtils.isNotEmpty(familyId)) {
-            family = IndividualQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
-            if (family == null) {
-                throw new ToolException("Family '" + familyId + "' not found.");
-            }
-        }
+//        // Check family
+//        if (StringUtils.isNotEmpty(relatednessParams.get)) {
+//            family = IndividualQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
+//            if (family == null) {
+//                throw new ToolException("Family '" + familyId + "' not found.");
+//            }
+//        }
 
         // Check individuals and samples
-        if (CollectionUtils.isNotEmpty(individualIds) && CollectionUtils.isNotEmpty(sampleIds)) {
+        if (CollectionUtils.isNotEmpty(relatednessParams.getIndividuals()) && CollectionUtils.isNotEmpty(relatednessParams.getSamples())) {
             throw new ToolException("Incorrect parameters: only a list of individuals or samples is allowed.");
         }
 
-        if (CollectionUtils.isNotEmpty(individualIds)) {
+        if (CollectionUtils.isNotEmpty(relatednessParams.getIndividuals())) {
             // Check and get individual for each ID
             sampleIds = new ArrayList<>();
-            for (String individualId : individualIds) {
+            for (String individualId : relatednessParams.getIndividuals()) {
                 Sample sample = IndividualQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
                 sampleIds.add(sample.getId());
             }
@@ -169,12 +116,29 @@ public class RelatednessAnalysis extends OpenCgaTool {
             throw new ToolException("Member samples not found to execute relatedness analysis.");
         }
 
+        // Checking samples in family
+        Set<String> familySet = new HashSet<>();
+        for (String sampleId : sampleIds) {
+            Family family = IndividualQcUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
+            familySet.add(family.getId());
+        }
+        if (familySet.size() > 1) {
+            throw new ToolException("More than one family found (" + StringUtils.join(familySet, ", ") + ") for the input samples ("
+                    + StringUtils.join(sampleIds, ", ") + ")");
+        }
+        if (familySet.size() == 0) {
+            throw new ToolException("No family found for the input samples (" + StringUtils.join(sampleIds, ", ") + ")");
+        }
+        family = IndividualQcUtils.getFamilyById(studyId, familySet.stream().collect(Collectors.toList()).get(0), catalogManager, token);
+
         // If the minor allele frequency is missing then set the default value
+        minorAlleleFreq = relatednessParams.getMinorAlleleFreq();
         if (StringUtils.isEmpty(minorAlleleFreq)) {
             minorAlleleFreq = MAF_DEFAULT_VALUE;
         }
 
         // Check haploid call mode
+        haploidCallMode = relatednessParams.getHaploidCallMode();
         if (StringUtils.isEmpty(haploidCallMode)) {
             haploidCallMode = RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE;
         } else {
@@ -191,7 +155,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
         }
 
         Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(FamilyQcAnalysis.ID).resolve("relatedness_thresholds.csv");
-        thresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
+        relatednessThresholds = AnalysisUtils.parseRelatednessThresholds(thresholdsPath);
     }
 
     @Override
@@ -205,7 +169,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
                     .setSampleIds(sampleIds)
                     .setMinorAlleleFreq(minorAlleleFreq)
                     .setHaploidCallMode(haploidCallMode)
-                    .setThresholds(thresholds)
+                    .setThresholds(relatednessThresholds)
                     .setResourcePath(getOpencgaHome().resolve("analysis/resources").resolve(ID))
                     .execute();
         });

@@ -26,7 +26,7 @@ import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REP
 import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REPORT_MAF_DESCRIPTION;
 
 public class RelatednessAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Relatedness analysis params based on PLINK/IBD method";
+    public static final String DESCRIPTION = "Relatedness analysis params.";
 
     @DataField(id = "individuals", description = "List of individuals (separated by commas)")
     private List<String> individuals;

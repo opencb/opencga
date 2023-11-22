@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -27,10 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.qc.HRDetect;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.biodata.models.clinical.qc.SignatureFitting;
+import org.opencb.biodata.models.clinical.qc.*;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -39,6 +37,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
@@ -46,10 +45,12 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -1061,6 +1062,49 @@ public class VariantAnalysisTest {
 
         assertTrue(family.getPedigreeGraph() != null);
         assertEquals(base64, family.getPedigreeGraph().getBase64());
+    }
+
+    @Test
+    public void testFamilyQc() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_familyqc"));
+
+        FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
+        params.setFamily("f1");
+        params.setRelatednessMaf("1000G:ALL>0.1");
+
+        System.out.println("Family QC out dir = " + outDir.toAbsolutePath());
+        toolRunner.execute(FamilyQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        System.out.println("Family QC out dir = " + outDir.toAbsolutePath());
+
+
+        OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(STUDY, new Query("id", "f1"), QueryOptions.empty(), token);
+        Family family = results.first();
+        RelatednessReport relatednessReport = family.getQualityControl().getRelatedness().get(0);
+        assertEquals(params.getRelatednessMaf(), relatednessReport.getMaf());
+        assertEquals(RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE, relatednessReport.getHaploidCallMode());
+    }
+
+    @Test
+    public void testRelatedness() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_relatedness"));
+
+        Query query = new Query(IndividualDBAdaptor.QueryParams.FAMILY_IDS.key(), Collections.singletonList("f1"));
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+        OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(STUDY, query, queryOptions, token);
+        List<String> individualIds = results.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+
+        RelatednessAnalysisParams params = new RelatednessAnalysisParams();
+        params.setIndividuals(individualIds);
+        params.setMinorAlleleFreq("1000G:ALL>0.2");
+        params.setHaploidCallMode(RelatednessReport.HAPLOID_CALL_MODE_MISSING_VALUE);
+
+        System.out.println("Relatedness out dir = " + outDir.toAbsolutePath());
+        toolRunner.execute(RelatednessAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        System.out.println("Relatedness out dir = " + outDir.toAbsolutePath());
+
+        RelatednessReport relatednessReport = JacksonUtils.getDefaultObjectMapper().readValue(outDir.resolve("relatedness.report.json").toFile(), RelatednessReport.class);
+        assertEquals(params.getMinorAlleleFreq(), relatednessReport.getMaf());
+        assertEquals(params.getHaploidCallMode(), relatednessReport.getHaploidCallMode());
     }
 
     @Test

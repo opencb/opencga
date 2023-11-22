@@ -16,28 +16,27 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,7 @@ import java.util.Map;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
 
 @Tool(id = FamilyQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyQcAnalysis.DESCRIPTION)
-public class FamilyQcAnalysis extends OpenCgaTool {
+public class FamilyQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "family-qc";
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
@@ -53,9 +52,9 @@ public class FamilyQcAnalysis extends OpenCgaTool {
 
     public  static final String RELATEDNESS_STEP = "relatedness";
 
-    private String studyId;
-    private String familyId;
-    private String relatednessMethod;
+    @ToolParams
+    private FamilyQcAnalysisParams familyQcParams = new FamilyQcAnalysisParams();
+
     private String relatednessMaf;
     private String haploidCallMode;
     private Map<String, Map<String, Float>> relatednessThresholds;
@@ -65,15 +64,15 @@ public class FamilyQcAnalysis extends OpenCgaTool {
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(studyId);
+        setUpStorageEngineExecutor(study);
 
-        if (StringUtils.isEmpty(studyId)) {
+        if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study ID.");
         }
 
         // Check permissions
         try {
-            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            Study study = catalogManager.getStudyManager().get(this.study, QueryOptions.empty(), token).first();
             String userId = catalogManager.getUserManager().getUserId(token);
             catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_FAMILIES);
         } catch (CatalogException e) {
@@ -81,22 +80,23 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         }
 
         // Sanity check
-        if (StringUtils.isEmpty(familyId)) {
+        if (StringUtils.isEmpty(familyQcParams.getFamily())) {
             throw new ToolException("Missing family ID.");
         }
 
-        family = IndividualQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
+        family = IndividualQcUtils.getFamilyById(study, familyQcParams.getFamily(), catalogManager, token);
         if (family == null) {
-            throw new ToolException("Family '" + familyId + "' not found.");
+            throw new ToolException("Family '" + familyQcParams.getFamily() + "' not found.");
         }
 
-        // As relatedness is the only QC to compute, it is mandatory
-        if (StringUtils.isEmpty(relatednessMethod)) {
-            relatednessMethod = "PLINK/IBD";
-        }
+        // Check MAF
+        relatednessMaf = familyQcParams.getRelatednessMaf();
         if (StringUtils.isEmpty(relatednessMaf)) {
             relatednessMaf = RelatednessAnalysis.MAF_DEFAULT_VALUE;
         }
+
+        // Check haploid call mode
+        haploidCallMode = familyQcParams.getHaploidCallMode();
         if (StringUtils.isEmpty(haploidCallMode)) {
             haploidCallMode = RelatednessReport.HAPLOID_CALL_MODE_DEFAUT_VALUE;
         } else {
@@ -133,9 +133,8 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         FamilyQcAnalysisExecutor executor = getToolExecutor(FamilyQcAnalysisExecutor.class);
 
         // Set up executor
-        executor.setStudyId(studyId)
+        executor.setStudyId(study)
                 .setFamily(family)
-                .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
                 .setHaploidCallMode(haploidCallMode)
                 .setRelatednessThresholds(relatednessThresholds)
@@ -149,39 +148,12 @@ public class FamilyQcAnalysis extends OpenCgaTool {
         try {
             qualityControl = executor.getQualityControl();
             if (qualityControl != null) {
-                catalogManager.getFamilyManager().update(getStudyId(), familyId, new FamilyUpdateParams().setQualityControl(qualityControl),
+                catalogManager.getFamilyManager().update(study, familyQcParams.getFamily(), new FamilyUpdateParams().setQualityControl(qualityControl),
                         QueryOptions.empty(), token);
             }
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public FamilyQcAnalysis setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getFamilyId() {
-        return familyId;
-    }
-
-    public FamilyQcAnalysis setFamilyId(String familyId) {
-        this.familyId = familyId;
-        return this;
-    }
-
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public FamilyQcAnalysis setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
-        return this;
     }
 
     public String getRelatednessMaf() {
