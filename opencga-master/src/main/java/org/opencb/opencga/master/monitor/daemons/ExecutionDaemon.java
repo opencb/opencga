@@ -986,7 +986,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
                     token).getResults();
         } catch (CatalogException e) {
-            logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
+            logger.error("Could not register files in Catalog: {}", e.getMessage(), e);
             return 0;
         }
 
