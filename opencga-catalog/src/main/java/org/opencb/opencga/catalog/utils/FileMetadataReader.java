@@ -78,7 +78,7 @@ public class FileMetadataReader {
         file.setSize(updateParams.getSize() != null ? updateParams.getSize() : file.getSize());
     }
 
-    public File updateMetadataInformation(String organizationId, String studyId, File file, String token) throws CatalogException {
+    public File updateMetadataInformation(String studyId, File file, String token) throws CatalogException {
         try {
             FileUpdateParams updateParams = extractMetadataInformation(studyId, file);
             ObjectMap updateMap = updateParams.getUpdateMap();

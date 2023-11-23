@@ -212,7 +212,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(organizationId, study, finalQuery, token);
+        fixQueryObject(organizationId, study, finalQuery, tokenPayload);
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, finalQuery);
         AnnotationUtils.fixQueryOptionAnnotation(options);
@@ -318,7 +318,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("options", options)
                 .append("token", token);
         try {
-            fixQueryObject(organizationId, study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, tokenPayload);
 
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, finalQuery);
@@ -356,7 +356,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            fixQueryObject(organizationId, study, query, userId);
+            fixQueryObject(organizationId, study, query, tokenPayload);
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, query);
 
@@ -374,7 +374,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private void fixQueryObject(String organizationId, Study study, Query query, String token) throws CatalogException {
+    private void fixQueryObject(String organizationId, Study study, Query query, JwtPayload payload) throws CatalogException {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.FAMILY_INTERNAL_STATUS_PARAM, FamilyDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
         changeQueryId(query, ParamConstants.FAMILY_STATUS_PARAM, FamilyDBAdaptor.QueryParams.STATUS_ID.key());
@@ -387,7 +387,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // We change the MEMBERS parameters for MEMBER_UID which is what the DBAdaptor understands
         if (query.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
-            String userId = userManager.getUserId(organizationId, token);
+            String userId = payload.getUserId();
 
             List<Individual> memberList = catalogManager.getIndividualManager().internalGet(organizationId, study.getUid(),
                     query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
@@ -411,7 +411,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                 query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
-                        .search(study.getFqn(), newQuery, options, token);
+                        .search(study.getFqn(), newQuery, options, payload.getToken());
 
                 if (individualResult.getNumResults() == 0) {
                     // Add -1 to query so no results are obtained
@@ -445,7 +445,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, finalQuery);
-            fixQueryObject(organizationId, study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, tokenPayload);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Long> queryResultAux = getFamilyDBAdaptor(organizationId).count(finalQuery, userId);
@@ -589,7 +589,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, finalQuery);
-            fixQueryObject(organizationId, study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, tokenPayload);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = getFamilyDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
@@ -659,7 +659,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(organizationId, study, finalQuery, sessionId);
+        fixQueryObject(organizationId, study, finalQuery, tokenPayload);
 
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, userId, query, authorizationManager);
@@ -781,7 +781,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         DBIterator<Family> iterator;
         try {
-            fixQueryObject(organizationId, study, finalQuery, token);
+            fixQueryObject(organizationId, study, finalQuery, tokenPayload);
 
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, finalQuery);

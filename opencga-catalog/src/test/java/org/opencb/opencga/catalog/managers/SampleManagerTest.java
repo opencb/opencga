@@ -925,7 +925,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
 
         catalogManager.getSampleManager().updateSampleInternalVariantSecondarySampleIndex(
-                organizationId, catalogManager.getSampleManager().get(studyFqn, "sample3", null, ownerToken).first(),
+                studyFqn, catalogManager.getSampleManager().get(studyFqn, "sample3", null, ownerToken).first(),
                 new SampleInternalVariantSecondarySampleIndex(
                         new IndexStatus(IndexStatus.READY, "This should be doable!"),
                         new IndexStatus(IndexStatus.READY, "This should be doable!"),
@@ -1767,10 +1767,9 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGroupByAnnotations() throws Exception {
-        AbstractManager.MyResourceId vs1 = catalogManager.getStudyManager().getVariableSetId(organizationId, "vs", studyFqn, ownerToken);
-
+        VariableSet vs = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", QueryOptions.empty(), ownerToken).first();
         DataResult queryResult = catalogManager.getSampleManager().groupBy(studyFqn, new Query(),
-                Collections.singletonList(Constants.ANNOTATION + ":" + vs1.getResourceId() + ":annot1:PHEN"), QueryOptions.empty(),
+                Collections.singletonList(Constants.ANNOTATION + ":" + vs.getUid() + ":annot1:PHEN"), QueryOptions.empty(),
                 ownerToken);
 
         assertEquals(3, queryResult.getNumResults());
@@ -2771,7 +2770,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                     new QueryOptions(ParamConstants.FORCE, true), ownerToken);
             fail("Expected CatalogException with message containing 'associated with individual'.");
         } catch (CatalogException e) {
-            MatcherAssert.assertThat(e, ThrowableMessageMatcher.hasMessage(CoreMatchers.containsString("associated with individual")));
+            MatcherAssert.assertThat(e, ThrowableMessageMatcher.hasMessage(CoreMatchers.containsString("in 3 cases")));
         }
     }
 

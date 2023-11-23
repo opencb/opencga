@@ -737,45 +737,47 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return result;
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantIndex(String organizationId, Sample sample, SampleInternalVariantIndex index,
+    public OpenCGAResult<?> updateSampleInternalVariantIndex(String studyFqn, Sample sample, SampleInternalVariantIndex index,
                                                              String token) throws CatalogException {
-        return updateSampleInternalVariant(organizationId, sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
+        return updateSampleInternalVariant(studyFqn, sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(String organizationId, Sample sample,
+    public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(String studyFqn, Sample sample,
                                                                             SampleInternalVariantSecondarySampleIndex index, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(organizationId, sample, index, Arrays.asList(
+        return updateSampleInternalVariant(studyFqn, sample, index, Arrays.asList(
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key()), token);
     }
 
     public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(
-            String organizationId, Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
-        return updateSampleInternalVariant(organizationId, sample, index,
+            String studyFqn, Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, index,
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(
-            String organizationId, Sample sample, SampleInternalVariantSecondaryAnnotationIndex index, String token)
-            throws CatalogException {
-        return updateSampleInternalVariant(organizationId, sample, index,
+    public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(String studyFqn, Sample sample,
+                                                                                SampleInternalVariantSecondaryAnnotationIndex index,
+                                                                                String token) throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, index,
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(), token);
     }
 
-    private OpenCGAResult<?> updateSampleInternalVariant(String organizationId, Sample sample, Object value, String fieldKey, String token)
+    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, String fieldKey, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(organizationId, sample, value, Collections.singletonList(fieldKey), token);
+        return updateSampleInternalVariant(studyFqn, sample, value, Collections.singletonList(fieldKey), token);
     }
 
-    private OpenCGAResult<?> updateSampleInternalVariant(String organizationId, Sample sample, Object value, List<String> fieldKeys,
+    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, List<String> fieldKeys,
                                                          String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
         Study study = getStudyDBAdaptor(organizationId).get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
+                .append("studyFqn", studyFqn)
                 .append("sample", sample.getId())
                 .append("token", token);
         for (String fieldKey : fieldKeys) {

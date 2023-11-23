@@ -500,7 +500,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS) AuditRecord.Status.Result status,
             @ApiParam(value = ParamConstants.DATE_DESCRIPTION) @QueryParam(ParamConstants.DATE) String date) {
         try {
-            OpenCGAResult<AuditRecord> queryResult = catalogManager.getAuditManager().search(organizationId, studyId, query, queryOptions, token);
+            OpenCGAResult<AuditRecord> queryResult = catalogManager.getAuditManager().search(studyId, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

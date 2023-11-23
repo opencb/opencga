@@ -1562,12 +1562,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetFileParents1() throws CatalogException {
-        long fileId;
-        DataResult<File> fileParents;
-
-        fileId = fileManager.get(studyFqn, "data/test/folder/", FileManager.INCLUDE_FILE_IDS, ownerToken).first().getUid();
-        fileParents = fileManager.getParents(organizationId, fileId, null, ownerToken);
-
+        DataResult<File> fileParents = fileManager.getParents(studyFqn, "data/test/folder/", true, QueryOptions.empty(), ownerToken);
         assertEquals(4, fileParents.getNumResults());
         assertEquals("", fileParents.getResults().get(0).getPath());
         assertEquals("data/", fileParents.getResults().get(1).getPath());
@@ -1577,13 +1572,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetFileParents2() throws CatalogException {
-        long fileId;
-        DataResult<File> fileParents;
-
-        fileId = fileManager.get(studyFqn, "data/test/folder/test_1K.txt.gz", FileManager.INCLUDE_FILE_IDS, ownerToken)
-                .first().getUid();
-        fileParents = fileManager.getParents(organizationId, fileId, null, ownerToken);
-
+        DataResult<File> fileParents = fileManager.getParents(studyFqn, "data/test/folder/test_1K.txt.gz", true, QueryOptions.empty(), ownerToken);
         assertEquals(5, fileParents.getNumResults());
         assertEquals("", fileParents.getResults().get(0).getPath());
         assertEquals("data/", fileParents.getResults().get(1).getPath());
@@ -1594,13 +1583,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetFileParents3() throws CatalogException {
-        long fileId;
-        DataResult<File> fileParents;
-
-        fileId = fileManager.get(studyFqn, "data/test/", FileManager.INCLUDE_FILE_IDS, ownerToken).first().getUid();
-        fileParents = fileManager.getParents(organizationId, fileId, new QueryOptions("include", "projects.studies.files.path," +
-                "projects.studies.files.id"), ownerToken);
-
+        DataResult<File> fileParents = fileManager.getParents(studyFqn, "data/test/", true,
+                new QueryOptions("include", "projects.studies.files.path,projects.studies.files.id"), ownerToken);
         assertEquals(3, fileParents.getNumResults());
         assertEquals("", fileParents.getResults().get(0).getPath());
         assertEquals("data/", fileParents.getResults().get(1).getPath());
@@ -2124,7 +2108,8 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setPath("data/"),
                 true, ownerToken);
 
-        fileManager.updateFileInternalVariantIndex(organizationId, fileResult.first(), FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMED, null)), ownerToken);
+        fileManager.updateFileInternalVariantIndex(studyFqn, fileResult.first(), FileInternalVariantIndex.init()
+                .setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMED, null)), ownerToken);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), ownerToken);
         assertEquals(VariantIndexStatus.TRANSFORMED, read.first().getInternal().getVariant().getIndex().getStatus().getId());
     }

@@ -115,12 +115,12 @@ public class JwtManager {
 
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
-        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration());
+        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
     }
 
     public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
-        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration());
+        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
     }
 
 

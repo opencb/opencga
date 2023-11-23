@@ -195,26 +195,6 @@ public class JobManager extends ResourceManager<Job> {
         return getJobDBAdaptor(organizationId).getStudyId(jobId);
     }
 
-    public Study getStudy(String organizationId, Job job, String token) throws CatalogException {
-        ParamUtils.checkObj(job, "job");
-        ParamUtils.checkObj(token, "session id");
-
-        if (job.getStudyUid() <= 0) {
-            throw new CatalogException("Missing study uid field in job");
-        }
-
-        String user = catalogManager.getUserManager().getUserId(organizationId, token);
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.UID.key(), job.getStudyUid());
-        OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, QueryOptions.empty(), user);
-        if (studyDataResult.getNumResults() == 1) {
-            return studyDataResult.first();
-        } else {
-            authorizationManager.checkCanViewStudy(organizationId, job.getStudyUid(), user);
-            throw new CatalogException("Incorrect study uid");
-        }
-    }
-
     public OpenCGAResult<Job> visit(String studyId, String jobId, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
@@ -1516,7 +1496,7 @@ public class JobManager extends ResourceManager<Job> {
                 .stream()
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
-        return top(organizationId, studies, baseQuery, limit, token);
+        return top(studies, baseQuery, limit, token);
     }
 
     public OpenCGAResult<JobTop> top(String organizationId, String studyStr, Query baseQuery, int limit, String token)
@@ -1524,20 +1504,27 @@ public class JobManager extends ResourceManager<Job> {
         if (StringUtils.isEmpty(studyStr)) {
             return top(organizationId, baseQuery, limit, token);
         } else {
-            return top(organizationId, Collections.singletonList(studyStr), baseQuery, limit, token);
+            return top(Collections.singletonList(studyStr), baseQuery, limit, token);
         }
     }
 
-    public OpenCGAResult<JobTop> top(String organizationId, List<String> studiesStr, Query baseQuery, int limit, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(organizationId, token);
-        fixQueryObject(organizationId, null, baseQuery, userId);
+    public OpenCGAResult<JobTop> top(List<String> studiesStr, Query baseQuery, int limit, String token) throws CatalogException {
+        JwtPayload payload = userManager.validateToken(token);
         List<Study> studies = new ArrayList<>(studiesStr.size());
+        String organizationId = null;
         for (String studyStr : studiesStr) {
-            Study study = studyManager.resolveId(studyStr, userId, organizationId);
-            authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, payload);
+            if (organizationId == null) {
+                organizationId = studyFqn.getOrganizationId();
+            } else if (!organizationId.equals(studyFqn.getOrganizationId())) {
+                throw new CatalogException("Organization id should be the same for all the studies.");
+            }
+            Study study = studyManager.resolveId(studyFqn, QueryOptions.empty(), payload);
             studies.add(study);
         }
+
+        String userId = payload.getUserId(organizationId);
+        fixQueryObject(organizationId, null, baseQuery, userId);
 
         StopWatch stopWatch = StopWatch.createStarted();
         QueryOptions queryOptions = new QueryOptions()

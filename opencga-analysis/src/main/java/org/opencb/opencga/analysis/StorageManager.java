@@ -24,8 +24,10 @@ import org.opencb.opencga.analysis.models.StudyInfo;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -73,19 +75,6 @@ public abstract class StorageManager {
         logger = LoggerFactory.getLogger(getClass());
     }
 
-
-    public void clearCache(String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-
-    }
-
-
-    public void clearCache(String studyId, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-
-    }
-
-
     public abstract void testConnection() throws StorageEngineException;
 
     @Deprecated
@@ -95,18 +84,20 @@ public abstract class StorageManager {
     }
 
     @Deprecated
-    protected StudyInfo getStudyInfo(@Nullable String studyIdStr, List<String> fileIdStrs, String sessionId)
-            throws CatalogException {
-        StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
+    protected StudyInfo getStudyInfo(@Nullable String studyIdStr, List<String> fileIdStrs, String token) throws CatalogException {
+        StudyInfo studyInfo = new StudyInfo().setSessionId(token);
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-        Study study = catalogManager.getStudyManager().get(studyIdStr, QueryOptions.empty(), sessionId).first();
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyIdStr, jwtPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+
+        Study study = catalogManager.getStudyManager().get(studyIdStr, QueryOptions.empty(), token).first();
 
         List<File> files;
         if (fileIdStrs.isEmpty()) {
             files = Collections.emptyList();
         } else {
-            DataResult<File> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
+            DataResult<File> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, token);
             files = queryResult.getResults();
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
@@ -131,7 +122,7 @@ public abstract class StorageManager {
         studyInfo.setStudy(study);
         String projectFqn = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
         Project project = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.FQN.key(), projectFqn),
-                new QueryOptions(), sessionId).first();
+                new QueryOptions(), token).first();
         studyInfo.setProjectUid(project.getUid());
         studyInfo.setProjectId(project.getId());
         studyInfo.setOrganism(project.getOrganism());
@@ -139,8 +130,8 @@ public abstract class StorageManager {
         studyInfo.setUserId(user);
 
         Map<File.Bioformat, DataStore> dataStores = new HashMap<>();
-        dataStores.put(File.Bioformat.VARIANT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId));
-        dataStores.put(File.Bioformat.ALIGNMENT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.ALIGNMENT, sessionId));
+        dataStores.put(File.Bioformat.VARIANT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, token));
+        dataStores.put(File.Bioformat.ALIGNMENT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.ALIGNMENT, token));
         studyInfo.setDataStores(dataStores);
 
         return studyInfo;

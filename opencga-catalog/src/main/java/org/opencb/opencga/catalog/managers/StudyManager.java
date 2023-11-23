@@ -73,7 +73,6 @@ import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -111,9 +110,10 @@ public class StudyManager extends AbstractManager {
     public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
             StudyDBAdaptor.QueryParams.FQN.key()));
-    static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-    static final QueryOptions INCLUDE_CONFIGURATION =
-            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+    static final QueryOptions INCLUDE_VARIABLE_SET = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
+            StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+    static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
+            StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
 
     protected Logger logger;
 
@@ -546,12 +546,6 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public int getCurrentRelease(String organizationId, Study study, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
-        return getCurrentRelease(study);
-    }
-
     int getCurrentRelease(Study study) throws CatalogException {
         String[] split = StringUtils.split(study.getFqn(), ":");
         String[] split2 = StringUtils.split(split[0], "@");
@@ -561,39 +555,6 @@ public class StudyManager extends AbstractManager {
         Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
         return getProjectDBAdaptor(organization).get(query, options).first().getCurrentRelease();
-    }
-
-    MyResourceId getVariableSetId(String organizationId, String variableStr, @Nullable String studyStr, String sessionId)
-            throws CatalogException {
-        if (StringUtils.isEmpty(variableStr)) {
-            throw new CatalogException("Missing variableSet parameter");
-        }
-
-        String userId;
-        long studyId;
-        long variableSetId;
-
-        if (variableStr.contains(",")) {
-            throw new CatalogException("More than one variable set found. Please, choose just one variable set");
-        }
-
-        userId = catalogManager.getUserManager().getUserId(organizationId, sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
-        studyId = study.getUid();
-
-        Query query = new Query()
-                .append(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
-                .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
-        QueryOptions queryOptions = new QueryOptions();
-        OpenCGAResult<VariableSet> variableSetDataResult = getStudyDBAdaptor(organizationId).getVariableSets(query, queryOptions);
-        if (variableSetDataResult.getNumResults() == 0) {
-            throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
-        } else if (variableSetDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
-        }
-        variableSetId = variableSetDataResult.first().getUid();
-
-        return new MyResourceId(userId, studyId, variableSetId);
     }
 
     /**
@@ -916,7 +877,8 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(projectId, "projectId");
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String userId = payload.getUserId(organizationId);
         authorizationManager.checkCanViewProject(organizationId, projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -943,7 +905,8 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkObj(fields, "fields");
         ParamUtils.checkObj(projectId, "projectId");
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String userId = payload.getUserId(organizationId);
         authorizationManager.checkCanViewProject(organizationId, projectId, userId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -1551,26 +1514,6 @@ public class StudyManager extends AbstractManager {
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
-    }
-
-    public OpenCGAResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        query = ParamUtils.defaultObject(query, Query::new);
-        if (query.containsKey(StudyDBAdaptor.VariableSetParams.UID.key())) {
-            // Id could be either the id or the name
-            MyResourceId resource = getVariableSetId(organizationId, query.getString(StudyDBAdaptor.VariableSetParams.UID.key()), studyStr,
-                    token);
-            query.put(StudyDBAdaptor.VariableSetParams.UID.key(), resource.getResourceId());
-        }
-        query.put(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid());
-        return getStudyDBAdaptor(organizationId).getVariableSets(query, options, userId);
     }
 
     public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, boolean force, String token)

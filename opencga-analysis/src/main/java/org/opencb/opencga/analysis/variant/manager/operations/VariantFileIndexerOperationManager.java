@@ -34,7 +34,9 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
@@ -86,6 +88,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private final Logger logger;
 
     private String studyFqn;
+    private String organizationId;
     private List<String> files;
 
     private boolean calculateStats;
@@ -127,6 +130,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private void check(String study, ObjectMap params, String token) throws Exception {
         studyFqn = getStudyFqn(study, token);
+
+        JwtPayload jwtPayload = new JwtPayload(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, jwtPayload);
+        this.organizationId = catalogFqn.getOrganizationId();
 
         this.keepIntermediateFiles = params.getBoolean(OperationTool.KEEP_INTERMEDIATE_FILES);
 
@@ -184,8 +191,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
      * @throws URISyntaxException
      * @throws StorageEngineException
      */
-    private List<URI> findFilesToIndex(ObjectMap params, String token)
-            throws CatalogException, URISyntaxException, StorageEngineException {
+    private List<URI> findFilesToIndex(ObjectMap params, String token) throws CatalogException, URISyntaxException, StorageEngineException {
         synchronizer = new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
 
         List<File> inputFiles = new ArrayList<>();
@@ -279,7 +285,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 FileInternalVariantIndex index = file.getInternal().getVariant().getIndex();
                 index.setRelease(release);
                 index.setStatus(new VariantIndexStatus(fileStatus, fileStatusMessage));
-                catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, file, index, token);
+                catalogManager.getFileManager().updateFileInternalVariantIndex(studyFqn, file, index, token);
             }
         }
         return fileUris;
@@ -461,12 +467,12 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storagePipelineResult", storagePipelineResult);
             FileUpdateParams updateParams = new FileUpdateParams().setAttributes(attributes);
-            catalogManager.getFileManager().update(organizationId, study, indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
+            catalogManager.getFileManager().update(study, indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
 
             // Update index status
             index.setRelease(release);
             index.setStatus(new VariantIndexStatus(indexStatusId, indexStatusMessage));
-            catalogManager.getFileManager().updateFileInternalVariantIndex(organizationId, indexedFile, index, sessionId);
+            catalogManager.getFileManager().updateFileInternalVariantIndex(studyFqn, indexedFile, index, sessionId);
 
             boolean calculateStats = options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
             if (indexStatusId.equals(VariantIndexStatus.READY) && calculateStats) {
@@ -511,7 +517,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         }
 
         catalogManager.getFileManager()
-                .update(organizationId, studyFqn, inputFile.getPath(),
+                .update(studyFqn, inputFile.getPath(),
                         new FileUpdateParams().setQualityControl(
                                 new FileQualityControl().setVariant(
                                         new VariantFileQualityControl(stats, null))),

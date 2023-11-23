@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptor
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -40,6 +39,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -167,8 +167,11 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
-        if (!OPENCGA.equals(userManager.getUserId(organizationId, token))) {
-            throw new CatalogException("Operation only allowed for the OpenCGA admin");
+        JwtPayload payload = userManager.validateToken(token);
+        String userId = payload.getUserId();
+        if (!authorizationManager.isInstallationAdministrator(payload)
+                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw new CatalogException("Operation only allowed for the organization owner or admins");
         }
 
         if (params == null || params.isEmpty()) {
@@ -278,8 +281,11 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes(String organizationId, String token) throws CatalogException {
-        if (!OPENCGA.equals(userManager.getUserId(organizationId, token))) {
-            throw new CatalogAuthorizationException("Only the admin can install new indexes");
+        JwtPayload payload = userManager.validateToken(token);
+        String userId = payload.getUserId();
+        if (!authorizationManager.isInstallationAdministrator(payload)
+                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw new CatalogException("Operation only allowed for the organization owner or admins");
         }
 
         catalogDBAdaptorFactory.createIndexes(organizationId);

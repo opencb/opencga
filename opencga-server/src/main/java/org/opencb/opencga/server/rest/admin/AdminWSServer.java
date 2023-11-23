@@ -232,7 +232,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         try {
 
 
-            return createOkResponse(catalogManager.getAuditManager().groupBy(organizationId, query, fields, queryOptions, token));
+            return createOkResponse(catalogManager.getAuditManager().groupBy(query, fields, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

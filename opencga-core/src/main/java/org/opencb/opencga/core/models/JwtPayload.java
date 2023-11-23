@@ -15,11 +15,13 @@ public class JwtPayload {
     private String issuer;        // Issuer of the JWT token.
     private Date issuedAt;        // Time when the JWT was issued.
     private Date expirationTime;  // Expiration time of the JWT.
+    private String token;
 
     public JwtPayload() {
     }
 
-    public JwtPayload(String userId, String organization, String issuer, Date issuedAt, Date expirationTime) {
+    public JwtPayload(String userId, String organization, String issuer, Date issuedAt, Date expirationTime, String token) {
+        this.token = token;
         this.userId = userId;
         this.organization = organization;
         this.issuer = issuer;
@@ -51,6 +53,8 @@ public class JwtPayload {
                 throw new IllegalArgumentException("Invalid JWT token. Token could not be parsed.", e);
             }
 
+            this.token = token;
+
             this.userId = claimsMap.getString("sub");
             this.organization = claimsMap.getString("aud");
             this.issuer = claimsMap.getString("iss");
@@ -75,6 +79,7 @@ public class JwtPayload {
         sb.append(", issuer='").append(issuer).append('\'');
         sb.append(", issuedAt=").append(issuedAt);
         sb.append(", expirationTime=").append(expirationTime);
+        sb.append(", token='").append(token).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -105,5 +110,9 @@ public class JwtPayload {
 
     public Date getExpirationTime() {
         return expirationTime;
+    }
+
+    public String getToken() {
+        return token;
     }
 }

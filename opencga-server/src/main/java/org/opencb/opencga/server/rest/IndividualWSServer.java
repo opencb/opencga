@@ -350,7 +350,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     .append("parents", parents)
                     .append("annotationSetId", annotationSetId);
 
-            return createOkResponse(catalogManager.getIndividualManager().loadTsvAnnotations(organizationId, studyStr, variableSetId, path, params,
+            return createOkResponse(catalogManager.getIndividualManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
                     additionalParams, IndividualTsvAnnotationLoader.ID, token));
         } catch (Exception e) {
             return createErrorResponse(e);

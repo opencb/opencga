@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -35,11 +36,15 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
     @ToolParams
     protected VariantStorageMetadataRepairToolParams toolParams;
 
+    private String organizationId;
+
     @Override
     protected void check() throws Exception {
         super.check();
 
-        String userId = getCatalogManager().getUserManager().getUserId(organizationId, getToken());
+        JwtPayload payload = getCatalogManager().getUserManager().validateToken(getToken());
+        organizationId = payload.getOrganization();
+        String userId = payload.getUserId();
         if (!userId.equals(ParamConstants.OPENCGA_USER_ID)) {
             throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
         }

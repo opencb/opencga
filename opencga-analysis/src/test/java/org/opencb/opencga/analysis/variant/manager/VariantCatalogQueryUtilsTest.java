@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -238,7 +239,7 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileInternalVariantIndex(organizationId, file, new FileInternalVariantIndex()
+            catalog.getFileManager().updateFileInternalVariantIndex(, file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);
         }
@@ -384,8 +385,8 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryBySavedFilter() throws Exception {
-        String userId = catalog.getUserManager().getUserId(organizationId, sessionId);
-        catalog.getUserManager().addFilter(organizationId, userId, "myFilter", "", Enums.Resource.VARIANT,
+        String userId = new JwtPayload(sessionId).getUserId();
+        catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
                 new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
 
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), null, sessionId);

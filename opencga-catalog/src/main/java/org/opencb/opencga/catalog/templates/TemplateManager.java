@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.templates.config.TemplateStudy;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.AclEntry;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -144,7 +145,8 @@ public class TemplateManager {
         String organizationId = manifest.getConfiguration().getOrganizationId();
         // Study should already exist
         Study study = getStudy(organizationId, manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String userId = payload.getUserId(organizationId);
         catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
 
 //        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.

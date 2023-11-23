@@ -26,11 +26,13 @@ import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
@@ -222,13 +224,15 @@ public class AuditManager {
         }
     }
 
-    public OpenCGAResult<AuditRecord> search(String organizationId, String studyStr, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<AuditRecord> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, payload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = payload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, payload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -256,25 +260,24 @@ public class AuditManager {
     /**
      * Groups the matching entries by some fields.
      *
-     * @param organizationId Organization id.
-     * @param query          Query object.
-     * @param fields         A field or a comma separated list of fields by which the results will be grouped in.
-     * @param options        QueryOptions object.
-     * @param sessionId      Session id of the user logged in.
+     * @param query     Query object.
+     * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
+     * @param options   QueryOptions object.
+     * @param sessionId Session id of the user logged in.
      * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult groupBy(String organizationId, Query query, String fields, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public OpenCGAResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(organizationId, query, Arrays.asList(fields.split(",")), options, sessionId);
+        return groupBy(query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    public OpenCGAResult groupBy(String organizationId, Query query, List<String> fields, QueryOptions options, String token)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = payload.getOrganization();
+        String userId = payload.getUserId();
         if (authorizationManager.isOpencga(userId) || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).groupBy(query, fields, options);
         }

@@ -30,9 +30,11 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -112,11 +114,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
     }
 
-    public OpenCGAResult<Job> loadTsvAnnotations(String organizationId, String studyStr, String variableSetId, String path,
-                                                 TsvAnnotationParams tsvParams, ObjectMap params, String toolId, String token)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(organizationId, token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
+    public OpenCGAResult<Job> loadTsvAnnotations(String studyStr, String variableSetId, String path, TsvAnnotationParams tsvParams,
+                                                 ObjectMap params, String toolId, String token) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, payload);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, payload);
 
         ParamUtils.checkObj(variableSetId, "VariableSetId");
         ParamUtils.checkObj(tsvParams, "AnnotationTsvParams");

@@ -40,7 +40,9 @@ public class JulieTool extends OpenCgaTool {
         String project = getParams().getString(ParamConstants.PROJECT_PARAM);
 
         if (StringUtils.isEmpty(project)) {
-            String userId = getCatalogManager().getUserManager().getUserId(organizationId, getToken());
+            JwtPayload payload = getCatalogManager().getUserManager().validateToken(getToken());
+            String organizationId = payload.getOrganization();
+            String userId = payload.getUserId();
             User user = catalogManager.getUserManager().get(organizationId, userId, null, getToken()).first();
             if (CollectionUtils.isEmpty(user.getProjects()) || user.getProjects().size() > 1) {
                 throw new CatalogException("Missing '" + ParamConstants.PROJECT_PARAM + "' parameter");

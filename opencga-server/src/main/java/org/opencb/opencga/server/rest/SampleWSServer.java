@@ -351,7 +351,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     .append("parents", parents)
                     .append("annotationSetId", annotationSetId);
 
-            return createOkResponse(catalogManager.getSampleManager().loadTsvAnnotations(organizationId, studyStr, variableSetId, path, params,
+            return createOkResponse(catalogManager.getSampleManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
                     additionalParams, SampleTsvAnnotationLoader.ID, token));
         } catch (Exception e) {
             return createErrorResponse(e);

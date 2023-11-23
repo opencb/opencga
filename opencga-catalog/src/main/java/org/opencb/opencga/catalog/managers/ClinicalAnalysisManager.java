@@ -864,120 +864,120 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 //        }
     }
 
-    private Family getFullValidatedFamily(String organizationId, Family family, Study study, String token) throws CatalogException {
-        if (family == null) {
-            return null;
-        }
+//    private Family getFullValidatedFamily(String organizationId, Family family, Study study, String token) throws CatalogException {
+//        if (family == null) {
+//            return null;
+//        }
+//
+//        if (StringUtils.isEmpty(family.getId())) {
+//            throw new CatalogException("Missing family id");
+//        }
+//
+//        // List of members relevant for the clinical analysis
+//        List<Individual> selectedMembers = family.getMembers();
+//
+//        OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(), family.getId(),
+//                new QueryOptions(), token);
+//        if (familyDataResult.getNumResults() == 0) {
+//            throw new CatalogException("Family " + family.getId() + " not found");
+//        }
+//        Family finalFamily = familyDataResult.first();
+//
+//        if (ListUtils.isNotEmpty(selectedMembers)) {
+//            if (ListUtils.isEmpty(finalFamily.getMembers())) {
+//                throw new CatalogException("Family " + family.getId() + " does not have any members associated");
+//            }
+//
+//            Map<String, Individual> memberMap = new HashMap<>();
+//            for (Individual member : finalFamily.getMembers()) {
+//                memberMap.put(member.getId(), member);
+//            }
+//
+//            List<Individual> finalMembers = new ArrayList<>(selectedMembers.size());
+//            for (Individual selectedMember : selectedMembers) {
+//                Individual fullMember = memberMap.get(selectedMember.getId());
+//                if (fullMember == null) {
+//                    throw new CatalogException("Member " + selectedMember.getId() + " does not belong to family " + family.getId());
+//                }
+//                fullMember.setSamples(selectedMember.getSamples());
+//                finalMembers.add(getFullValidatedMember(organizationId, fullMember, study, token));
+//            }
+//
+//            finalFamily.setMembers(finalMembers);
+//        } else {
+//            if (ListUtils.isNotEmpty(finalFamily.getMembers())) {
+//                Query query = new Query()
+//                        .append(IndividualDBAdaptor.QueryParams.UID.key(), finalFamily.getMembers().stream()
+//                                .map(Individual::getUid).collect(Collectors.toList()))
+//                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//                OpenCGAResult<Individual> individuals = getIndividualDBAdaptor(organizationId).get(study.getUid(), query,
+//                        QueryOptions.empty(), catalogManager.getUserManager().getUserId(organizationId, token));
+//                finalFamily.setMembers(individuals.getResults());
+//            }
+//        }
+//
+//        return finalFamily;
+//    }
 
-        if (StringUtils.isEmpty(family.getId())) {
-            throw new CatalogException("Missing family id");
-        }
-
-        // List of members relevant for the clinical analysis
-        List<Individual> selectedMembers = family.getMembers();
-
-        OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(), family.getId(),
-                new QueryOptions(), token);
-        if (familyDataResult.getNumResults() == 0) {
-            throw new CatalogException("Family " + family.getId() + " not found");
-        }
-        Family finalFamily = familyDataResult.first();
-
-        if (ListUtils.isNotEmpty(selectedMembers)) {
-            if (ListUtils.isEmpty(finalFamily.getMembers())) {
-                throw new CatalogException("Family " + family.getId() + " does not have any members associated");
-            }
-
-            Map<String, Individual> memberMap = new HashMap<>();
-            for (Individual member : finalFamily.getMembers()) {
-                memberMap.put(member.getId(), member);
-            }
-
-            List<Individual> finalMembers = new ArrayList<>(selectedMembers.size());
-            for (Individual selectedMember : selectedMembers) {
-                Individual fullMember = memberMap.get(selectedMember.getId());
-                if (fullMember == null) {
-                    throw new CatalogException("Member " + selectedMember.getId() + " does not belong to family " + family.getId());
-                }
-                fullMember.setSamples(selectedMember.getSamples());
-                finalMembers.add(getFullValidatedMember(organizationId, fullMember, study, token));
-            }
-
-            finalFamily.setMembers(finalMembers);
-        } else {
-            if (ListUtils.isNotEmpty(finalFamily.getMembers())) {
-                Query query = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.UID.key(), finalFamily.getMembers().stream()
-                                .map(Individual::getUid).collect(Collectors.toList()))
-                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                OpenCGAResult<Individual> individuals = getIndividualDBAdaptor(organizationId).get(study.getUid(), query,
-                        QueryOptions.empty(), catalogManager.getUserManager().getUserId(organizationId, token));
-                finalFamily.setMembers(individuals.getResults());
-            }
-        }
-
-        return finalFamily;
-    }
-
-    private Individual getFullValidatedMember(String organizationId, Individual member, Study study, String sessionId)
-            throws CatalogException {
-        if (member == null) {
-            return null;
-        }
-
-        if (StringUtils.isEmpty(member.getId())) {
-            throw new CatalogException("Missing member id");
-        }
-
-        Individual finalMember;
-
-        // List of samples relevant for the clinical analysis
-        List<Sample> samples = member.getSamples();
-
-        if (member.getUid() <= 0) {
-            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
-                    member.getId(), new QueryOptions(), sessionId);
-            if (individualDataResult.getNumResults() == 0) {
-                throw new CatalogException("Member " + member.getId() + " not found");
-            }
-
-            finalMember = individualDataResult.first();
-        } else {
-            finalMember = member;
-            if (ListUtils.isNotEmpty(samples) && StringUtils.isEmpty(samples.get(0).getUuid())) {
-                // We don't have the full sample information...
-                OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
-                        finalMember.getId(), new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
-                        sessionId);
-                if (individualDataResult.getNumResults() == 0) {
-                    throw new CatalogException("Member " + finalMember.getId() + " not found");
-                }
-
-                finalMember.setSamples(individualDataResult.first().getSamples());
-            }
-        }
-
-        if (ListUtils.isNotEmpty(finalMember.getSamples())) {
-            List<Sample> finalSampleList = null;
-            if (ListUtils.isNotEmpty(samples)) {
-
-                Map<String, Sample> sampleMap = new HashMap<>();
-                for (Sample sample : finalMember.getSamples()) {
-                    sampleMap.put(sample.getId(), sample);
-                }
-
-                finalSampleList = new ArrayList<>(samples.size());
-
-                // We keep only the original list of samples passed
-                for (Sample sample : samples) {
-                    finalSampleList.add(sampleMap.get(sample.getId()));
-                }
-            }
-            finalMember.setSamples(finalSampleList);
-        }
-
-        return finalMember;
-    }
+//    private Individual getFullValidatedMember(String organizationId, Individual member, Study study, String sessionId)
+//            throws CatalogException {
+//        if (member == null) {
+//            return null;
+//        }
+//
+//        if (StringUtils.isEmpty(member.getId())) {
+//            throw new CatalogException("Missing member id");
+//        }
+//
+//        Individual finalMember;
+//
+//        // List of samples relevant for the clinical analysis
+//        List<Sample> samples = member.getSamples();
+//
+//        if (member.getUid() <= 0) {
+//            OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
+//                    member.getId(), new QueryOptions(), sessionId);
+//            if (individualDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Member " + member.getId() + " not found");
+//            }
+//
+//            finalMember = individualDataResult.first();
+//        } else {
+//            finalMember = member;
+//            if (ListUtils.isNotEmpty(samples) && StringUtils.isEmpty(samples.get(0).getUuid())) {
+//                // We don't have the full sample information...
+//                OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().get(study.getFqn(),
+//                        finalMember.getId(), new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
+//                        sessionId);
+//                if (individualDataResult.getNumResults() == 0) {
+//                    throw new CatalogException("Member " + finalMember.getId() + " not found");
+//                }
+//
+//                finalMember.setSamples(individualDataResult.first().getSamples());
+//            }
+//        }
+//
+//        if (ListUtils.isNotEmpty(finalMember.getSamples())) {
+//            List<Sample> finalSampleList = null;
+//            if (ListUtils.isNotEmpty(samples)) {
+//
+//                Map<String, Sample> sampleMap = new HashMap<>();
+//                for (Sample sample : finalMember.getSamples()) {
+//                    sampleMap.put(sample.getId(), sample);
+//                }
+//
+//                finalSampleList = new ArrayList<>(samples.size());
+//
+//                // We keep only the original list of samples passed
+//                for (Sample sample : samples) {
+//                    finalSampleList.add(sampleMap.get(sample.getId()));
+//                }
+//            }
+//            finalMember.setSamples(finalSampleList);
+//        }
+//
+//        return finalMember;
+//    }
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalAnalysisUpdateParams updateParams,
                                                   QueryOptions options, String token) throws CatalogException {

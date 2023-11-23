@@ -338,8 +338,7 @@ public class CatalogAuthorizationManagerTest extends AbstractManagerTest {
 
         StudyAclParams aclParams = new StudyAclParams(null, null);
         catalogManager.getStudyManager().updateAcl(studyFqn, group, aclParams, RESET, ownerToken);
-        String userId = catalogManager.getUserManager().getUserId(organizationId, ownerToken);
-        studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(organizationId, study.getUid(), group, userId);
+        studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(organizationId, study.getUid(), group, orgOwnerUserId);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(1, studyAcls.first().getAcl().size());
         assertEquals(group, studyAcls.first().getAcl().get(0).getMember());
