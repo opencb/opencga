@@ -30,8 +30,10 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -76,7 +78,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public void run() throws ToolException, IOException {
+    public void run() throws ToolException, IOException, CatalogException {
 
         plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class).readValue(getConfigFile());
 
@@ -125,7 +127,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
 
             // Get genome version
             String genomeVersion = "hg38";
-            if (StringUtils.isNotEmpty(getAssembly()) && getAssembly().toUpperCase(Locale.ROOT).equals("GRCH37")) {
+            String assembly = ResourceUtils.getAssembly(storageManager.getCatalogManager(), getStudy(), getToken());
+            if (StringUtils.isNotEmpty(assembly) && assembly.toUpperCase(Locale.ROOT).equals("GRCH37")) {
                 genomeVersion = "hg19";
             }
 

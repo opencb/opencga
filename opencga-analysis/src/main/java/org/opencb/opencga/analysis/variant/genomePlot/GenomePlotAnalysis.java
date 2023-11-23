@@ -52,7 +52,6 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
     private GenomePlotAnalysisParams genomePlotParams = new GenomePlotAnalysisParams();
 
     private java.io.File configFile;
-    private String assembly;
 
     @Override
     protected void check() throws Exception {
@@ -73,8 +72,6 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         if (!configFile.exists()) {
             throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + configFile + ")");
         }
-
-        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
     }
 
     @Override
@@ -82,7 +79,6 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         step(getId(), () -> {
             getToolExecutor(GenomePlotAnalysisExecutor.class)
                     .setStudy(study)
-                    .setAssembly(assembly)
                     .setConfigFile(configFile)
                     .execute();
 

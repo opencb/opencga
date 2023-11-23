@@ -70,7 +70,6 @@ public class CircosAnalysis extends OpenCgaTool {
         step(getId(), () -> {
             getToolExecutor(CircosAnalysisExecutor.class)
                     .setStudy(study)
-                    .setAssembly(assembly)
                     .setCircosParams(circosParams)
                     .execute();
         });

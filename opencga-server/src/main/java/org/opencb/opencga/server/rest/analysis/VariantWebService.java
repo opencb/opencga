@@ -1334,7 +1334,6 @@ public class VariantWebService extends AnalysisWebService {
 
             // Create and set up Circos executor
             CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
-            executor.setAssembly(ResourceUtils.getAssembly(catalogManager, study, token));
 
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);

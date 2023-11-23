@@ -22,7 +22,6 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
-    private String assembly;
     private CircosAnalysisParams circosParams;
 
     public CircosAnalysisExecutor() {
@@ -39,15 +38,6 @@ public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
 
     public CircosAnalysisExecutor setStudy(String study) {
         this.study = study;
-        return this;
-    }
-
-    public String getAssembly() {
-        return assembly;
-    }
-
-    public CircosAnalysisExecutor setAssembly(String assembly) {
-        this.assembly = assembly;
         return this;
     }
 
