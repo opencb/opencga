@@ -33,18 +33,13 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
-import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
-import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
-import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
-import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.panel.PanelImportTask;
-import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
@@ -171,25 +166,25 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
-            put(FileIndexTask.ID, "files secondary-index");
+//            put(FileIndexTask.ID, "files secondary-index");
             put(FileTsvAnnotationLoader.ID, "files tsv-load");
             put(PostLinkSampleAssociation.ID, "files postlink");
 
-            put(SampleIndexTask.ID, "samples secondary-index");
+//            put(SampleIndexTask.ID, "samples secondary-index");
             put(SampleTsvAnnotationLoader.ID, "samples tsv-load");
 
-            put(IndividualIndexTask.ID, "individuals secondary-index");
+//            put(IndividualIndexTask.ID, "individuals secondary-index");
             put(IndividualTsvAnnotationLoader.ID, "individuals tsv-load");
 
-            put(CohortIndexTask.ID, "cohorts secondary-index");
+//            put(CohortIndexTask.ID, "cohorts secondary-index");
             put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
 
-            put(FamilyIndexTask.ID, "families secondary-index");
+//            put(FamilyIndexTask.ID, "families secondary-index");
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
 
             put(PanelImportTask.ID, "panels import");
 
-            put(JobIndexTask.ID, "jobs secondary-index");
+//            put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index-run", "alignment index-run");
             put("coverage-index-run", "alignment coverage-index-run");

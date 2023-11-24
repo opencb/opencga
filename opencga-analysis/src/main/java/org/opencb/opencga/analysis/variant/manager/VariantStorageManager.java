@@ -47,6 +47,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.ExceptionUtils;
@@ -54,6 +55,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1475,6 +1477,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, payload);
+        String organizationId = studyFqn.getOrganizationId();
+
         long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
@@ -1626,6 +1632,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
         if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
+            // Extract organization from token
+            JwtPayload jwtPayload = new JwtPayload(token);
+            String organizationId = jwtPayload.getOrganization();
+            // Look for projects from own organization
             List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults();
             if (projects.size() == 1) {
                 projectStr = projects.get(0).getFqn();
@@ -1703,6 +1713,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String databasePrefix, String token)
             throws CatalogException {
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(project.getFqn());
+        String organizationId = projectFqn.getOrganizationId();
         DataStore dataStore;
         //Must use the UserByStudyId instead of the file owner.
         String userId = catalogManager.getProjectManager().getOwner(organizationId, project.getUid());

@@ -27,12 +27,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
@@ -324,7 +322,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             }
                             SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);
                             getCatalogManager().getSampleManager()
-                                    .update(organizationId, study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
+                                    .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
 
                             progressLogger.increment(1);
                         }

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.JwtPayload;
 
 import java.util.regex.Matcher;
@@ -44,6 +45,20 @@ public final class CatalogFqn {
                     .setProjectId(split[1]);
         } else {
             return new CatalogFqn(payload.getOrganization(), projectStr).setProjectId(projectStr);
+        }
+    }
+
+    public static CatalogFqn extractFqnFromProjectFqn(String projectFqn) throws CatalogException {
+        if (StringUtils.isEmpty(projectFqn)) {
+            throw new CatalogException("Missing project fqn");
+        }
+
+        String[] split = projectFqn.split("@");
+        if (split.length == 2) {
+            return new CatalogFqn(split[0], projectFqn)
+                    .setProjectId(split[1]);
+        } else {
+            throw new CatalogException("Provided string '" + projectFqn + "' is not a valid project fqn.");
         }
     }
 

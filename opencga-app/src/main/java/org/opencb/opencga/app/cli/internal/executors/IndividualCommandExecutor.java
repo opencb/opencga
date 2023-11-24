@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.app.cli.internal.options.IndividualCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -25,9 +24,9 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(individualCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case "secondary-index":
-                secondaryIndex();
-                break;
+//            case "secondary-index":
+//                secondaryIndex();
+//                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -38,11 +37,11 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void secondaryIndex() throws ToolException {
-        IndividualCommandOptions.SecondaryIndex options = individualCommandOptions.secondaryIndex;
-        Path outDir = Paths.get(options.outDir);
-        toolRunner.execute(IndividualIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
-    }
+//    private void secondaryIndex() throws ToolException {
+//        IndividualCommandOptions.SecondaryIndex options = individualCommandOptions.secondaryIndex;
+//        Path outDir = Paths.get(options.outDir);
+//        toolRunner.execute(IndividualIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
+//    }
 
     private void tsvLoad() throws ToolException {
         IndividualCommandOptions.TsvLoad options = individualCommandOptions.tsvLoad;

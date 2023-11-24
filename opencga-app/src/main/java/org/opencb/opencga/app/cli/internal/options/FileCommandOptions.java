@@ -4,7 +4,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import com.microsoft.graph.models.extensions.Post;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -20,7 +19,7 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     public PostlinkCommandOptions postlinkCommandOptions;
-    public SecondaryIndex secondaryIndex;
+//    public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
 
     public final GeneralCliOptions.CommonCommandOptions fileCommonOptions;
@@ -36,7 +35,7 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.postlinkCommandOptions = new PostlinkCommandOptions();
-        this.secondaryIndex = new SecondaryIndex();
+//        this.secondaryIndex = new SecondaryIndex();
         this.tsvLoad = new TsvLoad();
     }
 
@@ -133,22 +132,22 @@ public class FileCommandOptions {
         public String outDir;
     }
 
-    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for files using a search engine")
-    public class SecondaryIndex {
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
-
-        @ParametersDelegate
-        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
-
-        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
-                arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
-                arity = 1)
-        public String outDir;
-    }
+//    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for files using a search engine")
+//    public class SecondaryIndex {
+//        @ParametersDelegate
+//        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+//
+//        @ParametersDelegate
+//        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+//
+//        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
+//                arity = 1)
+//        public String studyId;
+//
+//        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+//                arity = 1)
+//        public String outDir;
+//    }
 
     @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")
     public class TsvLoad {

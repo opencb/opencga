@@ -30,7 +30,6 @@ import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
@@ -38,8 +37,10 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -218,6 +219,10 @@ public class AlignmentStorageManager extends StorageManager {
         // Get file
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, token);
 //        System.out.println("file = " + file.getUri());
+
+        JwtPayload jwtPayload = new JwtPayload(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyIdStr, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
 
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
@@ -437,6 +442,9 @@ public class AlignmentStorageManager extends StorageManager {
             }
         }
 
+        JwtPayload jwtPayload = new JwtPayload(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
@@ -560,23 +568,6 @@ public class AlignmentStorageManager extends StorageManager {
 
     @Override
     public void testConnection() throws StorageEngineException {
-    }
-
-    @Deprecated
-    private Path getFilePath(long fileId, String sessionId) throws CatalogException, IOException {
-        QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key()));
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(organizationId, fileId, fileOptions, sessionId);
-
-        if (fileResult.getNumResults() != 1) {
-            logger.error("Critical error: File {} not found in catalog.", fileId);
-            throw new CatalogException("Critical error: File " + fileId + " not found in catalog");
-        }
-
-        Path path = Paths.get(fileResult.first().getUri().getRawPath());
-        FileUtils.checkFile(path);
-
-        return path;
     }
 
     @Deprecated
