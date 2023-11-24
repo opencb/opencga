@@ -30,6 +30,23 @@ public final class CatalogFqn {
         this.providedId = id;
     }
 
+    public static CatalogFqn fromProjectFqn(String projectFqn) {
+        if (StringUtils.isEmpty(projectFqn)) {
+            throw new IllegalArgumentException("Missing project fqn");
+        }
+
+        if (UuidUtils.isOpenCgaUuid(projectFqn)) {
+            throw new IllegalArgumentException("Project fqn cannot be an OpenCGA uuid");
+        }
+
+        String[] split = projectFqn.split("@", 2);
+        if (split.length == 2) {
+            return new CatalogFqn(split[0], projectFqn).setProjectId(split[1]);
+        } else {
+            throw new IllegalArgumentException("Provided string '" + projectFqn + "' is not a valid project fqn.");
+        }
+    }
+
     public static CatalogFqn extractFqnFromProject(String projectStr, JwtPayload payload) {
         if (StringUtils.isEmpty(projectStr)) {
             return new CatalogFqn(payload.getOrganization(), projectStr);

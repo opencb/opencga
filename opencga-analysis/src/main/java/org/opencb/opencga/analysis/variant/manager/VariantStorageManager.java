@@ -966,12 +966,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .first();
 
         DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
-        setCellbaseConfiguration(variantStorageEngine, getProjectFqn(null, studyStr, token), token);
-        if (dataStore.getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
-        }
+        String projectFqn = getProjectFqn(null, studyStr, token);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, study.getFqn(), projectFqn, token);
         if (study.getInternal() != null
                 && study.getInternal().getConfiguration() != null
                 && study.getInternal().getConfiguration().getVariantEngine() != null
@@ -997,14 +993,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
             throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStoreByProjectId(project, token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        setCellbaseConfiguration(variantStorageEngine, project, token);
-        if (dataStore.getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
-        }
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, null, project, token);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
+        }
+        return variantStorageEngine;
+    }
+
+    private VariantStorageEngine getVariantStorageEngineByDatastore(DataStore dataStore, String alias, String projectFqnStr, String token) throws StorageEngineException, CatalogException {
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), alias);
+        CatalogFqn projectFqn = CatalogFqn.fromProjectFqn(projectFqnStr);
+        variantStorageEngine.getOptions().put("catalog.organization", projectFqn.getOrganizationId());
+        variantStorageEngine.getOptions().put("catalog.project", projectFqn.getProjectId());
+        setCellbaseConfiguration(variantStorageEngine, projectFqnStr, token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         return variantStorageEngine;
     }
@@ -1257,6 +1261,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
+            String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
             catalogManager.getAuditManager().audit(organizationId, userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
                     "", "", "", "",
                     params,
@@ -1287,9 +1292,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
         try {
-            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
-
             StopWatch stopWatch = StopWatch.createStarted();
             query = catalogUtils.parseQuery(query, queryOptions, variantStorageEngine.getCellBaseUtils(), token);
             auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -1332,6 +1336,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
+            String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
             catalogManager.getAuditManager().audit(organizationId, userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
                     status, auditAttributes);
         }
