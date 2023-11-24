@@ -1218,7 +1218,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // deprecated
                 .append("operationName", toolId);
         R result = null;
-        String userId = catalogManager.getUserManager().validateToken(token).getUserId();
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String userId = payload.getUserId();
+        String organizationId = payload.getOrganization();
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
 
@@ -1279,7 +1281,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("query", new Query(query))
                 .append("queryOptions", new QueryOptions(queryOptions));
         R result = null;
-        String userId = catalogManager.getUserManager().validateToken(token).getUserId();
+        JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+        String userId = payload.getUserId();
+        String organizationId = payload.getOrganization();
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;

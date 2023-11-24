@@ -78,14 +78,13 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
 public class VariantOperationsTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -148,7 +147,7 @@ public class VariantOperationsTest {
 //        catalogManager = opencga.getCatalogManager();
 //        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 //        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @After
@@ -229,7 +228,7 @@ public class VariantOperationsTest {
             if (i % 2 == 0) {
                 String id = file.getSampleIds().get(i);
                 SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
+                catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
             }
         }
 
@@ -275,10 +274,10 @@ public class VariantOperationsTest {
     }
 
     public void setUpCatalogManager() throws Exception {
-        catalogManager.getUserManager().create(organizationId, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create(ORGANIZATION, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
@@ -493,7 +492,7 @@ public class VariantOperationsTest {
     @Test
     public void testCellbaseConfigure() throws Exception {
         String project = "Project_test_cellbase_configure";
-        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
+        catalogManager.getProjectManager().create(ORGANIZATION, new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
 
         CellBaseUtils cellBaseUtils = variantStorageManager.getVariantStorageEngineByProject(project, null, token).getCellBaseUtils();
         assertEquals(ParamConstants.CELLBASE_URL, cellBaseUtils.getURL());

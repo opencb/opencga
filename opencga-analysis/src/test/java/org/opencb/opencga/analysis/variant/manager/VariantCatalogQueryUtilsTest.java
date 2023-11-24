@@ -54,6 +54,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -97,6 +98,7 @@ public class VariantCatalogQueryUtilsTest {
     public ExpectedException thrown = ExpectedException.none();
 
     private static CatalogManager catalog;
+    private static String organizationId = "test";
     private static String sessionId;
     private static VariantCatalogQueryUtils queryUtils;
     private static List<Sample> samples = new ArrayList<>();
@@ -110,18 +112,21 @@ public class VariantCatalogQueryUtilsTest {
     private static Panel myPanelWithRegions;
     private static CellBaseUtils cellBaseUtils;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @BeforeClass
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create(organizationId, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
+        User user = catalog.getUserManager().create(organizationId, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
+                1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
-        sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionId = catalog.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
-        catalog.getProjectManager().create(organizationId, "p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
+        Project project = catalog.getProjectManager().create(organizationId, "p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
+        catalog.getStudyManager().create(project.getFqn(), "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(project.getFqn(), "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(project.getFqn(), "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -239,7 +244,7 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileInternalVariantIndex(, file, new FileInternalVariantIndex()
+            catalog.getFileManager().updateFileInternalVariantIndex("s1", file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);
         }

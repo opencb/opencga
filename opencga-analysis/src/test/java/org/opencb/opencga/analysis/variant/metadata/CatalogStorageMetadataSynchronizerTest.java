@@ -72,6 +72,7 @@ public class CatalogStorageMetadataSynchronizerTest {
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     static private CatalogManager catalogManager;
+    static private final String organizationId = "test";
     static private String sessionId;
     static private String projectId;
     static private String studyId;
@@ -92,7 +93,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, TestParamConstants.PASSWORD).getToken();
+        sessionId = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create(organizationId, "p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", "Study " + "1", null, null,

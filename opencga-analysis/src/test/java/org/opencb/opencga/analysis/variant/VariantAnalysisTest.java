@@ -113,6 +113,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 @Category(LongTests.class)
 public class VariantAnalysisTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -185,11 +186,11 @@ public class VariantAnalysisTest {
                 String id = file.getSampleIds().get(i);
                 if (id.equals(son)) {
                     SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-                    catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
+                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
                 }
                 if (i % 2 == 0) {
                     SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                    catalogManager.getSampleManager().update(organizationId, STUDY, id, updateParams, null, token);
+                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
                 }
             }
 
@@ -242,7 +243,7 @@ public class VariantAnalysisTest {
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
 
             SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-            catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
+            catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -256,7 +257,7 @@ public class VariantAnalysisTest {
         variantStorageManager = opencga.getVariantStorageManager();
         variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY);
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @AfterClass
@@ -268,10 +269,10 @@ public class VariantAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(organizationId, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create(ORGANIZATION, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
@@ -404,7 +405,7 @@ public class VariantAnalysisTest {
             SampleQualityControl qualityControl = sample.getQualityControl();
             if (qualityControl != null && qualityControl.getVariant() != null && CollectionUtils.isNotEmpty(qualityControl.getVariant().getVariantStats())) {
                 qualityControl.getVariant().setVariantStats(Collections.emptyList());
-                catalogManager.getSampleManager().update(organizationId, STUDY, sample.getId(), new SampleUpdateParams()
+                catalogManager.getSampleManager().update(STUDY, sample.getId(), new SampleUpdateParams()
                         .setQualityControl(qualityControl), new QueryOptions(), token);
             }
         }
@@ -767,7 +768,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Collections.singletonList(signature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
         params.setSample(cancer_sample);
@@ -885,7 +886,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Collections.singletonList(signature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
         params.setSample(cancer_sample);
@@ -936,7 +937,7 @@ public class VariantAnalysisTest {
         SampleQualityControl qc = new SampleQualityControl();
         qc.getVariant().setSignatures(Arrays.asList(snvSignature, svSignature));
         SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qc);
-        catalogManager.getSampleManager().update(organizationId, CANCER_STUDY, cancer_sample, updateParams, null, token);
+        catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         // SNV fitting
         MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
@@ -1066,7 +1067,7 @@ public class VariantAnalysisTest {
     @Test
     public void testCellbaseConfigure() throws Exception {
         String project = "Project_test_cellbase_configure";
-        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "grch38"), null, null), QueryOptions.empty(), token);
+        catalogManager.getProjectManager().create(ORGANIZATION, new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "grch38"), null, null), QueryOptions.empty(), token);
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("The storage engine is in mode=READ_ONLY");

@@ -60,6 +60,7 @@ import static org.junit.Assert.assertEquals;
 @Category(MediumTests.class)
 public class AlignmentAnalysisTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -211,7 +212,7 @@ public class AlignmentAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @AfterClass
@@ -227,9 +228,9 @@ public class AlignmentAnalysisTest {
         catalogManager.getUserManager().create("test", new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk"), PASSWORD, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update("test", new OrganizationUpdateParams().setOwner(USER), null, opencga.getAdminToken());
 
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(organizationId, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 

@@ -263,7 +263,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         cohorts.put("coh0", catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.getCohortManager().update(organizationId, studyId, coh[0],
+        catalogManager.getCohortManager().update(studyId, coh[0],
                 new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getInternal().getStatus().getId());
 
@@ -271,7 +271,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 .map(s -> new SampleReferenceParam().setId(s.getId()))
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
-        catalogManager.getCohortManager().update(organizationId, studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
+        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
                 new QueryOptions(Constants.ACTIONS, Collections.singletonMap(SAMPLES.key(), ParamUtils.BasicUpdateAction.SET)), sessionId);
         assertEquals(CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getInternal().getStatus().getId());
 

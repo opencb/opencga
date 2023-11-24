@@ -58,6 +58,8 @@ public class FamilyAnalysisTest extends GenericTest {
     private static String opencgaToken;
     protected static String sessionIdUser;
 
+    private static String organizationId = "test";
+
     protected static Family family;
     protected static Family family2;
     protected static Family family3;
@@ -79,7 +81,7 @@ public class FamilyAnalysisTest extends GenericTest {
 
         catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         projectId = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -118,7 +120,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family2.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family2.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -132,7 +134,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family3.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family3.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -172,7 +174,7 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(organizationId, studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
+        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
@@ -330,30 +332,30 @@ public class FamilyAnalysisTest extends GenericTest {
 
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
+        catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
                 QueryOptions.empty(), sessionIdUser);
 
         if (numMembers > 1) {
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relMother.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(1)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 2) {
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(2)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 3) {
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(3)))), QueryOptions.empty(), sessionIdUser);
         }
 
         if (numMembers > 4) {
-            catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
+            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(4)))), QueryOptions.empty(), sessionIdUser);
         }
@@ -460,12 +462,12 @@ public class FamilyAnalysisTest extends GenericTest {
 
         OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, relFather.getId(),
+        catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(fatherSample))),
                 QueryOptions.empty(), sessionIdUser);
 
 
-        catalogManager.getIndividualManager().update(organizationId, STUDY, relChild1.getId(),
+        catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(childSample))),
                 QueryOptions.empty(), sessionIdUser);
 

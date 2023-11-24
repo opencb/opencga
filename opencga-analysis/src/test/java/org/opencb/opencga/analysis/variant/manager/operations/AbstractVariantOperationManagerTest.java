@@ -96,6 +96,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     protected final String userId = "user";
 
+    protected String organizationId = "test";
     protected String projectId;
     protected String studyId;
     protected String studyFqn;
@@ -143,7 +144,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
-        sessionId = catalogManager.getUserManager().login(userId, "userACME1.").getToken();
+        sessionId = catalogManager.getUserManager().login(organizationId, userId, "userACME1.").getToken();
         projectId = "p1";
         catalogManager.getProjectManager().create(organizationId, projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);

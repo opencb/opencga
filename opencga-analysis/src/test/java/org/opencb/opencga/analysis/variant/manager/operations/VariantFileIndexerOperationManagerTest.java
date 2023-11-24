@@ -200,7 +200,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), inputFile.getSampleIds().get(100));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Sample associated to the files");
-        DataResult delete = catalogManager.getSampleManager().delete(organizationId, studyFqn, query, null, sessionId);
+        DataResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
     }
 
     @Test
