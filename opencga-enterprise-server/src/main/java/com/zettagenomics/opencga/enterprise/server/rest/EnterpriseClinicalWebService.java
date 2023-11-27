@@ -6,48 +6,37 @@ import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetada
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
-import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
-@Path("/{apiVersion}/cvdb")
+@Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Cvdb", description = "Methods for working with CVDB endpoints")
-public class CvdbWSServer extends OpenCGAWSServer {
+@Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Interpretations")
+public class EnterpriseClinicalWebService extends ClinicalWebService {
 
     protected CvdbSolrEngine cvdbEngine;
 
-    public CvdbWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public EnterpriseClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         // Get enterprise configuration to set the CVDB engine
@@ -61,7 +50,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/index/run")
+    @Path("/cvdv/index/run")
     @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
     public Response indexProjectClinicalAnalyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -83,7 +72,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/case/query")
+    @Path("/cvdv/case/query")
     @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = ClinicalAnalysis.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -237,7 +226,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/interpretation/query")
+    @Path("/cvdv/interpretation/query")
     @ApiOperation(value = CLINICAL_INTERPRETATION_QUERY_DESCRIPTION, response = Interpretation.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -390,7 +379,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/variant/query")
+    @Path("/cvdv/variant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -543,7 +532,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/variantEvidence/query")
+    @Path("/cvdv/variantEvidence/query")
     @ApiOperation(value = CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION, response = ClinicalVariantEvidence.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -700,7 +689,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/case/aggregationStats")
+    @Path("/cvdv/case/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -846,7 +835,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/interpretation/aggregationStats")
+    @Path("/cvdv/interpretation/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical interpretation aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -992,7 +981,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/variant/aggregationStats")
+    @Path("/cvdv/variant/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1138,7 +1127,7 @@ public class CvdbWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/variantEvidence/aggregationStats")
+    @Path("/cvdv/variantEvidence/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),

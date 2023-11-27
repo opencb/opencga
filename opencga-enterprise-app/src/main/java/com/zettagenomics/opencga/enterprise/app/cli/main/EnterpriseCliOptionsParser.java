@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
 * Copyright 2015-2023-11-27 OpenCB
-=======
-* Copyright 2015-2023-11-13 OpenCB
->>>>>>> develop
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -54,7 +50,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     private final FilesCommandOptions filesCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
-    private final CvdbCommandOptions cvdbCommandOptions;
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
@@ -135,6 +130,15 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-case-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdvCaseCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-case-query", analysisClinicalCommandOptions.queryCvdvCaseCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-index-run", analysisClinicalCommandOptions.runCvdvIndexCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdvInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-interpretation-query", analysisClinicalCommandOptions.queryCvdvInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-variant-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdvVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-variant-query", analysisClinicalCommandOptions.queryCvdvVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-variant-evidence-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsCvdvVariantEvidenceCommandOptions);
+        analysisClinicalSubCommands.addCommand("cvdv-variant-evidence-query", analysisClinicalCommandOptions.queryCvdvVariantEvidenceCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
@@ -388,19 +392,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         cohortsSubCommands.addCommand("info", cohortsCommandOptions.infoCommandOptions);
         cohortsSubCommands.addCommand("update", cohortsCommandOptions.updateCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-annotations-update", cohortsCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
-
-        cvdbCommandOptions = new CvdbCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("cvdb", cvdbCommandOptions);
-        JCommander cvdbSubCommands = jCommander.getCommands().get("cvdb");
-        cvdbSubCommands.addCommand("case-aggregation-stats", cvdbCommandOptions.aggregationStatsCaseCommandOptions);
-        cvdbSubCommands.addCommand("case-query", cvdbCommandOptions.queryCaseCommandOptions);
-        cvdbSubCommands.addCommand("index-run", cvdbCommandOptions.runIndexCommandOptions);
-        cvdbSubCommands.addCommand("interpretation-aggregation-stats", cvdbCommandOptions.aggregationStatsInterpretationCommandOptions);
-        cvdbSubCommands.addCommand("interpretation-query", cvdbCommandOptions.queryInterpretationCommandOptions);
-        cvdbSubCommands.addCommand("variant-aggregation-stats", cvdbCommandOptions.aggregationStatsVariantCommandOptions);
-        cvdbSubCommands.addCommand("variant-query", cvdbCommandOptions.queryVariantCommandOptions);
-        cvdbSubCommands.addCommand("variant-evidence-aggregation-stats", cvdbCommandOptions.aggregationStatsVariantEvidenceCommandOptions);
-        cvdbSubCommands.addCommand("variant-evidence-query", cvdbCommandOptions.queryVariantEvidenceCommandOptions);
     }
     
     public AnalysisVariantCommandOptions getAnalysisVariantCommandOptions() {
@@ -480,11 +471,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     
     public CohortsCommandOptions getCohortsCommandOptions() {
         return cohortsCommandOptions;
-    }
-    
-    
-    public CvdbCommandOptions getCvdbCommandOptions() {
-        return cvdbCommandOptions;
     }
     
 }

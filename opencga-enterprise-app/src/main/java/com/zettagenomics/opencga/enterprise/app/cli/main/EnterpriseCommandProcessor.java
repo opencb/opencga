@@ -234,9 +234,6 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
             case "meta":
                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                 break;
-            case "cvdb":
-                commandExecutor = new CvdbCommandExecutor(cliOptionsParser.getCvdbCommandOptions());
-                break;
             case "admin":
                 commandExecutor = new AdminCommandExecutor(cliOptionsParser.getAdminCommandOptions());
                 break;
