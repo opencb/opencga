@@ -3,14 +3,12 @@ package com.zettagenomics.opencga.enterprise.cvdb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
@@ -35,12 +33,15 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
     }
 
     public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean primary, String interpretationId,
-                                                         String clinicalAnalysisId) throws CvdbException {
-        return toClinicalVariantSearch(Collections.singletonList(cv), primary, interpretationId, clinicalAnalysisId).get(0);
+                                                         String clinicalAnalysisId, String studyId, List<String> viewers)
+            throws CvdbException {
+        return toClinicalVariantSearch(Collections.singletonList(cv), primary, interpretationId, clinicalAnalysisId, studyId, viewers)
+                .get(0);
     }
 
     public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean primary, String interpretationId,
-                                                               String clinicalAnalysisId) throws CvdbException {
+                                                               String clinicalAnalysisId, String studyId, List<String> viewers)
+            throws CvdbException {
         List<ClinicalVariantSearch> cvsList = new ArrayList<>();
 
         for (ClinicalVariant cv : cvList) {
@@ -48,10 +49,12 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
             ClinicalVariantSearch cvs = new ClinicalVariantSearch(variantSearchModel);
 
             cvs.setId(interpretationId + "-" + variantSearchModel.getVariantId());
-            cvs.setCiId(interpretationId);
-            cvs.setCaId(clinicalAnalysisId);
 
-            cvs.setPrimary(primary);
+            cvs.setCiId(interpretationId)
+                    .setCaId(clinicalAnalysisId)
+                    .setPrimary(primary)
+                    .setStudyId(studyId)
+                    .setViewers(viewers);
 
             // Comments are stores: author -- message -- tag1:tag2:.. -- date
             if (CollectionUtils.isNotEmpty(cv.getComments())) {

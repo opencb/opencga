@@ -28,13 +28,10 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     @Field("studyId")
     private String studyId;
 
-    @Field("studyJson")
-    private String studyJson;
+    @Field("viewers")
+    private List<String> viewers;
 
     // "Primary" and "foreign" keys
-
-//    @Field("id")
-//    private String id;
 
     @Field("caId")
     private String caId;
@@ -96,6 +93,7 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     }
 
     private void init() {
+        viewers = new ArrayList<>();
         comments = new ArrayList<>();
         annotations = new HashMap<>();
         annotationScores = new HashMap<>();
@@ -106,7 +104,7 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", viewers=").append(viewers);
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
         sb.append(", primary=").append(primary);
@@ -114,11 +112,11 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         sb.append(", annotations=").append(annotations);
         sb.append(", annotationScores=").append(annotationScores);
         sb.append(", discussionAuthor='").append(discussionAuthor).append('\'');
-        sb.append(", discussionDate='").append(discussionDate).append('\'');
+        sb.append(", discussionDate=").append(discussionDate);
         sb.append(", discussionText='").append(discussionText).append('\'');
         sb.append(", confidenceValue='").append(confidenceValue).append('\'');
         sb.append(", confidenceAuthor='").append(confidenceAuthor).append('\'');
-        sb.append(", confidenceDate='").append(confidenceDate).append('\'');
+        sb.append(", confidenceDate=").append(confidenceDate);
         sb.append(", tags=").append(tags);
         sb.append(", status='").append(status).append('\'');
         sb.append(", json='").append(json).append('\'');
@@ -135,12 +133,12 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         return this;
     }
 
-    public String getStudyJson() {
-        return studyJson;
+    public List<String> getViewers() {
+        return viewers;
     }
 
-    public ClinicalVariantSearch setStudyJson(String studyJson) {
-        this.studyJson = studyJson;
+    public ClinicalVariantSearch setViewers(List<String> viewers) {
+        this.viewers = viewers;
         return this;
     }
 

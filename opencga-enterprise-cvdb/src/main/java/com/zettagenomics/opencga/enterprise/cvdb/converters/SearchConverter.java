@@ -12,6 +12,10 @@ import java.util.HashMap;
 
 public class SearchConverter<M, N> {
 
+    public static final String CVDB_INTERNALS_KEY = "OPENCGA_CVDB_INTERNALS";
+    public static final String CVDB_VIEWERS_KEY = "OPENCGA_VIEWERS";
+    public static final String CVDB_STUDY_ID_KEY = "OPENCGA_STUDY_ID";
+
     protected ObjectMapper mapper;
     protected ObjectReader mapReader;
 

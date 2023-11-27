@@ -264,9 +264,8 @@ public class CvdbSolrEngine {
                     QueryOptions.empty(), sessionIdUser);
             if (caResult.getNumResults() == 1) {
                 ClinicalAnalysis clinicalAnalysis = caResult.first();
-                clinicalAnalysis.getAttributes().put(ClinicalAnalysisConverter.CVDB_CA_VIEWERS_KEY, caIdUserIdsMap.get(caId));
                 try {
-                    if (index(clinicalAnalysis, projectId, overwrite)) {
+                    if (index(clinicalAnalysis, projectId, study.getFqn(), caIdUserIdsMap.get(caId), overwrite)) {
                         numIndexed++;
                     } else {
                         String key = caId + " (" + study.getFqn() + ")";
@@ -622,12 +621,13 @@ public class CvdbSolrEngine {
         }
     }
 
-    private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite) throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, String studyId, List<String> viewers, boolean overwrite)
+            throws CvdbException {
         SolrClient solrClient = solrManager.getSolrClient();
 
         try {
             // Index
-            if (index(clinicalAnalysis, projectId, overwrite, solrClient)) {
+            if (index(clinicalAnalysis, projectId, studyId, viewers, overwrite, solrClient)) {
                 // Commit
                 solrClient.commit(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
                 solrClient.commit(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
@@ -643,14 +643,11 @@ public class CvdbSolrEngine {
         return false;
     }
 
-    private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, boolean overwrite, SolrClient solrClient)
-            throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String projectId, String studyId, List<String> viewers, boolean overwrite,
+                          SolrClient solrClient) throws CvdbException {
         try {
             logger.info("Indexing clinical analysis {} ...", clinicalAnalysis.getId());
             UpdateResponse updateResponse;
-
-            // Clinical analysis
-            ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis);
 
             boolean exists;
             if (overwrite) {
@@ -666,6 +663,9 @@ public class CvdbSolrEngine {
             }
 
             if (!exists) {
+                // Clinical analysis
+                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, studyId, viewers);
+
                 // Index
                 updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), cas);
                 if (updateResponse.getStatus() != 0) {
@@ -674,13 +674,13 @@ public class CvdbSolrEngine {
 
                 // Primary interpretation
                 if (clinicalAnalysis.getInterpretation() != null) {
-                    index(clinicalAnalysis.getInterpretation(), true, projectId, solrClient);
+                    index(clinicalAnalysis.getInterpretation(), true, projectId, studyId, viewers, solrClient);
                 }
 
                 // Secondary interpretations
                 if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
                     for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                        index(secondaryInterpretation, false, projectId, solrClient);
+                        index(secondaryInterpretation, false, projectId, studyId, viewers, solrClient);
                     }
                 }
                 logger.info("Done! Indexed clinical analysis {}", clinicalAnalysis.getId());
@@ -689,7 +689,8 @@ public class CvdbSolrEngine {
                 return false;
             }
         } catch (SolrServerException | IOException e) {
-            logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(), e.getMessage());
+            logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}",
+                    clinicalAnalysis.getId(), e.getMessage());
             rollback(solrClient, e);
             return false;
         }
@@ -697,12 +698,13 @@ public class CvdbSolrEngine {
         return true;
     }
 
-    private void index(Interpretation interpretation, boolean isPrimary, String projectId, SolrClient solrClient) throws CvdbException {
+    private void index(Interpretation interpretation, boolean isPrimary, String projectId, String studyId, List<String> viewers,
+                       SolrClient solrClient) throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
             // Interpretation
-            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary);
+            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary, studyId, viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), cis);
             if (updateResponse.getStatus() != 0) {
@@ -713,7 +715,7 @@ public class CvdbSolrEngine {
             if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
                 for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                     index(primaryFinding, true, interpretation.getId(), interpretation.getClinicalAnalysisId(), projectId,
-                            solrClient);
+                            studyId, viewers, solrClient);
                 }
             }
         } catch (SolrServerException | IOException e) {
@@ -722,7 +724,7 @@ public class CvdbSolrEngine {
     }
 
     private void index(ClinicalVariant clinicalVariant, boolean primary, String interpretationId, String clinicalAnalysisId,
-                       String projectId, SolrClient solrClient) throws CvdbException {
+                       String projectId, String studyId, List<String> viewers, SolrClient solrClient) throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
@@ -733,7 +735,7 @@ public class CvdbSolrEngine {
             clinicalVariant.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
             clinicalVariant.getAttributes().put(CI_ID_NAME, interpretationId);
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, primary, interpretationId,
-                    clinicalAnalysisId);
+                    clinicalAnalysisId, studyId, viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvs);
             if (updateResponse.getStatus() != 0) {
@@ -741,7 +743,7 @@ public class CvdbSolrEngine {
             }
 
             for (ClinicalVariantEvidence evidence : clinicalVariant.getEvidences()) {
-                index(evidence, clinicalVariant.getId(), interpretationId, clinicalAnalysisId, projectId, solrClient);
+                index(evidence, clinicalVariant.getId(), interpretationId, clinicalAnalysisId, projectId, studyId, viewers, solrClient);
             }
         } catch (SolrServerException | IOException e) {
             rollback(solrClient, e);
@@ -749,7 +751,8 @@ public class CvdbSolrEngine {
     }
 
     private void index(ClinicalVariantEvidence clinicalVariantEvidence, String variantId, String interpretationId,
-                       String clinicalAnalysisId, String projectId, SolrClient solrClient) throws CvdbException {
+                       String clinicalAnalysisId, String projectId, String studyId, List<String> viewers, SolrClient solrClient)
+            throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
@@ -761,7 +764,7 @@ public class CvdbSolrEngine {
             clinicalVariantEvidence.getAttributes().put(CI_ID_NAME, interpretationId);
             clinicalVariantEvidence.getAttributes().put(CV_ID_NAME, variantId);
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
-                    interpretationId, clinicalAnalysisId);
+                    interpretationId, clinicalAnalysisId, studyId, viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), cves);
             if (updateResponse.getStatus() != 0) {
@@ -860,7 +863,7 @@ public class CvdbSolrEngine {
             if (ANONYMOUS_USER_ID.equals(userId)) {
                 throw new CvdbException(NO_ACCESS_FOR_ANONYMOUS_USERS_MSG);
             }
-            query.put(CA_VIEWER_NAME, userId);
+            query.put(VIEWER_NAME, userId);
         } catch (CatalogException e) {
             throw new CvdbException("Checking user query permissions", e);
         }

@@ -29,8 +29,8 @@ public class ClinicalInterpretationSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("studyJson")
-    private String studyJson;
+    @Field("viewers")
+    private List<String> viewers;
 
     // "Primary" and "foreign" keys
 
@@ -113,10 +113,7 @@ public class ClinicalInterpretationSearch {
     private String json;
 
     public ClinicalInterpretationSearch() {
-        init();
-    }
-
-    private void init() {
+        viewers = new ArrayList<>();
         panelIds = new ArrayList<>();
         methodDependencies = new ArrayList<>();
         comments = new ArrayList<>();
@@ -126,7 +123,7 @@ public class ClinicalInterpretationSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalInterpretationSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", primary=").append(primary);
@@ -136,7 +133,7 @@ public class ClinicalInterpretationSearch {
         sb.append(", analystName='").append(analystName).append('\'');
         sb.append(", analystEmail='").append(analystEmail).append('\'');
         sb.append(", analystAssignedBy='").append(analystAssignedBy).append('\'');
-        sb.append(", analystDate='").append(analystDate).append('\'');
+        sb.append(", analystDate=").append(analystDate);
         sb.append(", methodName='").append(methodName).append('\'');
         sb.append(", methodVersion='").append(methodVersion).append('\'');
         sb.append(", methodCommit='").append(methodCommit).append('\'');
@@ -146,9 +143,9 @@ public class ClinicalInterpretationSearch {
         sb.append(", statusId='").append(statusId).append('\'');
         sb.append(", statusName='").append(statusName).append('\'');
         sb.append(", statusDescription='").append(statusDescription).append('\'');
-        sb.append(", statusDate='").append(statusDate).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", statusDate=").append(statusDate);
+        sb.append(", creationDate=").append(creationDate);
+        sb.append(", modificationDate=").append(modificationDate);
         sb.append(", version=").append(version);
         sb.append(", json='").append(json).append('\'');
         sb.append('}');
@@ -164,12 +161,12 @@ public class ClinicalInterpretationSearch {
         return this;
     }
 
-    public String getStudyJson() {
-        return studyJson;
+    public List<String> getViewers() {
+        return viewers;
     }
 
-    public ClinicalInterpretationSearch setStudyJson(String studyJson) {
-        this.studyJson = studyJson;
+    public ClinicalInterpretationSearch setViewers(List<String> viewers) {
+        this.viewers = viewers;
         return this;
     }
 

@@ -47,19 +47,21 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
         this.interpretationReader = mapper.readerFor(Interpretation.class);
     }
 
-    public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary) throws CvdbException {
-        return toInterpretationSearch(Collections.singletonList(interpretation), primary).get(0);
+    public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary, String studyId, List<String> viewers) throws CvdbException {
+        return toInterpretationSearch(Collections.singletonList(interpretation), primary, studyId, viewers).get(0);
     }
 
-    public List<ClinicalInterpretationSearch> toInterpretationSearch(List<Interpretation> interpretations, boolean primary)
-            throws CvdbException {
+    public List<ClinicalInterpretationSearch> toInterpretationSearch(List<Interpretation> interpretations, boolean primary, String studyId,
+                                                                     List<String> viewers) throws CvdbException {
         List<ClinicalInterpretationSearch> clinicalInterpretationSearchList = new ArrayList<>();
         for (org.opencb.opencga.core.models.clinical.Interpretation interpretation : interpretations) {
             ClinicalInterpretationSearch clinicalInterpretationSearch = new ClinicalInterpretationSearch()
                     .setId(interpretation.getId())
                     .setCaId(interpretation.getClinicalAnalysisId())
                     .setDescription(interpretation.getDescription())
-                    .setPrimary(primary);
+                    .setPrimary(primary)
+                    .setStudyId(studyId)
+                    .setViewers(viewers);
 
             // Panels
             if (CollectionUtils.isNotEmpty(interpretation.getPanels())) {

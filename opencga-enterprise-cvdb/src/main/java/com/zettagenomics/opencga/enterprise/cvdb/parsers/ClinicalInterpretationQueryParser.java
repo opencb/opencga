@@ -57,6 +57,7 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
 
         // Clinical interpretation filters
         filters = clinicalInterpretationFilters(query);
+        addCommonFilters(query, filters);
         addStringFilters(filters, solrQuery);
 
         // Clinical variant filters

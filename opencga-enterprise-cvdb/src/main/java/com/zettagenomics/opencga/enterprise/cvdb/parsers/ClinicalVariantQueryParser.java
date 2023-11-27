@@ -68,6 +68,7 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
         // Clinical variant filters
         filters = clinicalVariantFilters(query);
+        addCommonFilters(query, filters);
         addStringFilters(filters, solrQuery);
 
         // Clinical variant evidences filters

@@ -29,13 +29,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
 public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis, ClinicalAnalysisSearch> {
-
-    public static final String CVDB_CA_VIEWERS_KEY = "OPENCGA_CA_VIEWERS";
 
     private ObjectReader clinicalAnalysisReader;
 
@@ -46,17 +45,21 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
     }
 
-    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis) throws CvdbException {
-        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis)).get(0);
+    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis, String studyId, List<String> users)
+            throws CvdbException {
+        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis), studyId, users).get(0);
     }
 
-    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList) throws CvdbException {
+    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList, String studyId,
+                                                                 List<String> viewers) throws CvdbException {
         List<ClinicalAnalysisSearch> clinicalAnalysisSearchList = new ArrayList<>();
 
         for (ClinicalAnalysis ca : clinicalAnalysisList) {
             ClinicalAnalysisSearch cas = new ClinicalAnalysisSearch()
                     .setId(ca.getId())
-                    .setDescription(ca.getDescription());
+                    .setDescription(ca.getDescription())
+                    .setStudyId(studyId)
+                    .setViewers(viewers);
 
             if (ca.getType() != null) {
                 cas.setType(ca.getType().name());
@@ -95,12 +98,6 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             }
 
             cas.setLocked(ca.isLocked());
-
-            // Finally, process internally viewers, i.e., users that can view that clinical analysis
-            if (MapUtils.isNotEmpty(ca.getAttributes()) && ca.getAttributes().containsKey(CVDB_CA_VIEWERS_KEY)) {
-                cas.setViewers((List<String>) ca.getAttributes().get(CVDB_CA_VIEWERS_KEY));
-                ca.getAttributes().remove(CVDB_CA_VIEWERS_KEY);
-            }
 
             try {
                 String json = mapper.writeValueAsString(ca);

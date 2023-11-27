@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.models;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClinicalAnalysisSearch {
@@ -27,8 +28,8 @@ public class ClinicalAnalysisSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("studyJson")
-    private String studyJson;
+    @Field("viewers")
+    private List<String> viewers;
 
     // "Primary" and "foreign" keys
 
@@ -70,17 +71,21 @@ public class ClinicalAnalysisSearch {
     @Field("locked")
     private boolean locked;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     @Field("json")
     private String json;
+
+    public ClinicalAnalysisSearch() {
+        viewers = new ArrayList<>();
+        fileNames = new ArrayList<>();
+        familyPhenotypeNames = new ArrayList<>();
+        familyMemberIds = new ArrayList<>();
+    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", studyJson='").append(studyJson).append('\'');
+        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -93,7 +98,6 @@ public class ClinicalAnalysisSearch {
         sb.append(", report='").append(report).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", locked=").append(locked);
-        sb.append(", viewers=").append(viewers);
         sb.append(", json='").append(json).append('\'');
         sb.append('}');
         return sb.toString();
@@ -108,12 +112,12 @@ public class ClinicalAnalysisSearch {
         return this;
     }
 
-    public String getStudyJson() {
-        return studyJson;
+    public List<String> getViewers() {
+        return viewers;
     }
 
-    public ClinicalAnalysisSearch setStudyJson(String studyJson) {
-        this.studyJson = studyJson;
+    public ClinicalAnalysisSearch setViewers(List<String> viewers) {
+        this.viewers = viewers;
         return this;
     }
 
@@ -222,15 +226,6 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setLocked(boolean locked) {
         this.locked = locked;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalAnalysisSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 

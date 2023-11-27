@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
+import java.util.Collection;
 import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
@@ -49,6 +50,7 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
         // Clinical analysis filters
         filters = clinicalAnalysisFilters(query);
+        addCommonFilters(query, filters);
         addStringFilters(filters, solrQuery);
 
         // Clinical interpretation filters

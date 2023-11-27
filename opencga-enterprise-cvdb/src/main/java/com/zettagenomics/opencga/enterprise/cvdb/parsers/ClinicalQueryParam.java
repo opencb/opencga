@@ -41,6 +41,10 @@ public final class ClinicalQueryParam implements QueryParam {
     public static final ClinicalQueryParam PROJECT_ID = new ClinicalQueryParam(ParamConstants.PROJECT_PARAM_NAME,
             STRING, PROJECT_ID_DESCR);
 
+    public static final String STUDY_ID_DESCR = ParamConstants.STUDY_PARAM_DESCRIPTION;
+    public static final ClinicalQueryParam STUDY_ID = new ClinicalQueryParam(ParamConstants.STUDY_PARAM_NAME,
+            STRING, STUDY_ID_DESCR);
+
     // ---------- Commons
 
     private static final String OPT_LIST = " separated by commas)";
@@ -561,7 +565,7 @@ public final class ClinicalQueryParam implements QueryParam {
     // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
 
     // Internal filter
-    public static final String CA_VIEWER_NAME = "caViewer";
+    public static final String VIEWER_NAME = "viewer";
 
     // Constructor
     private ClinicalQueryParam(String key, Type type, String description) {

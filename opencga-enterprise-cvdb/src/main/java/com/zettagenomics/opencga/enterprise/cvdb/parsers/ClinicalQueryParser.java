@@ -123,8 +123,6 @@ public class ClinicalQueryParser {
     public List<String> clinicalAnalysisFilters(Query query) {
         List<String> filters = new ArrayList<>();
 
-        addStringFilters("viewers", query.getString(ClinicalQueryParam.CA_VIEWER_NAME), filters);
-
         // <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
         addStringFilters("id", query.getString(ClinicalQueryParam.CA_ID_NAME), filters);
 
@@ -846,4 +844,11 @@ public class ClinicalQueryParser {
 //            throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
 //        }
 //    }
+
+    protected void addCommonFilters(Query query, List<String> filters) {
+        // <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
+        addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
+        // <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
+        addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
+    }
 }

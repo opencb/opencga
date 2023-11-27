@@ -571,7 +571,7 @@
 	<!-- Catalog -->
 
     <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="studyJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+    <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
 
 	<!-- Clinical analysis -->
 
@@ -586,8 +586,6 @@
     <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
-
-    <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <field name="json" type="text_en" indexed="false" stored="true" multiValued="false"/>
 

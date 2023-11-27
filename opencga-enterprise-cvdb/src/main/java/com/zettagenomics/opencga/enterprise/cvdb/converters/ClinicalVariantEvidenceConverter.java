@@ -4,10 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantEvidenceSearch;
-import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
@@ -30,25 +28,27 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
     }
 
     public ClinicalVariantEvidenceSearch toClinicalVariantEvidenceSearch(ClinicalVariantEvidence cve, String variantId,
-                                                                         String interpretationId, String clinicalAnalysisId)
-            throws CvdbException {
-        return toClinicalVariantEvidenceSearch(Collections.singletonList(cve), variantId, interpretationId, clinicalAnalysisId).get(0);
+                                                                         String interpretationId, String clinicalAnalysisId, String studyId,
+                                                                         List<String> viewers) throws CvdbException {
+        return toClinicalVariantEvidenceSearch(Collections.singletonList(cve), variantId, interpretationId, clinicalAnalysisId, studyId,
+                viewers).get(0);
     }
 
     public List<ClinicalVariantEvidenceSearch> toClinicalVariantEvidenceSearch(List<ClinicalVariantEvidence> cveList, String variantId,
-                                                                               String interpretationId, String clinicalAnalysisId)
-            throws CvdbException {
+                                                                               String interpretationId, String clinicalAnalysisId,
+                                                                               String studyId, List<String> viewers) throws CvdbException {
         List<ClinicalVariantEvidenceSearch> cvesList = new ArrayList<>();
 
         int i = 0;
         for (ClinicalVariantEvidence cve : cveList) {
-            ClinicalVariantEvidenceSearch cves = new ClinicalVariantEvidenceSearch();
-
-            cves.setId((i++) + "-" + variantId + "-" + interpretationId);
-            cves.setVariantId(variantId);
-            cves.setCvId(interpretationId + "-" + variantId);
-            cves.setCiId(interpretationId);
-            cves.setCaId(clinicalAnalysisId);
+            ClinicalVariantEvidenceSearch cves = new ClinicalVariantEvidenceSearch()
+                    .setId((i++) + "-" + variantId + "-" + interpretationId)
+                    .setVariantId(variantId)
+                    .setCvId(interpretationId + "-" + variantId)
+                    .setCiId(interpretationId)
+                    .setCaId(clinicalAnalysisId)
+                    .setStudyId(studyId)
+                    .setViewers(viewers);
 
             // Phenotypes (including IDs and names)
             if (CollectionUtils.isNotEmpty(cve.getPhenotypes())) {
