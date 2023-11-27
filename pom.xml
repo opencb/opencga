@@ -22,8 +22,9 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.12.0-SNAPSHOT</version>
+    <version>2.12.1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <name>OpenCGA</name>
     <description>OpenCGA projects implements a big data platform for genomic data analysis</description>
     <url>http://docs.opencb.org/display/opencga/</url>
@@ -42,15 +43,15 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.12.0_dev</pyopencga.version>
-        <opencgar.version>2.12.0_dev</opencgar.version>
-        <cellbase.version>5.8.0-SNAPSHOT</cellbase.version>
-        <biodata.version>2.12.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.12.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.12.0-SNAPSHOT</iva.version>
-
+        <pyopencga.version>2.12.1_dev</pyopencga.version>
+        <opencgar.version>2.12.1_dev</opencgar.version>
+        <cellbase.version>5.8.1-SNAPSHOT</cellbase.version>
+        <biodata.version>2.12.1-SNAPSHOT</biodata.version>
+        <java-common-libs.version>4.12.1-SNAPSHOT</java-common-libs.version>
+        <iva.version>2.12.1-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
+
         <jackson.version>2.11.4</jackson.version>
         <jersey.version>2.30.1</jersey.version>
         <collections.version>4.4</collections.version>
@@ -62,30 +63,90 @@
         <solr.version>8.8.2</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
+        <guava.version>19.0</guava.version>
+        <htsjdk.version>2.23.0</htsjdk.version>
+        <snpeff.version>4.3.1</snpeff.version>
+        <mongodb-driver.version>4.8.2</mongodb-driver.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-io.version>2.5</commons-io.version>
+        <commons-codec.version>1.7</commons-codec.version>
+        <reflections.version>0.9.10</reflections.version>
+        <mockito.version>2.2.27</mockito.version>
+        <commons-lang26.version>2.6</commons-lang26.version>
+        <findbugs-annotations.version>2.0.1</findbugs-annotations.version>
         <junit.version>4.13.2</junit.version>
+        <jline.version>3.12.1</jline.version>
+        <javax-mail.version>1.4.7</javax-mail.version>
+        <hamcrest-core.version>1.3</hamcrest-core.version>
+        <ga4gh.version>0.6.0a5</ga4gh.version>
+        <jansi.version>2.4.0</jansi.version>
+        <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
+        <jcommander.version>1.69</jcommander.version>
+        <jackson-codehaus.version>1.9.13</jackson-codehaus.version>
+        <adal4j.version>1.6.3</adal4j.version>
+        <microsoft-graph.version>1.4.0</microsoft-graph.version>
+        <json-smart.version>2.3</json-smart.version>
+        <gson.version>2.8.0</gson.version>
+        <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
+        <azure-client.version>1.5.4</azure-client.version>
+        <azure-batch.version>4.0.1</azure-batch.version>
+        <azure.version>1.13.0</azure.version>
+        <azure.optional>true</azure.optional>
+        <azure-storage-blob.version>11.0.0</azure-storage-blob.version>
+        <httpclient.version>4.5.6</httpclient.version>
+        <oauth2-oidc-sdk.version>5.64.4</oauth2-oidc-sdk.version>
+        <passay.version>1.6.1</passay.version>
+        <kubernetes.version>4.3.0</kubernetes.version>
+        <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
+        <ant.version>1.10.12</ant.version>
+        <httpcore.version>4.4.13</httpcore.version>
+        <log4j.version>1.2.17</log4j.version>
+        <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
+        <jmeter.version>5.0</jmeter.version>
+        <ApacheJMeter_components.version>5.0</ApacheJMeter_components.version>
+        <grep4j.version>1.8.7</grep4j.version>
+        <redisson.version>2.2.0</redisson.version>
+        <jsr305.version>3.0.2</jsr305.version>
+        <commons-compress.version>1.4.1</commons-compress.version>
+        <rxjava.version>2.2.0</rxjava.version>
+        <client-runtime.version>2.1.0</client-runtime.version>
+        <reactive-streams.version>1.0.0</reactive-streams.version>
+        <snappy-java.version>1.1.7.6</snappy-java.version>
+        <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-        <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
+        <opencga-storage-hadoop-deps.id-default>
+            hdp3.1
+        </opencga-storage-hadoop-deps.id-default>
         <opencga-storage-hadoop-deps.artifactId-default>
             opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
         </opencga-storage-hadoop-deps.artifactId-default>
-        <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+        <opencga-storage-hadoop-deps.id>
+            ${opencga-storage-hadoop-deps.id-default}
+        </opencga-storage-hadoop-deps.id>
+        <opencga-storage-hadoop-deps.artifactId>
+            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
         </opencga-storage-hadoop-deps.artifactId>
-
+        <jorphan.version>5.0</jorphan.version>
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>
-
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
         <surefire.skipDefaultTestExecution>false</surefire.skipDefaultTestExecution>
         <surefire.testFailureIgnore>false</surefire.testFailureIgnore>
         <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
+        <parquet-hadoop.version>${parquet-common.version}</parquet-hadoop.version>
+        <parquet-common.version>1.7.0</parquet-common.version>
+        <commons-logging.version>1.1.3</commons-logging.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
+        <jcl-over-slf4j.version>1.7.24</jcl-over-slf4j.version>
+        <servlet-api.version>2.5-20081211</servlet-api.version>
+
+        <kryo.version>2.23.0</kryo.version>
     </properties>
 
     <scm>
@@ -161,37 +222,42 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-catalog</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-app</artifactId>
-                <version>${project.parent.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-core</artifactId>
-                <version>${project.parent.version}</version>
+                <artifactId>opencga-master</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-client</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-core</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.opencb.opencga</groupId>
@@ -202,7 +268,7 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
-                <version>${project.parent.version}</version>
+                <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
                 <exclusions>
@@ -212,18 +278,56 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-deps-hdp3.1</artifactId>
+                <version>${project.version}</version>
+                <classifier>shaded</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-analysis</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- OpenCB dependencies -->
             <dependency>
-                <groupId>org.opencb.oskar</groupId>
-                <artifactId>oskar-analysis</artifactId>
-                <version>${oskar.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-lib</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-core</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-mongodb</artifactId>
+                <version>${java-common-libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-solr</artifactId>
+                <version>${java-common-libs.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
@@ -246,6 +350,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.mortbay.jetty</groupId>
+                <artifactId>servlet-api</artifactId>
+                <version>${servlet-api.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.biodata</groupId>
                 <artifactId>biodata-tools</artifactId>
                 <version>${biodata.version}</version>
@@ -257,14 +366,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.opencb.commons</groupId>
-                <artifactId>commons-lib</artifactId>
-                <version>${java-common-libs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.commons</groupId>
-                <artifactId>commons-datastore-core</artifactId>
-                <version>${java-common-libs.version}</version>
+                <groupId>org.opencb.cellbase</groupId>
+                <artifactId>cellbase-core</artifactId>
+                <version>${cellbase.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
@@ -278,62 +382,42 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.opencb.commons</groupId>
-                <artifactId>commons-datastore-mongodb</artifactId>
-                <version>${java-common-libs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.commons</groupId>
-                <artifactId>commons-datastore-solr</artifactId>
-                <version>${java-common-libs.version}</version>
-            </dependency>
-
-            <!-- General dependencies -->
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-solrj</artifactId>
-                <version>${solr.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.solr</groupId>
-                <artifactId>solr-test-framework</artifactId>
-                <version>${solr.version}</version>
-                <scope>test</scope>
+                <groupId>org.opencb.oskar</groupId>
+                <artifactId>oskar-analysis</artifactId>
+                <version>${oskar.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-slf4j-impl</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-1.2-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-web</artifactId>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
+
+            <!-- General dependencies -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-collections4</artifactId>
                 <version>${collections.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <!--WARNING-->
-                <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
-                <!--See #1086-->
-                <version>19.0</version>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang26.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -342,12 +426,17 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
+                <artifactId>log4j-core</artifactId>
                 <version>${log4j2.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
                 <version>${log4j2.version}</version>
             </dependency>
             <dependency>
@@ -381,9 +470,136 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.mail</groupId>
-                <artifactId>mail</artifactId>
-                <version>1.4.7</version>
+                <groupId>org.apache.jmeter</groupId>
+                <artifactId>ApacheJMeter_components</artifactId>
+                <version>${ApacheJMeter_components.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-core</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-test-framework</artifactId>
+                <version>${solr.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-1.2-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-web</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.jmeter</groupId>
+                <artifactId>ApacheJMeter_core</artifactId>
+                <version>${jmeter.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>mongo-java-driver</artifactId>
+                        <groupId>org.mongodb</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-1.2-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.beust</groupId>
+                        <artifactId>jcommander</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.jmeter</groupId>
+                <artifactId>ApacheJMeter_http</artifactId>
+                <version>${jmeter.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>mongo-java-driver</artifactId>
+                        <groupId>org.mongodb</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-1.2-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.jmeter</groupId>
+                <artifactId>ApacheJMeter_java</artifactId>
+                <version>${jmeter.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>mongo-java-driver</artifactId>
+                        <groupId>org.mongodb</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-1.2-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.jmeter</groupId>
+                <artifactId>jorphan</artifactId>
+                <version>${jorphan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.ws.rs</groupId>
+                <artifactId>javax.ws.rs-api</artifactId>
+                <version>${javax.ws.rs-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-reader</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-terminal</artifactId>
+                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
@@ -446,6 +662,26 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-multipart</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-server</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet-core</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
                 <version>${jjwt.version}</version>
@@ -454,13 +690,11 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-impl</artifactId>
                 <version>${jjwt.version}</version>
-                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>
-                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -473,8 +707,28 @@
                 <version>${protobuf.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${findbugs-annotations.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-all</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
@@ -500,15 +754,203 @@
                 <classifier>hadoop2</classifier>
             </dependency>
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-core</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-sync</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.parquet</groupId>
+                <artifactId>parquet-common</artifactId>
+                <version>${parquet-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${jcl-over-slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>${commons-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.mail</groupId>
+                <artifactId>mail</artifactId>
+                <version>${javax-mail.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.reflections</groupId>
+                <artifactId>reflections</artifactId>
+                <version>${reflections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.samtools</groupId>
+                <artifactId>htsjdk</artifactId>
+                <version>${htsjdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.databricks</groupId>
+                <artifactId>SnpEff</artifactId>
+                <version>${snpeff.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.parquet</groupId>
+                <artifactId>parquet-avro</artifactId>
+                <version>${parquet-avro.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <!--WARNING-->
+                <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
+                <!--See #1086-->
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.ga4gh</groupId>
+                <artifactId>ga4gh</artifactId>
+                <version>${ga4gh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.ws.rs</groupId>
+                <artifactId>jakarta.ws.rs-api</artifactId>
+                <version>${jakarta.ws.rs-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>${jcommander.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>adal4j</artifactId>
+                <version>${adal4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.graph</groupId>
+                <artifactId>microsoft-graph</artifactId>
+                <version>${microsoft-graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-client-runtime</artifactId>
+                <version>${azure-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-client-authentication</artifactId>
+                <version>${azure-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>oauth2-oidc-sdk</artifactId>
+                <version>${oauth2-oidc-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.passay</groupId>
+                <artifactId>passay</artifactId>
+                <version>${passay.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-batch</artifactId>
+                <version>${azure-batch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model</artifactId>
+                <version>${kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>${javax.servlet-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.ant</groupId>
+                <artifactId>ant</artifactId>
+                <version>${ant.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-mapper-asl</artifactId>
+                <version>${jackson-codehaus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-core-asl</artifactId>
+                <version>${jackson-codehaus.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>2.2.27</version>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -516,6 +958,99 @@
                 <artifactId>maven-surefire-report-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <type>maven-plugin</type>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.grep4j</groupId>
+                <artifactId>grep4j</artifactId>
+                <version>${grep4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${redisson.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-codec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-handler</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-buffer</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.reactivestreams</groupId>
+                <artifactId>reactive-streams</artifactId>
+                <version>${reactive-streams.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.rest.v2</groupId>
+                <artifactId>client-runtime</artifactId>
+                <version>${client-runtime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-storage-blob</artifactId>
+                <version>${azure-storage-blob.version}</version>
+                <optional>${azure.optional}</optional>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>${jsr305.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.reactivex.rxjava2</groupId>
+                <artifactId>rxjava</artifactId>
+                <version>${rxjava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.parquet</groupId>
+                <artifactId>parquet-hadoop</artifactId>
+                <version>${parquet-hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline-terminal-jna</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure</artifactId>
+                <version>${azure.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-json-jackson</artifactId>
+                <version>2.30.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.esotericsoftware.kryo</groupId>
+                <artifactId>kryo</artifactId>
+                <version>${kryo.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -655,7 +1190,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -672,9 +1206,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
     <reporting>
         <plugins>
             <plugin>
@@ -870,10 +1422,24 @@
             </build>
         </profile>
         <profile>
+            <id>deploy-github</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub OpenCB Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/opencb/opencga</url>
+                </repository>
+            </distributionManagement>
+            <build>
+            </build>
+        </profile>
+
+        <profile>
             <id>hdp3.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp3.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                <opencga-storage-hadoop-deps.artifactId>
+                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
                 </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
@@ -881,7 +1447,8 @@
             <id>emr6.1</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                <opencga-storage-hadoop-deps.artifactId>
+                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
                 </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
@@ -889,7 +1456,8 @@
             <id>hdp2.6</id>
             <properties>
                 <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
+                <opencga-storage-hadoop-deps.artifactId>
+                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
                 </opencga-storage-hadoop-deps.artifactId>
             </properties>
         </profile>
@@ -1016,18 +1584,7 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>deploy-github</id>
-            <distributionManagement>
-                <repository>
-                    <id>github</id>
-                    <name>GitHub OpenCB Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/opencb/opencga</url>
-                </repository>
-            </distributionManagement>
-            <build>
-            </build>
-        </profile>
+
     </profiles>
 
 </project>
