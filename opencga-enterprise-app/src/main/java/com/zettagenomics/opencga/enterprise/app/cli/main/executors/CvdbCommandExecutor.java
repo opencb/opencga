@@ -98,6 +98,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -196,6 +197,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -333,6 +335,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -431,6 +434,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -529,6 +533,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -627,6 +632,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
@@ -725,6 +731,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -823,6 +830,7 @@ public class CvdbCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
+        queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);

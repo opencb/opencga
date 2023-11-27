@@ -69,6 +69,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
     
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
+    
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
@@ -340,6 +343,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
+    
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -651,6 +657,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
     
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
+    
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
@@ -922,6 +931,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
+    
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -1195,6 +1207,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
     
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
+    
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
@@ -1466,6 +1481,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
+    
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -1739,6 +1757,9 @@ public class CvdbCommandOptions {
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
     
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
+    
         @Parameter(names = {"--ca-id"}, description = "Clinical analysis ID (or list of IDs separated by commas)", required = false, arity = 1)
         public String caId; 
     
@@ -2010,6 +2031,9 @@ public class CvdbCommandOptions {
     
         @Parameter(names = {"--project-id"}, description = "Project ID", required = false, arity = 1)
         public String projectId; 
+    
+        @Parameter(names = {"--study-id"}, description = "Study ID", required = false, arity = 1)
+        public String studyId; 
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
