@@ -260,9 +260,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregationStatsCvdvCase(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregationStatsCvdbCase(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/case", null, "aggregationStats", params, GET, FacetField.class);
+        return execute("analysis", null, "clinical/cvdb/case", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -397,9 +397,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalAnalysis> queryCvdvCase(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalAnalysis> queryCvdbCase(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/case", null, "query", params, GET, ClinicalAnalysis.class);
+        return execute("analysis", null, "clinical/cvdb/case", null, "query", params, GET, ClinicalAnalysis.class);
     }
 
     /**
@@ -414,10 +414,10 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runCvdvIndex(CvdbIndexTaskParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runCvdbIndex(CvdbIndexTaskParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical/cvdv/index", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "clinical/cvdb/index", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -556,9 +556,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregationStatsCvdvInterpretation(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregationStatsCvdbInterpretation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/interpretation", null, "aggregationStats", params, GET, FacetField.class);
+        return execute("analysis", null, "clinical/cvdb/interpretation", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -693,9 +693,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Interpretation> queryCvdvInterpretation(ObjectMap params) throws ClientException {
+    public RestResponse<Interpretation> queryCvdbInterpretation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/interpretation", null, "query", params, GET, Interpretation.class);
+        return execute("analysis", null, "clinical/cvdb/interpretation", null, "query", params, GET, Interpretation.class);
     }
 
     /**
@@ -833,9 +833,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregationStatsCvdvVariant(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregationStatsCvdbVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/variant", null, "aggregationStats", params, GET, FacetField.class);
+        return execute("analysis", null, "clinical/cvdb/variant", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -970,9 +970,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariant> queryCvdvVariant(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariant> queryCvdbVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/variant", null, "query", params, GET, ClinicalVariant.class);
+        return execute("analysis", null, "clinical/cvdb/variant", null, "query", params, GET, ClinicalVariant.class);
     }
 
     /**
@@ -1111,9 +1111,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FacetField> aggregationStatsCvdvVariantEvidence(ObjectMap params) throws ClientException {
+    public RestResponse<FacetField> aggregationStatsCvdbVariantEvidence(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/variantEvidence", null, "aggregationStats", params, GET, FacetField.class);
+        return execute("analysis", null, "clinical/cvdb/variantEvidence", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -1248,9 +1248,9 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalVariantEvidence> queryCvdvVariantEvidence(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariantEvidence> queryCvdbVariantEvidence(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/cvdv/variantEvidence", null, "query", params, GET, ClinicalVariantEvidence.class);
+        return execute("analysis", null, "clinical/cvdb/variantEvidence", null, "query", params, GET, ClinicalVariantEvidence.class);
     }
 
     /**

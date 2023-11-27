@@ -76,10 +76,10 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._post(category='analysis', resource='create', subcategory='clinical', data=data, **options)
 
-    def aggregation_stats_cvdv_case(self, **options):
+    def aggregation_stats_cvdb_case(self, **options):
         """
         Calculate and fetch clinical analysis aggregation stats.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/case/aggregationStats
+        PATH: /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -322,12 +322,12 @@ class ClinicalAnalysis(_ParentRestClient):
             caFamilyMemberId, caStatus, caLocked.
         """
 
-        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdv/case', **options)
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/case', **options)
 
-    def query_cvdv_case(self, **options):
+    def query_cvdb_case(self, **options):
         """
         Filter and fetch clinical analyses from CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/case/query
+        PATH: /{apiVersion}/analysis/clinical/cvdb/case/query
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -564,13 +564,13 @@ class ClinicalAnalysis(_ParentRestClient):
             (or roles in cancer separated by commas).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/cvdv/case', **options)
+        return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/case', **options)
 
-    def run_cvdv_index(self, data=None, **options):
+    def run_cvdb_index(self, data=None, **options):
         """
         Index clinical analyses of a OpenCGA project, a study or a list of
             clinical analyses into CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/index/run
+        PATH: /{apiVersion}/analysis/clinical/cvdb/index/run
 
         :param dict data: Parameters: Index clinical analyses of a OpenCGA
             project, a study or a list of clinical analyses into CVDB.
@@ -585,12 +585,12 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='clinical/cvdv/index', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='clinical/cvdb/index', data=data, **options)
 
-    def aggregation_stats_cvdv_interpretation(self, **options):
+    def aggregation_stats_cvdb_interpretation(self, **options):
         """
         Calculate and fetch clinical interpretation aggregation stats.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/interpretation/aggregationStats
+        PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -835,12 +835,12 @@ class ClinicalAnalysis(_ParentRestClient):
             ciCreationDate, ciModificationDate, ciVersion.
         """
 
-        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdv/interpretation', **options)
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/interpretation', **options)
 
-    def query_cvdv_interpretation(self, **options):
+    def query_cvdb_interpretation(self, **options):
         """
         Filter and fetch clinical interpretations from CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/interpretation/query
+        PATH: /{apiVersion}/analysis/clinical/cvdb/interpretation/query
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -1077,12 +1077,12 @@ class ClinicalAnalysis(_ParentRestClient):
             (or roles in cancer separated by commas).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/cvdv/interpretation', **options)
+        return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/interpretation', **options)
 
-    def aggregation_stats_cvdv_variant(self, **options):
+    def aggregation_stats_cvdb_variant(self, **options):
         """
         Calculate and fetch clinical variant aggregation stats.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/variant/aggregationStats
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -1326,12 +1326,12 @@ class ClinicalAnalysis(_ParentRestClient):
             cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
         """
 
-        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdv/variant', **options)
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/variant', **options)
 
-    def query_cvdv_variant(self, **options):
+    def query_cvdb_variant(self, **options):
         """
         Filter and fetch clinical variants from CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/variant/query
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variant/query
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -1568,12 +1568,12 @@ class ClinicalAnalysis(_ParentRestClient):
             (or roles in cancer separated by commas).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/cvdv/variant', **options)
+        return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variant', **options)
 
-    def aggregation_stats_cvdv_variant_evidence(self, **options):
+    def aggregation_stats_cvdb_variant_evidence(self, **options):
         """
         Calculate and fetch clinical variant evidence aggregation stats.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/variantEvidence/aggregationStats
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -1818,12 +1818,12 @@ class ClinicalAnalysis(_ParentRestClient):
             cveTumorigenesis, cveOtherClassification, cveRolInCancer.
         """
 
-        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdv/variantEvidence', **options)
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/cvdb/variantEvidence', **options)
 
-    def query_cvdv_variant_evidence(self, **options):
+    def query_cvdb_variant_evidence(self, **options):
         """
         Filter and fetch clinical variant evidences from CVDB.
-        PATH: /{apiVersion}/analysis/clinical/cvdv/variantEvidence/query
+        PATH: /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query
 
         :param str project_id: Project ID.
         :param str study_id: Study ID.
@@ -2060,7 +2060,7 @@ class ClinicalAnalysis(_ParentRestClient):
             (or roles in cancer separated by commas).
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/cvdv/variantEvidence', **options)
+        return self._get(category='analysis', resource='query', subcategory='clinical/cvdb/variantEvidence', **options)
 
     def distinct(self, field, **options):
         """

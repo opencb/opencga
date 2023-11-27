@@ -209,8 +209,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     caFamilyMemberId, caStatus, caLocked.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregationStatsCvdvCase(params) {
-        return this._get("analysis", null, "clinical/cvdv/case", null, "aggregationStats", params);
+    aggregationStatsCvdbCase(params) {
+        return this._get("analysis", null, "clinical/cvdb/case", null, "aggregationStats", params);
     }
 
     /** Filter and fetch clinical analyses from CVDB
@@ -347,8 +347,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryCvdvCase(params) {
-        return this._get("analysis", null, "clinical/cvdv/case", null, "query", params);
+    queryCvdbCase(params) {
+        return this._get("analysis", null, "clinical/cvdb/case", null, "query", params);
     }
 
     /** Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB
@@ -362,8 +362,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.jobTags] - Job tags.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    runCvdvIndex(data, params) {
-        return this._post("analysis", null, "clinical/cvdv/index", null, "run", data, params);
+    runCvdbIndex(data, params) {
+        return this._post("analysis", null, "clinical/cvdb/index", null, "run", data, params);
     }
 
     /** Calculate and fetch clinical interpretation aggregation stats
@@ -504,8 +504,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     ciStatusDate, ciCreationDate, ciModificationDate, ciVersion.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregationStatsCvdvInterpretation(params) {
-        return this._get("analysis", null, "clinical/cvdv/interpretation", null, "aggregationStats", params);
+    aggregationStatsCvdbInterpretation(params) {
+        return this._get("analysis", null, "clinical/cvdb/interpretation", null, "aggregationStats", params);
     }
 
     /** Filter and fetch clinical interpretations from CVDB
@@ -642,8 +642,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryCvdvInterpretation(params) {
-        return this._get("analysis", null, "clinical/cvdv/interpretation", null, "query", params);
+    queryCvdbInterpretation(params) {
+        return this._get("analysis", null, "clinical/cvdb/interpretation", null, "query", params);
     }
 
     /** Calculate and fetch clinical variant aggregation stats
@@ -783,8 +783,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregationStatsCvdvVariant(params) {
-        return this._get("analysis", null, "clinical/cvdv/variant", null, "aggregationStats", params);
+    aggregationStatsCvdbVariant(params) {
+        return this._get("analysis", null, "clinical/cvdb/variant", null, "aggregationStats", params);
     }
 
     /** Filter and fetch clinical variants from CVDB
@@ -921,8 +921,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryCvdvVariant(params) {
-        return this._get("analysis", null, "clinical/cvdv/variant", null, "query", params);
+    queryCvdbVariant(params) {
+        return this._get("analysis", null, "clinical/cvdb/variant", null, "query", params);
     }
 
     /** Calculate and fetch clinical variant evidence aggregation stats
@@ -1063,8 +1063,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     cveTumorigenesis, cveOtherClassification, cveRolInCancer.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    aggregationStatsCvdvVariantEvidence(params) {
-        return this._get("analysis", null, "clinical/cvdv/variantEvidence", null, "aggregationStats", params);
+    aggregationStatsCvdbVariantEvidence(params) {
+        return this._get("analysis", null, "clinical/cvdb/variantEvidence", null, "aggregationStats", params);
     }
 
     /** Filter and fetch clinical variant evidences from CVDB
@@ -1201,8 +1201,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.cveRolInCancer] - Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    queryCvdvVariantEvidence(params) {
-        return this._get("analysis", null, "clinical/cvdv/variantEvidence", null, "query", params);
+    queryCvdbVariantEvidence(params) {
+        return this._get("analysis", null, "clinical/cvdb/variantEvidence", null, "query", params);
     }
 
     /** Clinical Analysis distinct method

@@ -50,7 +50,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/cvdv/index/run")
+    @Path("/cvdb/index/run")
     @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
     public Response indexProjectClinicalAnalyses(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -72,7 +72,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/cvdv/case/query")
+    @Path("/cvdb/case/query")
     @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = ClinicalAnalysis.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -226,7 +226,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/interpretation/query")
+    @Path("/cvdb/interpretation/query")
     @ApiOperation(value = CLINICAL_INTERPRETATION_QUERY_DESCRIPTION, response = Interpretation.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -379,7 +379,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/variant/query")
+    @Path("/cvdb/variant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -532,7 +532,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/variantEvidence/query")
+    @Path("/cvdb/variantEvidence/query")
     @ApiOperation(value = CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION, response = ClinicalVariantEvidence.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -689,7 +689,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     //-------------------------------------------------------------------------
 
     @GET
-    @Path("/cvdv/case/aggregationStats")
+    @Path("/cvdb/case/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -835,7 +835,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/interpretation/aggregationStats")
+    @Path("/cvdb/interpretation/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical interpretation aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -981,7 +981,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/variant/aggregationStats")
+    @Path("/cvdb/variant/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
@@ -1127,7 +1127,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
     }
 
     @GET
-    @Path("/cvdv/variantEvidence/aggregationStats")
+    @Path("/cvdb/variantEvidence/aggregationStats")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),

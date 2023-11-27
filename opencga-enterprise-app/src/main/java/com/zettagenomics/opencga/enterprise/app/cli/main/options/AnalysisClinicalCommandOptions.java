@@ -36,15 +36,15 @@ public class AnalysisClinicalCommandOptions {
         public UpdateAclCommandOptions updateAclCommandOptions;
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
-        public AggregationStatsCvdvCaseCommandOptions aggregationStatsCvdvCaseCommandOptions;
-        public QueryCvdvCaseCommandOptions queryCvdvCaseCommandOptions;
-        public RunCvdvIndexCommandOptions runCvdvIndexCommandOptions;
-        public AggregationStatsCvdvInterpretationCommandOptions aggregationStatsCvdvInterpretationCommandOptions;
-        public QueryCvdvInterpretationCommandOptions queryCvdvInterpretationCommandOptions;
-        public AggregationStatsCvdvVariantCommandOptions aggregationStatsCvdvVariantCommandOptions;
-        public QueryCvdvVariantCommandOptions queryCvdvVariantCommandOptions;
-        public AggregationStatsCvdvVariantEvidenceCommandOptions aggregationStatsCvdvVariantEvidenceCommandOptions;
-        public QueryCvdvVariantEvidenceCommandOptions queryCvdvVariantEvidenceCommandOptions;
+        public AggregationStatsCvdbCaseCommandOptions aggregationStatsCvdbCaseCommandOptions;
+        public QueryCvdbCaseCommandOptions queryCvdbCaseCommandOptions;
+        public RunCvdbIndexCommandOptions runCvdbIndexCommandOptions;
+        public AggregationStatsCvdbInterpretationCommandOptions aggregationStatsCvdbInterpretationCommandOptions;
+        public QueryCvdbInterpretationCommandOptions queryCvdbInterpretationCommandOptions;
+        public AggregationStatsCvdbVariantCommandOptions aggregationStatsCvdbVariantCommandOptions;
+        public QueryCvdbVariantCommandOptions queryCvdbVariantCommandOptions;
+        public AggregationStatsCvdbVariantEvidenceCommandOptions aggregationStatsCvdbVariantEvidenceCommandOptions;
+        public QueryCvdbVariantEvidenceCommandOptions queryCvdbVariantEvidenceCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public DistinctInterpretationCommandOptions distinctInterpretationCommandOptions;
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
@@ -83,15 +83,15 @@ public class AnalysisClinicalCommandOptions {
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
-        this.aggregationStatsCvdvCaseCommandOptions = new AggregationStatsCvdvCaseCommandOptions();
-        this.queryCvdvCaseCommandOptions = new QueryCvdvCaseCommandOptions();
-        this.runCvdvIndexCommandOptions = new RunCvdvIndexCommandOptions();
-        this.aggregationStatsCvdvInterpretationCommandOptions = new AggregationStatsCvdvInterpretationCommandOptions();
-        this.queryCvdvInterpretationCommandOptions = new QueryCvdvInterpretationCommandOptions();
-        this.aggregationStatsCvdvVariantCommandOptions = new AggregationStatsCvdvVariantCommandOptions();
-        this.queryCvdvVariantCommandOptions = new QueryCvdvVariantCommandOptions();
-        this.aggregationStatsCvdvVariantEvidenceCommandOptions = new AggregationStatsCvdvVariantEvidenceCommandOptions();
-        this.queryCvdvVariantEvidenceCommandOptions = new QueryCvdvVariantEvidenceCommandOptions();
+        this.aggregationStatsCvdbCaseCommandOptions = new AggregationStatsCvdbCaseCommandOptions();
+        this.queryCvdbCaseCommandOptions = new QueryCvdbCaseCommandOptions();
+        this.runCvdbIndexCommandOptions = new RunCvdbIndexCommandOptions();
+        this.aggregationStatsCvdbInterpretationCommandOptions = new AggregationStatsCvdbInterpretationCommandOptions();
+        this.queryCvdbInterpretationCommandOptions = new QueryCvdbInterpretationCommandOptions();
+        this.aggregationStatsCvdbVariantCommandOptions = new AggregationStatsCvdbVariantCommandOptions();
+        this.queryCvdbVariantCommandOptions = new QueryCvdbVariantCommandOptions();
+        this.aggregationStatsCvdbVariantEvidenceCommandOptions = new AggregationStatsCvdbVariantEvidenceCommandOptions();
+        this.queryCvdbVariantEvidenceCommandOptions = new QueryCvdbVariantEvidenceCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.distinctInterpretationCommandOptions = new DistinctInterpretationCommandOptions();
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
@@ -286,8 +286,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-case-aggregation-stats"}, commandDescription ="Calculate and fetch clinical analysis aggregation stats")
-    public class AggregationStatsCvdvCaseCommandOptions {
+    @Parameters(commandNames = {"cvdb-case-aggregation-stats"}, commandDescription ="Calculate and fetch clinical analysis aggregation stats")
+    public class AggregationStatsCvdbCaseCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -561,8 +561,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-case-query"}, commandDescription ="Filter and fetch clinical analyses from CVDB")
-    public class QueryCvdvCaseCommandOptions {
+    @Parameters(commandNames = {"cvdb-case-query"}, commandDescription ="Filter and fetch clinical analyses from CVDB")
+    public class QueryCvdbCaseCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -836,8 +836,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-index-run"}, commandDescription ="Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB")
-    public class RunCvdvIndexCommandOptions {
+    @Parameters(commandNames = {"cvdb-index-run"}, commandDescription ="Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB")
+    public class RunCvdbIndexCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -874,8 +874,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-interpretation-aggregation-stats"}, commandDescription ="Calculate and fetch clinical interpretation aggregation stats")
-    public class AggregationStatsCvdvInterpretationCommandOptions {
+    @Parameters(commandNames = {"cvdb-interpretation-aggregation-stats"}, commandDescription ="Calculate and fetch clinical interpretation aggregation stats")
+    public class AggregationStatsCvdbInterpretationCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1149,8 +1149,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-interpretation-query"}, commandDescription ="Filter and fetch clinical interpretations from CVDB")
-    public class QueryCvdvInterpretationCommandOptions {
+    @Parameters(commandNames = {"cvdb-interpretation-query"}, commandDescription ="Filter and fetch clinical interpretations from CVDB")
+    public class QueryCvdbInterpretationCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1424,8 +1424,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-variant-aggregation-stats"}, commandDescription ="Calculate and fetch clinical variant aggregation stats")
-    public class AggregationStatsCvdvVariantCommandOptions {
+    @Parameters(commandNames = {"cvdb-variant-aggregation-stats"}, commandDescription ="Calculate and fetch clinical variant aggregation stats")
+    public class AggregationStatsCvdbVariantCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1699,8 +1699,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-variant-query"}, commandDescription ="Filter and fetch clinical variants from CVDB")
-    public class QueryCvdvVariantCommandOptions {
+    @Parameters(commandNames = {"cvdb-variant-query"}, commandDescription ="Filter and fetch clinical variants from CVDB")
+    public class QueryCvdbVariantCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1974,8 +1974,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-variant-evidence-aggregation-stats"}, commandDescription ="Calculate and fetch clinical variant evidence aggregation stats")
-    public class AggregationStatsCvdvVariantEvidenceCommandOptions {
+    @Parameters(commandNames = {"cvdb-variant-evidence-aggregation-stats"}, commandDescription ="Calculate and fetch clinical variant evidence aggregation stats")
+    public class AggregationStatsCvdbVariantEvidenceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -2249,8 +2249,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"cvdv-variant-evidence-query"}, commandDescription ="Filter and fetch clinical variant evidences from CVDB")
-    public class QueryCvdvVariantEvidenceCommandOptions {
+    @Parameters(commandNames = {"cvdb-variant-evidence-query"}, commandDescription ="Filter and fetch clinical variant evidences from CVDB")
+    public class QueryCvdbVariantEvidenceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;

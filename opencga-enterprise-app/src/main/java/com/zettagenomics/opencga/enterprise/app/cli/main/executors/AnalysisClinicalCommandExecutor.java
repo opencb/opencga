@@ -104,32 +104,32 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             case "create":
                 queryResponse = create();
                 break;
-            case "cvdv-case-aggregation-stats":
-                queryResponse = aggregationStatsCvdvCase();
+            case "cvdb-case-aggregation-stats":
+                queryResponse = aggregationStatsCvdbCase();
                 break;
-            case "cvdv-case-query":
-                queryResponse = queryCvdvCase();
+            case "cvdb-case-query":
+                queryResponse = queryCvdbCase();
                 break;
-            case "cvdv-index-run":
-                queryResponse = runCvdvIndex();
+            case "cvdb-index-run":
+                queryResponse = runCvdbIndex();
                 break;
-            case "cvdv-interpretation-aggregation-stats":
-                queryResponse = aggregationStatsCvdvInterpretation();
+            case "cvdb-interpretation-aggregation-stats":
+                queryResponse = aggregationStatsCvdbInterpretation();
                 break;
-            case "cvdv-interpretation-query":
-                queryResponse = queryCvdvInterpretation();
+            case "cvdb-interpretation-query":
+                queryResponse = queryCvdbInterpretation();
                 break;
-            case "cvdv-variant-aggregation-stats":
-                queryResponse = aggregationStatsCvdvVariant();
+            case "cvdb-variant-aggregation-stats":
+                queryResponse = aggregationStatsCvdbVariant();
                 break;
-            case "cvdv-variant-query":
-                queryResponse = queryCvdvVariant();
+            case "cvdb-variant-query":
+                queryResponse = queryCvdbVariant();
                 break;
-            case "cvdv-variant-evidence-aggregation-stats":
-                queryResponse = aggregationStatsCvdvVariantEvidence();
+            case "cvdb-variant-evidence-aggregation-stats":
+                queryResponse = aggregationStatsCvdbVariantEvidence();
                 break;
-            case "cvdv-variant-evidence-query":
-                queryResponse = queryCvdvVariantEvidence();
+            case "cvdb-variant-evidence-query":
+                queryResponse = queryCvdbVariantEvidence();
                 break;
             case "distinct":
                 queryResponse = distinct();
@@ -358,10 +358,10 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStatsCvdvCase() throws Exception {
-        logger.debug("Executing aggregationStatsCvdvCase in Analysis - Clinical command line");
+    private RestResponse<FacetField> aggregationStatsCvdbCase() throws Exception {
+        logger.debug("Executing aggregationStatsCvdbCase in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.AggregationStatsCvdvCaseCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdvCaseCommandOptions;
+        AnalysisClinicalCommandOptions.AggregationStatsCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -454,13 +454,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdvCase(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbCase(queryParams);
     }
 
-    private RestResponse<ClinicalAnalysis> queryCvdvCase() throws Exception {
-        logger.debug("Executing queryCvdvCase in Analysis - Clinical command line");
+    private RestResponse<ClinicalAnalysis> queryCvdbCase() throws Exception {
+        logger.debug("Executing queryCvdbCase in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.QueryCvdvCaseCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdvCaseCommandOptions;
+        AnalysisClinicalCommandOptions.QueryCvdbCaseCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbCaseCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -553,13 +553,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdvCase(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbCase(queryParams);
     }
 
-    private RestResponse<Job> runCvdvIndex() throws Exception {
-        logger.debug("Executing runCvdvIndex in Analysis - Clinical command line");
+    private RestResponse<Job> runCvdbIndex() throws Exception {
+        logger.debug("Executing runCvdbIndex in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.RunCvdvIndexCommandOptions commandOptions = analysisClinicalCommandOptions.runCvdvIndexCommandOptions;
+        AnalysisClinicalCommandOptions.RunCvdbIndexCommandOptions commandOptions = analysisClinicalCommandOptions.runCvdbIndexCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -592,13 +592,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CvdbIndexTaskParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runCvdvIndex(cvdbIndexTaskParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runCvdbIndex(cvdbIndexTaskParams, queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStatsCvdvInterpretation() throws Exception {
-        logger.debug("Executing aggregationStatsCvdvInterpretation in Analysis - Clinical command line");
+    private RestResponse<FacetField> aggregationStatsCvdbInterpretation() throws Exception {
+        logger.debug("Executing aggregationStatsCvdbInterpretation in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.AggregationStatsCvdvInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdvInterpretationCommandOptions;
+        AnalysisClinicalCommandOptions.AggregationStatsCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -691,13 +691,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdvInterpretation(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbInterpretation(queryParams);
     }
 
-    private RestResponse<Interpretation> queryCvdvInterpretation() throws Exception {
-        logger.debug("Executing queryCvdvInterpretation in Analysis - Clinical command line");
+    private RestResponse<Interpretation> queryCvdbInterpretation() throws Exception {
+        logger.debug("Executing queryCvdbInterpretation in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.QueryCvdvInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdvInterpretationCommandOptions;
+        AnalysisClinicalCommandOptions.QueryCvdbInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbInterpretationCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -790,13 +790,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdvInterpretation(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbInterpretation(queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStatsCvdvVariant() throws Exception {
-        logger.debug("Executing aggregationStatsCvdvVariant in Analysis - Clinical command line");
+    private RestResponse<FacetField> aggregationStatsCvdbVariant() throws Exception {
+        logger.debug("Executing aggregationStatsCvdbVariant in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.AggregationStatsCvdvVariantCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdvVariantCommandOptions;
+        AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -889,13 +889,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdvVariant(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbVariant(queryParams);
     }
 
-    private RestResponse<ClinicalVariant> queryCvdvVariant() throws Exception {
-        logger.debug("Executing queryCvdvVariant in Analysis - Clinical command line");
+    private RestResponse<ClinicalVariant> queryCvdbVariant() throws Exception {
+        logger.debug("Executing queryCvdbVariant in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.QueryCvdvVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdvVariantCommandOptions;
+        AnalysisClinicalCommandOptions.QueryCvdbVariantCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -988,13 +988,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdvVariant(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbVariant(queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStatsCvdvVariantEvidence() throws Exception {
-        logger.debug("Executing aggregationStatsCvdvVariantEvidence in Analysis - Clinical command line");
+    private RestResponse<FacetField> aggregationStatsCvdbVariantEvidence() throws Exception {
+        logger.debug("Executing aggregationStatsCvdbVariantEvidence in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.AggregationStatsCvdvVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdvVariantEvidenceCommandOptions;
+        AnalysisClinicalCommandOptions.AggregationStatsCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -1087,13 +1087,13 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveReviewText", commandOptions.cveReviewText);
         queryParams.putIfNotEmpty("field", commandOptions.field);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdvVariantEvidence(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().aggregationStatsCvdbVariantEvidence(queryParams);
     }
 
-    private RestResponse<ClinicalVariantEvidence> queryCvdvVariantEvidence() throws Exception {
-        logger.debug("Executing queryCvdvVariantEvidence in Analysis - Clinical command line");
+    private RestResponse<ClinicalVariantEvidence> queryCvdbVariantEvidence() throws Exception {
+        logger.debug("Executing queryCvdbVariantEvidence in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.QueryCvdvVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdvVariantEvidenceCommandOptions;
+        AnalysisClinicalCommandOptions.QueryCvdbVariantEvidenceCommandOptions commandOptions = analysisClinicalCommandOptions.queryCvdbVariantEvidenceCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
@@ -1186,7 +1186,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("cveOtherClassification", commandOptions.cveOtherClassification);
         queryParams.putIfNotEmpty("cveRolInCancer", commandOptions.cveRolInCancer);
 
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdvVariantEvidence(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().queryCvdbVariantEvidence(queryParams);
     }
 
     private RestResponse<ObjectMap> distinct() throws Exception {
