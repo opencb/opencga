@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.11.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -14,10 +14,30 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- OpenCB dependencies -->
         <dependency>
-            <groupId>com.zettagenomics.opencga-enterprise</groupId>
-            <artifactId>opencga-enterprise-core</artifactId>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
+        <!-- General dependencies -->
+        <dependency>
+            <groupId>org.opencb.ga4gh</groupId>
+            <artifactId>ga4gh</artifactId>
+        </dependency>
+
+        <!-- TODO Review -->
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-server</artifactId>
@@ -27,10 +47,9 @@
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-cvdb</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-client</artifactId>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
         </dependency>
     </dependencies>
 </project>

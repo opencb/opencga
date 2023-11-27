@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.core.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+@JsonIgnoreProperties({"cvdb"})
 public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;
