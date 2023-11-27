@@ -225,7 +225,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
-        String jsonInString = "\n";
+        StringBuilder jsonInString = new StringBuilder("\n");
         try {
             ObjectMap queryParams = new ObjectMap();
             queryParams.putIfNotEmpty("category", objectCategory);
@@ -241,11 +241,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                 //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
                                 if (parameter.getData() != null) {
                                     enc = true;
-                                    jsonInString += printBody(parameter.getData(), "");
+                                    jsonInString.append(printBody(parameter.getData(), ""));
                                 }
                             }
                             if (!enc) {
-                                jsonInString += "No model available";
+                                jsonInString.append("No model available");
                             }
                             //
                         }
@@ -253,10 +253,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 }
            }
         } catch (Exception e) {
-            jsonInString = "Data model not found.";
+            jsonInString = new StringBuilder("Data model not found.");
             CommandLineUtils.error(e);
         }
-        return jsonInString;
+        return jsonInString.toString();
     }
 
     private String printBody(List<RestParameter> data, String tabs) {
