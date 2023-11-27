@@ -74,6 +74,8 @@
         <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
         <!--See #1086-->
         <guava.version>19.0</guava.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <bson.version>4.8.2</bson.version>
     </properties>
 
     <repositories>
@@ -560,6 +562,21 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${bson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
