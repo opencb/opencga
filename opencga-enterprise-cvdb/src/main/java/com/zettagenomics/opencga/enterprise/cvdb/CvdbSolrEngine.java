@@ -71,7 +71,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
@@ -95,7 +95,7 @@ public class CvdbSolrEngine {
     private Logger logger;
 
     public static final String NO_ACCESS_FOR_ANONYMOUS_USERS_MSG = "Access to CVDB is restricted for anonymous users. Please log in to"
-        + " proceed.";
+            + " proceed.";
 
     public static final String CLINICAL_ANALYSES_COLLECTION_SUFFIX = "_cvdb_analyses";
     public static final String INTERPRETATIONS_COLLECTION_SUFFIX = "_cvdb_interpretations";
@@ -289,7 +289,7 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         int limit = queryOptions.getInt(LIMIT);
         List<ClinicalAnalysis> results = new ArrayList<>(limit);
 
@@ -308,9 +308,9 @@ public class CvdbSolrEngine {
     }
 
     public ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> clinicalAnalysisIterator(
-            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException {
+            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
         // Check
-        checkQuery(query, queryOptions);
+        checkQuery(query, queryOptions, token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
@@ -362,7 +362,7 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public DataResult<Interpretation> searchClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         int limit = queryOptions.getInt(LIMIT);
         List<Interpretation> results = new ArrayList<>(limit);
 
@@ -381,9 +381,9 @@ public class CvdbSolrEngine {
     }
 
     public ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> clinicalInterpretationIterator(
-            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException {
+            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
         // Check
-        checkQuery(query, queryOptions);
+        checkQuery(query, queryOptions, token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
@@ -435,7 +435,7 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalVariant> searchClinicalVariants(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         int limit = queryOptions.getInt(LIMIT);
         List<ClinicalVariant> results = new ArrayList<>(limit);
 
@@ -454,9 +454,9 @@ public class CvdbSolrEngine {
     }
 
     public ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> clinicalVariantIterator(
-            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException {
+            Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
         // Check
-        checkQuery(query, queryOptions);
+        checkQuery(query, queryOptions, token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
@@ -524,7 +524,7 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public DataResult<ClinicalVariantEvidence> searchClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException {
+            throws IOException, CvdbException, CatalogException {
         int limit = queryOptions.getInt(LIMIT);
         List<ClinicalVariantEvidence> results = new ArrayList<>(limit);
 
@@ -543,9 +543,9 @@ public class CvdbSolrEngine {
     }
 
     public ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter>
-    clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException {
+    clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
         // Check
-        checkQuery(query, queryOptions);
+        checkQuery(query, queryOptions, token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
@@ -602,8 +602,21 @@ public class CvdbSolrEngine {
         }
     }
 
-    private void checkQuery(Query query, QueryOptions queryOptions) throws CvdbException {
+    private void checkQuery(Query query, QueryOptions queryOptions, String token) throws CvdbException, CatalogException {
         check(query, queryOptions);
+
+        if (!query.containsKey(STUDY_PARAM_NAME) || StringUtils.isEmpty(query.getString(STUDY_PARAM_NAME))) {
+            throw new CvdbException("Missing study ID (or list of study IDs)");
+        }
+
+        if (ALL_STUDY_VALUE.equals(query.getString(STUDY_PARAM_NAME))) {
+            OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(query.getString(PROJECT_PARAM_NAME), new Query(),
+                    new QueryOptions(INCLUDE, "id"), token);
+
+            String studyIds = StringUtils.join(studyResults.getResults().stream().map(Study::getId).collect(Collectors.toList()), ",");
+            query.put(STUDY_PARAM_NAME, studyIds);
+        }
+
 
         if (queryOptions.containsKey(LIMIT)) {
             int limit = queryOptions.getInt(LIMIT);

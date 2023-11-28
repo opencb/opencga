@@ -121,7 +121,7 @@ public class CvdbSolrEngineQueryStudyTest {
     //-----------------------------------------------------------------------
 
     @Test
-    public void testCvdbContent() throws IOException, CvdbException {
+    public void testCvdbContent() throws IOException, CvdbException, CatalogException {
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
         QueryOptions queryOptions = new QueryOptions();
@@ -141,7 +141,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesFromVariantId() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesFromVariantId() throws IOException, CvdbException, CatalogException {
         // CVDB query
         String variantId = "X:54751204:C:T";
         String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
@@ -164,7 +164,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesFromVariantIdList() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesFromVariantIdList() throws IOException, CvdbException, CatalogException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -185,7 +185,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesInclude() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesInclude() throws IOException, CvdbException, CatalogException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -213,7 +213,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationsInclude() throws IOException, CvdbException {
+    public void testQueryClinicalInterpretationsInclude() throws IOException, CvdbException, CatalogException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
@@ -247,7 +247,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantInclude() throws IOException, CvdbException {
+    public void testQueryClinicalVariantInclude() throws IOException, CvdbException, CatalogException {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
         DataResult<ClinicalVariant> result;
@@ -311,7 +311,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesByCaFilters() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesByCaFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -366,7 +366,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationByCaFilters() throws IOException, CvdbException {
+    public void testQueryClinicalInterpretationByCaFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -425,7 +425,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantByCaFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantByCaFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -490,7 +490,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantEvidenceByCaFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantEvidenceByCaFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -555,7 +555,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesByCiFilters() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesByCiFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -617,7 +617,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testDateFilter() throws IOException, CvdbException, ParseException {
+    public void testDateFilter() throws IOException, CvdbException, ParseException, CatalogException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -667,7 +667,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testIntegerFilter() throws IOException, CvdbException, ParseException {
+    public void testIntegerFilter() throws IOException, CvdbException, ParseException, CatalogException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -703,7 +703,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testBooleanFilter() throws IOException, CvdbException, ParseException {
+    public void testBooleanFilter() throws IOException, CvdbException, ParseException, CatalogException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -762,7 +762,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testTextFilter() throws IOException, CvdbException, ParseException {
+    public void testTextFilter() throws IOException, CvdbException, ParseException, CatalogException {
         // CVDB query
         Query query;
         QueryOptions queryOptions = new QueryOptions();
@@ -823,7 +823,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationsByCiFilters() throws IOException, CvdbException {
+    public void testQueryClinicalInterpretationsByCiFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -889,7 +889,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantsByCiFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantsByCiFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -969,7 +969,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantEvidencesByCiFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantEvidencesByCiFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -1049,7 +1049,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesByCvFilters() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesByCvFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -1067,7 +1067,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationsByCvFilters() throws IOException, CvdbException {
+    public void testQueryClinicalInterpretationsByCvFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -1085,7 +1085,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantsByCvFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantsByCvFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -1103,7 +1103,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantEvidencesByCvFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantEvidencesByCvFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -1124,7 +1124,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalAnalysesByCveFilters() throws IOException, CvdbException {
+    public void testQueryClinicalAnalysesByCveFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -1379,7 +1379,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalInterpretationsByCveFilters() throws IOException, CvdbException {
+    public void testQueryClinicalInterpretationsByCveFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
         Set<String> alreadyChecked = new HashSet<>();
@@ -1632,7 +1632,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantByCveFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantByCveFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -1848,7 +1848,7 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     @Test
-    public void testQueryClinicalVariantEvidencesByCveFilters() throws IOException, CvdbException {
+    public void testQueryClinicalVariantEvidencesByCveFilters() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
 
@@ -2013,7 +2013,7 @@ public class CvdbSolrEngineQueryStudyTest {
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
-    private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException {
+    private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), sessionIdUser);
@@ -2022,7 +2022,7 @@ public class CvdbSolrEngineQueryStudyTest {
         return result.first();
     }
 
-    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException {
+    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
@@ -2031,7 +2031,7 @@ public class CvdbSolrEngineQueryStudyTest {
         return result.first();
     }
 
-    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException {
+    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CV_ID_NAME, cvId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);

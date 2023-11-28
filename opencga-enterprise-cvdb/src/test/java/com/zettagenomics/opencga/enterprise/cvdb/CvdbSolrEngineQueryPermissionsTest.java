@@ -3,16 +3,12 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,7 +29,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,8 +37,8 @@ import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalRe
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.NO_ACCESS_FOR_ANONYMOUS_USERS_MSG;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static org.junit.Assert.*;
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 public class CvdbSolrEngineQueryPermissionsTest {
@@ -316,7 +311,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         return result.first();
     }
 
-    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException {
+    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
@@ -325,7 +320,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         return result.first();
     }
 
-    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException {
+    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
         Query query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CV_ID_NAME, cvId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);

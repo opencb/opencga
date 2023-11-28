@@ -34,6 +34,8 @@ public class ParamConstants {
     public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
     public static final String PROJECT_PARAM_NAME = "projectId";
 
-    public static final String STUDY_PARAM_DESCRIPTION = "Study ID";
+    public static final String ALL_STUDY_VALUE = "*";
+    public static final String STUDY_PARAM_DESCRIPTION = "Study ID (or list of study IDs separated by commas), or '" + ALL_STUDY_VALUE
+            + "' for all studies of the current user";
     public static final String STUDY_PARAM_NAME = "studyId";
 }
