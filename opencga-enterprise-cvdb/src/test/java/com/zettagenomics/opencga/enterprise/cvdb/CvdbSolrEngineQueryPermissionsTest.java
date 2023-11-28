@@ -7,11 +7,13 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -115,7 +117,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     // T E S T S
     //-----------------------------------------------------------------------
 
-    @Test
+    @Test(expected = CatalogAuthorizationException.class)
     public void testQueryClinicalAnalyses() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -145,12 +147,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
+        // (expected = CatalogAuthorizationException.class)
         token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
-        assertEquals(0, result.getNumResults());
+        cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
     }
 
-    @Test
+    @Test(expected = CatalogAuthorizationException.class)
     public void testQueryClinicalVariants() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -195,12 +197,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
+        // (expected = CatalogAuthorizationException.class)
         token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
-        result = cvdbEngine.searchClinicalVariants(query, queryOptions, token);
-        assertEquals(0, result.getNumResults());
+        cvdbEngine.searchClinicalVariants(query, queryOptions, token);
     }
 
-    @Test
+    @Test(expected = CatalogAuthorizationException.class)
     public void testQueryClinicalInterpretations() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -231,13 +233,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
+        // expected = CatalogAuthorizationException.class
         token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
-        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
-        assertEquals(0, result.getNumResults());
-
+        cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
     }
 
-    @Test
+    @Test(expected = CatalogAuthorizationException.class)
     public void testQueryClinicalVariantEvidences() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -277,12 +278,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
 
         // "user3" can not access any clinical analyses
+        // (expected = CatalogAuthorizationException.class)
         token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
-        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
-        assertEquals(0, result.getNumResults());
+        cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
     }
 
-    @Test
+    @Test(expected = CatalogAuthorizationException.class)
     public void testAnonymous() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -295,13 +296,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user" can access to all clinical analyses
-        try {
-            cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
-        } catch (Exception e) {
-            assertEquals(NO_ACCESS_FOR_ANONYMOUS_USERS_MSG, e.getMessage());
-            return;
-        }
-        Assert.fail();
+        // expected = CatalogAuthorizationException.class
+        cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
     }
 
     //-----------------------------------------------------------------------

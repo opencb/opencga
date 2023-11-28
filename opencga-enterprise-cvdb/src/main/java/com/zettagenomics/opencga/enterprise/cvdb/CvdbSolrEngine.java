@@ -52,6 +52,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -77,6 +78,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 /**
  * Created by jtarraga on 11/11/17.
@@ -596,28 +598,123 @@ public class CvdbSolrEngine {
     // P R I V A T E      M E T H O D S
     //----------------------------------------------------------------------
 
-    private void check(Query query, QueryOptions queryOptions) throws CvdbException {
-        if (!query.containsKey(PROJECT_PARAM_NAME) || StringUtils.isEmpty(query.getString(PROJECT_PARAM_NAME))) {
-            throw new CvdbException("Missing project ID");
-        }
-    }
-
     private void checkQuery(Query query, QueryOptions queryOptions, String token) throws CvdbException, CatalogException {
-        check(query, queryOptions);
-
-        if (!query.containsKey(STUDY_PARAM_NAME) || StringUtils.isEmpty(query.getString(STUDY_PARAM_NAME))) {
-            throw new CvdbException("Missing study ID (or list of study IDs)");
+        String projectInputValue = null;
+        if (query.containsKey(PROJECT_PARAM_NAME) && StringUtils.isNotEmpty(query.getString(PROJECT_PARAM_NAME))) {
+            projectInputValue = query.getString(PROJECT_PARAM_NAME);
         }
 
-        if (ALL_STUDIES_VALUE.equals(query.getString(STUDY_PARAM_NAME))) {
-            OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(query.getString(PROJECT_PARAM_NAME), new Query(),
-                    new QueryOptions(INCLUDE, "id"), token);
-
-            String studyIds = StringUtils.join(studyResults.getResults().stream().map(Study::getId).collect(Collectors.toList()), ",");
-            query.put(STUDY_PARAM_NAME, studyIds);
+        String studyInputValue = null;
+        if (query.containsKey(STUDY_PARAM_NAME) || StringUtils.isNotEmpty(query.getString(STUDY_PARAM_NAME))) {
+            studyInputValue = query.getString(STUDY_PARAM_NAME);
         }
 
+        // Project and study are not defined
+        if (StringUtils.isEmpty(projectInputValue) && StringUtils.isEmpty(studyInputValue)) {
+            throw new CvdbException("Missing project ID and/or study ID");
+        }
 
+        // Only project is defined (study is undefined)
+        if (StringUtils.isEmpty(studyInputValue)) {
+            OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().get(projectInputValue, QueryOptions.empty(), token);
+            if (projectResult.getNumResults() <= 0) {
+                throw new CvdbException("No project found for ID '" + projectInputValue + "'");
+            } else if (projectResult.getNumResults() == 1) {
+                // Setting project ID in query
+                query.put(PROJECT_PARAM_NAME, projectResult.first().getId());
+            } else {
+                // This should never happen
+                throw new CvdbException("More than one project found for ID '" + projectInputValue + "'");
+            }
+
+            OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(projectInputValue, new Query(),
+                    QueryOptions.empty(), token);
+            if (studyResults.getNumResults() <= 0) {
+                // No studies found for that project
+                throw new CvdbException("No studies found for project '" + projectInputValue + "'");
+            } else if (studyResults.getNumResults() == 1) {
+                // Setting study ID in the query
+                query.put(STUDY_PARAM_NAME, studyResults.first().getId());
+            } else {
+                // More than one study found for project
+                throw new CvdbException("More than one study found for project '" + projectInputValue + "'. Please, enter which studies to"
+                        + " use or the value '" + ALL_STUDIES_VALUE + "' to use all studies");
+            }
+            return;
+        }
+
+        // Study is defined, check if there are multiple studies
+        List<String> studyInputValues = Arrays.asList(studyInputValue.split(","));
+
+        // Get project, in case project is defined as well
+        Project project = null;
+        if (StringUtils.isNotEmpty(projectInputValue)) {
+            OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().get(projectInputValue, QueryOptions.empty(), token);
+            if (projectResult.getNumResults() <= 0) {
+                throw new CvdbException("No project found for ID '" + projectInputValue + "'");
+            } else if (projectResult.getNumResults() == 1) {
+                project = projectResult.first();
+            } else {
+                // This should never happen
+                throw new CvdbException("More than one project found for ID '" + projectInputValue + "'");
+            }
+        }
+
+        Set<String> studyIds = new HashSet<>();
+        List<String> projectIds = new ArrayList<>();
+        for (String studyValue : studyInputValues) {
+            if (ALL_STUDIES_VALUE.equals(studyValue)) {
+                if (project != null) {
+                    OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(project.getId(), new Query(),
+                            QueryOptions.empty(), token);
+                    for (Study study : studyResults.getResults()) {
+                        if (!FqnUtils.getProject(study.getFqn()).equals(project.getId())) {
+                            throw new CvdbException("Invalid study ID '" + study.getId() + "' not found in project '" + project.getId()
+                                    + "'");
+                        }
+                        studyIds.add(study.getId());
+                    }
+                } else {
+                    throw new CvdbException("Invalid use of '" + ALL_STUDIES_VALUE + "' (to indicate all studies) because no project has"
+                            + " been specified");
+                }
+            } else {
+                OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyValue, QueryOptions.empty(), token);
+                if (studyResult.getNumResults() == 0) {
+                    throw new CvdbException("Study not found for ID '" + studyInputValue + "'");
+                }
+                Study study = studyResult.first();
+                if (project != null) {
+                    // Project was defined
+                    if (!project.getId().equals(FqnUtils.getProject(study.getFqn()))) {
+                        throw new CvdbException("Mismatch project ID: from input study ID '" + studyValue + ", got project ID '"
+                                + FqnUtils.getProject(study.getFqn()) + "', but the project ID parameter '" + project.getId() + "'");
+                    }
+                } else {
+                    if (CollectionUtils.isEmpty(projectIds)) {
+                        projectIds.add(FqnUtils.getProject(study.getFqn()));
+                    } else {
+                        if (!projectIds.contains(FqnUtils.getProject(study.getFqn()))) {
+                            throw new CvdbException("Study IDs belong to different projects: '" + projectIds.get(0) + "' and '"
+                                    + FqnUtils.getProject(study.getFqn()) + "'");
+                        }
+                    }
+                }
+                studyIds.add(study.getId());
+            }
+        }
+
+        // Set project ID in query
+        if (project != null) {
+            query.put(PROJECT_PARAM_NAME, project.getId());
+        } else {
+            query.put(PROJECT_PARAM_NAME, projectIds.get(0));
+        }
+
+        // Set study IDs in query
+        query.put(STUDY_PARAM_NAME, StringUtils.join(new ArrayList<>(studyIds), ","));
+
+        // Check limit
         if (queryOptions.containsKey(LIMIT)) {
             int limit = queryOptions.getInt(LIMIT);
             if (limit < 1 || limit > ParamConstants.DEFAULT_LIMIT) {
@@ -627,7 +724,9 @@ public class CvdbSolrEngine {
     }
 
     private void checkFacet(Query query, QueryOptions queryOptions, Set<String> fieldSet) throws CvdbException {
-        check(query, queryOptions);
+        if (!query.containsKey(PROJECT_PARAM_NAME) || StringUtils.isEmpty(query.getString(PROJECT_PARAM_NAME))) {
+            throw new CvdbException("Missing project ID");
+        }
 
         if (!queryOptions.containsKey(QueryOptions.FACET) || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
             throw new CvdbException("Missing facet field to aggregation stats");
