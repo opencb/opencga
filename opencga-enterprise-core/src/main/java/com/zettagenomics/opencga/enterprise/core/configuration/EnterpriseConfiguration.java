@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
-@JsonIgnoreProperties({"cvdb"})
 public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;

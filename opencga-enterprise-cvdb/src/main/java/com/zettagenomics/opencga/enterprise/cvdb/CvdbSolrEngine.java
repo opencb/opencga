@@ -609,7 +609,7 @@ public class CvdbSolrEngine {
             throw new CvdbException("Missing study ID (or list of study IDs)");
         }
 
-        if (ALL_STUDY_VALUE.equals(query.getString(STUDY_PARAM_NAME))) {
+        if (ALL_STUDIES_VALUE.equals(query.getString(STUDY_PARAM_NAME))) {
             OpenCGAResult<Study> studyResults = catalogManager.getStudyManager().search(query.getString(PROJECT_PARAM_NAME), new Query(),
                     new QueryOptions(INCLUDE, "id"), token);
 
