@@ -75,6 +75,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "clinical";
     public AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
 
     public AnalysisClinicalCommandExecutor(AnalysisClinicalCommandOptions analysisClinicalCommandOptions) throws CatalogAuthenticationException {
@@ -209,10 +210,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
             RestResponse<ClinicalAnalysisAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -243,10 +243,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisStudyConfiguration));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/clinical/configuration/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper()
@@ -280,10 +279,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -459,10 +457,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(cancerTieringInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/cancerTiering/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -498,10 +495,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ExomiserInterpretationAnalysisParams exomiserInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            exomiserInterpretationAnalysisParams = new ExomiserInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(exomiserInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/exomiser/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -535,10 +531,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(teamInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/team/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -575,10 +570,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tieringInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/tiering/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -615,10 +609,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(zettaInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/zetta/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -818,10 +811,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         RgaAnalysisParams rgaAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            rgaAnalysisParams = new RgaAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(rgaAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/rga/index/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1158,10 +1150,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalyses}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -1233,10 +1224,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         InterpretationCreateParams interpretationCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationCreateParams = new InterpretationCreateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(interpretationCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -1323,10 +1313,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         InterpretationUpdateParams interpretationUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationUpdateParams = new InterpretationUpdateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(interpretationUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
