@@ -15,13 +15,13 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Migration(id = "add_annotation_sets_to_clinical_analysis" ,
-        description = "Add private annotation fields to ClinicalAnalysis documents",
+        description = "Add private annotation fields to ClinicalAnalysis documents #TASK-5198",
         version = "2.12.0",
         domain = Migration.MigrationDomain.CATALOG,
         language = Migration.MigrationLanguage.JAVA,
         date = 20231116
 )
-public class AddAnnotationSetsInClinicalAnalysis extends MigrationTool {
+public class AddAnnotationSetsInClinicalAnalysisMigration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {

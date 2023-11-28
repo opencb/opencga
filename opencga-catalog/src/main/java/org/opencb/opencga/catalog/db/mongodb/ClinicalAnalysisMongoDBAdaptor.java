@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.*;
@@ -153,6 +154,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             }
         }
         parameters.put(FILES.key(), fileParamList);
+    }
+
+    static void fixAnalystsForRemoval(ObjectMap parameters) {
+        if (parameters.get(ANALYSTS.key()) == null) {
+            return;
+        }
+
+        List<Document> analystParamList = new LinkedList<>();
+        for (Object analyst : parameters.getAsList(ANALYSTS.key())) {
+            if (analyst instanceof ClinicalAnalyst) {
+                analystParamList.add(new Document("id", ((ClinicalAnalyst) analyst).getId()));
+            }
+        }
+        parameters.put(ANALYSTS.key(), analystParamList);
     }
 
     @Override
@@ -382,8 +397,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
-                REPORT.key(), ATTRIBUTES.key()};
+                QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(), REPORT.key(),
+                REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
@@ -398,6 +413,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
+        clinicalConverter.validateReportToUpdate(document.getSet());
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
@@ -420,8 +436,26 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 throw new IllegalStateException("Unknown operation " + basicOperation);
         }
 
+        objectAcceptedParams = new String[]{ANALYSTS.key()};
+        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ANALYSTS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        switch (operation) {
+            case SET:
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case REMOVE:
+                fixAnalystsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case ADD:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+            default:
+                throw new IllegalStateException("Unknown operation " + basicOperation);
+        }
+
         objectAcceptedParams = new String[]{QueryParams.FILES.key()};
-        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILES.key(),
+        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILES.key(),
                 ParamUtils.BasicUpdateAction.ADD);
         switch (operation) {
             case SET:
@@ -1238,7 +1272,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case FAMILY_MEMBERS_UID:
                     case FAMILY_MEMBERS_SAMPLES_UID:
                     case PANELS_UID:
-                    case ANALYST_ID:
+                    case ANALYSTS_ID:
                     case PRIORITY_ID:
                     case FLAGS_ID:
                     case QUALITY_CONTROL_SUMMARY:

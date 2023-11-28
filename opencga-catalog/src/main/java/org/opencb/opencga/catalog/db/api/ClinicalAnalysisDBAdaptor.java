@@ -69,10 +69,14 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         CONSENT("consent", OBJECT, ""),
         PRIORITY("priority", OBJECT, ""),
         PRIORITY_ID("priority.id", TEXT, ""),
-        ANALYST("analyst", TEXT_ARRAY, ""),
-        ANALYST_ID("analyst.id", TEXT, ""),
-        ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
+        ANALYSTS("analysts", TEXT_ARRAY, ""),
+        ANALYSTS_ID("analysts.id", TEXT, ""),
+        ANALYSTS_ASSIGNED_BY("analysts.assignedBy", TEXT, ""),
         REPORT("report", OBJECT, ""),
+        REPORT_SUPPORTING_EVIDENCES("report.supportingEvidences", TEXT_ARRAY, ""),
+        REPORT_FILES("report.files", TEXT_ARRAY, ""),
+        REQUEST("request", OBJECT, ""),
+        RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
@@ -156,6 +160,54 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum ReportQueryParams implements QueryParam {
+        COMMENTS("comments", OBJECT, ""),
+        SUPPORTING_EVIDENCES("supportingEvidences", TEXT_ARRAY, ""),
+        FILES("files", TEXT_ARRAY, "");
+
+        private static Map<String, ReportQueryParams> map;
+
+        static {
+            map = new LinkedMap();
+            for (ReportQueryParams params : ReportQueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        ReportQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, ReportQueryParams> getMap() {
+            return map;
+        }
+
+        public static ReportQueryParams getParam(String key) {
             return map.get(key);
         }
     }

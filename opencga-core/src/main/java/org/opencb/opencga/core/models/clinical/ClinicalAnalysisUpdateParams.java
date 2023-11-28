@@ -48,9 +48,10 @@ public class ClinicalAnalysisUpdateParams {
     private FamilyParam family;
 
     private Boolean locked;
-    private ClinicalAnalystParam analyst;
+    private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
-
+    private ClinicalRequest request;
+    private ClinicalResponsible responsible;
 
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -72,8 +73,9 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked, ClinicalAnalystParam analyst,
-                                        ClinicalReport report, ClinicalAnalysisQualityControlUpdateParam qualityControl,
+                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked,
+                                        List<ClinicalAnalystParam> analysts, ClinicalReport report, ClinicalRequest request,
+                                        ClinicalResponsible responsible, ClinicalAnalysisQualityControlUpdateParam qualityControl,
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
                                         String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
                                         List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
@@ -88,8 +90,10 @@ public class ClinicalAnalysisUpdateParams {
         this.panels = panels;
         this.panelLock = panelLock;
         this.locked = locked;
-        this.analyst = analyst;
+        this.analysts = analysts;
         this.report = report;
+        this.request = request;
+        this.responsible = responsible;
         this.qualityControl = qualityControl;
         this.consent = consent;
         this.creationDate = creationDate;
@@ -119,7 +123,10 @@ public class ClinicalAnalysisUpdateParams {
                 locked != null && locked,
                 null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
-                analyst != null ? analyst.toClinicalAnalyst() : null, report,
+                analysts != null
+                        ? analysts.stream().map(ClinicalAnalystParam::toClinicalAnalyst).collect(Collectors.toList())
+                        : null,
+                report, request, responsible,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
@@ -141,8 +148,10 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", locked=").append(locked);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
+        sb.append(", request=").append(request);
+        sb.append(", responsible=").append(responsible);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -248,12 +257,12 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalAnalystParam getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalystParam> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysisUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysisUpdateParams setAnalysts(List<ClinicalAnalystParam> analysts) {
+        this.analysts = analysts;
         return this;
     }
 
@@ -365,4 +374,21 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
+    public ClinicalRequest getRequest() {
+        return request;
+    }
+
+    public ClinicalAnalysisUpdateParams setRequest(ClinicalRequest request) {
+        this.request = request;
+        return this;
+    }
+
+    public ClinicalResponsible getResponsible() {
+        return responsible;
+    }
+
+    public ClinicalAnalysisUpdateParams setResponsible(ClinicalResponsible responsible) {
+        this.responsible = responsible;
+        return this;
+    }
 }

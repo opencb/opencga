@@ -211,6 +211,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Action to be performed if the array of flags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("flagsAction") ParamUtils.BasicUpdateAction flagsAction,
+            @ApiParam(value = "Action to be performed if the array of analysts is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("analystsAction") ParamUtils.BasicUpdateAction analystsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
@@ -235,6 +237,9 @@ public class ClinicalWebService extends AnalysisWebService {
             if (panelsAction == null) {
                 panelsAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (analystsAction == null) {
+                analystsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -242,6 +247,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), flagsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), filesAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), analystsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
