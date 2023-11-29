@@ -305,8 +305,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         for (ClinicalAnalyst analyst : result.first().getAnalysts()) {
             assertNotNull(analyst.getId());
             assertNotNull(analyst.getName());
-            assertNotNull(analyst.getDate());
-            assertEquals("user", analyst.getAssignedBy());
+            assertNotNull(analyst.getRole());
+            assertNotNull(analyst.getAttributes());
         }
 
         // Remove analysts

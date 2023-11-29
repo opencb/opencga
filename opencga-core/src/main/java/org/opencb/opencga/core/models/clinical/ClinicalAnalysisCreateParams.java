@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
@@ -210,7 +209,7 @@ public class ClinicalAnalysisCreateParams {
         if (analysts != null) {
             clinicalAnalystList = new ArrayList<>(analysts.size());
             for (ClinicalAnalystParam analyst : analysts) {
-                clinicalAnalystList.add(new ClinicalAnalyst(analyst.getId(), analyst.getId(), "", "", TimeUtils.getTime()));
+                clinicalAnalystList.add(new ClinicalAnalyst(analyst.getId(), analyst.getId(), "", "", Collections.emptyMap()));
             }
         }
 

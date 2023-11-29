@@ -337,7 +337,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             }
             List<ClinicalAnalyst> clinicalAnalystList = new ArrayList<>(userList.size());
             for (User user : userList) {
-                clinicalAnalystList.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
+                clinicalAnalystList.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, Collections.emptyMap()));
             }
             clinicalAnalysis.setAnalysts(clinicalAnalystList);
 
@@ -1484,7 +1484,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         }
                         for (User user : userResult.getResults()) {
                             clinicalAnalystList.add(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId,
-                                    TimeUtils.getTime()));
+                                    Collections.emptyMap()));
                         }
                     }
                     parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), clinicalAnalystList);
