@@ -118,6 +118,12 @@ public final class SampleIndexSchema {
     static final String ANNOTATION_CLINICAL_PREFIX = META_PREFIX + "CL_";
     static final byte[] ANNOTATION_CLINICAL_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CLINICAL_PREFIX);
 
+    /**
+     * The largestVariantLength might be unknown if the sample was loaded before this field was added.
+     * In that case, a default value for the largestVariantLength will be used.
+     * See HadoopVariantStorageOptions.SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER
+     */
+    public static final String UNKNOWN_LARGEST_VARIANT_LENGTH = "unknownLargestVariantLength";
     public static final String LARGEST_VARIANT_LENGTH = "largestVariantLength";
 
     private final int version;

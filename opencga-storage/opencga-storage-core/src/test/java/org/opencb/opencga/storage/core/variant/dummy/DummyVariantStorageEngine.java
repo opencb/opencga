@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -102,7 +103,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         logger.info("Running family index!");
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
@@ -121,7 +122,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                 }
             });
         }
-        return new DataResult<List<String>>().setResults(trios);
+        return new DataResult<Trio>().setResults(trios);
     }
 
     @Override

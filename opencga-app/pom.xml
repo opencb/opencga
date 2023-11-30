@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.11.0-SNAPSHOT</version>
+        <version>2.13.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -33,14 +33,14 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
-        <dep.jline.version>3.12.1</dep.jline.version>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
+
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
+            <artifactId>opencga-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -48,8 +48,17 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-analysis</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-master</artifactId>
-            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -63,74 +72,182 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-client</artifactId>
-        </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.opencb.opencga</groupId>-->
-        <!--            <artifactId>opencga-test</artifactId>-->
-        <!--            <version>${project.parent.version}</version>-->
-        <!--            <type>pom</type>-->
-        <!--        </dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
-            <version>${project.parent.version}</version>
-            <!--<type>war</type>-->
         </dependency>
-
-        <!--        <dependency>-->
-        <!--            <groupId>com.beust</groupId>-->
-        <!--            <artifactId>jcommander</artifactId>-->
-        <!--            <version>1.82</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.glassfish.jersey.containers</groupId>-->
-        <!--            <artifactId>jersey-container-servlet-core</artifactId>-->
-        <!--            <version>${jersey.version}</version>-->
-        <!--        </dependency>-->
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
-            <version>${project.parent.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-mongodb</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>${project.parent.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
-            <version>${project.parent.version}</version>
-            <type>test-jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-solr</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-formats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-tools</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.oskar</groupId>
+            <artifactId>oskar-analysis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.ga4gh</groupId>
+            <artifactId>ga4gh</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>arg.apache.avro</groupId>
+                    <artifactId>avro-ipc</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Added dependencies -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
-        <!--JLINE Terminal dependencies-->
-        <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-reader</artifactId>
-            <version>${dep.jline.version}</version>
-        </dependency>
 
+        <!-- TODO Review -->
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline-terminal</artifactId>
-            <version>${dep.jline.version}</version>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal-jna</artifactId>
-            <version>${dep.jline.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+
     </dependencies>
 
     <build>
@@ -145,6 +262,13 @@
                 <includes>
                     <include>compileR.sh</include>
                 </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>cli-usage.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/classes</targetPath>
             </resource>
             <resource>
                 <directory>app/cloud/docker/compose</directory>
@@ -306,7 +430,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/git.properties"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
@@ -346,6 +470,7 @@
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.internal.xml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
+<!--                                    <arg value="${project.basedir}/src/main/resources/usage.yml"/>-->
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
@@ -469,6 +594,25 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

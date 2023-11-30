@@ -50,18 +50,19 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
     }
 
-    public RestResponse<AuthenticationResponse> login() throws Exception {
+    public RestResponse<AuthenticationResponse> login(CustomUsersCommandOptions.LoginCommandOptions commandOptions) throws Exception {
         logger.debug("Login");
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
-            String user = String.valueOf(options.get("user"));
-            String password = String.valueOf(options.get("password"));
+            String user = commandOptions.user;
+            String password = commandOptions.password;
 
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
                 AuthenticationResponse response = null;
                 try {
                     response = openCGAClient.login(user, password);
                 } catch (Exception e) {
+                    logger.debug("Login error", e);
                     Event event = new Event();
                     event.setMessage(e.getMessage());
                     event.setType(Event.Type.ERROR);
@@ -73,16 +74,16 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
                 res = session.saveSession(user, response, openCGAClient);
                 println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
-                String sessionId = String.valueOf(options.get("token"));
+                String token = session.getSession().getToken();
                 String errorMsg = "Missing password. ";
-                if (StringUtils.isNotEmpty(sessionId)) {
+                if (StringUtils.isNotEmpty(token)) {
                     errorMsg += "Active token detected ";
                 }
                 CommandLineUtils.error(errorMsg);
             }
         } catch (Exception e) {
             CommandLineUtils.error(LOGIN_ERROR, e);
-            e.printStackTrace();
+            logger.debug("Login error", e);
             Event event = new Event();
             event.setMessage(LOGIN_ERROR + e.getMessage());
             res.setType(QueryType.VOID);
@@ -93,7 +94,7 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
     }
 
 
-    public RestResponse<AuthenticationResponse> logout() throws IOException {
+    public RestResponse<AuthenticationResponse> logout(CustomUsersCommandOptions.LogoutCommandOptions commandOptions) throws IOException {
         logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
@@ -106,6 +107,7 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
             res.setType(QueryType.VOID);
         } catch (Exception e) {
             CommandLineUtils.error("Logout fail", e);
+            logger.debug("Logout error", e);
         }
         return res;
     }

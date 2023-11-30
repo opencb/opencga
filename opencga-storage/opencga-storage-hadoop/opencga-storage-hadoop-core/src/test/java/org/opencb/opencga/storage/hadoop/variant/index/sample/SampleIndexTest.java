@@ -31,6 +31,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -104,6 +105,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_5, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_6, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
@@ -111,12 +113,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 //            Arrays.asList("NA19661", "NA19685", "NA19600"),
 //            Arrays.asList("NA19685", "NA19600", "NA19660")
 //    );
-    private static List<List<String>> trios = Arrays.asList(
-            Arrays.asList("NA19660", "NA19661", "NA19685"),
-            Arrays.asList("NA19660", "NA19661", "NA19600")
+    private static List<Trio> trios = Arrays.asList(
+            new Trio("NA19660", "NA19661", "NA19685"),
+            new Trio("NA19660", "NA19661", "NA19600")
     );
-    private static List<List<String>> triosPlatinum = Arrays.asList(
-            Arrays.asList("NA12877", "-", "NA12878")
+    private static List<Trio> triosPlatinum = Arrays.asList(
+            new Trio("NA12877", null, "NA12878")
     );
 
     @Before
@@ -341,8 +343,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     studyId,
                     Collections.emptySet(), options), "");
 
-            if (sampleNames.get(study).containsAll(trios.get(0))) {
-                options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+            if (sampleNames.get(study).containsAll(trios.get(0).toList())) {
+                options.put(FamilyIndexDriver.TRIOS, trios.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
                 new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
@@ -350,7 +352,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         studyId,
                         Collections.emptySet(), options), "");
             } else if (study.equals(STUDY_NAME_3)) {
-                options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+                options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(Trio::serialize).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
                 new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                         dbAdaptor.getArchiveTableName(studyId),
@@ -1036,8 +1038,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testFamilyIndexQueryCount() {
-        List<String> trio = trios.get(0);
-        String proband = trio.get(2);
+        Trio trio = trios.get(0);
+        String proband = trio.getChild();
         VariantQueryResult<Variant> result = variantStorageEngine.get(
                 new Query()
                         .append(STUDY.key(), STUDY_NAME)

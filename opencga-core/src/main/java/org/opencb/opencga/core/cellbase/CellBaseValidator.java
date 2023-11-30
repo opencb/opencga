@@ -11,16 +11,19 @@ import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.VersionUtils;
+
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 public class CellBaseValidator {
 
@@ -193,6 +196,7 @@ public class CellBaseValidator {
                 }
             }
         }
+
         String apiKey = getApiKey();
         if (StringUtils.isEmpty(apiKey)) {
             cellBaseConfiguration.setApiKey(null);

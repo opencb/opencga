@@ -202,12 +202,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 if (family == null || StringUtils.isEmpty(family.getId())) {
                     continue;
                 }
-                List<List<String>> trios = variantStorageManager.getTriosFromFamily(getStudy(), family, true, getToken());
-                for (List<String> trio : trios) {
-                    String child = trio.get(2);
+                List<Trio> trios = variantStorageManager.getTriosFromFamily(getStudy(), family, true, getToken());
+                for (Trio trio : trios) {
+                    String child = trio.getChild();
                     if (analysisParams.getSample().contains(child)) {
-                        String father = trio.get(0);
-                        String mother = trio.get(1);
+                        String father = trio.getFather();
+                        String mother = trio.getMother();
                         triosMap.put(child, new Trio(family.getId(),
                                 "-".equals(father) ? null : father,
                                 "-".equals(mother) ? null : mother,

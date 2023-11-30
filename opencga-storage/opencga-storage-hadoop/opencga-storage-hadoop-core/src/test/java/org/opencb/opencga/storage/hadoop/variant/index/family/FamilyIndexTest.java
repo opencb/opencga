@@ -18,6 +18,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -80,12 +81,13 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             runETL(variantStorageEngine, getResourceUri("variant-test-me.vcf"), outputUri, params, true, true, true);
 
 
-            List<String> family = Arrays.asList(father, mother, child);
+            Trio family = new Trio(father, mother, child);
+            Trio family2 = new Trio("FATHER", "MOTHER", "PROBAND");
 
-            variantStorageEngine.aggregateFamily(study, new VariantAggregateFamilyParams(family, false), new ObjectMap());
+            variantStorageEngine.aggregateFamily(study, new VariantAggregateFamilyParams(family.toList(), false), new ObjectMap());
 
             variantStorageEngine.familyIndex(study, Collections.singletonList(family), new ObjectMap());
-            variantStorageEngine.familyIndex(study, Collections.singletonList(Arrays.asList("FATHER", "MOTHER", "PROBAND")), new ObjectMap());
+            variantStorageEngine.familyIndex(study, Collections.singletonList(family2), new ObjectMap());
 
             variantStorageEngine.annotate(outputUri, new ObjectMap());
 

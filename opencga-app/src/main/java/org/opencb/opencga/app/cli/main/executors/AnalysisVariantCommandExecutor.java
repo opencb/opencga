@@ -1,23 +1,9 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.commons.datastore.core.ObjectMap;
-
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.common.JacksonUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
 import java.util.HashMap;
-import org.opencb.opencga.core.response.QueryType;
-import org.opencb.commons.utils.PrintUtils;
-
-import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
-
+import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
@@ -29,7 +15,15 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
@@ -58,6 +52,8 @@ import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 
@@ -862,6 +858,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "family",commandOptions.family, true);
             putNestedIfNotNull(beanParams, "somatic",commandOptions.somatic, true);
             putNestedIfNotNull(beanParams, "load",commandOptions.load, true);
+            putNestedIfNotNull(beanParams, "forceReload",commandOptions.forceReload, true);
             putNestedIfNotEmpty(beanParams, "loadSplitData",commandOptions.loadSplitData, true);
             putNestedIfNotNull(beanParams, "loadMultiFileData",commandOptions.loadMultiFileData, true);
             putNestedIfNotEmpty(beanParams, "loadSampleIndex",commandOptions.loadSampleIndex, true);
