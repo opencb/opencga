@@ -52,6 +52,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "individuals";
     public IndividualsCommandOptions individualsCommandOptions;
 
     public IndividualsCommandExecutor(IndividualsCommandOptions individualsCommandOptions) throws CatalogAuthenticationException {
@@ -129,10 +130,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualAclUpdateParams individualAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualAclUpdateParams = new IndividualAclUpdateParams();
             RestResponse<IndividualAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -200,10 +200,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -237,10 +236,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualCreateParams individualCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualCreateParams = new IndividualCreateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -442,10 +440,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualUpdateParams individualUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualUpdateParams = new IndividualUpdateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individuals}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -512,10 +509,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()
