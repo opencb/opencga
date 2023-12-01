@@ -128,7 +128,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Enums.Resource.JOB,
                 Collections.singletonList(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection()));
         this.dbCollectionMap.put(Enums.Resource.CLINICAL_ANALYSIS,
-                Collections.singletonList(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection()));
+                Collections.singletonList(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getCollection()));
 
         // Versioned models will always have first the main collection and second the archive collection
         this.dbCollectionMap.put(Enums.Resource.INDIVIDUAL, Arrays.asList(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection(),

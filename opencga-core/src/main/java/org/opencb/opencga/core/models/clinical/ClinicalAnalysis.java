@@ -24,7 +24,8 @@ import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.Annotable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -41,7 +42,7 @@ import java.util.Map;
  */
 @DataClass(id = "ClinicalAnalysis", since = "1.0",
         description = "ClinicalAnalysis data model hosts information about any analysis.")
-public class ClinicalAnalysis extends PrivateStudyUid {
+public class ClinicalAnalysis extends Annotable {
 
     /**
      * ClinicalAnalysis ID is a mandatory parameter when creating a new ClinicalAnalysis, this ID cannot be changed at the moment.
@@ -116,13 +117,21 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
     private ClinicalConsentAnnotation consent;
 
-    @DataField(id = "analyst", indexed = true,
+    @DataField(id = "analysts", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_ANALYST)
-    private ClinicalAnalyst analyst;
+    private List<ClinicalAnalyst> analysts;
 
     @DataField(id = "report", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
     private ClinicalReport report;
+
+    @DataField(id = "request", since = "2.12.0",
+            description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
+    private ClinicalRequest request;
+
+    @DataField(id = "responsible", since = "2.12.0",
+            description = FieldConstants.CLINICAL_ANALYSIS_RESPONSIBLE)
+    private ClinicalResponsible responsible;
 
     @DataField(id = "priority", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_PRIORITY)
@@ -208,10 +217,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
-                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
-                            ClinicalReport report, ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate,
-                            String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
-                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
+                            List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
+                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
+                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
+                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, List<AnnotationSet> annotationSets,
                             Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
@@ -226,8 +236,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
-        this.analyst = analyst;
+        this.analysts = analysts;
         this.report = report;
+        this.request = request;
+        this.responsible = responsible;
         this.priority = priority;
         this.flags = flags;
         this.creationDate = creationDate;
@@ -238,6 +250,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.comments = comments;
         this.audit = audit;
         this.internal = internal;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
     }
@@ -259,8 +272,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
+        sb.append(", request=").append(request);
+        sb.append(", responsible=").append(responsible);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -406,12 +421,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalyst getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalyst> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysis setAnalysts(List<ClinicalAnalyst> analysts) {
+        this.analysts = analysts;
         return this;
     }
 
@@ -421,6 +436,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setReport(ClinicalReport report) {
         this.report = report;
+        return this;
+    }
+
+    public ClinicalRequest getRequest() {
+        return request;
+    }
+
+    public ClinicalAnalysis setRequest(ClinicalRequest request) {
+        this.request = request;
+        return this;
+    }
+
+    public ClinicalResponsible getResponsible() {
+        return responsible;
+    }
+
+    public ClinicalAnalysis setResponsible(ClinicalResponsible responsible) {
+        this.responsible = responsible;
         return this;
     }
 
@@ -511,6 +544,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
         this.internal = internal;
+        return this;
+    }
+
+    @Override
+    public ClinicalAnalysis setAnnotationSets(List<AnnotationSet> annotationSets) {
+        super.setAnnotationSets(annotationSets);
         return this;
     }
 

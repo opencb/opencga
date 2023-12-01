@@ -49,7 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Category(MediumTests.class)
-public class AbstractManagerTest extends GenericTest {
+public class  AbstractManagerTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
