@@ -21,24 +21,26 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.*;
+import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
-public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
+public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterator<E> {
 
     private long studyUid;
     private String user;
@@ -54,8 +56,6 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private QueryOptions interpretationQueryOptions;
     private QueryOptions panelQueryOptions;
 
-    private QueryOptions options;
-
     private Queue<Document> clinicalAnalysisListBuffer;
 
     private Logger logger;
@@ -68,20 +68,19 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private static final String UID_VERSION_SEP = "___";
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                  QueryOptions options) {
-        this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
+                                                  AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                                  MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, dbAdaptorFactory, 0, null, options);
     }
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                                  long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, clientSession, converter, null);
+                                                  AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                                  MongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
+                                                  QueryOptions options) {
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
-
-        this.options = options;
 
         this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
         this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
@@ -110,7 +109,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         addAclInformation(next, options);
 
         if (converter != null) {
-            return (E) converter.convertToDataModelType(next);
+            return (E) converter.convertToDataModelType(next, options);
         } else {
             return (E) next;
         }

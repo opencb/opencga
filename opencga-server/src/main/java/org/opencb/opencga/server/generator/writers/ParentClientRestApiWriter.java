@@ -84,11 +84,15 @@ public abstract class ParentClientRestApiWriter {
         return commandName.toLowerCase();
     }
 
+    public String getCategoryRestName(RestCategory restCategory, CategoryConfig categoryConfig) {
+        return restCategory.getPath().substring(restCategory.getPath().lastIndexOf("/") + 1);
+    }
+
     public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {
         if (!StringUtils.isEmpty(categoryConfig.getCommandName())) {
             return categoryConfig.getCommandName();
         }
-        return restCategory.getPath().substring(restCategory.getPath().lastIndexOf("/") + 1);
+        return getCategoryRestName(restCategory, categoryConfig);
     }
 
     protected void writeToFile(File file, StringBuffer sb) throws IOException {
