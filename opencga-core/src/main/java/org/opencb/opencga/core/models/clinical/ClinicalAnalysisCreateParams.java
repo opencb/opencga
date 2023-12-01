@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -47,8 +47,10 @@ public class ClinicalAnalysisCreateParams {
     private List<PanelReferenceParam> panels;
     private Boolean panelLock;
 
-    private ClinicalAnalystParam analyst;
+    private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
+    private ClinicalRequest request;
+    private ClinicalResponsible responsible;
     private InterpretationCreateParams interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -61,6 +63,7 @@ public class ClinicalAnalysisCreateParams {
     private PriorityParam priority;
     private List<FlagValueParam> flags;
 
+    private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
     private StatusParam status;
 
@@ -69,12 +72,13 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
-                                        ClinicalReport report, InterpretationCreateParams interpretation,
-                                        ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
-                                        String dueDate, List<ClinicalCommentParam> comments,
+                                        List<PanelReferenceParam> panels, Boolean panelLock, List<ClinicalAnalystParam> analysts,
+                                        ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
+                                        InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
+                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
-                                        List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
+                                        List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
+                                        StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -85,7 +89,9 @@ public class ClinicalAnalysisCreateParams {
         this.panels = panels;
         this.panelLock = panelLock;
         this.report = report;
-        this.analyst = analyst;
+        this.request = request;
+        this.responsible = responsible;
+        this.analysts = analysts;
         this.interpretation = interpretation;
         this.consent = consent;
         this.creationDate = creationDate;
@@ -95,6 +101,7 @@ public class ClinicalAnalysisCreateParams {
         this.qualityControl = qualityControl;
         this.priority = priority;
         this.flags = flags;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
     }
@@ -111,8 +118,10 @@ public class ClinicalAnalysisCreateParams {
                         ? clinicalAnalysis.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
                 clinicalAnalysis.isPanelLock(),
-                clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
-                clinicalAnalysis.getReport(),
+                clinicalAnalysis.getAnalysts() != null
+                        ? clinicalAnalysis.getAnalysts().stream().map(ClinicalAnalystParam::of).collect(Collectors.toList())
+                        : null,
+                clinicalAnalysis.getReport(), clinicalAnalysis.getRequest(), clinicalAnalysis.getResponsible(),
                 clinicalAnalysis.getInterpretation() != null
                         ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
                         : null,
@@ -128,6 +137,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getFlags() != null
                         ? clinicalAnalysis.getFlags().stream().map(FlagValueParam::of).collect(Collectors.toList())
                         : null,
+                clinicalAnalysis.getAnnotationSets(),
                 clinicalAnalysis.getAttributes(), StatusParam.of(clinicalAnalysis.getStatus()));
     }
 
@@ -143,8 +153,10 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
         sb.append(", panelLock=").append(panelLock);
-        sb.append(", analyst=").append(analyst);
+        sb.append(", analysts=").append(analysts);
         sb.append(", report=").append(report);
+        sb.append(", request=").append(request);
+        sb.append(", responsible=").append(responsible);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
@@ -154,6 +166,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -192,7 +205,13 @@ public class ClinicalAnalysisCreateParams {
 
         Interpretation primaryInterpretation = interpretation != null ? interpretation.toClinicalInterpretation() : null;
 
-        String assignee = analyst != null ? analyst.getId() : "";
+        List<ClinicalAnalyst> clinicalAnalystList = null;
+        if (analysts != null) {
+            clinicalAnalystList = new ArrayList<>(analysts.size());
+            for (ClinicalAnalystParam analyst : analysts) {
+                clinicalAnalystList.add(new ClinicalAnalyst(analyst.getId(), analyst.getId(), "", "", Collections.emptyMap()));
+            }
+        }
 
         List<File> caFiles = new LinkedList<>();
         if (files != null) {
@@ -211,12 +230,12 @@ public class ClinicalAnalysisCreateParams {
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
                 diseasePanelList, panelLock != null ? panelLock : false, false, primaryInterpretation, new LinkedList<>(),
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
-                new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()), report,
-                priority != null ? priority.toClinicalPriorityAnnotation() : null,
+                clinicalAnalystList, report, request, responsible, priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
-                comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null, qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
-                attributes, status != null ? status.toStatus() : null);
+                comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
+                annotationSets, attributes, status != null ? status.toStatus() : null);
     }
 
     public String getId() {
@@ -300,12 +319,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public ClinicalAnalystParam getAnalyst() {
-        return analyst;
+    public List<ClinicalAnalystParam> getAnalysts() {
+        return analysts;
     }
 
-    public ClinicalAnalysisCreateParams setAnalyst(ClinicalAnalystParam analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysisCreateParams setAnalysts(List<ClinicalAnalystParam> analysts) {
+        this.analysts = analysts;
         return this;
     }
 
@@ -315,6 +334,24 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setReport(ClinicalReport report) {
         this.report = report;
+        return this;
+    }
+
+    public ClinicalRequest getRequest() {
+        return request;
+    }
+
+    public ClinicalAnalysisCreateParams setRequest(ClinicalRequest request) {
+        this.request = request;
+        return this;
+    }
+
+    public ClinicalResponsible getResponsible() {
+        return responsible;
+    }
+
+    public ClinicalAnalysisCreateParams setResponsible(ClinicalResponsible responsible) {
+        this.responsible = responsible;
         return this;
     }
 
@@ -396,6 +433,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public ClinicalAnalysisCreateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
         return this;
     }
 
