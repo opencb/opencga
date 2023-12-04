@@ -71,6 +71,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     private ExecutionDaemon daemon;
     private DummyBatchExecutor executor;
 
+    private List<String> organizationIds;
+
     @Override
     @Before
     public void setUp() throws Exception {
@@ -84,6 +86,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE), "/tmp");
         executor = new DummyBatchExecutor();
         daemon.batchExecutor = executor;
+
+        this.organizationIds = Arrays.asList(organizationId, ParamConstants.ADMIN_ORGANIZATION);
     }
 
     @Test
@@ -134,7 +138,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         URI uri = getJob(jobId).getOutDir().getUri();
         Assert.assertTrue(Files.exists(Paths.get(uri)));
@@ -149,7 +153,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
         // We sleep because there must be a thread sending notifying to the webhook url.
         Thread.sleep(1500);
 
@@ -165,7 +169,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("outdir", "outputDir/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         URI uri = getJob(jobId).getOutDir().getUri();
         Assert.assertTrue(Files.exists(Paths.get(uri)));
@@ -184,7 +188,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params,
                 ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         URI uri = getJob(jobId).getOutDir().getUri();
         Assert.assertTrue(Files.exists(Paths.get(uri)));
@@ -197,7 +201,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("outdir", "data/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
@@ -226,7 +230,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
                 params, "job3", "", null, null, orgAdminToken2).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         // Job sent by the owner
         OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), ownerToken);
@@ -260,7 +264,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String job2 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
                 Collections.singletonList(job1), null, ownerToken).first().getId();
 
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job1, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
@@ -271,24 +275,24 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.PENDING);
 
         // Set the status of job1 to ERROR
-        catalogManager.getJobManager().update(organizationId, studyFqn, job1, new PrivateJobUpdateParams()
+        catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
                 .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))), QueryOptions.empty(), ownerToken);
 
         // The job that depended on job1 should be ABORTED because job1 execution "failed"
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
 
         // Set status of job1 to DONE to simulate it finished successfully
-        catalogManager.getJobManager().update(organizationId, studyFqn, job1, new PrivateJobUpdateParams()
+        catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
                 .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), ownerToken);
 
         // And create a new job to simulate a normal successfully dependency
         String job3 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
                 Collections.singletonList(job1), null, ownerToken).first().getId();
-        daemon.checkPendingJobs();
+        daemon.checkPendingJobs(organizationIds);
 
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job3, QueryOptions.empty(), ownerToken);
         assertEquals(1, jobOpenCGAResult.getNumResults());

@@ -72,7 +72,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void createStudyFailMoreThanOneProject() throws CatalogException {
         catalogManager.getProjectManager().incrementRelease(project1, ownerToken);
-        catalogManager.getProjectManager().create(organizationId, "1000G2", "Project about some genomes", "", "Homo sapiens",
+        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), ownerToken);
 
         // Create a new study without providing the project. It should raise an error because the user owns more than one project
@@ -112,7 +112,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create(organizationId, orgOwnerUserId, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, orgOwnerUserId, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, opencgaToken);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(organizationId, ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, opencgaToken);
+                opencgaToken);
     }
 
     @Test
@@ -128,7 +128,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
         catalogManager.getUserManager().create(organizationId, ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.FULL, opencgaToken);
+                opencgaToken);
     }
 
     @Test
@@ -147,11 +147,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String org2 = "otherOrg";
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
-        Project p = catalogManager.getProjectManager().create(org2, new ProjectCreateParams()
+        catalogManager.getUserManager().create(org2, new User().setId("userFromOrg2").setName("name").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
+        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
+        Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId("project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
-                INCLUDE_RESULT, opencgaToken).first();
-        Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, opencgaToken).first();
+                INCLUDE_RESULT, owner2Token).first();
+        Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, owner2Token).first();
 
         try {
             catalogManager.getUserManager().loginAnonymous(org2);
@@ -162,13 +165,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         catalogManager.getStudyManager().updateGroup(study.getFqn(), ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("*")), opencgaToken);
+                new GroupUpdateParams(Collections.singletonList("*")), owner2Token);
         authResponse = catalogManager.getUserManager().loginAnonymous(org2);
         assertNotNull(authResponse.getToken());
 
 
         catalogManager.getStudyManager().updateGroup(study.getFqn(), ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.REMOVE,
-                new GroupUpdateParams(Collections.singletonList("*")), opencgaToken);
+                new GroupUpdateParams(Collections.singletonList("*")), owner2Token);
         thrown.expect(CatalogAuthenticationException.class);
         thrown.expectMessage("not found");
         catalogManager.getUserManager().loginAnonymous(org2);
@@ -391,7 +394,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createEmptyGroup() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, opencgaToken);
         catalogManager.getStudyManager().createGroup(studyFqn, "group_cancer_some_thing_else", null, ownerToken);
         catalogManager.getStudyManager().updateGroup(studyFqn, "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), ownerToken);
@@ -399,7 +402,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, opencgaToken);
 
         catalogManager.getStudyManager().createGroup(studyFqn, "group_cancer_some_thing_else", Collections.singletonList("test"), ownerToken);
         DataResult<AclEntryList<StudyPermissions.Permissions>> permissions = catalogManager.getStudyManager().updateAcl(
@@ -449,12 +452,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String projectAlias = "projectAlias_ASDFASDF";
 
-        catalogManager.getProjectManager().create(organizationId, projectAlias, "Project", "", "Homo sapiens", null, "GRCh38", new
+        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens", null, "GRCh38", new
                 QueryOptions(), ownerToken);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getProjectManager().create(organizationId, projectAlias, "Project", "", "Homo sapiens",
+        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), ownerToken);
     }
 
@@ -497,7 +500,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testLimitProjects() throws CatalogException {
         for (int i = 0; i < 20; i++) {
-            catalogManager.getProjectManager().create(organizationId, new ProjectCreateParams()
+            catalogManager.getProjectManager().create(new ProjectCreateParams()
                     .setId("project_" + i)
                     .setOrganism(new ProjectOrganism("hsapiens", "grch38")), QueryOptions.empty(), ownerToken);
             for (int j = 0; j < 2; j++) {
@@ -659,7 +662,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new OrganizationUpdateParams()
                         .setOwner(orgOwnerUserId),
                 null, opencgaToken);
-        Project project = catalogManager.getProjectManager().create(otherOrg, "myProject", "Project about some genomes", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create("myProject", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first();
 
         StudyManager studyManager = catalogManager.getStudyManager();
@@ -917,9 +920,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateJobAndReuse() throws CatalogException {
-        String project1 = catalogManager.getProjectManager().create(organizationId, "testCreateJobAndReuse_project1", "", "", "Homo sapiens",
+        String project1 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project1", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first().getId();
-        String project2 = catalogManager.getProjectManager().create(organizationId, "testCreateJobAndReuse_project2", "", "", "Homo sapiens",
+        String project2 = catalogManager.getProjectManager().create("testCreateJobAndReuse_project2", "", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first().getId();
 
         String study1 = catalogManager.getStudyManager().create(project1, new Study()

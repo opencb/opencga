@@ -56,7 +56,6 @@ import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -119,11 +118,11 @@ public class VariantCatalogQueryUtilsTest {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
         User user = catalog.getUserManager().create(organizationId, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
-                1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
+                1000L, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalog.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
-        Project project = catalog.getProjectManager().create(organizationId, "p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
+        Project project = catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
         catalog.getStudyManager().create(project.getFqn(), "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create(project.getFqn(), "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create(project.getFqn(), "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
@@ -163,7 +162,7 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().create(organizationId, "p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
+        catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
         myPanel = new Panel("MyPanel", "MyPanel", 1);

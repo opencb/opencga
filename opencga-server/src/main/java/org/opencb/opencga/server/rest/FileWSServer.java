@@ -375,7 +375,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(fileManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(fileManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -852,7 +852,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
-                File file1 = catalogFileUtils.checkFile(organizationId, studyStr, file, false, token);
+                File file1 = catalogFileUtils.checkFile(studyStr, file, false, token);
                 file1 = fileMetadataReader.updateMetadataInformation(studyStr, file1, token);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
@@ -994,44 +994,44 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-    @GET
-    @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Name") @QueryParam("name") String name,
-            @ApiParam(value = "Type") @QueryParam("type") String type,
-            @ApiParam(value = "Format") @QueryParam("format") String format,
-            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "External") @QueryParam("external") Boolean external,
-            @ApiParam(value = "Size") @QueryParam("size") String size,
-            @ApiParam(value = "Software") @QueryParam("software") String software,
-            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
-            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
-                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Name") @QueryParam("name") String name,
+//            @ApiParam(value = "Type") @QueryParam("type") String type,
+//            @ApiParam(value = "Format") @QueryParam("format") String format,
+//            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
+//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+//            @ApiParam(value = "Status") @QueryParam("status") String status,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//            @ApiParam(value = "External") @QueryParam("external") Boolean external,
+//            @ApiParam(value = "Size") @QueryParam("size") String size,
+//            @ApiParam(value = "Software") @QueryParam("software") String software,
+//            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
+//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
+//            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//
+//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+//
+//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
+//                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            query.remove("field");
+//
+//            queryOptions.put(QueryOptions.FACET, facet);
+//
+//            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 }

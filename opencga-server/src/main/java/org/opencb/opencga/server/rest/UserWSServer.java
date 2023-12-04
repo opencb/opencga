@@ -56,7 +56,10 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
     })
-    public Response getInfo(@ApiParam(value = ParamConstants.USERS_DESCRIPTION, required = true) @PathParam("users") String userIds) {
+    public Response getInfo(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.USERS_DESCRIPTION, required = true) @PathParam("users") String userIds
+    ) {
         try {
             List<String> userList = getIdList(userIds);
             OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, userList, queryOptions, token);
@@ -118,12 +121,12 @@ public class UserWSServer extends OpenCGAWSServer {
                 if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
                 }
-                authenticationResponse = catalogManager.getUserManager().login(login.getUser(), login.getPassword());
+                authenticationResponse = catalogManager.getUserManager().login(login.getOrganizationId(), login.getUser(), login.getPassword());
             } else if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                 if (StringUtils.isNotEmpty(login.getPassword()) || StringUtils.isNotEmpty(login.getUser())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
                 }
-                authenticationResponse = catalogManager.getUserManager().refreshToken(organizationId, login.getRefreshToken());
+                authenticationResponse = catalogManager.getUserManager().refreshToken(login.getOrganizationId(), login.getRefreshToken());
             } else {
                 throw new Exception("Neither 'user' and 'password' for login nor 'refreshToken' for refreshing token were provided.");
             }
@@ -163,7 +166,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response changePassword(
             @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
         try {
-            catalogManager.getUserManager().changePassword(organizationId, params.getUser(), params.getPassword(), params.getNewPassword());
+            catalogManager.getUserManager().changePassword(params.getOrganizationId(), params.getUser(), params.getPassword(), params.getNewPassword());
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -174,9 +177,10 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/password/reset")
     @ApiOperation(value = "Reset password", hidden = false,
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
-    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
+    public Response resetPassword(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
-            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(organizationId, userId, token);
+            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
             return createOkResponse(result, "The new password has been sent to the user's email.");
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -226,7 +230,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(parameters, new UserUpdateParams());
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            OpenCGAResult<User> result = catalogManager.getUserManager().update(organizationId, userId, params, queryOptions, token);
+            OpenCGAResult<User> result = catalogManager.getUserManager().update(userId, params, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

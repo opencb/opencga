@@ -18,15 +18,10 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
-import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -108,7 +103,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
-        catalogManager.getProjectManager().importReleases(organizationId, commandOptions.owner, commandOptions.directory, token);
+        catalogManager.getProjectManager().importReleases(commandOptions.organizationId, commandOptions.owner, commandOptions.directory, token);
     }
 
     private void status() throws CatalogException, JsonProcessingException {
@@ -137,28 +132,28 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             if (catalogManager.existsCatalogDB()) {
                 result.put("installed", true);
 
-                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
-                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(OrganizationMongoDBAdaptorFactory.METADATA_COLLECTION);
-                Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
-
-                result.put("creationDate", metaDocument.get("creationDate"));
-                result.put("version", metaDocument.get("version"));
-
-                Object fullVersion = metaDocument.get("_fullVersion");
-                int version = 20000;
-                int release = 4;
-                int lastJavaUpdate = 0;
-                int lastJsUpdate = 0;
-                if (fullVersion != null) {
-                    version = ((Document) fullVersion).getInteger("version");
-                    release = ((Document) fullVersion).getInteger("release");
-                    lastJavaUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
-                    lastJsUpdate = ((Document) fullVersion).getInteger("lastJsUpdate");
-                }
-                result.put("versionNumeric", version);
-                result.put("release", release);
-                result.put("lastJsUpdate", lastJsUpdate);
-                result.put("lastJavaUpdate", lastJavaUpdate);
+//                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+//                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(OrganizationMongoDBAdaptorFactory.METADATA_COLLECTION);
+//                Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
+//
+//                result.put("creationDate", metaDocument.get("creationDate"));
+//                result.put("version", metaDocument.get("version"));
+//
+//                Object fullVersion = metaDocument.get("_fullVersion");
+//                int version = 20000;
+//                int release = 4;
+//                int lastJavaUpdate = 0;
+//                int lastJsUpdate = 0;
+//                if (fullVersion != null) {
+//                    version = ((Document) fullVersion).getInteger("version");
+//                    release = ((Document) fullVersion).getInteger("release");
+//                    lastJavaUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
+//                    lastJsUpdate = ((Document) fullVersion).getInteger("lastJsUpdate");
+//                }
+//                result.put("versionNumeric", version);
+//                result.put("release", release);
+//                result.put("lastJsUpdate", lastJsUpdate);
+//                result.put("lastJavaUpdate", lastJavaUpdate);
             } else {
                 result.put("installed", false);
             }
@@ -211,7 +206,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
 
-        catalogManager.installIndexes(organizationId, token);
+        catalogManager.installIndexes(catalogCommandOptions.indexCatalogCommandOptions.organizationId, token);
     }
 
     private void daemons() throws Exception {

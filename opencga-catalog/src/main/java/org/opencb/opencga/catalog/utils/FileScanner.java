@@ -92,7 +92,7 @@ public class FileScanner {
         List<File> modifiedFiles = new LinkedList<>();
         while (iterator.hasNext()) {
             File file = iterator.next();
-            File checkedFile = catalogFileUtils.checkFile(organizationId, study.getFqn(), file, calculateChecksum, sessionId);
+            File checkedFile = catalogFileUtils.checkFile(study.getFqn(), file, calculateChecksum, sessionId);
             if (checkedFile != file) {
                 modifiedFiles.add(checkedFile);
             }

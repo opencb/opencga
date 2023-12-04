@@ -68,7 +68,6 @@ import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -1119,7 +1118,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
         catalogManager.getUserManager().create(organizationId, "external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
 
         OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> aclResult =
                 catalogManager.getClinicalAnalysisManager().getAcls(studyFqn, Collections.singletonList(clinicalAnalysis.getId()), "external",

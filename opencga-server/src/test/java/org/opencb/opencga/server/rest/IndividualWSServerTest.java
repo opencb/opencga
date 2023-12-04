@@ -61,6 +61,7 @@ public class IndividualWSServerTest {
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
     private static ObjectMapper jsonObjectMapper;
+    private String organizationId = "test";
     private String sessionId;
     private String studyId = "user@1000G:phase1";
     private String in1;
@@ -93,7 +94,7 @@ public class IndividualWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true),
                 sessionId).first().getId();
         in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in2"), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first()
@@ -177,7 +178,7 @@ public class IndividualWSServerTest {
 
         // We update to make the individual in1 be the child of in2
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather(new IndividualReferenceParam("in2", ""));
-        OpenCGAWSServer.catalogManager.getIndividualManager().update(organizationId, String.valueOf(studyId), "in1",
+        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1",
                 individualUpdateParams, QueryOptions.empty(), sessionId);
         // and query again. We look for an individual with father "in2"
         json = webTarget.path("individuals").path("search")

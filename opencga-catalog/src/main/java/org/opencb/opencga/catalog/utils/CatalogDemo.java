@@ -24,7 +24,6 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyAclParams;
-import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.util.*;
@@ -64,7 +63,7 @@ public final class CatalogDemo {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId), QueryOptions.empty(),
                 opencgaToken);
         catalogManager.getUserManager().create(organizationId, "owner", "owner", "owner@mail.com", "owner_pass", organizationId, 2000L,
-                Account.AccountType.FULL, null);
+                null);
         catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner("owner"),
                 QueryOptions.empty(), opencgaToken);
         String ownerToken = catalogManager.getUserManager().login(organizationId, "owner", "owner_pass").getToken();
@@ -77,7 +76,7 @@ public final class CatalogDemo {
             String password = id + "_pass";
             String email = id + "@gmail.com";
             catalogManager.getUserManager().create(organizationId, id, name, email, password, organizationId, 2000L,
-                    Account.AccountType.FULL, ownerToken);
+                    ownerToken);
             userSessions.put(id, catalogManager.getUserManager().login(organizationId, id, password).getToken());
         }
 
@@ -85,7 +84,7 @@ public final class CatalogDemo {
         Map<String, String> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
             projects.put(userSession.getKey(), catalogManager.getProjectManager()
-                    .create(organizationId, "default", "DefaultProject", "Description", "Homo sapiens", null, "GrCh38", new QueryOptions(),
+                    .create("default", "DefaultProject", "Description", "Homo sapiens", null, "GrCh38", new QueryOptions(),
                             userSession.getValue()).first().getFqn());
         }
 

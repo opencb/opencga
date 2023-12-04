@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
+import org.opencb.opencga.app.migrations.v3_0_0.OrganizationMigration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
@@ -55,11 +56,24 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             case "run-manual":
                 runManual();
                 break;
+            case "v3.0.0":
+                runMigrationToV3();
+                break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
                 break;
         }
     }
+
+    private void runMigrationToV3() throws Exception {
+        MigrationCommandOptions.OrganizationMigrationCommandOptions options = migrationCommandOptions.getOrganizationCommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        OrganizationMigration organizationMigration = new OrganizationMigration(configuration, options.commonOptions.adminPassword,
+                options.user);
+        organizationMigration.execute();
+    }
+
 
     private void summary() throws Exception {
         MigrationCommandOptions.SummaryCommandOptions options = migrationCommandOptions.getSummaryCommandOptions();

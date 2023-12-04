@@ -155,14 +155,14 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogParameterException, CatalogDBException {
-        checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
+        checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.OWNER.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
                 QueryParams.AUTHENTICATION_ORIGINS.key(), QueryParams.ATTRIBUTES.key()));
 
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.NAME.key(), QueryParams.DOMAIN.key(), QueryParams.OWNER.key(),
+                QueryParams.NAME.key(), QueryParams.OWNER.key(),
         };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 

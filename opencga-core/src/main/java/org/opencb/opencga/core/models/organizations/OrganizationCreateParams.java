@@ -14,9 +14,6 @@ public class OrganizationCreateParams {
     @DataField(id = "name", description = FieldConstants.ORGANIZATION_NAME_DESCRIPTION)
     private String name;
 
-    @DataField(id = "domain", description = FieldConstants.ORGANIZATION_DOMAIN_DESCRIPTION)
-    private String domain;
-
     @DataField(id = "creationDate", description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
@@ -32,11 +29,10 @@ public class OrganizationCreateParams {
     public OrganizationCreateParams() {
     }
 
-    public OrganizationCreateParams(String id, String name, String domain, String creationDate, String modificationDate,
+    public OrganizationCreateParams(String id, String name, String creationDate, String modificationDate,
                                     OrganizationConfiguration configuration, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.domain = domain;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.configuration = configuration;
@@ -48,7 +44,6 @@ public class OrganizationCreateParams {
         final StringBuilder sb = new StringBuilder("OrganizationCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", domain='").append(domain).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", configuration=").append(configuration);
@@ -58,13 +53,13 @@ public class OrganizationCreateParams {
     }
 
     public static OrganizationCreateParams of(Organization organization) {
-        return new OrganizationCreateParams(organization.getId(), organization.getName(), organization.getDomain(),
+        return new OrganizationCreateParams(organization.getId(), organization.getName(),
                 organization.getCreationDate(), organization.getModificationDate(), organization.getConfiguration(),
                 organization.getAttributes());
     }
 
     public Organization toOrganization() {
-        return new Organization(id, name, domain, null, null, creationDate, modificationDate, null, configuration, null, attributes);
+        return new Organization(id, name, null, null, creationDate, modificationDate, null, configuration, null, attributes);
     }
 
     public String getId() {
@@ -82,15 +77,6 @@ public class OrganizationCreateParams {
 
     public OrganizationCreateParams setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public OrganizationCreateParams setDomain(String domain) {
-        this.domain = domain;
         return this;
     }
 

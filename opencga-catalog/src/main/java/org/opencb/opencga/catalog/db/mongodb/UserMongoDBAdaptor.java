@@ -305,21 +305,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         QueryOptions userOptions = filterQueryOptions(options, Collections.singletonList(ID));
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
-        if (includeStudies(options)) {
-            for (User user : userDataResult.getResults()) {
-                if (user.getProjects() != null) {
-                    for (Project project : user.getProjects()) {
-                        Query query1 = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-                        QueryOptions studyOptions = extractNestedOptions(options, PROJECTS.key() + ".studies.");
-                        OpenCGAResult<Study> studyResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(query1, studyOptions);
-                        project.setStudies(studyResult.getResults());
-                    }
-                }
-            }
-        }
-
-        if (includeSharedProjects(options)) {
-            QueryOptions sharedProjectOptions = extractNestedOptions(options, SHARED_PROJECTS.key());
+        if (includeProjects(options)) {
+            QueryOptions sharedProjectOptions = extractNestedOptions(options, PROJECTS.key());
             sharedProjectOptions = filterQueryOptions(sharedProjectOptions, Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(),
                     "studies." + StudyDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
             extractSharedProjects(userDataResult, sharedProjectOptions);
@@ -328,42 +315,20 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         return new OpenCGAResult<>(userDataResult);
     }
 
-    private boolean includeSharedProjects(QueryOptions options) {
+    private boolean includeProjects(QueryOptions options) {
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
 
         if (!includeList.isEmpty()) {
             for (String includeKey : includeList) {
-                if (includeKey.startsWith(SHARED_PROJECTS.key() + ".")) {
+                if (includeKey.startsWith(PROJECTS.key() + ".")) {
                     return true;
                 }
             }
             return false;
         } else if (!excludeList.isEmpty()) {
             for (String excludeKey : excludeList) {
-                if (excludeKey.equals(SHARED_PROJECTS.key())) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private boolean includeStudies(QueryOptions options) {
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-
-        if (!includeList.isEmpty()) {
-            for (String includeKey : includeList) {
-                if (includeKey.startsWith(PROJECTS.key() + ".studies.")) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (!excludeList.isEmpty()) {
-            for (String excludeKey : excludeList) {
-                if (excludeKey.equals(PROJECTS.key() + ".studies")) {
+                if (excludeKey.equals(PROJECTS.key())) {
                     return false;
                 }
             }
@@ -412,7 +377,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             }
         }
 
-        // Add SharedProject information
+        // Add sharedProject information
         for (User user : userDataResult.getResults()) {
             if (userStudyMap.containsKey(user.getId())) {
                 Map<String, List<Study>> projectStudyMap = new HashMap<>();
@@ -433,7 +398,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     projectList.add(project);
                 }
 
-                user.setSharedProjects(projectList);
+                user.setProjects(projectList);
             }
         }
     }
@@ -717,7 +682,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case QUOTA:
-                    case ACCOUNT_TYPE:
                     case ACCOUNT_AUTHENTICATION_ID:
                     case ACCOUNT_CREATION_DATE:
                     case TOOL_ID:

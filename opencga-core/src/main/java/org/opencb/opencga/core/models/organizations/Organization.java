@@ -12,19 +12,16 @@ import java.util.Map;
         description = "Organization data model hosts information about the organization managing the data.")
 public class Organization {
 
-    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
-    private String uuid;
-
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.ORGANIZATION_ID_DESCRIPTION)
     private String id;
 
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
+    private String uuid;
+
     @DataField(id = "name", description = FieldConstants.ORGANIZATION_NAME_DESCRIPTION)
     private String name;
-
-    @DataField(id = "domain", description = FieldConstants.ORGANIZATION_DOMAIN_DESCRIPTION)
-    private String domain;
 
     @DataField(id = "owner", description = FieldConstants.ORGANIZATION_OWNER_DESCRIPTION)
     private String owner;
@@ -53,12 +50,11 @@ public class Organization {
     public Organization() {
     }
 
-    public Organization(String id, String name, String domain, String owner, List<String> admins, String creationDate,
-                        String modificationDate, List<Project> projects,  OrganizationConfiguration configuration,
-                        OrganizationInternal internal, Map<String, Object> attributes) {
+    public Organization(String id, String name, String owner, List<String> admins, String creationDate, String modificationDate,
+                        List<Project> projects, OrganizationConfiguration configuration, OrganizationInternal internal,
+                        Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.domain = domain;
         this.owner = owner;
         this.admins = admins;
         this.creationDate = creationDate;
@@ -75,7 +71,6 @@ public class Organization {
         sb.append("uuid='").append(uuid).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", domain='").append(domain).append('\'');
         sb.append(", owner='").append(owner).append('\'');
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -112,15 +107,6 @@ public class Organization {
 
     public Organization setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public Organization setDomain(String domain) {
-        this.domain = domain;
         return this;
     }
 

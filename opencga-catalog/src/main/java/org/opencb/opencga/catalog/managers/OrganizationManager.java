@@ -196,6 +196,12 @@ public class OrganizationManager extends AbstractManager {
             }
             throw e;
         }
+
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
+            // Skip old available migrations
+            catalogManager.getMigrationManager().skipPendingMigrations(organizationCreateParams.getId(), token);
+        }
+
         auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION, organization.getId(),
                 organization.getUuid(), "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -255,7 +261,6 @@ public class OrganizationManager extends AbstractManager {
 
         organization.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.ORGANIZATION));
         organization.setName(ParamUtils.defaultString(organization.getName(), organization.getId()));
-        organization.setDomain(ParamUtils.defaultString(organization.getDomain(), ""));
         organization.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(organization.getCreationDate(),
                 OrganizationDBAdaptor.QueryParams.CREATION_DATE.key()));
         organization.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(organization.getModificationDate(),

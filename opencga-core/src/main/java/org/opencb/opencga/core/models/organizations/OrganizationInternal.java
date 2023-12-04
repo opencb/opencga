@@ -13,9 +13,11 @@ public class OrganizationInternal extends Internal {
     @DataField(id = "version", description = "OpenCGA version")
     private String version;
 
+    // TODO: REname to MigrationExecution
     @DataField(id = "migrations", description = "List of migrations run")
     private List<MigrationRun> migrations;
 
+    // TODO: REMOVE FIELD
     private List<String> organizationIds;
 
     public OrganizationInternal() {

@@ -215,7 +215,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organizationId, boolean raiseException)
             throws CatalogDBException {
-        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organizationId.toLowerCase());
+        OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organizationId);
         if (orgFactory == null) {
             if (!organizationId.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
                 orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
@@ -230,7 +230,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
                                 new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
-                        organizationDBAdaptorMap.put(organizationId.toLowerCase(), organizationMongoDBAdaptorFactory);
+                        organizationDBAdaptorMap.put(organizationId, organizationMongoDBAdaptorFactory);
                         return organizationMongoDBAdaptorFactory;
                     }
                 }
@@ -389,5 +389,13 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public InterpretationDBAdaptor getInterpretationDBAdaptor(String organizationId) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organizationId).getInterpretationDBAdaptor();
+    }
+
+    public MongoDataStoreManager getMongoManager() {
+        return mongoManager;
+    }
+
+    public MongoDBConfiguration getMongoDbConfiguration() {
+        return mongoDbConfiguration;
     }
 }

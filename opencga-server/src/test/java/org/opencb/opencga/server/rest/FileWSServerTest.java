@@ -62,6 +62,7 @@ public class FileWSServerTest {
     private WebTarget webTarget;
     private static WSServerTestUtils serverTestUtils;
     private String sessionId;
+    private String organizationId = "test";
     private String studyId = "user@1000G:phase1";
     public static final Path ROOT_DIR = Paths.get("/tmp/opencga-server-FileWSServerTest-folder");
 
@@ -91,7 +92,7 @@ public class FileWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         if (ROOT_DIR.toFile().exists()) {
             IOUtils.deleteDirectory(ROOT_DIR);

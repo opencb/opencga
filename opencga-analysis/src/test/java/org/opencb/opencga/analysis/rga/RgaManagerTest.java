@@ -30,7 +30,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -184,10 +183,10 @@ public class RgaManagerTest {
     }
 
     public void setUpCatalogManager() throws CatalogException {
-        catalogManager.getUserManager().create(ORGANIZATION, OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
+        catalogManager.getUserManager().create(ORGANIZATION, OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, opencga.getAdminToken());
         ownerToken = catalogManager.getUserManager().login(ORGANIZATION, OWNER, PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, ownerToken);
 
@@ -200,7 +199,7 @@ public class RgaManagerTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, ownerToken);
         }
 
-        catalogManager.getUserManager().create(ORGANIZATION, USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, opencga.getAdminToken());
+        catalogManager.getUserManager().create(ORGANIZATION, USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, "", null, opencga.getAdminToken());
         userToken = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).getToken();
     }
 

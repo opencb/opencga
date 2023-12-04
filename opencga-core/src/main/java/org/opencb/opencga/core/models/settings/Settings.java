@@ -5,13 +5,14 @@ import java.util.Map;
 
 public class Settings {
 
+    // TODO: Indexes - id, version  <---
     private String id;
     private int version;
     private String userId;
     private List<String> tags;
     private String creationDate;
     private String modificationDate;
-    private Map<String, Object> value;
+    private Map<String, Object> value; // TODO: Rename to values
 
     public Settings() {
     }

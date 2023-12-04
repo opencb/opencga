@@ -64,7 +64,6 @@ import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -2345,7 +2344,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void checkRegisteredUserPermissions() throws CatalogException {
         catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn2, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2361,7 +2360,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void checkRegisteredUserPermissions2() throws CatalogException {
         catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
@@ -2411,7 +2410,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);
 
         catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
         token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());

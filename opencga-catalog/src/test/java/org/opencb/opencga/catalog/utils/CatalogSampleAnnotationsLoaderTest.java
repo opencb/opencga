@@ -97,7 +97,7 @@ public class CatalogSampleAnnotationsLoaderTest extends AbstractManagerTest {
 
     @Test
     public void testLoadPedigreeCatalog() throws Exception {
-        DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(organizationId, pedFile, null, ownerToken);
+        DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(studyFqn, pedFile, null, ownerToken);
         String variableSetId = sampleDataResult.getResults().get(0).getAnnotationSets().get(0).getVariableSetId();
 
         Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");

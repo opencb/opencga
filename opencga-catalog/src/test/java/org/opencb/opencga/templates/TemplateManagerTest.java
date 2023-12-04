@@ -25,13 +25,13 @@ public class TemplateManagerTest extends AbstractManagerTest {
     public void test() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(organizationId, new User().setId("user1").setName("User 1").setAccount(new Account().setType(Account.AccountType.FULL)),
+        catalogManager.getUserManager().create(organizationId, new User().setId("user1").setName("User 1").setAccount(new Account()),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user2").setName("User 2").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
 
-        catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), ownerToken);
 
         URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
@@ -54,13 +54,13 @@ public class TemplateManagerTest extends AbstractManagerTest {
     public void test_yaml() throws Exception {
         CatalogManager catalogManager = catalogManagerResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(organizationId, new User().setId("user1").setName("User 1").setAccount(new Account().setType(Account.AccountType.FULL)),
+        catalogManager.getUserManager().create(organizationId, new User().setId("user1").setName("User 1").setAccount(new Account()),
                 TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user2").setName("User 2").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user2").setName("User 2").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
 
-        catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), ownerToken);
 
         URI resource = catalogManagerResource.getResourceUri("templates_yaml/manifest.yml");

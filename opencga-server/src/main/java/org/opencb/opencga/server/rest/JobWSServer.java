@@ -18,8 +18,6 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -236,7 +234,7 @@ public class JobWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(jobManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(jobManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -286,7 +284,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") JobUpdateParams parameters) {
         try {
-            return createOkResponse(jobManager.update(organizationId, studyStr, getIdList(jobStr), parameters, queryOptions, token));
+            return createOkResponse(jobManager.update(studyStr, getIdList(jobStr), parameters, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -322,7 +320,7 @@ public class JobWSServer extends OpenCGAWSServer {
         if (limit == 0) {
             limit = 20;
         }
-        return run(() -> catalogManager.getJobManager().top(organizationId, study, query, limit, token));
+        return run(() -> catalogManager.getJobManager().top(study, query, limit, token));
     }
 
 
@@ -357,39 +355,39 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
 
-    @GET
-    @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Tool id") @QueryParam("toolId") String toolId,
-            @ApiParam(value = "Tool scope") @QueryParam("toolScope") String toolScope,
-            @ApiParam(value = "Tool type") @QueryParam("toolType") String toolType,
-            @ApiParam(value = "Tool resource") @QueryParam("toolResource") String toolResource,
-            @ApiParam(value = "User id") @QueryParam("userId") String userId,
-            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
-            @ApiParam(value = "Tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Executor id") @QueryParam("executorId") String executorId,
-            @ApiParam(value = "Executor framework") @QueryParam("executorFramework") String executorFramework,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
-                    token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Tool id") @QueryParam("toolId") String toolId,
+//            @ApiParam(value = "Tool scope") @QueryParam("toolScope") String toolScope,
+//            @ApiParam(value = "Tool type") @QueryParam("toolType") String toolType,
+//            @ApiParam(value = "Tool resource") @QueryParam("toolResource") String toolResource,
+//            @ApiParam(value = "User id") @QueryParam("userId") String userId,
+//            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
+//            @ApiParam(value = "Tags") @QueryParam("tags") String tags,
+//            @ApiParam(value = "Executor id") @QueryParam("executorId") String executorId,
+//            @ApiParam(value = "Executor framework") @QueryParam("executorFramework") String executorFramework,
+//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+//            @ApiParam(value = "Status") @QueryParam("status") String status,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            query.remove("field");
+//
+//            queryOptions.put(QueryOptions.FACET, facet);
+//
+//            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
+//                    token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 }

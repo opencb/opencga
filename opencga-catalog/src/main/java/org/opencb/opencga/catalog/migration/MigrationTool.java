@@ -283,10 +283,14 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection,
-                                    QueryCollectionFunc queryCollectionFunc) throws CatalogDBException {
+    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc)
+            throws CatalogDBException {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
+        queryMongo(inputCollection, query, projection, queryCollectionFunc);
+    }
 
+    protected final void queryMongo(MongoCollection<Document> inputCollection, Bson query, Bson projection,
+                                    QueryCollectionFunc queryCollectionFunc) throws CatalogDBException {
         try (MongoCursor<Document> it = inputCollection
                 .find(query)
                 .batchSize(batchSize)

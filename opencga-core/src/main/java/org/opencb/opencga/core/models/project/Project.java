@@ -117,8 +117,7 @@ public class Project extends PrivateFields {
      * @apiNote Internal
      */
 
-    @DataField(id = "release", indexed = true,
-            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
+    @DataField(id = "internal", indexed = true, description = FieldConstants.GENERIC_INTERNAL)
     private ProjectInternal internal;
 
     /**

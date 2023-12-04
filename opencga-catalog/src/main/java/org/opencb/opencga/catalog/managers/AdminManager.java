@@ -56,10 +56,6 @@ public class AdminManager extends AbstractManager {
                 query.put(UserDBAdaptor.QueryParams.ID.key(), query.get(ParamConstants.USER));
                 query.remove(ParamConstants.USER);
             }
-            if (query.containsKey(ParamConstants.USER_ACCOUNT_TYPE)) {
-                query.put(UserDBAdaptor.QueryParams.ACCOUNT_TYPE.key(), query.get(ParamConstants.USER_ACCOUNT_TYPE));
-                query.remove(ParamConstants.USER_ACCOUNT_TYPE);
-            }
             if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
                 query.put(UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key(), query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
                 query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);

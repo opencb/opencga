@@ -24,7 +24,9 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileStatus;
@@ -67,7 +69,6 @@ public class FileUtils {
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
      *
-     * @param organizationId    Organization id.
      * @param studyStr          Study corresponding to the file to be checked.
      * @param file              File to check
      * @param calculateChecksum Calculate checksum for "found files"
@@ -75,8 +76,11 @@ public class FileUtils {
      * @return If there is any change, returns the modified file. Else, return the same file.
      * @throws CatalogException CatalogException
      */
-    public File checkFile(String organizationId, String studyStr, File file, boolean calculateChecksum, String sessionId)
-            throws CatalogException {
+    public File checkFile(String studyStr, File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, payload);
+        String organizationId = studyFqn.getOrganizationId();
+
         if (!file.getType().equals(File.Type.FILE)) {
             return file;
         }

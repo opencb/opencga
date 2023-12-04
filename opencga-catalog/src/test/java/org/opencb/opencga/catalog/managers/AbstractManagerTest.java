@@ -44,7 +44,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -222,13 +221,13 @@ public class AbstractManagerTest extends GenericTest {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(organizationId, new User().setId(orgOwnerUserId).setName(orgOwnerUserId), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, orgAdminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, orgAdminUserId2, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, studyAdminUserId1, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, noAccessUserId1, "Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, orgAdminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, orgAdminUserId2, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, studyAdminUserId1, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, noAccessUserId1, "Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
 
         catalogManager.getOrganizationManager().update(organizationId, 
                 new OrganizationUpdateParams()
@@ -245,11 +244,11 @@ public class AbstractManagerTest extends GenericTest {
         normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
         noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
 
-        catalogManager.getProjectManager().create(organizationId, project1, "Project about some genomes", "", "Homo sapiens",
+        catalogManager.getProjectManager().create(project1, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken);
-        catalogManager.getProjectManager().create(organizationId, project2, "Project Management Project", "life art intelligent system",
+        catalogManager.getProjectManager().create(project2, "Project Management Project", "life art intelligent system",
                 "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, orgAdminToken1);
-        catalogManager.getProjectManager().create(organizationId, project3, "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
+        catalogManager.getProjectManager().create(project3, "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
                 orgAdminToken2);
 
         Study study = catalogManager.getStudyManager().create(project1, studyId, null, "Phase 1", "Done", null, null, null, null,

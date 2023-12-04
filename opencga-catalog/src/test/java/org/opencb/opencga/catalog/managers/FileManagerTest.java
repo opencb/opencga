@@ -44,7 +44,6 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -154,7 +153,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, ownerToken);
         String analystToken = catalogManager.getUserManager().login(organizationId, "analyst", TestParamConstants.PASSWORD).getToken();
 
@@ -166,7 +165,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getUserManager().create(organizationId, "view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, ownerToken);
         String analystToken = catalogManager.getUserManager().login(organizationId, "view_user", TestParamConstants.PASSWORD).getToken();
 

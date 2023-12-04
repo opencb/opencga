@@ -16,9 +16,6 @@ public class OrganizationUpdateParams {
     @DataField(id = "name", description = FieldConstants.ORGANIZATION_NAME_DESCRIPTION)
     private String name;
 
-    @DataField(id = "domain", description = FieldConstants.ORGANIZATION_DOMAIN_DESCRIPTION)
-    private String domain;
-
     @DataField(id = "owner", description = FieldConstants.ORGANIZATION_OWNER_DESCRIPTION)
     private String owner;
 
@@ -40,10 +37,9 @@ public class OrganizationUpdateParams {
     public OrganizationUpdateParams() {
     }
 
-    public OrganizationUpdateParams(String name, String domain, String owner, List<String> admins, String creationDate,
-                                    String modificationDate, OrganizationConfiguration configuration, Map<String, Object> attributes) {
+    public OrganizationUpdateParams(String name, String owner, List<String> admins, String creationDate, String modificationDate,
+                                    OrganizationConfiguration configuration, Map<String, Object> attributes) {
         this.name = name;
-        this.domain = domain;
         this.owner = owner;
         this.admins = admins;
         this.creationDate = creationDate;
@@ -61,7 +57,6 @@ public class OrganizationUpdateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("OrganizationUpdateParams{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", domain='").append(domain).append('\'');
         sb.append(", owner='").append(owner).append('\'');
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -78,15 +73,6 @@ public class OrganizationUpdateParams {
 
     public OrganizationUpdateParams setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public OrganizationUpdateParams setDomain(String domain) {
-        this.domain = domain;
         return this;
     }
 

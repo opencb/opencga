@@ -70,7 +70,7 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
                 new HashMap<>(), ownerToken);
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setCommandLine("myCommandLine");
-        catalogManager.getJobManager().update(organizationId, studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), ownerToken);
+        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), ownerToken);
         jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), ownerToken);
 
         assertEquals("myCommandLine", jobResult.first().getCommandLine());
@@ -80,7 +80,7 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
                 .setPath("/tmp/path")
                 .setId("myJobId"))
                 .setStudy(new JobStudyParam(studyFqn, Arrays.asList(studyFqn2, studyFqn3)));
-        catalogManager.getJobManager().update(organizationId, studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), ownerToken);
+        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), ownerToken);
         jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), ownerToken);
         assertEquals(2, jobResult.first().getStudy().getOthers().size());
         System.out.println(jobResult);

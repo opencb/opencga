@@ -23,6 +23,7 @@ public class SettingsManager extends AbstractManager {
 
     public OpenCGAResult<Settings> create(SettingsCreateParams settingsCreateParams, String token) throws CatalogException {
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        //TODO: Only usable for organization admins
         String organizationId = jwtPayload.getOrganization();
         Settings settings = settingsCreateParams.toSettings(jwtPayload.getUserId());
 

@@ -98,7 +98,7 @@ public class CatalogFileUtilsTest extends AbstractManagerTest {
                         .setDescription("file at root")
                         .setContent(RandomStringUtils.randomAlphanumeric(100)),
                 true, ownerToken).first();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
+        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
         assertEquals(InternalStatus.READY, file.getInternal().getStatus().getId());
@@ -114,14 +114,14 @@ public class CatalogFileUtilsTest extends AbstractManagerTest {
 
         /** Check READY and missing file **/
         assertTrue(new java.io.File(file.getUri()).delete());
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
+        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getId());
 
         /** Check MISSING file still missing **/
         file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, ownerToken).first();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
+        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 
         assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getId(),
                 returnedFile.getInternal().getStatus().getId());
@@ -132,7 +132,7 @@ public class CatalogFileUtilsTest extends AbstractManagerTest {
         os.write(RandomStringUtils.randomAlphanumeric(1000).getBytes());
         os.write('\n');
         os.close();
-        returnedFile = catalogFileUtils.checkFile(organizationId, studyFqn, file, true, ownerToken);
+        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, ownerToken);
 
         assertNotSame(file, returnedFile);
         assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getId());

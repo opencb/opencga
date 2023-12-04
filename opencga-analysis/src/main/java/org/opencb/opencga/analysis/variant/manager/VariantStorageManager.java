@@ -1223,8 +1223,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("operationName", toolId);
         R result = null;
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
-        String userId = payload.getUserId();
-        String organizationId = payload.getOrganization();
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
 
@@ -1262,6 +1260,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
             String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
+            String userId = payload.getUserId(organizationId);
             catalogManager.getAuditManager().audit(organizationId, userId, Enums.Action.VARIANT_STORAGE_OPERATION, Enums.Resource.VARIANT,
                     "", "", "", "",
                     params,
@@ -1287,8 +1286,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("queryOptions", new QueryOptions(queryOptions));
         R result = null;
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
-        String userId = payload.getUserId();
-        String organizationId = payload.getOrganization();
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
@@ -1337,6 +1334,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
             String organizationId = variantStorageEngine.getOptions().getString("catalog.organization");
+            String userId = payload.getUserId(organizationId);
             catalogManager.getAuditManager().audit(organizationId, userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
                     status, auditAttributes);
         }

@@ -50,7 +50,6 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -589,7 +588,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         createDummyFamily("Martinez-Martinez", true);
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 
         try {
@@ -651,7 +650,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
         createDummyFamily("Martinez-Martinez", true);
 
         catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+                opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 
         try {

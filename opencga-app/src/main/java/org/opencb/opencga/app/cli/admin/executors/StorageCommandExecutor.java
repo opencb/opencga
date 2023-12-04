@@ -102,7 +102,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             status.put("solr", solrStatus);
 
             List<ObjectMap> dataStores = new ArrayList<>();
-            List<String> variantStorageProjects = getVariantStorageProjects(catalogManager, variantStorageManager);
+            List<String> variantStorageProjects = getVariantStorageProjects(commandOptions.organizationId, catalogManager, variantStorageManager);
             for (String project : variantStorageProjects) {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
                 ObjectMap map = new ObjectMap("project", project);
@@ -139,10 +139,10 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
             Set<String> variantStorageProjects = Collections.emptySet();
             if (commandOptions.projectsWithoutStorage || commandOptions.projectsWithStorage) {
-                variantStorageProjects = new HashSet<>(getVariantStorageProjects(catalogManager, variantStorageManager));
+                variantStorageProjects = new HashSet<>(getVariantStorageProjects(commandOptions.organizationId, catalogManager, variantStorageManager));
             }
 
-            for (Project project : catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults()) {
+            for (Project project : catalogManager.getProjectManager().search(commandOptions.organizationId, new Query(), new QueryOptions(), token).getResults()) {
                 if (projects != null && !projects.contains(project.getFqn())) {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
@@ -208,10 +208,10 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageProjects(String organizationId, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
-        for (String studyFqn : getVariantStorageStudies(catalogManager, variantStorageManager)) {
+        for (String studyFqn : getVariantStorageStudies(organizationId, catalogManager, variantStorageManager)) {
             projects.add(catalogManager.getStudyManager().getProjectFqn(studyFqn));
         }
 
@@ -223,7 +223,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageStudies(CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageStudies(String organizationId, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
         for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList("fqn")), token).getResults()) {

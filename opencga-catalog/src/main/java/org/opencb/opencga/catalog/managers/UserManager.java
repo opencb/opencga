@@ -131,13 +131,11 @@ public class UserManager extends AbstractManager {
         }
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
         user.setAccount(ParamUtils.defaultObject(user.getAccount(), Account::new));
-        user.getAccount().setType(ParamUtils.defaultObject(user.getAccount().getType(), Account.AccountType.GUEST));
         user.getAccount().setCreationDate(TimeUtils.getTime());
         user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
         user.setInternal(new UserInternal(new UserStatus(UserStatus.READY)));
         user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
         user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
-        user.setSharedProjects(ParamUtils.defaultObject(user.getSharedProjects(), Collections::emptyList));
         user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
         user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
         user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
@@ -207,15 +205,14 @@ public class UserManager extends AbstractManager {
      * @param password       Encrypted Password
      * @param organization   Optional organization
      * @param quota          Maximum user disk quota
-     * @param type           User account type. Full or guest.
      * @param token          JWT token.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
     public OpenCGAResult<User> create(String organizationId, String id, String name, String email, String password, String organization,
-                                      Long quota, Account.AccountType type, String token) throws CatalogException {
+                                      Long quota, String token) throws CatalogException {
         User user = new User(id, name, email, organization, new UserInternal(new UserStatus()))
-                .setAccount(new Account(type, "", "", null))
+                .setAccount(new Account("", "", null))
                 .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
         return create(organizationId, user, password, token);
     }
@@ -436,7 +433,6 @@ public class UserManager extends AbstractManager {
             } else {
                 for (String applicationId : idList) {
                     User application = new User(applicationId, new Account()
-                            .setType(Account.AccountType.GUEST)
                             .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
                             .setEmail("mail@mail.co.uk");
                     create(organizationId, application, null, token);
@@ -701,10 +697,11 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public OpenCGAResult resetPassword(String organizationId, String userId, String token) throws CatalogException {
+    public OpenCGAResult resetPassword(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         JwtPayload jwtPayload = validateToken(token);
+        String organizationId = jwtPayload.getOrganization();
         try {
             authorizationManager.checkIsInstallationAdministrator(jwtPayload);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);

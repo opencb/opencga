@@ -45,7 +45,6 @@ import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -143,10 +142,10 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        Policies policies = new Policies();
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
-        User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
+        User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "userACME1.", "ACME", null, opencga.getAdminToken()).first();
         sessionId = catalogManager.getUserManager().login(organizationId, userId, "userACME1.").getToken();
         projectId = "p1";
-        catalogManager.getProjectManager().create(organizationId, projectId, projectId, "Project 1", "Homo sapiens",
+        catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)

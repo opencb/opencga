@@ -19,16 +19,12 @@ package org.opencb.opencga.client.rest.clients;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.client.rest.*;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
-import org.opencb.opencga.core.models.admin.InstallationParams;
-import org.opencb.opencga.core.models.admin.JWTParams;
-import org.opencb.opencga.core.models.admin.UserCreateParams;
-import org.opencb.opencga.core.models.admin.UserImportParams;
-import org.opencb.opencga.core.models.admin.UserUpdateGroup;
+import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 

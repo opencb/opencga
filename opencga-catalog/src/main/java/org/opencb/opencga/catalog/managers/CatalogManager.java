@@ -118,11 +118,13 @@ public class CatalogManager implements AutoCloseable {
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
                     .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
-            if (organization == null) {
-                throw new CatalogException("Could not initialise OpenCGA for organization '" + organizationId
-                        + "'. Associated database could not be found.");
+//            if (organization == null) {
+//                throw new CatalogException("Could not initialise OpenCGA for organization '" + organizationId
+//                        + "'. Associated database could not be found.");
+//            }
+            if (organization != null) {
+                AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
             }
-            AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
         }
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
@@ -259,11 +261,11 @@ public class CatalogManager implements AutoCloseable {
                         .setExpiration(3600L)
                         .setSecretKey(secretKey)),
                 new Optimizations());
-        organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, "", null, null,
+        organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
 
-        User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
+        User user = new User(OPENCGA, new Account().setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(ADMIN_ORGANIZATION, user, password, null);
@@ -271,7 +273,7 @@ public class CatalogManager implements AutoCloseable {
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
-        projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project")
+        projectManager.create(new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "grch38")), null, token);
         studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
                 QueryOptions.empty(), token);
