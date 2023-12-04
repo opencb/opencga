@@ -1331,6 +1331,7 @@ public class VariantWebService extends AnalysisWebService {
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
             }
+            Runtime.getRuntime().exec("chmod 777 " + outDir.getAbsolutePath());
 
             // Create and set up Circos executor
             CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
