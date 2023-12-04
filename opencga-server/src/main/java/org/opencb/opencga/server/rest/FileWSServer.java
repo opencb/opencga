@@ -375,7 +375,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(fileManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(fileManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -852,7 +852,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
-                File file1 = catalogFileUtils.checkFile(organizationId, studyStr, file, false, token);
+                File file1 = catalogFileUtils.checkFile(studyStr, file, false, token);
                 file1 = fileMetadataReader.updateMetadataInformation(studyStr, file1, token);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();

@@ -148,21 +148,20 @@ public class ProjectManager extends AbstractManager {
     }
 
     @Deprecated
-    public OpenCGAResult<Project> create(String organizationId, String id, String name, String description, String scientificName,
-                                         String commonName, String assembly, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
+                                         String assembly, QueryOptions options, String sessionId) throws CatalogException {
         ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
                 new ProjectOrganism(scientificName, commonName, assembly), null, null);
-        return create(organizationId, projectCreateParams, options, sessionId);
+        return create(projectCreateParams, options, sessionId);
     }
 
-    public OpenCGAResult<Project> create(String organizationId, ProjectCreateParams projectCreateParams, QueryOptions options, String token)
+    public OpenCGAResult<Project> create(ProjectCreateParams projectCreateParams, QueryOptions options, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String userId = tokenPayload.getUserId(organizationId);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId();
 
         ObjectMap auditParams = new ObjectMap()
-                .append("organizationId", organizationId)
                 .append("project", projectCreateParams)
                 .append("options", options)
                 .append("token", token);
@@ -310,15 +309,19 @@ public class ProjectManager extends AbstractManager {
     public OpenCGAResult<Project> search(String organizationId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String userId = tokenPayload.getUserId(organizationId);
-        query = new Query(query);
-
         ObjectMap auditParams = new ObjectMap()
                 .append("organizationId", organizationId)
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        if (StringUtils.isEmpty(organizationId)) {
+            organizationId = tokenPayload.getOrganization();
+        }
+        String userId = tokenPayload.getUserId(organizationId);
+        query = new Query(query);
+
 
         try {
             fixQueryObject(query);

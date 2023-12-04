@@ -272,7 +272,7 @@ public class VariantAnalysisTest {
         catalogManager.getUserManager().create(ORGANIZATION, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
@@ -1067,7 +1067,7 @@ public class VariantAnalysisTest {
     @Test
     public void testCellbaseConfigure() throws Exception {
         String project = "Project_test_cellbase_configure";
-        catalogManager.getProjectManager().create(ORGANIZATION, new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "grch38"), null, null), QueryOptions.empty(), token);
+        catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "grch38"), null, null), QueryOptions.empty(), token);
 
         thrown.expect(StorageEngineException.class);
         thrown.expectMessage("The storage engine is in mode=READ_ONLY");

@@ -86,7 +86,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
-        catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
+        catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 new QueryOptions(), token);
 
         Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null,

@@ -97,7 +97,7 @@ public class AbstractSolrManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
         sessionIdUser3 = catalogManager.getUserManager().login(organizationId, "user3", TestParamConstants.PASSWORD).getToken();
 
-        Project project = catalogManager.getProjectManager().create(organizationId, "1000G", "Project about some genomes", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdOwner).first();
         studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
                 null, null, null, INCLUDE_RESULT, sessionIdOwner).first().getFqn();

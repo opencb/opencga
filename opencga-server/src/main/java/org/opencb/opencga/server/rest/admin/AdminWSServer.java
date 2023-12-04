@@ -68,6 +68,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response userSearch(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER) String user,
             @ApiParam(value = ParamConstants.USER_ACCOUNT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.USER_ACCOUNT_TYPE) String account,
             @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
@@ -83,7 +84,10 @@ public class AdminWSServer extends OpenCGAWSServer {
     @Path("/users/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'GUEST' (default) or 'FULL'")
-    public Response create(@ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user) {
+    public Response create(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
+    ) {
         try {
             if (!user.checkValidParams()) {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
@@ -114,7 +118,10 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "configuration. <br>"
                     + "<b>type</b> will be one of 'guest' or 'full'. If not provided, it will be considered 'guest' by default."
     )
-    public Response remoteImport(@ApiParam(value = "JSON containing the parameters", required = true) UserImportParams remoteParams) {
+    public Response remoteImport(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) UserImportParams remoteParams
+    ) {
         try {
             if (remoteParams.getResourceType() == null) {
                 throw new CatalogException("Missing mandatory 'resourceType' field.");
@@ -148,6 +155,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add or remove users from existing groups", response = Group.class)
     public Response updateGroups(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_DESCRIPTION) @PathParam(ParamConstants.USER) String user,
             @ApiParam(value = "Action to be performed: ADD or REMOVE user to/from groups", allowableValues = "ADD,REMOVE",
                     defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveAction action,
@@ -176,7 +184,10 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "synchronised with any other group.</li>"
                     + "</ul>"
     )
-    public Response externalSync(@ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams) {
+    public Response externalSync(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+    ) {
         try {
             // TODO: These two methods should return an OpenCGAResult containing at least the number of changes
             if (syncParams.isSyncAll()) {
@@ -330,7 +341,10 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/catalog/jwt")
     @ApiOperation(value = "Change JWT secret key")
-    public Response jwt(@ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams) {
+    public Response jwt(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams
+    ) {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.getSecretKey());
         try {
@@ -344,7 +358,10 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/token")
     @ApiOperation(value = "Obtain a valid token for a user", hidden = true)
-    public Response token(@ApiParam(value = "Token parameters", required = true) TokenParams jwtParams) {
+    public Response token(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "Token parameters", required = true) TokenParams jwtParams
+    ) {
         try {
             String newToken = jwtParams.getExpiration() != null
                     ? catalogManager.getUserManager().getToken(organizationId, jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)

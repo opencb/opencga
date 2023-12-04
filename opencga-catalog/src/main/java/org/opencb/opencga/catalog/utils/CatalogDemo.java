@@ -85,7 +85,7 @@ public final class CatalogDemo {
         Map<String, String> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
             projects.put(userSession.getKey(), catalogManager.getProjectManager()
-                    .create(organizationId, "default", "DefaultProject", "Description", "Homo sapiens", null, "GrCh38", new QueryOptions(),
+                    .create("default", "DefaultProject", "Description", "Homo sapiens", null, "GrCh38", new QueryOptions(),
                             userSession.getValue()).first().getFqn());
         }
 

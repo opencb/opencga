@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.user;
 
 public class LoginParams {
 
+    private String organizationId;
     private String user;
     private String password;
     private String refreshToken;
@@ -25,6 +26,7 @@ public class LoginParams {
     public LoginParams() {
     }
 
+    @Deprecated
     public LoginParams(String user, String password) {
         this.user = user;
         this.password = password;
@@ -34,7 +36,14 @@ public class LoginParams {
         this.refreshToken = refreshToken;
     }
 
-    public LoginParams(String user, String password, String refreshToken) {
+    public LoginParams(String organizationId, String user, String password) {
+        this.organizationId = organizationId;
+        this.user = user;
+        this.password = password;
+    }
+
+    public LoginParams(String organizationId, String user, String password, String refreshToken) {
+        this.organizationId = organizationId;
         this.user = user;
         this.password = password;
         this.refreshToken = refreshToken;
@@ -43,11 +52,21 @@ public class LoginParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");
-        sb.append("user='").append(user).append('\'');
-        sb.append(", password='").append("********").append('\'');
-        sb.append(", refreshToken='").append("********").append('\'');
+        sb.append("organizationId='").append(organizationId).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getOrganizationId() {
+        return organizationId;
+    }
+
+    public LoginParams setOrganizationId(String organizationId) {
+        this.organizationId = organizationId;
+        return this;
     }
 
     public String getUser() {

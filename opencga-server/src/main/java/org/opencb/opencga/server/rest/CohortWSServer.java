@@ -209,7 +209,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(cohortManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(cohortManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -291,7 +291,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             List<String> cohortIds = getIdList(cohorts);
 
-            return createOkResponse(catalogManager.getCohortManager().update(organizationId, studyStr, cohortIds, params, queryOptions, token));
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortIds, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

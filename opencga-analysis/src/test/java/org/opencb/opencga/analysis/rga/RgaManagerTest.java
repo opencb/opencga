@@ -187,7 +187,7 @@ public class RgaManagerTest {
         catalogManager.getUserManager().create(ORGANIZATION, OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
         ownerToken = catalogManager.getUserManager().login(ORGANIZATION, OWNER, PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(ORGANIZATION, PROJECT, "Project about some genomes", "", "Homo sapiens",
+        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, ownerToken);
 

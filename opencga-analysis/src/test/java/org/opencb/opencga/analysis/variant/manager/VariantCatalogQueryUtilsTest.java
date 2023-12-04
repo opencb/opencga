@@ -123,7 +123,7 @@ public class VariantCatalogQueryUtilsTest {
 
         sessionId = catalog.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
-        Project project = catalog.getProjectManager().create(organizationId, "p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
+        Project project = catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
         catalog.getStudyManager().create(project.getFqn(), "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create(project.getFqn(), "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create(project.getFqn(), "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
@@ -163,7 +163,7 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().create(organizationId, "p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
+        catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
         myPanel = new Panel("MyPanel", "MyPanel", 1);

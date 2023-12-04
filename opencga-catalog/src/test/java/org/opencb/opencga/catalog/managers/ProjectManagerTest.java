@@ -32,12 +32,14 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -87,20 +89,23 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void searchProjects() throws CatalogException {
         String org2 = "otherOrg";
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
-        Project p = catalogManager.getProjectManager().create(org2, new ProjectCreateParams()
+        catalogManager.getUserManager().create(org2, new User().setId("userFromOrg2").setName("name").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
+        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
+        Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId("project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
-                INCLUDE_RESULT, opencgaToken).first();
-         Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, opencgaToken).first();
+                INCLUDE_RESULT, owner2Token).first();
+        Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, owner2Token).first();
 
-        catalogManager.getUserManager().create(org2, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(org2, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, owner2Token);
         String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
-        catalogManager.getUserManager().create(org2, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, opencgaToken);
+        catalogManager.getUserManager().create(org2, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, owner2Token);
         String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
@@ -109,7 +114,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
         // Give some permissions to the user in the study
         catalogManager.getStudyManager().updateGroup(study.getFqn(), "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList(otherUser)), opencgaToken);
+                new GroupUpdateParams(Collections.singletonList(otherUser)), owner2Token);
 
         result = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
         assertEquals(1, result.getNumResults());
@@ -157,7 +162,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateOrganismInProject() throws CatalogException {
-        Project pr = catalogManager.getProjectManager().create(organizationId, "project2", "Project about some genomes", "", "Homo sapiens",
+        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first();
 
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
@@ -186,7 +191,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
     @Test
     public void createProjectCheckCellbase() throws CatalogException {
         Project pr = catalogManager.getProjectManager()
-                .create(organizationId, new ProjectCreateParams()
+                .create(new ProjectCreateParams()
                                 .setId("Project_1")
                                 .setName("Project about some genomes")
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
@@ -197,7 +202,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         assertNull(pr.getCellbase().getDataRelease());
 
         pr = catalogManager.getProjectManager()
-                .create(organizationId, new ProjectCreateParams()
+                .create(new ProjectCreateParams()
                                 .setId("Project_2")
                                 .setName("Project about some genomes")
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
@@ -208,7 +213,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         assertNull(pr.getCellbase().getDataRelease());
 
         pr = catalogManager.getProjectManager()
-                .create(organizationId, new ProjectCreateParams()
+                .create(new ProjectCreateParams()
                                 .setId("Project_3")
                                 .setName("Project about some genomes")
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
@@ -223,7 +228,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void createProjectWrongCellbase() throws CatalogException, JsonProcessingException {
         thrown.expectMessage("DataRelease 'NON_EXISTING_DR' not found on cellbase");
         catalogManager.getProjectManager()
-                .create(organizationId, new ProjectCreateParams()
+                .create(new ProjectCreateParams()
                                 .setId("project2")
                                 .setName("Project about some genomes")
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
@@ -233,7 +238,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateCellbaseInProject() throws CatalogException, JsonProcessingException {
-        Project pr = catalogManager.getProjectManager().create(organizationId, "project2", "Project about some genomes", "", "Homo sapiens",
+        Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken).first();
         assertNotNull(pr.getCellbase());
         assertEquals("https://ws.zettagenomics.com/cellbase", pr.getCellbase().getUrl());

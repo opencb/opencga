@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -58,11 +59,14 @@ public class CatalogSampleAnnotationsLoader {
         this.catalogManager = null;
     }
 
-    public DataResult<Sample> loadSampleAnnotations(String organizationId, File pedFile, String variableSetId, String sessionId)
+    public DataResult<Sample> loadSampleAnnotations(String studyStr, File pedFile, String variableSetId, String sessionId)
             throws CatalogException {
         if (!pedFile.getFormat().equals(File.Format.PED)) {
             throw new CatalogException(pedFile.getUid() + " is not a pedigree file");
         }
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
 
         URI fileUri = catalogManager.getFileManager().getUri(organizationId, pedFile);
         Study study = catalogManager.getFileManager().getStudy(organizationId, pedFile, sessionId);

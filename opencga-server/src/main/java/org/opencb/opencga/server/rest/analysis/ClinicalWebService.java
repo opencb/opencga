@@ -362,7 +362,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(clinicalManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(clinicalManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -688,7 +688,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove("methods");
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
 
-            return createOkResponse(catalogInterpretationManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(catalogInterpretationManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

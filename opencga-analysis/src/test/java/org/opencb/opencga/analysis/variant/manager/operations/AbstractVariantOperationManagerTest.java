@@ -146,7 +146,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "userACME1.", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
         sessionId = catalogManager.getUserManager().login(organizationId, userId, "userACME1.").getToken();
         projectId = "p1";
-        catalogManager.getProjectManager().create(organizationId, projectId, projectId, "Project 1", "Homo sapiens",
+        catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)

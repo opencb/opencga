@@ -147,7 +147,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(familyManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(familyManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

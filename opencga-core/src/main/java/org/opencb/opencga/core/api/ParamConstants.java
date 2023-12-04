@@ -145,6 +145,9 @@ public class ParamConstants {
     public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String USER = "user";
     // ---------------------------------------------
+    public static final String ORGANIZATION_DESCRIPTION = "Organization id";
+    public static final String ORGANIZATION = "organizationId";
+    // ---------------------------------------------
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
     public static final String USER_ACCOUNT_TYPE = "account";

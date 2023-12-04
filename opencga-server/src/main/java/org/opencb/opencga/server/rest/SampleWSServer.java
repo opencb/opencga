@@ -123,7 +123,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileStr, null, token).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(organizationId, pedigreeFile, variableSet, token);
+            DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(studyStr, pedigreeFile, variableSet, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -247,7 +247,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(sampleManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(sampleManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

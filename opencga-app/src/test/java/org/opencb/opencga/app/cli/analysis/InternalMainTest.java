@@ -83,6 +83,7 @@ public class InternalMainTest {
 
 
     private CatalogManager catalogManager;
+    private final String organizationId = "test";
     private final String userId = "user";
     private final String dbNameVariants = "opencga_variants_test";
     private final String dbNameAlignments = "opencga_alignments_test";
@@ -104,8 +105,8 @@ public class InternalMainTest {
 
         User user = catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
-        projectId = catalogManager.getProjectManager().create(organizationId, "p1", "p1", "Project 1", "Homo sapiens",
+        sessionId = catalogManager.getUserManager().login(organizationId, userId, "user").getToken();
+        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         datastores = new HashMap<>();

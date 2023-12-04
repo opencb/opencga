@@ -245,11 +245,11 @@ public class AbstractManagerTest extends GenericTest {
         normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
         noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
 
-        catalogManager.getProjectManager().create(organizationId, project1, "Project about some genomes", "", "Homo sapiens",
+        catalogManager.getProjectManager().create(project1, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken);
-        catalogManager.getProjectManager().create(organizationId, project2, "Project Management Project", "life art intelligent system",
+        catalogManager.getProjectManager().create(project2, "Project Management Project", "life art intelligent system",
                 "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, orgAdminToken1);
-        catalogManager.getProjectManager().create(organizationId, project3, "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
+        catalogManager.getProjectManager().create(project3, "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
                 orgAdminToken2);
 
         Study study = catalogManager.getStudyManager().create(project1, studyId, null, "Phase 1", "Done", null, null, null, null,

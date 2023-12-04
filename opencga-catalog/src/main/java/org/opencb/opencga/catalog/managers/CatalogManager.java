@@ -271,7 +271,7 @@ public class CatalogManager implements AutoCloseable {
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
-        projectManager.create(ADMIN_ORGANIZATION, new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project")
+        projectManager.create(new ProjectCreateParams().setId(ADMIN_PROJECT).setDescription("Default project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "grch38")), null, token);
         studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"),
                 QueryOptions.empty(), token);

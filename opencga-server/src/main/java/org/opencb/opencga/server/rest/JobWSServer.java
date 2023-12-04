@@ -236,7 +236,7 @@ public class JobWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(jobManager.distinct(organizationId, studyStr, fields, query, token));
+            return createOkResponse(jobManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -286,7 +286,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") JobUpdateParams parameters) {
         try {
-            return createOkResponse(jobManager.update(organizationId, studyStr, getIdList(jobStr), parameters, queryOptions, token));
+            return createOkResponse(jobManager.update(studyStr, getIdList(jobStr), parameters, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -322,7 +322,7 @@ public class JobWSServer extends OpenCGAWSServer {
         if (limit == 0) {
             limit = 20;
         }
-        return run(() -> catalogManager.getJobManager().top(organizationId, study, query, limit, token));
+        return run(() -> catalogManager.getJobManager().top(study, query, limit, token));
     }
 
 

@@ -701,10 +701,11 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public OpenCGAResult resetPassword(String organizationId, String userId, String token) throws CatalogException {
+    public OpenCGAResult resetPassword(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         JwtPayload jwtPayload = validateToken(token);
+        String organizationId = jwtPayload.getOrganization();
         try {
             authorizationManager.checkIsInstallationAdministrator(jwtPayload);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);

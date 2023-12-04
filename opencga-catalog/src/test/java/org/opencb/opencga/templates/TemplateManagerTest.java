@@ -31,7 +31,7 @@ public class TemplateManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
 
-        catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), ownerToken);
 
         URI resource = catalogManagerResource.getResourceUri("templates/manifest.yml");
@@ -60,7 +60,7 @@ public class TemplateManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().create(organizationId, new User().setId("user3").setName("User 3").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getUserManager().create(organizationId, new User().setId("user4").setName("User 4").setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
 
-        catalogManager.getProjectManager().create(organizationId, "project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
+        catalogManager.getProjectManager().create("project", "Project", "", "hsapiens", "common", "GRCh38", QueryOptions.empty(), ownerToken);
         catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), ownerToken);
 
         URI resource = catalogManagerResource.getResourceUri("templates_yaml/manifest.yml");

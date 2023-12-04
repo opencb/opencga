@@ -67,7 +67,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().create(organizationId, project, queryOptions, token);
+            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().create(project, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -89,7 +89,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
         try {
             List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getProjectManager().get(organizationId, idList, queryOptions, true, token));
+            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -107,6 +107,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
     public Response searchProjects(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = "Project name") @QueryParam("name") String name,
             @ApiParam(value = "Project fqn") @QueryParam("fqn") String fqn,

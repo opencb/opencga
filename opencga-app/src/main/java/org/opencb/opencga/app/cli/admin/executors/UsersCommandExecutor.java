@@ -82,9 +82,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword).getToken();
 
             if (executor.syncAll) {
-                catalogManager.getUserManager().syncAllUsersOfExternalGroup(organizationId, executor.study, executor.authOrigin, token);
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.organizationId, executor.study, executor.authOrigin, token);
             } else {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, executor.authOrigin, executor.from, executor.to, executor.study,
+                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.organizationId, executor.authOrigin, executor.from, executor.to, executor.study,
                         true, token);
             }
         }
@@ -113,10 +113,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             }
 
             if ("user".equalsIgnoreCase(executor.resourceType) || "application".equalsIgnoreCase(executor.resourceType)) {
-                catalogManager.getUserManager().importRemoteEntities(organizationId, executor.authOrigin, Arrays.asList(executor.id.split(",")),
+                catalogManager.getUserManager().importRemoteEntities(executor.organizationId, executor.authOrigin, Arrays.asList(executor.id.split(",")),
                         executor.resourceType.equalsIgnoreCase("application"), executor.studyGroup, executor.study, token);
             } else if ("group".equalsIgnoreCase(executor.resourceType)) {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, executor.authOrigin, executor.id, executor.studyGroup,
+                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.organizationId, executor.authOrigin, executor.id, executor.studyGroup,
                         executor.study, false, token);
             } else {
                 logger.error("Unknown resource type. Please use one of 'user', 'group' or 'application'");
@@ -154,7 +154,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
             User user;
             try {
-                user = catalogManager.getUserManager().create(organizationId, commandOptions.userId, commandOptions.userName, commandOptions.userEmail,
+                user = catalogManager.getUserManager().create(commandOptions.organizationId, commandOptions.userId, commandOptions.userName, commandOptions.userEmail,
                         commandOptions.userPassword, commandOptions.userOrganization, userQuota, commandOptions.type, token).first();
             } catch (CatalogException e) {
                 if (e.getMessage().contains("already exists")) {
@@ -179,7 +179,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             catalogManager.getUserManager().loginAsAdmin(usersCommandOptions.deleteUserCommandOptions.commonOptions.adminPassword);
 
             DataResult<User> deletedUsers = catalogManager.getUserManager()
-                    .delete(organizationId, usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
+                    .delete(usersCommandOptions.deleteUserCommandOptions.organizationId,
+                            usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
             for (User user : deletedUsers.getResults()) {
                 if (user != null) {
                     System.out.println("The user has been successfully deleted from the database: " + user.toString());
@@ -197,7 +198,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().loginAsAdmin(usersCommandOptions.quotaUserCommandOptions.commonOptions.adminPassword);
 
-            User user = catalogManager.getUserManager().update(organizationId, usersCommandOptions.quotaUserCommandOptions.userId, new ObjectMap
+            User user = catalogManager.getUserManager().update(usersCommandOptions.quotaUserCommandOptions.userId, new ObjectMap
                     (UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.quotaUserCommandOptions.quota * 1073741824), null, null).first();
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
