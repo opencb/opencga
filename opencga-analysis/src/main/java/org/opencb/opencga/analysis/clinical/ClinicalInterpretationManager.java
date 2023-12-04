@@ -824,7 +824,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
             User user = userQueryResult.first();
-            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", "");
+            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", Collections.emptyMap());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

@@ -261,6 +261,7 @@ public class FileUtils {
                 case BINARY:
                 case UNKNOWN:
                 case XML:
+                case PDF:
                     return File.Bioformat.NONE;
                 default:
                     break;
@@ -398,6 +399,8 @@ public class FileUtils {
             case "jpeg":
             case "tif":
                 return File.Format.IMAGE;
+            case "pdf":
+                return File.Format.PDF;
             default:
                 break;
         }

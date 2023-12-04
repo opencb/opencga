@@ -45,7 +45,8 @@ public class VariableSet extends PrivateFields {
         COHORT,
         INDIVIDUAL,
         FAMILY,
-        FILE
+        FILE,
+        CLINICAL_ANALYSIS
     }
 
     public VariableSet() {
