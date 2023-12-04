@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -18,6 +19,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -38,6 +40,8 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpd
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.ClinicalRequest;
+import org.opencb.opencga.core.models.clinical.ClinicalResponsible;
 import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
 import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.FamilyParam;
@@ -51,7 +55,9 @@ import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
@@ -95,6 +101,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "annotation-sets-load":
+                queryResponse = loadAnnotationSets();
                 break;
             case "clinical-configuration-update":
                 queryResponse = updateClinicalConfiguration();
@@ -168,6 +177,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
+            case "annotation-sets-annotations-update":
+                queryResponse = updateAnnotationSetsAnnotations();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -227,6 +239,40 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), ClinicalAnalysisAclUpdateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<Job> loadAnnotationSets() throws Exception {
+        logger.debug("Executing loadAnnotationSets in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("parents", commandOptions.parents);
+        queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        TsvAnnotationParams tsvAnnotationParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/annotationSets/load"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
+
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), TsvAnnotationParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
@@ -295,13 +341,24 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
-            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
+            putNestedIfNotEmpty(beanParams, "request.id",commandOptions.requestId, true);
+            putNestedIfNotEmpty(beanParams, "request.justification",commandOptions.requestJustification, true);
+            putNestedIfNotEmpty(beanParams, "request.date",commandOptions.requestDate, true);
+            putNestedIfNotNull(beanParams, "request.attributes",commandOptions.requestAttributes, true);
+            putNestedIfNotEmpty(beanParams, "responsible.id",commandOptions.responsibleId, true);
+            putNestedIfNotEmpty(beanParams, "responsible.name",commandOptions.responsibleName, true);
+            putNestedIfNotEmpty(beanParams, "responsible.email",commandOptions.responsibleEmail, true);
+            putNestedIfNotEmpty(beanParams, "responsible.organization",commandOptions.responsibleOrganization, true);
+            putNestedIfNotEmpty(beanParams, "responsible.department",commandOptions.responsibleDepartment, true);
+            putNestedIfNotEmpty(beanParams, "responsible.address",commandOptions.responsibleAddress, true);
+            putNestedIfNotEmpty(beanParams, "responsible.city",commandOptions.responsibleCity, true);
+            putNestedIfNotEmpty(beanParams, "responsible.postcode",commandOptions.responsiblePostcode, true);
             putNestedIfNotEmpty(beanParams, "interpretation.description",commandOptions.interpretationDescription, true);
             putNestedIfNotEmpty(beanParams, "interpretation.clinicalAnalysisId",commandOptions.interpretationClinicalAnalysisId, true);
             putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
@@ -309,6 +366,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "interpretation.locked",commandOptions.interpretationLocked, true);
             putNestedIfNotNull(beanParams, "interpretation.attributes",commandOptions.interpretationAttributes, true);
             putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
+            putNestedIfNotNull(beanParams, "qualityControl.comments",commandOptions.qualityControlComments, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
@@ -354,6 +413,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -995,6 +1055,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
+        queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -1020,6 +1081,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1142,6 +1204,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("analystsAction", commandOptions.analystsAction);
+        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1167,14 +1231,27 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
-            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
+            putNestedIfNotEmpty(beanParams, "request.id",commandOptions.requestId, true);
+            putNestedIfNotEmpty(beanParams, "request.justification",commandOptions.requestJustification, true);
+            putNestedIfNotEmpty(beanParams, "request.date",commandOptions.requestDate, true);
+            putNestedIfNotNull(beanParams, "request.attributes",commandOptions.requestAttributes, true);
+            putNestedIfNotEmpty(beanParams, "responsible.id",commandOptions.responsibleId, true);
+            putNestedIfNotEmpty(beanParams, "responsible.name",commandOptions.responsibleName, true);
+            putNestedIfNotEmpty(beanParams, "responsible.email",commandOptions.responsibleEmail, true);
+            putNestedIfNotEmpty(beanParams, "responsible.organization",commandOptions.responsibleOrganization, true);
+            putNestedIfNotEmpty(beanParams, "responsible.department",commandOptions.responsibleDepartment, true);
+            putNestedIfNotEmpty(beanParams, "responsible.address",commandOptions.responsibleAddress, true);
+            putNestedIfNotEmpty(beanParams, "responsible.city",commandOptions.responsibleCity, true);
+            putNestedIfNotEmpty(beanParams, "responsible.postcode",commandOptions.responsiblePostcode, true);
             putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
+            putNestedIfNotNull(beanParams, "qualityControl.comments",commandOptions.qualityControlComments, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
@@ -1189,6 +1266,32 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
 
+    private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
+        logger.debug("Executing updateAnnotationSetsAnnotations in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("action", commandOptions.action);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ObjectMap objectMap = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Sample> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().updateAnnotationSetsAnnotations(commandOptions.clinicalAnalysis, commandOptions.annotationSet, objectMap, queryParams);
+    }
+
     private RestResponse<ClinicalAnalysis> info() throws Exception {
         logger.debug("Executing info in Analysis - Clinical command line");
 
@@ -1197,6 +1300,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
