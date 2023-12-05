@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -47,6 +48,8 @@ public class ClinicalAnalysisCreateParams {
     private List<PanelReferenceParam> panels;
     private Boolean panelLock;
 
+    @Deprecated
+    private ClinicalAnalystParam analyst;
     private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
     private ClinicalRequest request;
@@ -316,6 +319,19 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setPanelLock(Boolean panelLock) {
         this.panelLock = panelLock;
+        return this;
+    }
+
+    @Deprecated
+    public ClinicalAnalystParam getAnalyst() {
+        return analyst;
+    }
+
+    @Deprecated
+    public ClinicalAnalysisCreateParams setAnalyst(ClinicalAnalystParam analyst) {
+        if (analyst != null && CollectionUtils.isEmpty(this.analysts)) {
+            this.analysts = Collections.singletonList(analyst);
+        }
         return this;
     }
 

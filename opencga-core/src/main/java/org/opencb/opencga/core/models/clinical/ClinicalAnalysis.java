@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -34,6 +36,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotation;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -116,6 +119,10 @@ public class ClinicalAnalysis extends Annotable {
     @DataField(id = "consent", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
     private ClinicalConsentAnnotation consent;
+
+    @Deprecated
+    @DataField(id = "analyst")
+    private ClinicalAnalyst analyst;
 
     @DataField(id = "analysts", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_ANALYST)
@@ -418,6 +425,20 @@ public class ClinicalAnalysis extends Annotable {
 
     public ClinicalAnalysis setConsent(ClinicalConsentAnnotation consent) {
         this.consent = consent;
+        return this;
+    }
+
+    @Deprecated
+    @JsonIgnore
+    public ClinicalAnalyst getAnalyst() {
+        return analyst;
+    }
+
+    @Deprecated
+    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
+        if (analyst != null && CollectionUtils.isEmpty(this.analysts)) {
+            this.analysts = Collections.singletonList(analyst);
+        }
         return this;
     }
 
