@@ -33,7 +33,7 @@
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>OpenCGEnterprise</servlet-name>
+    <servlet-name>OpenCGAEnterprise</servlet-name>
     <url-pattern>/webservices/rest/*</url-pattern>
   </servlet-mapping>
 
