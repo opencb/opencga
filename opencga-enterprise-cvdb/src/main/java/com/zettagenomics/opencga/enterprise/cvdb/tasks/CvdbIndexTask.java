@@ -91,11 +91,11 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
             addAttribute("Loading time (in sec.)", result.getTime());
 
             // Add warnings with the not indexed clinical analyses
-            if (result.getFailures().size() > 0) {
-                for (Map.Entry<String, String> entry : result.getFailures().entrySet()) {
-                    addWarning("Clinical analysis " + entry.getKey() + " could not be indexed: " + entry.getValue());
-                }
-            }
+//            if (result.getFailures().size() > 0) {
+//                for (Map.Entry<String, String> entry : result.getFailures().entrySet()) {
+//                    addWarning("Clinical analysis " + entry.getKey() + " could not be indexed: " + entry.getValue());
+//                }
+//            }
         });
     }
 }

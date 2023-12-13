@@ -272,6 +272,7 @@ public class CvdbSolrEngine {
                     } else {
                         String key = caId + " (" + study.getFqn() + ")";
                         failures.put(key, "Skipping index (overwrite is set to false)");
+                        logger.warn("{}: {}", key, failures.get(key));
                     }
                 } catch (Exception e) {
                     String key = caId + " (" + study.getFqn() + ")";
@@ -280,6 +281,7 @@ public class CvdbSolrEngine {
             } else {
                 String key = caId + " (" + study.getFqn() + ")";
                 failures.put(key, "Num. results = " + caResult.getNumResults() + " when searching for clinical analysis: " + caId);
+                logger.warn("{}: {}", key, failures.get(key));
             }
         }
 

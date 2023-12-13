@@ -16,8 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.models;
 
-import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
-
 import java.util.HashMap;
 import java.util.Map;
 
