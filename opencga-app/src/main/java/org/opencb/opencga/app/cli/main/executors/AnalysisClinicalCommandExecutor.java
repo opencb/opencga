@@ -341,6 +341,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "panelLock",commandOptions.panelLock, true);
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);
@@ -1231,6 +1232,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "proband.id",commandOptions.probandId, true);
             putNestedIfNotEmpty(beanParams, "family.id",commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "locked",commandOptions.locked, true);
+            putNestedIfNotEmpty(beanParams, "analyst.id",commandOptions.analystId, true);
             putNestedIfNotEmpty(beanParams, "report.title",commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview",commandOptions.reportOverview, true);
             putNestedIfNotEmpty(beanParams, "report.logo",commandOptions.reportLogo, true);

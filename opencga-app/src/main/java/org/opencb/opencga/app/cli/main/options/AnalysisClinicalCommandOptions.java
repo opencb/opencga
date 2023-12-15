@@ -240,6 +240,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
         public Boolean panelLock;
     
+        @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String analystId;
+    
         @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
         public String reportTitle;
     
@@ -1933,6 +1936,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--locked"}, description = "The body web service locked parameter", required = false, arity = 1)
         public Boolean locked;
+    
+        @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String analystId;
     
         @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
         public String reportTitle;
