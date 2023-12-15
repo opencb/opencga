@@ -278,6 +278,9 @@ public class OrganizationMigration extends MigrationTool {
                         .append("to", newDatabase + "." + collectionName)
                         .append("dropTarget", true)
                 );
+            } else {
+                // Remove collections
+                oldDatastore.getDb().getCollection(collectionName).drop();
             }
         }
 
