@@ -226,7 +226,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
                 for (Settings organizationSettings : results.getResults()) {
                     OrganizationSummary organizationSummary = getOrganizationSummary(organizationSettings);
-                    if (organizationId.equals(organizationSummary.getId())) {
+                    if (organizationSummary.getId().equals(organizationId)) {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
                                 new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
