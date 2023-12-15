@@ -217,7 +217,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             throws CatalogDBException {
         OrganizationMongoDBAdaptorFactory orgFactory = organizationDBAdaptorMap.get(organizationId);
         if (orgFactory == null) {
-            if (!organizationId.equalsIgnoreCase(ParamConstants.ADMIN_ORGANIZATION)) {
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
                 orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
 
                 // Read organizations present in the installation
