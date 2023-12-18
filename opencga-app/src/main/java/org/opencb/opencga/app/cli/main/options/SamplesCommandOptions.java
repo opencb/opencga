@@ -34,7 +34,6 @@ public class SamplesCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -52,7 +51,6 @@ public class SamplesCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -104,59 +102,6 @@ public class SamplesCommandOptions {
     
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
-    
-    }
-
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog sample stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
-        public String source; 
-    
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
-    
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
-    
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
-    
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
-    
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
-        public String status; 
-    
-        @Parameter(names = {"--type"}, description = "Type", required = false, arity = 1)
-        public String type; 
-    
-        @Parameter(names = {"--phenotypes"}, description = "Phenotypes", required = false, arity = 1)
-        public String phenotypes; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
-        public String release; 
-    
-        @Parameter(names = {"--version"}, description = "Version", required = false, arity = 1)
-        public String version; 
-    
-        @Parameter(names = {"--somatic"}, description = "Somatic", required = false, arity = 1)
-        public Boolean somatic; 
-    
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
-        public String annotation; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
-        public boolean default_values = false; 
-    
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
     
     }
 

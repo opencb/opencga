@@ -98,7 +98,7 @@ public class WorkEnvironmentTest extends ExternalResource {
 
 //        catalogManager = new CatalogManager(configuration);
         clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
-        openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
+        openCGAClient = new OpenCGAClient(organizationId, "user1", "user1_pass", clientConfiguration);
     }
 
     @Override

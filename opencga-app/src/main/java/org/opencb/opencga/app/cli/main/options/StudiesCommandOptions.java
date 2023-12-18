@@ -37,7 +37,6 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public CreateCommandOptions createCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public AclCommandOptions aclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public SearchAuditCommandOptions searchAuditCommandOptions;
         public GroupsCommandOptions groupsCommandOptions;
@@ -61,7 +60,6 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchAuditCommandOptions = new SearchAuditCommandOptions();
         this.groupsCommandOptions = new GroupsCommandOptions();
@@ -240,38 +238,6 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
         public boolean silent = false; 
-    
-    }
-
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog study stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--studies"}, description = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true, arity = 1)
-        public String studies; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values = true; 
-    
-        @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String fileFields; 
-    
-        @Parameter(names = {"--individual-fields"}, description = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String individualFields; 
-    
-        @Parameter(names = {"--family-fields"}, description = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String familyFields; 
-    
-        @Parameter(names = {"--sample-fields"}, description = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String sampleFields; 
-    
-        @Parameter(names = {"--cohort-fields"}, description = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String cohortFields; 
-    
-        @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String jobFields; 
     
     }
 

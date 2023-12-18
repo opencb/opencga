@@ -49,7 +49,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/users/create")
+    @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class)
     public Response create(

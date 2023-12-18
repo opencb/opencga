@@ -35,7 +35,6 @@ public class ProjectsCommandOptions {
 
         public CreateCommandOptions createCommandOptions;
         public SearchCommandOptions searchCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public IncReleaseCommandOptions incReleaseCommandOptions;
         public StudiesCommandOptions studiesCommandOptions;
@@ -48,7 +47,6 @@ public class ProjectsCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.createCommandOptions = new CreateCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.incReleaseCommandOptions = new IncReleaseCommandOptions();
         this.studiesCommandOptions = new StudiesCommandOptions();
@@ -136,8 +134,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--owner"}, description = "Owner of the project", required = false, arity = 1)
-        public String owner; 
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
     
         @Parameter(names = {"--id"}, description = "Project [user@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String id; 
@@ -147,9 +145,6 @@ public class ProjectsCommandOptions {
     
         @Parameter(names = {"--fqn"}, description = "Project fqn", required = false, arity = 1)
         public String fqn; 
-    
-        @Parameter(names = {"--organization"}, description = "Project organization", required = false, arity = 1)
-        public String organization; 
     
         @Parameter(names = {"--description"}, description = "Project description", required = false, arity = 1)
         public String description; 
@@ -168,38 +163,6 @@ public class ProjectsCommandOptions {
     
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes; 
-    
-    }
-
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog project stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--projects"}, description = "Comma separated list of projects [user@]project up to a maximum of 100", required = true, arity = 1)
-        public String projects; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values = true; 
-    
-        @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String fileFields; 
-    
-        @Parameter(names = {"--individual-fields"}, description = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String individualFields; 
-    
-        @Parameter(names = {"--family-fields"}, description = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String familyFields; 
-    
-        @Parameter(names = {"--sample-fields"}, description = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String sampleFields; 
-    
-        @Parameter(names = {"--cohort-fields"}, description = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String cohortFields; 
-    
-        @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String jobFields; 
     
     }
 

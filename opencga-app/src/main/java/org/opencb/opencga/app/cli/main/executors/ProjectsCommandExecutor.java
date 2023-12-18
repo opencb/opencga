@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -60,9 +59,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "search":
                 queryResponse = search();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "info":
                 queryResponse = info();
@@ -139,7 +135,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
-        queryParams.putIfNotEmpty("owner", commandOptions.owner);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("fqn", commandOptions.fqn);
@@ -155,23 +151,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getProjectClient().search(queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Projects command line");
-
-        ProjectsCommandOptions.AggregationStatsCommandOptions commandOptions = projectsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("fileFields", commandOptions.fileFields);
-        queryParams.putIfNotEmpty("individualFields", commandOptions.individualFields);
-        queryParams.putIfNotEmpty("familyFields", commandOptions.familyFields);
-        queryParams.putIfNotEmpty("sampleFields", commandOptions.sampleFields);
-        queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
-        queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
-
-        return openCGAClient.getProjectClient().aggregationStats(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Project> info() throws Exception {

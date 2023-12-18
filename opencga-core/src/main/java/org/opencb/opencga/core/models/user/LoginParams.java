@@ -26,12 +26,6 @@ public class LoginParams {
     public LoginParams() {
     }
 
-    @Deprecated
-    public LoginParams(String user, String password) {
-        this.user = user;
-        this.password = password;
-    }
-
     public LoginParams(String refreshToken) {
         this.refreshToken = refreshToken;
     }
