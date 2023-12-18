@@ -146,7 +146,7 @@ public class ParamConstants {
     public static final String USER = "user";
     // ---------------------------------------------
     public static final String ORGANIZATION_DESCRIPTION = "Organization id";
-    public static final String ORGANIZATION = "organizationId";
+    public static final String ORGANIZATION = "organization";
     // ---------------------------------------------
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";

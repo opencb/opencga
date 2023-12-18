@@ -83,14 +83,14 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/users/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'GUEST' (default) or 'FULL'")
+    @ApiOperation(value = "Create a new user", response = User.class)
     public Response create(
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
     ) {
         try {
             if (!user.checkValidParams()) {
-                createErrorResponse(new CatalogException("id, name, email or password not present"));
+                return createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
