@@ -306,9 +306,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             long queuedJobs = -1;
             long runningJobs = -1;
             try {
-                pendingJobs = jobManager.count(organizationId, pendingJobsQuery, token).getNumMatches();
-                queuedJobs = jobManager.count(organizationId, queuedJobsQuery, token).getNumMatches();
-                runningJobs = jobManager.count(organizationId, runningJobsQuery, token).getNumMatches();
+                pendingJobs = jobManager.countInOrganization(organizationId, pendingJobsQuery, token).getNumMatches();
+                queuedJobs = jobManager.countInOrganization(organizationId, queuedJobsQuery, token).getNumMatches();
+                runningJobs = jobManager.countInOrganization(organizationId, runningJobsQuery, token).getNumMatches();
             } catch (CatalogException e) {
                 logger.error("{}", e.getMessage(), e);
             }
@@ -335,7 +335,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected void checkRunningJobs(List<String> organizationIds) {
         for (String organizationId : organizationIds) {
             int handledRunningJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, runningJobsQuery, queryOptions, token)) {
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
                 while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
@@ -394,7 +394,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected void checkQueuedJobs(List<String> organizationIds) {
         for (String organizationId : organizationIds) {
             int handledQueuedJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, queuedJobsQuery, queryOptions, token)) {
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, queuedJobsQuery, queryOptions, token)) {
                 while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();
@@ -451,7 +451,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         for (String organizationId : organizationIds) {
             int handledPendingJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(organizationId, pendingJobsQuery, queryOptions, token)) {
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
                 while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
                     try {
                         Job job = iterator.next();

@@ -709,6 +709,13 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    public DBIterator<Job> iteratorInOrganization(String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        authorizationManager.isInstallationAdministrator(tokenPayload);
+        return getJobDBAdaptor(organizationId).iterator(query, options);
+    }
+
     @Override
     public DBIterator<Job> iterator(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);

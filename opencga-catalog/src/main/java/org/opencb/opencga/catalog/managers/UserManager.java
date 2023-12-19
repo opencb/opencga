@@ -541,6 +541,10 @@ public class UserManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
         JwtPayload jwtPayload = validateToken(token);
+
+        if (userIdList.size() == 1 && jwtPayload.getUserId().equals(userIdList.get(0)) && StringUtils.isEmpty(organizationId)) {
+            organizationId = jwtPayload.getOrganization();
+        }
         String userId = jwtPayload.getUserId(organizationId);
 
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
