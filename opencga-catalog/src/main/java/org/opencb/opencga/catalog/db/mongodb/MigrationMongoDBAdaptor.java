@@ -52,6 +52,10 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
         return new OpenCGAResult<>(migrationCollection.find(bsonQuery, migrationConverter, QueryOptions.empty()));
     }
 
+    public OpenCGAResult<Document> nativeGet() {
+        return new OpenCGAResult<>(migrationCollection.find(new Document(), QueryOptions.empty()));
+    }
+
     @Override
     public OpenCGAResult<MigrationRun> get(List<String> migrationRunIds) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), migrationRunIds);

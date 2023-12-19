@@ -51,7 +51,6 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
     private QueryOptions sampleQueryOptions;
 
     private IndividualMongoDBAdaptor individualDBAdaptor;
-
     private Queue<Document> individualListBuffer;
 
     private Logger logger;

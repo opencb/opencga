@@ -6,14 +6,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MigrationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 
 public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
@@ -22,12 +22,10 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
     private final QueryOptions options;
 
     private final Queue<Document> organizationListBuffer;
+    private MigrationMongoDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
 
-    private static final int BUFFER_SIZE = 100;
-
-    private static final String UID = OrganizationDBAdaptor.QueryParams.UID.key();
 
     public OrganizationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                          GenericDocumentComplexConverter<E> converter, OrganizationMongoDBAdaptorFactory dbAdaptorFactory,
@@ -35,8 +33,9 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
         super(mongoCursor, clientSession, converter, null);
 
         this.options = options != null ? new QueryOptions(options) : new QueryOptions();
-
         this.user = user;
+
+        this.migrationDBAdaptor = dbAdaptorFactory.getMigrationDBAdaptor();
 
         this.organizationListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(OrganizationCatalogMongoDBIterator.class);
@@ -58,8 +57,6 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
             next = filter.apply(next);
         }
 
-//        addAclInformation(next, options);
-
         if (converter != null) {
             return (E) converter.convertToDataModelType(next);
         } else {
@@ -68,21 +65,44 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
     }
 
     private void fetchNextBatch() {
-        Set<Long> organizationUidSet = new HashSet<>();
-
-        // Get next BUFFER_SIZE documents
-        int counter = 0;
-        while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
+        if (mongoCursor.hasNext()) {
             Document organizationDocument = mongoCursor.next();
 
-            organizationListBuffer.add(organizationDocument);
-            counter++;
-
-            if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                    || !options.getAsStringList(QueryOptions.EXCLUDE).contains("organizations.studies")) {
-                organizationUidSet.add(organizationDocument.get(UID, Long.class));
+            if (obtainMigrations()) {
+                List<Document> migrationRuns = migrationDBAdaptor.nativeGet().getResults();
+                Document internal = organizationDocument.get(OrganizationDBAdaptor.QueryParams.INTERNAL.key(), Document.class);
+                if (internal == null) {
+                    internal = new Document();
+                    organizationDocument.put(OrganizationDBAdaptor.QueryParams.INTERNAL.key(), internal);
+                }
+                internal.put("migrationExecutions", migrationRuns);
             }
+
+            organizationListBuffer.add(organizationDocument);
+        }
+    }
+
+    private boolean obtainMigrations() {
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String include : currentIncludeList) {
+                if (include.equals(OrganizationDBAdaptor.QueryParams.INTERNAL.key())
+                        || include.equals(OrganizationDBAdaptor.QueryParams.INTERNAL_MIGRATION_EXECUTIONS.key())) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : currentExcludeList) {
+                if (exclude.equals(OrganizationDBAdaptor.QueryParams.INTERNAL.key())
+                        || exclude.equals(OrganizationDBAdaptor.QueryParams.INTERNAL_MIGRATION_EXECUTIONS.key())) {
+                    return false;
+                }
+            }
+            return true;
         }
 
+        return true;
     }
 }

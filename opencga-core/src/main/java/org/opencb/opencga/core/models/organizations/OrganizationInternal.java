@@ -5,7 +5,6 @@ import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class OrganizationInternal extends Internal {
@@ -13,22 +12,17 @@ public class OrganizationInternal extends Internal {
     @DataField(id = "version", description = "OpenCGA version")
     private String version;
 
-    // TODO: REname to MigrationExecution
-    @DataField(id = "migrations", description = "List of migrations run")
-    private List<MigrationRun> migrations;
-
-    // TODO: REMOVE FIELD
-    private List<String> organizationIds;
+    @DataField(id = "migrationExecutions", description = "List of migrations executions")
+    private List<MigrationRun> migrationExecutions;
 
     public OrganizationInternal() {
     }
 
     public OrganizationInternal(InternalStatus status, String registrationDate, String lastModified, String version,
-                                List<MigrationRun> migrations) {
+                                List<MigrationRun> migrationExecutions) {
         super(status, registrationDate, lastModified);
         this.version = version;
-        this.migrations = migrations;
-        this.organizationIds = new ArrayList<>();
+        this.migrationExecutions = migrationExecutions;
     }
 
     public String getVersion() {
@@ -40,21 +34,13 @@ public class OrganizationInternal extends Internal {
         return this;
     }
 
-    public List<MigrationRun> getMigrations() {
-        return migrations;
+    public List<MigrationRun> getMigrationExecutions() {
+        return migrationExecutions;
     }
 
-    public OrganizationInternal setMigrations(List<MigrationRun> migrations) {
-        this.migrations = migrations;
+    public OrganizationInternal setMigrationExecutions(List<MigrationRun> migrationExecutions) {
+        this.migrationExecutions = migrationExecutions;
         return this;
     }
 
-    public List<String> getOrganizationIds() {
-        return organizationIds;
-    }
-
-    public OrganizationInternal setOrganizationIds(List<String> organizationIds) {
-        this.organizationIds = organizationIds;
-        return this;
-    }
 }
