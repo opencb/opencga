@@ -35,7 +35,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
       - uses: actions/upload-artifact@v3
         with:
           name: build-folder

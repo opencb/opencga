@@ -187,8 +187,10 @@ public class FieldConstants {
     public static final String CLINICAL_ANALYSIS_INTERPRETATION = "Interpretation of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_SECONDARY_INTERPRETATION = "List of Interpretations containing the second and consecutive.";
     public static final String CLINICAL_ANALYSIS_CONSENT = "Object contains consent annotations of clinical analysis.";
-    public static final String CLINICAL_ANALYSIS_ANALYST = "The analyst of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_ANALYST = "The analysts of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_REPORT = "Report of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_REQUEST = "Request of the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_RESPONSIBLE = "Responsible of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_PRIORITY = "Priority of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_FLAGS = "List of flags for the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_DUE_DATE_DESCRIPTION = "Due date of the clinical analysis.";
@@ -212,6 +214,9 @@ public class FieldConstants {
     public static final String CLINICAL_REPORT_SIGNED_BY = "Indicates who has signed the report.";
     public static final String CLINICAL_REPORT_SIGNATURE = "Report signature.";
     public static final String CLINICAL_REPORT_DATE = "Report date.";
+    public static final String CLINICAL_REPORT_COMMENTS = "Report comments.";
+    public static final String CLINICAL_REPORT_SUPPORTING_EVIDENCES = "Report supporting evidences.";
+    public static final String CLINICAL_REPORT_FILES = "Report files.";
 
     //ClinicalPriorityAnnotation
     public static final String CLINICAL_PRIORITY_ANNOTATION_RANK_DESCRIPTION = "ClinicalPriorityAnnotation rank.";

@@ -67,6 +67,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "studies";
     public StudiesCommandOptions studiesCommandOptions;
 
     public StudiesCommandExecutor(StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
@@ -157,10 +158,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyAclUpdateParams studyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyAclUpdateParams = new StudyAclUpdateParams();
             RestResponse<StudyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(studyAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -192,10 +192,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyCreateParams studyCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyCreateParams = new StudyCreateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(studyCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             studyCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -334,10 +333,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams groupCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            groupCreateParams = new GroupCreateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(groupCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/groups/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -365,10 +363,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         GroupUpdateParams groupUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            groupUpdateParams = new GroupUpdateParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(groupUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/groups/{group}/users/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -402,10 +399,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         PermissionRule permissionRule = null;
         if (commandOptions.jsonDataModel) {
-            permissionRule = new PermissionRule();
             RestResponse<PermissionRule> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(permissionRule));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/permissionRules/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             permissionRule = JacksonUtils.getDefaultObjectMapper()
@@ -485,10 +481,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         StudyUpdateParams studyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            studyUpdateParams = new StudyUpdateParams();
             RestResponse<Study> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(studyUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             studyUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -536,10 +531,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         VariableSetCreateParams variableSetCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            variableSetCreateParams = new VariableSetCreateParams();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variableSetCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/variableSets/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variableSetCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -570,10 +564,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         Variable variable = null;
         if (commandOptions.jsonDataModel) {
-            variable = new Variable();
             RestResponse<VariableSet> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(variable));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             variable = JacksonUtils.getDefaultObjectMapper()

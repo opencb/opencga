@@ -262,7 +262,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         return query.containsKey(Constants.ANNOTATION);
     }
 
-    OpenCGAResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters,
+    OpenCGAResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryUid, ObjectMap parameters,
                                                             List<VariableSet> variableSetList, QueryOptions options, boolean isVersioned)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
@@ -281,7 +281,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // Create or remove a new annotation set
             if (action == ParamUtils.BasicUpdateAction.ADD || action == ParamUtils.BasicUpdateAction.SET) {
                 // 1. Check the annotation set ids are not in use
-                validateNewAnnotations(clientSession, entryId, annotationSetList, variableSetList, isVersioned);
+                validateNewAnnotations(clientSession, entryUid, annotationSetList, variableSetList, isVersioned);
 
                 // 2. Obtain the list of documents that need to be inserted
                 List<Document> annotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList);
@@ -290,26 +290,26 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 if (action == ParamUtils.BasicUpdateAction.SET) {
                     if (CollectionUtils.isEmpty(internalAnnotationDocumentList)) {
                         // 2.1 Remove all user existing annotations
-                        removeAllAnnotationSets(clientSession, entryId, isVersioned);
+                        removeAllAnnotationSets(clientSession, entryUid, isVersioned);
                     } else {
                         // 2.1 Remove all internal existing annotations
-                        removeAllAnnotationSets(clientSession, entryId, isVersioned, true);
+                        removeAllAnnotationSets(clientSession, entryUid, isVersioned, true);
                     }
                 }
 
                 if (CollectionUtils.isEmpty(internalAnnotationDocumentList)) {
                     // 3. Insert the list of documents
-                    addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
+                    addNewAnnotations(clientSession, entryUid, annotationDocumentList, isVersioned);
 
                     // 4. Set variable set map uid - id
-                    addPrivateVariableMap(clientSession, entryId, getPrivateVariableMapToSet(annotationSetList, variableSetList),
+                    addPrivateVariableMap(clientSession, entryUid, getPrivateVariableMapToSet(annotationSetList, variableSetList),
                             isVersioned);
                 } else {
                     // 3. Insert the list of documents
-                    addNewAnnotations(clientSession, entryId, internalAnnotationDocumentList, isVersioned, true);
+                    addNewAnnotations(clientSession, entryUid, internalAnnotationDocumentList, isVersioned, true);
 
                     // 4. Set variable set map uid - id
-                    addPrivateVariableMap(clientSession, entryId, getPrivateVariableMapToSet(annotationSetList, variableSetList),
+                    addPrivateVariableMap(clientSession, entryUid, getPrivateVariableMapToSet(annotationSetList, variableSetList),
                             isVersioned, true);
                 }
 
@@ -317,7 +317,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 // Action = REMOVE
 
                 // 0. Obtain the annotationSet to be removed to know the variableSet being annotated
-                OpenCGAResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryId), new QueryOptions(QueryOptions.INCLUDE,
+                OpenCGAResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryUid), new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(ANNOTATION_SETS)));
 
                 if (queryResult.getNumResults() != 1) {
@@ -373,7 +373,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         }
 
                         // 1. Remove annotationSet
-                        removeAnnotationSetByAnnotationSetId(clientSession, entryId, annotationSet.getId(), isVersioned);
+                        removeAnnotationSetByAnnotationSetId(clientSession, entryUid, annotationSet.getId(), isVersioned);
 
                         String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
                         // Remove the annotation set from the variableSetAnnotationsets
@@ -384,7 +384,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                             // 2. Unset variable set map uid - id
                             Map<String, String> variableSetMapToRemove = new HashMap<>();
                             variableSetMapToRemove.put(variableSetId, null);
-                            removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
+                            removePrivateVariableMap(clientSession, entryUid, variableSetMapToRemove, isVersioned);
                         }
                     } else if (StringUtils.isNotEmpty(annotationSet.getVariableSetId())) {
                         VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
@@ -402,19 +402,18 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                             if (!variableSet.isInternal()) {
                                 // Remove all annotationSets
-                                removeAnnotationSetByVariableSetId(clientSession, entryId, variableSet.getUid(), isVersioned);
-                                removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
+                                removeAnnotationSetByVariableSetId(clientSession, entryUid, variableSet.getUid(), isVersioned);
+                                removePrivateVariableMap(clientSession, entryUid, variableSetMapToRemove, isVersioned);
                             } else {
                                 // Remove all annotationSets
-                                removeAnnotationSetByVariableSetId(clientSession, entryId, variableSet.getUid(), isVersioned, true);
-                                removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned, true);
+                                removeAnnotationSetByVariableSetId(clientSession, entryUid, variableSet.getUid(), isVersioned, true);
+                                removePrivateVariableMap(clientSession, entryUid, variableSetMapToRemove, isVersioned, true);
                             }
                         }
                     } else {
                         throw new CatalogDBException("Could not delete AnnotationSet. AnnotationSet 'id' or 'variableSetId' not defined.");
                     }
                 }
-
             }
         } else if (actionMap.containsKey(ANNOTATIONS)) {
             // Update annotation
@@ -424,10 +423,10 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             List<Document> annotationDocumentList = getNewAnnotationList(Collections.singletonList(annotationSet), variableSetList);
 
             // 2. Remove all the existing annotations of the annotation set
-            removeAnnotationSetByAnnotationSetId(clientSession, entryId, annotationSet.getId(), isVersioned);
+            removeAnnotationSetByAnnotationSetId(clientSession, entryUid, annotationSet.getId(), isVersioned);
 
             // 3. Add new list of annotations
-            addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
+            addNewAnnotations(clientSession, entryUid, annotationDocumentList, isVersioned);
         }
 
         return endWrite(startTime, 1, 1, new ArrayList<>());
