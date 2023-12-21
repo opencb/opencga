@@ -198,6 +198,11 @@ public class AnnotationUtils {
             }
         }
 
+        if (variableSet.isUnique() && StringUtils.isEmpty(annotationSet.getId())) {
+            // If no annotation set id is provided, replicate the variable set id
+            annotationSet.setId(variableSet.getId());
+        }
+
         //Get annotationSetName set and variableId map
         Set<String> annotatedVariables = annotationSet.getAnnotations().entrySet()
                 .stream()

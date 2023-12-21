@@ -17,11 +17,11 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
@@ -43,7 +43,10 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.study.*;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -97,14 +100,20 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         Iterator<AnnotationSet> iterator = annotationSetList.iterator();
         while (iterator.hasNext()) {
             AnnotationSet annotationSet = iterator.next();
-            String annotationSetName = annotationSet.getId();
-            ParamUtils.checkAlias(annotationSetName, "annotationSetName");
 
             // Get the variable set
             if (!variableSetMap.containsKey(annotationSet.getVariableSetId())) {
                 throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in variable set list");
             }
             VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+
+            if (variableSet.isUnique() && StringUtils.isEmpty(annotationSet.getId())) {
+                // If no annotation set id is provided, replicate the variable set id
+                annotationSet.setId(variableSet.getId());
+            }
+
+            String annotationSetId = annotationSet.getId();
+            ParamUtils.checkAlias(annotationSetId, "annotationSet.id");
 
             // Check validity of annotations and duplicities
             AnnotationUtils.checkAnnotationSet(variableSet, annotationSet, consideredAnnotationSetsList, true);
@@ -244,7 +253,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                                 // Validate annotable data model
                                 VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
-                                if (ListUtils.isNotEmpty(variableSet.getEntities())
+                                if (CollectionUtils.isNotEmpty(variableSet.getEntities())
                                         && !variableSet.getEntities().contains(annotableEntity)) {
                                     throw new CatalogException("Cannot annotate " + annotableEntity + " using VariableSet '"
                                             + variableSet.getId() + "'. VariableSet is intended only for '"
@@ -252,7 +261,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 }
 
                                 // Create new annotationSet
-
                                 if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
                                         authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
@@ -270,7 +278,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 // Add the new annotationSet to the list of annotations to be updated
                                 finalAnnotationList.add(annotationSet);
                             } else {
-                                throw new CatalogException("Neither the annotationSetName nor the variableSetId matches an existing "
+                                throw new CatalogException("Neither the annotationSetId nor the variableSetId matches an existing "
                                         + "AnnotationSet to perform an update or a VariableSet to create a new annotation.");
                             }
                         }

@@ -419,9 +419,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(),
-                        params.getUnique(),
-                        params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
+                VariableSet variableSet = params.toVariableSet();
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, variableSet, token);
             } else {
                 boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
                 queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);
