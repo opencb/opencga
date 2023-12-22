@@ -52,7 +52,7 @@
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
         <commons-io.version>2.5</commons-io.version>
 
-<!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
+        <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
         <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
