@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -36,6 +36,9 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,14 +224,96 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return this;
     }
 
-    public String getObjectAsJSON(Object o) throws Exception {
-        String jsonInString = "Data model not found.";
+    public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
+        StringBuilder jsonInString = new StringBuilder("\n");
         try {
-            jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
+            ObjectMap queryParams = new ObjectMap();
+            queryParams.putIfNotEmpty("category", objectCategory);
+            RestResponse<List> response = openCGAClient.getMetaClient().api(queryParams);
+            ObjectMapper jsonObjectMapper = new ObjectMapper();
+           for (List list : response.getResponses().get(0).getResults()) {
+                List<RestCategory> categories = jsonObjectMapper.convertValue(list, new TypeReference<List<RestCategory>>() {});
+                for (RestCategory category : categories) {
+                    for (RestEndpoint endpoint : category.getEndpoints()) {
+                        if (objectPath.equals(endpoint.getPath())) {
+                            boolean enc = false;
+                            for (RestParameter parameter : endpoint.getParameters()) {
+                                //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
+                                if (parameter.getData() != null) {
+                                    enc = true;
+                                    jsonInString.append(printBody(parameter.getData(), ""));
+                                }
+                            }
+                            if (!enc) {
+                                jsonInString.append("No model available");
+                            }
+                            //
+                        }
+                    }
+                }
+           }
         } catch (Exception e) {
+            jsonInString = new StringBuilder("Data model not found.");
             CommandLineUtils.error(e);
         }
-        return jsonInString;
+        return jsonInString.toString();
+    }
+
+    private String printBody(List<RestParameter> data, String tabs) {
+        String res = "";
+        res += "{\n";
+        String tab = "    " + tabs;
+        for (RestParameter parameter : data) {
+            if (parameter.getData() == null) {
+                res += printParameter(parameter, tab);
+            } else {
+                res += tab + parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+            }
+        }
+        res += tabs + "}";
+        return res;
+
+    }
+
+    private String printParameter(RestParameter parameter, String tab) {
+
+        return tab + "\"" + parameter.getName() + "\"" + ":" + printParameterValue(parameter) + ",\n";
+    }
+
+    private String printParameterValue(RestParameter parameter) {
+
+        if(!StringUtils.isEmpty(parameter.getAllowedValues())){
+            return parameter.getAllowedValues().replace(" ", "|");
+        }
+        switch (parameter.getType()) {
+            case "Boolean":
+            case "java.lang.Boolean":
+                return "false";
+            case "Long":
+            case "Float":
+            case "Double":
+            case "Integer":
+            case "int":
+            case "double":
+            case "float":
+            case "long":
+                return "0";
+            case "List":
+                return "[\"\"]";
+            case "Date":
+                return "\"dd/mm/yyyy\"";
+            case "Map":
+                return "{\"key\": \"value\"}";
+            case "String":
+                return "\"\"";
+            default:
+                return "\"-\"";
+        }
+    }
+
+    private boolean isNumeric(String type) {
+
+        return "int".equals(type) || "Long".equals(type) || "Float".equals(type) || "double".equals(type);
     }
 
     public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {
