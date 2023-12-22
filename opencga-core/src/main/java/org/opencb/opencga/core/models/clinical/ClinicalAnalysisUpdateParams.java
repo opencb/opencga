@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -26,6 +27,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,6 +50,8 @@ public class ClinicalAnalysisUpdateParams {
     private FamilyParam family;
 
     private Boolean locked;
+    @Deprecated
+    private ClinicalAnalystParam analyst;
     private List<ClinicalAnalystParam> analysts;
     private ClinicalReport report;
     private ClinicalRequest request;
@@ -254,6 +258,17 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setLocked(Boolean locked) {
         this.locked = locked;
+        return this;
+    }
+
+    public ClinicalAnalystParam getAnalyst() {
+        return analyst;
+    }
+
+    public ClinicalAnalysisUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
+        if (analyst != null && CollectionUtils.isNotEmpty(this.analysts)) {
+            this.analysts = Collections.singletonList(analyst);
+        }
         return this;
     }
 

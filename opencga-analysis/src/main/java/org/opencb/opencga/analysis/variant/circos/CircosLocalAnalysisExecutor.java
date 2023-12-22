@@ -28,8 +28,10 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -93,7 +95,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     }
 
     @Override
-    public void run() throws ToolException, IOException {
+    public void run() throws ToolException, IOException, CatalogException {
 
         // Create query
         Query query = new Query();
@@ -128,7 +130,6 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             throw new ToolException("Error launching threads when executing the Circos analysis", e);
         }
 
-
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
@@ -138,10 +139,19 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                     .toAbsolutePath().toString(),
                     DOCKER_OUTPUT_PATH);
+
+            // Get genome version
+            String genomeVersion = "hg38";
+            String assembly = ResourceUtils.getAssembly(storageManager.getCatalogManager(), getStudy(), getToken());
+            if (StringUtils.isNotEmpty(assembly) && assembly.toUpperCase(Locale.ROOT).equals("GRCH37")) {
+                genomeVersion = "hg19";
+            }
+
             String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
                     + (plotCopynumber ? "" : " --no_copynumber")
                     + (plotIndels ? "" : " --no_indels")
                     + (plotRearrangements ? "" : " --no_rearrangements")
+                    + " --genome_version " + genomeVersion
                     + " --out_path " + DOCKER_OUTPUT_PATH
                     + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()
