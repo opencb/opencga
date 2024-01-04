@@ -1,30 +1,90 @@
 #!/bin/bash
 
-BRANCH_NAME=$1
+#########################################################
+##### FUNCTIONS TO PRINT COLOURED MESSAGES  #############
+#########################################################
+function red(){
+   echo "$(tput setaf 1)$1$(tput setaf 7)"
+}
 
-if [[ -z $BRANCH_NAME  ]]; then
-  echo "The first parameter is mandatory and must be a valid branch name."
-  exit 1
-fi
+function green(){
+   echo "$(tput setaf 2)$1$(tput setaf 7)"
+}
 
-if [[ $BRANCH_NAME != "TASK-"*   ]]; then
-  echo "No need to check dependencies."
-  exit 0
-fi
+#BRANCH_NAME=$1
+#
+#if [[ -z $BRANCH_NAME  ]]; then
+#  echo "The first parameter is mandatory and must be a valid branch name."
+#  exit 1
+#fi
+#
+#if [[ $BRANCH_NAME != "TASK-"*   ]]; then
+#  echo "No need to check dependencies."
+#  exit 0
+#fi
 
-function install(){
-  local REPO=$1
-  cd /home/runner/work/ || exit 2
-  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
-  if [ -d "./$REPO" ]; then
-    cd "$REPO" || exit 2
-    echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -DskipTests
+#function install(){
+#  local REPO=$1
+#  cd /home/runner/work/ || exit 2
+#  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
+#  if [ -d "./$REPO" ]; then
+#    cd "$REPO" || exit 2
+#    echo "Branch name $BRANCH_NAME already exists."
+#    mvn clean install -DskipTests
+#  else
+#    echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
+#  fi
+#}
+#
+#install "java-common-libs"
+#install "biodata"
+#install "cellbase"
+
+
+function calculate_branch(){
+  CURRENT_BRANCH="$(git branch --show-current)"
+  if [[ "$CURRENT_BRANCH" != "release"* ]];then
+    echo "$CURRENT_BRANCH"
   else
-    echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
+    local VERSION=$(echo "$1" | cut -d "-" -f 1)
+    local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+    local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+    local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+    local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+    if [ -z "$HOTFIX" ]; then
+      echo "release-$MAJOR.$MINOR.x"
+    else
+      echo "release-$MAJOR.$MINOR.$PATCH.x"
+    fi
   fi
 }
 
-install "java-common-libs"
-install "biodata"
-install "cellbase"y 512 GB
+function install(){
+  CURRENT_DIR=$PWD
+  local REPO=$1
+  local BRANCH_NAME="$(calculate_branch $2)"
+  green "Version of $REPO to download correct $2 should be in $BRANCH_NAME"
+  cd /tmp/ || exit 2
+  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
+  if [ -d "./$REPO" ]; then
+    cd "$REPO" || exit 2
+    green "Branch name $BRANCH_NAME already exists."
+    mvn clean install -DskipTests
+  else
+    red "The Branch $BRANCH_NAME is NOT DOWNLOADED PROPERLY  "
+    exit 1
+  fi
+  green "Branch name $BRANCH_NAME already exists. $REPO Compiled Successfull!!!"
+  cd "$CURRENT_DIR" || exit
+}
+
+
+JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+install "java-common-libs" $JCL_DEPENDENCY_VERSION
+BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+install "biodata" $BIODATA_DEPENDENCY_VERSION
+CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+install "cellbase" $CELLBASE_DEPENDENCY_VERSION
+#OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
+#install "opencga" $OPENCGA_DEPENDENCY_VERSION
+
