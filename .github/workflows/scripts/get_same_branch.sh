@@ -70,11 +70,13 @@ function install(){
     cd "$REPO" || exit 2
     green "Branch name $BRANCH_NAME already exists."
     mvn clean install -DskipTests
+    if [ $? -eq 0 ]; then
+      green "$REPO Compilation Successful!!!"
+    fi
   else
-    red "The Branch $BRANCH_NAME is NOT DOWNLOADED PROPERLY  "
+    red "The $REPO branch $BRANCH_NAME cloning process has failed!"
     exit 1
   fi
-  green "Branch name $BRANCH_NAME already exists. $REPO Compiled Successfull!!!"
   cd "$CURRENT_DIR" || exit
 }
 
