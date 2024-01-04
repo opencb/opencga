@@ -77,7 +77,7 @@ function install(){
       green "$REPO Compilation Successful!!!"
     fi
   else
-   if [ $BRANCH_NAME != "TASK"*  ]; then
+   if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       red "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
     else
