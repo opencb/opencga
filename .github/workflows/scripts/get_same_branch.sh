@@ -10,6 +10,9 @@ function red(){
 function green(){
    echo "$(tput setaf 2)$1$(tput setaf 7)"
 }
+function yellow(){
+   echo "$(tput setaf 3)$1$(tput setaf 7)"
+}
 
 #BRANCH_NAME=$1
 #
@@ -74,8 +77,12 @@ function install(){
       green "$REPO Compilation Successful!!!"
     fi
   else
-    red "The $REPO branch $BRANCH_NAME cloning process has failed!"
-    exit 1
+   if [ $BRANCH_NAME != "TASK"*  ]; then
+      red "The $REPO branch $BRANCH_NAME cloning process has failed!"
+      exit 1
+    else
+      yellow "The $REPO branch $BRANCH_NAME not exists we use version $2 from maven repo"
+    fi
   fi
   cd "$CURRENT_DIR" || exit
 }
