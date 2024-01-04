@@ -3,16 +3,6 @@
 #########################################################
 ##### FUNCTIONS TO PRINT COLOURED MESSAGES  #############
 #########################################################
-function red(){
-   echo "$(tput setaf 1)$1$(tput setaf 7)"
-}
-
-function green(){
-   echo "$(tput setaf 2)$1$(tput setaf 7)"
-}
-function yellow(){
-   echo "$(tput setaf 3)$1$(tput setaf 7)"
-}
 
 #BRANCH_NAME=$1
 #
@@ -66,22 +56,22 @@ function install(){
   CURRENT_DIR=$PWD
   local REPO=$1
   local BRANCH_NAME="$(calculate_branch $2)"
-  green "Version of $REPO to download correct $2 should be in $BRANCH_NAME"
+  echo "Version of $REPO to download correct $2 should be in $BRANCH_NAME"
   cd /tmp/ || exit 2
   git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
-    green "Branch name $BRANCH_NAME already exists."
+    echo "Branch name $BRANCH_NAME already exists."
     mvn clean install -DskipTests
     if [ $? -eq 0 ]; then
-      green "$REPO Compilation Successful!!!"
+      echo "$REPO Compilation Successful!!!"
     fi
   else
    if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
-      red "The $REPO branch $BRANCH_NAME cloning process has failed!"
+      echo "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
     else
-      yellow "The $REPO branch $BRANCH_NAME not exists we use version $2 from maven repo"
+      echo "The $REPO branch $BRANCH_NAME not exists we use version $2 from maven repo"
     fi
   fi
   cd "$CURRENT_DIR" || exit
