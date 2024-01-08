@@ -48,20 +48,17 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-  -p | --push )
-      PUSH="true"
+  -p | --publish )
+      PUBLISH="true"
       shift # past argument
-      shift # past value
       ;;
   -b | --prepare_branches )
       PREPARE_BRANCHES="true"
       shift # past argument
-      shift # past value
       ;;
   -s | --skip_tests )
       SKIP_TESTS="true"
       shift # past argument
-      shift # past value
       ;;
   *) # unknown option
     echo "Unknown option $key"
