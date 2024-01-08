@@ -7,7 +7,7 @@ ARG BUILD_PATH="."
 ENV OPENCGA_HOME=/opt/opencga
 ENV OPENCGA_CONFIG_DIR=${OPENCGA_HOME}/conf
 
-RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin && \
+RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpass ca-certificates curl gnupg jq ncurses-bin unzip vim && \
     ## Install Docker repository
     install -m 0755 -d /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
