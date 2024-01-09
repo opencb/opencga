@@ -79,7 +79,7 @@ function install_dependency() {
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -t 2 -DskipTests
+    mvn clean install -T 2 -DskipTests
     if [ $? -eq 0 ]; then
       echo "$REPO Compilation Successful!!!"
     fi
@@ -195,7 +195,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
 
   if [ "$OPENCGA_DEPENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
     ## Only if you pass the parameter: --prepare-branch
-    if [ $PREPARE_BRANCHES == "true" ]; then
+    if [ "$PREPARE_BRANCHES" == "true" ]; then
       cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
       JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
       install_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
