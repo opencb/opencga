@@ -1,8 +1,58 @@
 #!/bin/bash
 
-function calculate_branch(){
-  CURRENT_BRANCH="$(git branch --show-current)"
-  if [[ "$CURRENT_BRANCH" != "release"* ]];then
+## Functions
+function printUsage() {
+  echo ""
+  echo "Run opencga-enterprise."
+  echo ""
+  echo "Usage:   $(basename $0) <command> [options]"
+  echo ""
+  echo "Commands:"
+  echo "    build                Build the opencga-enterprise application"
+  echo "    test                 Test all the application tests"
+  echo ""
+  printBuildUsage
+  printTestUsage
+}
+
+function printBuildUsage() {
+  echo ""
+  echo "'build' command:"
+  echo ""
+  echo "  Usage:   $(basename $0) build [options]"
+  echo ""
+  echo "  Options:"
+  echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
+  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, emr6.1, ..."
+  echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
+  echo "            --verbose             FLAG           Print verbose logs"
+  echo "            --help                FLAG           Print this help and exit"
+  echo ""
+}
+
+function printTestUsage() {
+  echo ""
+  echo "'test' command:"
+  echo ""
+  echo "  Usage:   $(basename $0) test [options]"
+  echo ""
+  echo "  Options:"
+  echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
+  echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
+  echo "     -p     --publish             FLAG           Publish the results in a reports server."
+  echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
+  echo "     -s     --skip-tests          FLAG           Publish the results on a reports server without rerunning the test."
+  echo "     -v     --verbose             FLAG           Print verbose logs"
+  echo "     -h     --help                FLAG           Print this help and exit"
+  echo ""
+}
+
+function calculate_branch() {
+  ## This is opencga-enterprise
+  local CURRENT_BRANCH="$(git branch --show-current)"
+  ## If opencga-enterprise branch name is main, develop or TASK-XYZ then we return the same name.
+  ## Otherwise, we calculate the dependency branch from the dependency version.
+  if [[ "$CURRENT_BRANCH" != "release"* ]]; then
     echo "$CURRENT_BRANCH"
   else
     local VERSION=$(echo "$1" | cut -d "-" -f 1)
@@ -18,18 +68,18 @@ function calculate_branch(){
   fi
 }
 
-function install(){
+function install_dependency() {
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
   local REPO=$1
   local BRANCH_NAME="$(calculate_branch $2)"
   echo "Version of $REPO to download correct $2 should be in $BRANCH_NAME"
-  TMPDIR=$(mktemp -d)
-  cd $TMPDIR || exit 2
+  local TEMP_DIR="$(mktemp -d)"
+  cd "$TEMP_DIR" || exit 2
   git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    mvn clean install -DskipTests
+    mvn clean install -t 2 -DskipTests
     if [ $? -eq 0 ]; then
       echo "$REPO Compilation Successful!!!"
     fi
@@ -44,58 +94,15 @@ function install(){
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
 
-function printTestUsage() {
-  echo ""
-  echo "  Command test opencga-enterprise."
-  echo ""
-  echo "  Usage:   $(basename $0) test [options]"
-  echo ""
-  echo "  Options:"
-  echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
-  echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -p     --publish             FLAG           Publish the results in a reports server."
-  echo "     -b     --prepare_branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
-  echo "     -s     --skip_tests          FLAG           Publish the results on a reports server without rerunning the test."
-  echo "     -v     --verbose             FLAG           Print verbose logs"
-  echo "     -h     --help                FLAG           Print this help and exit"
-  echo ""
-
-}
-
-function printBuildUsage() {
-  echo ""
-  echo "  Command build opencga-enterprise."
-  echo ""
-  echo "  Usage:   $(basename $0) build [options]"
-  echo ""
-  echo "  Options:"
-  echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
-  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, emr6.1, ..."
-  echo "     -b     --prepare_branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
-  echo "            --verbose             FLAG           Print verbose logs"
-  echo "            --help                FLAG           Print this help and exit"
-  echo ""
-
-}
-
-function printUsage() {
-  echo ""
-  echo "Run opencga-enterprise."
-  echo ""
-  echo "Usage:   $(basename $0) command [options]"
-  echo ""
-  echo "Commands:"
-  echo "            build                Build the opencga-enterprise application"
-  echo "            test                 Test all the application tests"
-  echo ""
-  printBuildUsage
-  printTestUsage
-}
-
+###################################
+####### Script starts here  #######
+###################################
+## 1. Set default values
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
-TEST_PROFILE="runShortTests"
+TEST_TAG="runShortTests"
 
+## 2. Parse CLI options
 if [ "$1" != "build" ] && [ "$1" != "test" ];then
   printUsage
   exit 0
@@ -139,15 +146,15 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     ;;
   -t | --tags )
-    TEST_PROFILE="$value"
+    TEST_TAG="$value"
     shift # past argument
     shift # past value
     ;;
-  -b | --prepare_branches )
+  -b | --prepare-branches )
     PREPARE_BRANCHES="true"
     shift # past argument
     ;;
-  -s | --skip_tests )
+  -s | --skip-tests )
     SKIP_TESTS="true"
     shift # past argument
     ;;
@@ -163,10 +170,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
+## 3. Execute scripts
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
-
 
 if [ "$DEBUG" == "true" ];then
   echo "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
@@ -180,7 +186,6 @@ if [ "$DEBUG" == "true" ];then
 fi
 
 if [ -d "$OPENCGA_HOME_DIR" ]; then
-
   OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
   cd "$OPENCGA_HOME_DIR" || exit 2
   OPENCGA_CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -189,14 +194,15 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
   echo "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
 
   if [ "$OPENCGA_DEPENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
+    ## Only if you pass the parameter: --prepare-branch
     if [ $PREPARE_BRANCHES == "true" ]; then
       cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
       JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
-      install "java-common-libs" "$JCL_DEPENDENCY_VERSION"
+      install_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
       BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
-      install "biodata" "$BIODATA_DEPENDENCY_VERSION"
+      install_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
       CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
-      install "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
+      install_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
     fi
 
     cd "$OPENCGA_HOME_DIR" || exit 2
@@ -221,7 +227,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
         echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
         exit 1
       fi
-      mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,"${TEST_PROFILE}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      mvn install surefire-report:report --fail-never -P storage-hadoop,hdp3.1,"${TEST_TAG}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
       # shellcheck disable=SC2181
       if [ $? -eq 0 ]; then
         echo "Opencga tests success!"
@@ -245,7 +251,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
       REF_TYPE="branch"
       REF="$OPENCGA_EXPECTED_BRANCH"
     fi
-    echo "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
+    echo "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
     echo "Please, execute bellow command and retry:"
     echo "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
     exit 1
@@ -258,6 +264,7 @@ else
   exit 1
 fi
 
+## 4. Move to opencga-enterprise to build or test
 cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
 if [ "$COMMAND" == "build" ];then

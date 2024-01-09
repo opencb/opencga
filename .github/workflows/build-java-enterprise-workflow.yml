@@ -49,7 +49,7 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - name: OpenCGA Enterprise Maven Build (skip tests)
-        run: ./build.sh --storage-hadoop  ${{ inputs.storage_hadoop }} --opencga-home ./opencga-home/
+        run: ./run.sh build --storage-hadoop ${{ inputs.storage_hadoop }} --opencga-home ./opencga-home/
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.artifact_name }}
