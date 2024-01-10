@@ -39,7 +39,7 @@ function printTestUsage() {
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
   echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -p     --publish             FLAG           Publish the results in a reports server."
+  echo "     -f     --fail-never          FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
   echo "     -s     --skip-tests          FLAG           Publish the results on a reports server without rerunning the test."
   echo "     -v     --verbose             FLAG           Print verbose logs"
@@ -101,7 +101,7 @@ function install_dependency() {
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
-
+FAIL_NEVER=""
 ## 2. Parse CLI options
 if [ "$1" != "build" ] && [ "$1" != "test" ];then
   printUsage
@@ -152,6 +152,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   -b | --prepare-branches )
     PREPARE_BRANCHES="true"
+    shift # past argument
+    ;;
+  -f | --fail-never )
+    FAIL_NEVER="--fail-never"
     shift # past argument
     ;;
   -s | --skip-tests )
@@ -227,7 +231,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
         echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
         exit 1
       fi
-      mvn install surefire-report:report --fail-never -P storage-hadoop,hdp3.1,"${TEST_TAG}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      mvn install surefire-report:report ${FAIL_NEVER} -P storage-hadoop,hdp3.1,"${TEST_TAG}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
       # shellcheck disable=SC2181
       if [ $? -eq 0 ]; then
         echo "Opencga tests success!"
@@ -241,7 +245,6 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
     OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
-
     REF_TYPE=
     REF=
     if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
@@ -272,5 +275,5 @@ if [ "$COMMAND" == "build" ];then
 fi
 
 if [ "$COMMAND" == "test" ];then
-  mvn -B verify surefire-report:report --fail-never
+  mvn -B verify surefire-report:report "${FAIL_NEVER}"
 fi
