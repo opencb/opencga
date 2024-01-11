@@ -25,11 +25,11 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
 WORKDIR /opt/opencga/signature.tools.lib
 
 RUN git fetch origin --tags && \
-    git checkout tags/v2.4.2 && \
+    git checkout tags/v2.4.4 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e 'options(timeout = 300);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
     ## Clean up
     rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
