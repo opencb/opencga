@@ -394,7 +394,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             user = result.first();
         }
-        interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
+        interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, Collections.emptyMap()));
     }
 
     public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
@@ -1010,11 +1010,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     throw new CatalogException("User '" + updateParams.getAnalyst().getId() + "' not found");
                 }
                 parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst(userResult.first().getId(),
-                        userResult.first().getName(), userResult.first().getEmail(), userId, TimeUtils.getTime()));
+                        userResult.first().getName(), userResult.first().getEmail(), userId, Collections.emptyMap()));
             } else {
                 // Remove assignee
                 parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst("", "", "", userId,
-                        TimeUtils.getTime()));
+                        Collections.emptyMap()));
             }
         }
 

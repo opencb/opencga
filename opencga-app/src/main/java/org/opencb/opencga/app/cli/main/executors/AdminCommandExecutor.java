@@ -43,6 +43,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "admin";
     public AdminCommandOptions adminCommandOptions;
 
     public AdminCommandExecutor(AdminCommandOptions adminCommandOptions) throws CatalogAuthenticationException {
@@ -116,10 +117,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         InstallationParams installationParams = null;
         if (commandOptions.jsonDataModel) {
-            installationParams = new InstallationParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(installationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/install"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             installationParams = JacksonUtils.getDefaultObjectMapper()
@@ -148,10 +148,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         JWTParams jWTParams = null;
         if (commandOptions.jsonDataModel) {
-            jWTParams = new JWTParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jWTParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jWTParams = JacksonUtils.getDefaultObjectMapper()
@@ -178,10 +177,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -212,10 +210,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserImportParams userImportParams = null;
         if (commandOptions.jsonDataModel) {
-            userImportParams = new UserImportParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userImportParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/import"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userImportParams = JacksonUtils.getDefaultObjectMapper()
@@ -265,10 +262,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         GroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
-            groupSyncParams = new GroupSyncParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(groupSyncParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupSyncParams = JacksonUtils.getDefaultObjectMapper()
@@ -301,10 +297,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
 
         UserUpdateGroup userUpdateGroup = null;
         if (commandOptions.jsonDataModel) {
-            userUpdateGroup = new UserUpdateGroup();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userUpdateGroup));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/{user}/groups/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userUpdateGroup = JacksonUtils.getDefaultObjectMapper()

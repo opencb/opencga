@@ -88,22 +88,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
             throw new RuntimeException(e);
         }
 
-     /*   //   if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
-        if (queryResponse.getEvents() != null) {
-            for (Event event : ((RestResponse<Object>)queryResponse.getResponses().get(0)).getEvents()) {
-                if (StringUtils.isNotEmpty(event.getMessage())) {
-                    if (event.getType().equals(Event.Type.ERROR)) {
-                        PrintUtils.printError(event.getMessage());
-                    } else {
-                        PrintUtils.printInfo(event.getMessage());
-                    }
-                } else {
-                    PrintUtils.printError(event.getMessage());
-                }
+        if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+            if (queryResponse.getResponses() != null && queryResponse.getResponses().size() > 0) {
+                manageEvents(((RestResponse<Object>) queryResponse.getResponses().get(0)).getEvents());
+            } else if (queryResponse.getEvents() != null && queryResponse.getEvents().size() > 0) {
+                manageEvents(queryResponse.getEvents());
             }
+            return;
         }
-        // return;
-        //  }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
@@ -112,11 +104,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
             return;
         }
 
-
         ps.print(printMetadata(queryResponse));
-*/
-        List<DataResult> queryResultList = queryResponse.getResponses();
 
+        List<DataResult> queryResultList = queryResponse.getResponses();
 
         if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
                 && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList) && isNotAnIdOrMessage(queryResultList)) {
@@ -180,6 +170,20 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse, false);
                 break;
+        }
+    }
+
+    private void manageEvents(final List<Event> events) {
+        for (Event event : events) {
+            if (StringUtils.isNotEmpty(event.getMessage())) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    PrintUtils.printError(event.getMessage());
+                } else {
+                    PrintUtils.printInfo(event.getMessage());
+                }
+            } else {
+                PrintUtils.printError(event.getMessage());
+            }
         }
     }
 

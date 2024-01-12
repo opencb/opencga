@@ -204,7 +204,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 }
 
                 // Update interpretation(s) in ClinicalAnalysis
-                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             case SECONDARY:
                 // Add to secondaryInterpretations array in ClinicalAnalysis
@@ -219,7 +219,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), null);
                 }
 
-                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             default:
                 throw new IllegalStateException("Unknown action " + action);
@@ -789,7 +789,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
         }
 
-        OpenCGAResult update = clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+        OpenCGAResult update = clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList,
+                options);
         if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update interpretation reference in Clinical Analysis to new version");
         }
@@ -881,7 +882,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             clinicalOptions.put(Constants.ACTIONS, actions);
         }
-        clinicalDBAdaptor.update(clientSession, clinicalAnalysis, clinicalParams, clinicalAuditList, clinicalOptions);
+        clinicalDBAdaptor.privateUpdate(clientSession, clinicalAnalysis, clinicalParams, Collections.emptyList(), clinicalAuditList,
+                clinicalOptions);
 
         Query query = new Query()
                 .append(QueryParams.UID.key(), interpretation.getUid())

@@ -59,7 +59,7 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 
 @Category(MediumTests.class)
-public class AbstractManagerTest extends GenericTest {
+public class  AbstractManagerTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

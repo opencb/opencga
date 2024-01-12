@@ -625,8 +625,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
                 ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), individualCopy);
 
-                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
-                        QueryOptions.empty());
+                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().privateUpdate(clientSession, clinicalAnalysis,
+                        params, Collections.emptyList(), null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {
                     throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
                             + "individual version of '" + individual.getId() + "'");

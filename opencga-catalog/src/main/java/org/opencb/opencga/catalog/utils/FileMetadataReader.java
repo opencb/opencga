@@ -183,7 +183,7 @@ public class FileMetadataReader {
                 VariantFileMetadata fileMetadata;
                 try {
                     fileMetadata = readVariantFileMetadata(file, file.getUri());
-                } catch (IOException e) {
+                } catch (Exception e) {
                     throw new CatalogIOException("Unable to read VariantSource", e);
                 }
                 if (fileMetadata != null) {

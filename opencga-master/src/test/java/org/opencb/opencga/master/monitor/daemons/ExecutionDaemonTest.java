@@ -37,7 +37,9 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
@@ -52,6 +54,7 @@ import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
@@ -540,6 +543,34 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         checkStatus(getJob(jobId), Enums.ExecutionStatus.ERROR);
         assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getDescription());
+    }
+
+    @Test
+    public void registerMalformedVcfFromExecutedJobTest() throws CatalogException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, ownerToken).first();
+        String jobId = job.getId();
+
+        daemon.checkJobs();
+        job = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), ownerToken).first();
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
+        try {
+            // Create an empty VCF file (this will fail because OpenCGA will not be able to parse it)
+            Path vcffile = Paths.get(job.getOutDir().getUri()).resolve("myemptyvcf.vcf");
+            Files.createFile(vcffile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        daemon.checkJobs();
+
+        // Check the file has been properly registered
+        job = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(1, job.getOutput().size());
+        assertEquals("myemptyvcf.vcf", job.getOutput().get(0).getName());
+        assertEquals(File.Format.VCF, job.getOutput().get(0).getFormat());
+        assertEquals(FileStatus.ERROR, job.getOutput().get(0).getInternal().getStatus().getId());
     }
 
     private void checkStatus(Job job, String status) {

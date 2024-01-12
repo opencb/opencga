@@ -37,6 +37,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "projects";
     public ProjectsCommandOptions projectsCommandOptions;
 
     public ProjectsCommandExecutor(ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
@@ -94,10 +95,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCreateParams projectCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(projectCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             projectCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -199,10 +199,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectUpdateParams projectUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(projectUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/{project}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper()

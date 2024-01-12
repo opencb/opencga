@@ -114,6 +114,8 @@ public class StudyManager extends AbstractManager {
             StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
             StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+    static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
+            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
     protected Logger logger;
 

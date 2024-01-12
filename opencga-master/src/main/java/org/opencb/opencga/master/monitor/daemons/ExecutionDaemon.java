@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -238,6 +239,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(RgaAnalysis.ID, "clinical " + RgaAnalysis.ID + "-run");
             put(AuxiliarRgaAnalysis.ID, "clinical " + AuxiliarRgaAnalysis.ID + "-run");
+            put(ClinicalTsvAnnotationLoader.ID, "clinical tsv-load");
 
             put(JulieTool.ID, "variant julie-run");
 
@@ -994,7 +996,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
                     token).getResults();
         } catch (CatalogException e) {
-            logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
+            logger.error("Could not register files in Catalog: {}", e.getMessage(), e);
             return 0;
         }
 

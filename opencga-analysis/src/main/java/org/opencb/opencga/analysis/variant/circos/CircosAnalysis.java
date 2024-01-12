@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.circos;
 
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -33,6 +34,8 @@ public class CircosAnalysis extends OpenCgaTool {
 
     private String study;
     private CircosAnalysisParams circosParams;
+
+    private String assembly;
 
     @Override
     protected void check() throws Exception {
@@ -58,6 +61,8 @@ public class CircosAnalysis extends OpenCgaTool {
 //        }
 //
 //        addAttribute("sampleName", sampleName);
+
+        assembly = ResourceUtils.getAssembly(catalogManager, study, token);
     }
 
     @Override

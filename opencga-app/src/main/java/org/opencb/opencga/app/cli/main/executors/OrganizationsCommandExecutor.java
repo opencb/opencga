@@ -37,6 +37,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "organizations";
     public OrganizationsCommandOptions organizationsCommandOptions;
 
     public OrganizationsCommandExecutor(OrganizationsCommandOptions organizationsCommandOptions) throws CatalogAuthenticationException {
@@ -85,10 +86,9 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
 
         OrganizationCreateParams organizationCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            organizationCreateParams = new OrganizationCreateParams();
             RestResponse<Organization> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(organizationCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             organizationCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -134,10 +134,9 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
 
         OrganizationUpdateParams organizationUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            organizationUpdateParams = new OrganizationUpdateParams();
             RestResponse<Organization> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(organizationUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/{organization}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             organizationUpdateParams = JacksonUtils.getDefaultObjectMapper()

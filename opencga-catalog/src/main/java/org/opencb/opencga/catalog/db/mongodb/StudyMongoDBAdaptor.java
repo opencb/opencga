@@ -1234,6 +1234,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     dbAdaptorFactory.getCatalogFileDBAdaptor()
                             .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, false);
                     break;
+                case CLINICAL_ANALYSIS:
+                    dbAdaptorFactory.getClinicalAnalysisDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, false);
+                    break;
                 default:
                     throw new CatalogDBException("Unexpected entity '" + entity + "'");
             }
@@ -1266,6 +1270,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     break;
                 case FILE:
                     result = dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options);
+                    break;
+                case CLINICAL_ANALYSIS:
+                    result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(query, options);
                     break;
                 default:
                     throw new CatalogDBException("Unexpected entity '" + entity + "'");
