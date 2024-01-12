@@ -343,7 +343,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     @Test
     public void updateClinicalAnalysisResponsible() throws CatalogException {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
-        assertEquals("user", case1.getResponsible().getId());
+        assertEquals(orgOwnerUserId, case1.getResponsible().getId());
 
         catalogManager.getUserManager().create(organizationId, new User().setId("u1").setName("u1").setEmail("mail@mail.com")
                         .setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
@@ -382,7 +382,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(report.getTitle(), result.first().getReport().getTitle());
         assertEquals(2, result.first().getReport().getComments().size());
         for (ClinicalComment comment : result.first().getReport().getComments()) {
-            assertEquals("user", comment.getAuthor());
+            assertEquals(orgOwnerUserId, comment.getAuthor());
             assertTrue(StringUtils.isNotEmpty(comment.getDate()));
         }
 
@@ -408,7 +408,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(report.getTitle(), result.first().getReport().getTitle());
         assertEquals(2, result.first().getReport().getComments().size());
         for (ClinicalComment comment : result.first().getReport().getComments()) {
-            assertEquals("user", comment.getAuthor());
+            assertEquals(orgOwnerUserId, comment.getAuthor());
             assertTrue(StringUtils.isNotEmpty(comment.getDate()));
         }
         assertEquals(2, result.first().getReport().getSupportingEvidences().size());
@@ -423,7 +423,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(report.getTitle(), result.first().getReport().getTitle());
         assertEquals(2, result.first().getReport().getComments().size());
         for (ClinicalComment comment : result.first().getReport().getComments()) {
-            assertEquals("user", comment.getAuthor());
+            assertEquals(orgOwnerUserId, comment.getAuthor());
             assertTrue(StringUtils.isNotEmpty(comment.getDate()));
         }
         assertEquals(2, result.first().getReport().getSupportingEvidences().size());
