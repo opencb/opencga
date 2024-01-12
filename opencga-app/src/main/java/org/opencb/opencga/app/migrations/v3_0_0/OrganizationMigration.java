@@ -44,16 +44,23 @@ public class OrganizationMigration extends MigrationTool {
     private MongoDataStore oldDatastore;
     private Set<String> userIdsToDiscardData;
 
+    private MigrationStatus status;
+
+    private enum MigrationStatus {
+        MIGRATED,
+        PENDING_MIGRATION,
+        ERROR
+    }
 
     public OrganizationMigration(Configuration configuration, String adminPassword, String userId) throws CatalogException {
         this.configuration = configuration;
         this.adminPassword = adminPassword;
         this.userId = userId;
 
-        checkAndInit();
+        this.status = checkAndInit();
     }
 
-    private void checkAndInit() throws CatalogException {
+    private MigrationStatus checkAndInit() throws CatalogException {
         this.oldDatabase = configuration.getDatabasePrefix() + "_catalog";
         this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         this.oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
@@ -61,6 +68,20 @@ public class OrganizationMigration extends MigrationTool {
         MongoCollection<Document> userCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
         FindIterable<Document> iterable = userCol.find(Filters.eq("id", "opencga"));
         try (MongoCursor<Document> cursor = iterable.cursor()) {
+            if (!cursor.hasNext()) {
+                MongoIterable<String> collectionNames = oldDatastore.getDb().listCollectionNames();
+                try (MongoCursor<String> tmpCursor = collectionNames.cursor()) {
+                    if (!tmpCursor.hasNext()) {
+                        logger.info("Database '{}' not found. Database already migrated.", this.oldDatabase);
+                        return MigrationStatus.MIGRATED;
+                    } else {
+                        List<String> collections = new LinkedList<>();
+                        tmpCursor.forEachRemaining(collections::add);
+                        logger.debug("Found '{}' collections in '{}' database", StringUtils.join(collections, ", "), this.oldDatabase);
+                        return MigrationStatus.ERROR;
+                    }
+                }
+            }
             Document userDoc = cursor.next();
             String password = userDoc.getString("_password");
             // Check admin password
@@ -125,10 +146,17 @@ public class OrganizationMigration extends MigrationTool {
 
         this.organizationId = this.userId;
         this.catalogManager = new CatalogManager(configuration);
+        return MigrationStatus.PENDING_MIGRATION;
     }
 
     @Override
     protected void run() throws Exception {
+        if (this.status == MigrationStatus.ERROR) {
+            throw new CatalogException("Corrupted database '" + this.oldDatabase + "' found. Could not migrate.");
+        } else if (this.status == MigrationStatus.MIGRATED) {
+            return;
+        }
+
         MongoCollection<Document> metadataCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.METADATA_COLLECTION);
         FindIterable<Document>  iterable = metadataCol.find(new Document());
         Document metaDoc;
