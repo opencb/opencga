@@ -39,6 +39,9 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
 
         SolrQuery solrQuery = new SolrQuery("*:*");
 
+        // Process query options, if necessary
+        parseQueryOptions(queryOptions, solrQuery);
+
         // Process facet, if necessary
         parseFacet(query, queryOptions, solrQuery);
 

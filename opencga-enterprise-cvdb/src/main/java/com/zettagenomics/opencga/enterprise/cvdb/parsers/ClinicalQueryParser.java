@@ -556,6 +556,24 @@ public class ClinicalQueryParser {
     //  A G G R E G A T I O N      S T A T S     /     F A C E T
     //-------------------------------------------------------------------------
 
+    protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            // Nothing to do
+            return;
+        }
+
+        if (StringUtils.isNotEmpty(QueryOptions.LIMIT)) {
+            solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
+        }
+        if (StringUtils.isNotEmpty(QueryOptions.SKIP)) {
+            solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    //  A G G R E G A T I O N      S T A T S     /     F A C E T
+    //-------------------------------------------------------------------------
+
     protected void parseFacet(Query query, QueryOptions queryOptions, SolrQuery solrQuery) throws CvdbException {
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {

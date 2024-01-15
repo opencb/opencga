@@ -308,7 +308,7 @@ public class CvdbSolrEngine {
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+        return new DataResult<>(dbTime, null, results.size(), results, iterator.getNumFound());
     }
 
     public ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> clinicalAnalysisIterator(
@@ -381,7 +381,7 @@ public class CvdbSolrEngine {
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+        return new DataResult<>(dbTime, null, results.size(), results, iterator.getNumFound());
     }
 
     public ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> clinicalInterpretationIterator(
@@ -454,7 +454,7 @@ public class CvdbSolrEngine {
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+        return new DataResult<>(dbTime, null, results.size(), results, iterator.getNumFound());
     }
 
     public ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> clinicalVariantIterator(
@@ -543,7 +543,7 @@ public class CvdbSolrEngine {
         }
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-        return new DataResult<>(dbTime, null, results.size(), results, results.size());
+        return new DataResult<>(dbTime, null, results.size(), results, iterator.getNumFound());
     }
 
     public ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter>

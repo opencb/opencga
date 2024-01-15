@@ -50,8 +50,7 @@ import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalRe
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.*;
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
-import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
+import static org.opencb.commons.datastore.core.QueryOptions.*;
 
 public class CvdbSolrEngineQueryTest {
 
@@ -2070,6 +2069,34 @@ public class CvdbSolrEngineQueryTest {
         for (ClinicalVariantEvidence cve : result.getResults()) {
             System.out.println(StringUtils.join(cve.getModeOfInheritances().stream().map(m -> m.name())
                     .collect(Collectors.toList()), ", "));
+        }
+    }
+
+    //-----------------------------------------------------------------------
+    // Count
+    //-----------------------------------------------------------------------
+
+    @Test
+    public void testCountQueryClinicalVariantEvidences() throws IOException, CvdbException, CatalogException {
+        int limit = 2;
+
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, limit);
+
+        // Check tier
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CVE_TIER_NAME, "TIER3");
+        DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
+        assertEquals(limit, result.getNumResults());
+        assertEquals(8, result.getNumMatches());
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+        for (ClinicalVariantEvidence cve : result.getResults()) {
+            assertEquals(query.getString(CVE_TIER_NAME), cve.getClassification().getTier());
         }
     }
 
