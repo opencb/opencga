@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -35,19 +36,23 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
     }
 
     public String ssoLogin(AttributePrincipal principal) throws CatalogException {
+        String organizationId;
         if (principal.getAttributes() != null) {
             for (Map.Entry<String, Object> entry : principal.getAttributes().entrySet()) {
                 // Print user attributes
                 logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
             }
+            organizationId = getDefaultValue(principal.getAttributes(),
+                    enterpriseConfiguration.getSso().getAttributes().getOrganization(), "");
         } else {
-            logger.warn("No attributes found for user '{}'", principal.getName());
+            throw CatalogParameterException.isNull("organizationId");
         }
 
         String userId = principal.getName();
         // Check user exists
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
-        OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(query, userAccountInfoQueryOptions, opencgaToken);
+        OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(organizationId, query,
+                userAccountInfoQueryOptions, opencgaToken);
 
         if (result.getNumResults() == 1) {
             // Check account
@@ -60,7 +65,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             // User does not exist
             User user = new User()
                     .setId(principal.getName())
-                    .setAccount(new Account(Account.AccountType.GUEST, null, null, new Account.AuthenticationOrigin("CAS", false)))
+                    .setAccount(new Account(null, null, new Account.AuthenticationOrigin("CAS", false)))
                     .setAttributes(principal.getAttributes());
             if (enterpriseConfiguration.getSso().getAttributes() != null && principal.getAttributes() != null) {
                 String name = getDefaultValue(principal.getAttributes(),
@@ -78,17 +83,19 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
                         enterpriseConfiguration.getSso().getAttributes().getOrganization(), ""));
             }
 
-            catalogManager.getUserManager().create(user, null, opencgaToken);
+            catalogManager.getUserManager().create(organizationId, user, null, opencgaToken);
         }
 
-        syncGroups(principal);
+        syncGroups(organizationId, principal);
 
-        return catalogManager.getUserManager().getToken(principal.getName(), Collections.emptyMap(), null, opencgaToken);
+        return catalogManager.getUserManager().getToken(organizationId, principal.getName(), Collections.emptyMap(),
+                null, opencgaToken);
     }
 
-    private void syncGroups(AttributePrincipal principal) throws CatalogException {
+    private void syncGroups(String organizationId, AttributePrincipal principal) throws CatalogException {
         List<String> groups = getGroupsFromSSO(principal);
-        catalogManager.getAdminManager().syncRemoteGroups(principal.getName(), groups, "CAS", opencgaToken);
+        catalogManager.getAdminManager().syncRemoteGroups(organizationId, principal.getName(), groups, "CAS",
+                opencgaToken);
     }
 
     private List<String> getGroupsFromSSO(AttributePrincipal principal) {

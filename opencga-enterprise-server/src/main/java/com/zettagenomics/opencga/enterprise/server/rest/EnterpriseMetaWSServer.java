@@ -51,7 +51,8 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
 
         Key key = new SecretKeySpec(catalogManager.getConfiguration().getAdmin().getSecretKey().getBytes(), SignatureAlgorithm.HS256.getJcaName());
         JwtManager jwtManager = new JwtManager(catalogManager.getConfiguration().getAdmin().getAlgorithm(), key);
-        this.opencgaToken = jwtManager.createJWTToken(ParamConstants.OPENCGA_USER_ID, 0L);
+        this.opencgaToken = jwtManager.createJWTToken(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID,
+                null, 0L);
 
         this.enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
     }
