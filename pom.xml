@@ -147,6 +147,13 @@
         <servlet-api.version>2.5-20081211</servlet-api.version>
 
         <kryo.version>2.23.0</kryo.version>
+
+        <!--TO REMOVE:
+            The version of Java (11.0.21) used to run this analysis is deprecated, and SonarCloud no longer supports it. Please upgrade to Java 17 or later.
+            As a temporary measure, you can set the property 'sonar.scanner.force-deprecated-java-version' to 'true' to continue using Java 11.0.21
+            This workaround will only be effective until January 28, 2024. After this date, all scans using the deprecated Java 11 will fail.
+         -->
+        <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
     </properties>
 
     <scm>
