@@ -2101,6 +2101,41 @@ public class CvdbSolrEngineQueryTest {
     }
 
     //-----------------------------------------------------------------------
+    // Exclude
+    //-----------------------------------------------------------------------
+
+    @Test
+    public void testExcludeQueryClinicalInterpretations() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+//        queryOptions.put(LIMIT, 100);
+        queryOptions.put(EXCLUDE, "panels,primaryFindings");
+
+        DataResult<Interpretation> result;
+
+        // ciId = OPA-6522-1.2, primary = true
+        // ciId = SAP-32015-1.2, primary = true
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+
+        for (Interpretation ci : result.getResults()) {
+            assertTrue(CollectionUtils.isEmpty(ci.getPanels()));
+            assertTrue(CollectionUtils.isEmpty(ci.getPrimaryFindings()));
+            ClinicalAnalysis clinicalAnalyis = getClinicalAnalyis(ci.getClinicalAnalysisId());
+            assertEquals(ci.getId(), clinicalAnalyis.getInterpretation().getId());
+        }
+    }
+
+
+    //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {

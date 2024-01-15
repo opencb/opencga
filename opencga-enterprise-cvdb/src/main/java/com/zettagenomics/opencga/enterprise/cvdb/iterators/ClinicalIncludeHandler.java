@@ -29,6 +29,11 @@ public class ClinicalIncludeHandler {
 
     protected List<String> includeList;
 
+    public static List<String> caFields;
+    public static List<String> ciFields;
+    public static List<String> cvFields;
+    public static List<String> cveFields;
+
     public ClinicalIncludeHandler() {
     }
 
@@ -155,5 +160,72 @@ public class ClinicalIncludeHandler {
     public ClinicalIncludeHandler setIncludeList(List<String> includeList) {
         this.includeList = includeList;
         return this;
+    }
+
+    static {
+
+        caFields = Arrays.asList("id",
+                "description",
+                "type",
+                "disorder",
+                "files",
+                "proband",
+                "family",
+                "panels",
+                "panelLock",
+                "locked",
+                "interpretation",
+                "secondaryInterpretations",
+                "consent",
+                "analyst",
+                "report",
+                "priority",
+                "flags",
+                "creationDate",
+                "modificationDate",
+                "dueDate",
+                "qualityControl",
+                "release",
+                "comments",
+                "audit",
+                "internal",
+                "attributes",
+                "status");
+
+        ciFields = Arrays.asList("studyUid",
+                "uid",
+                "panels",
+                "internal",
+                "release",
+                "id",
+                "uuid",
+                "description",
+                "clinicalAnalysisId",
+                "analyst",
+                "method",
+                "primaryFindings",
+                "secondaryFindings",
+                "comments",
+                "stats",
+                "locked",
+                "status",
+                "creationDate",
+                "modificationDate",
+                "version",
+                "attributes");
+
+        cveFields = Arrays.asList("interpretationMethodName",
+                "phenotypes",
+                "genomicFeature",
+                "modeOfInheritances",
+                "panelId",
+                "classification",
+                "penetrance",
+                "score",
+                "fullyExplainPhenotypes",
+                "compoundHeterozygousVariantIds",
+                "rolesInCancer",
+                "review",
+                "attributes");
     }
 }

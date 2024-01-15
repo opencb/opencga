@@ -23,6 +23,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretati
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
@@ -75,10 +76,8 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
-import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
+import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
-import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 /**
  * Created by jtarraga on 11/11/17.
@@ -322,10 +321,7 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = new ArrayList<>();
-        if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
-        }
+        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.caFields);
 
         // Execute query
         try {
@@ -395,10 +391,7 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = new ArrayList<>();
-        if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
-        }
+        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.ciFields);
 
         // Execute query
         try {
@@ -557,10 +550,7 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = new ArrayList<>();
-        if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
-        }
+        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.cveFields);
 
         // Execute query
         try {
@@ -981,6 +971,20 @@ public class CvdbSolrEngine {
         } catch (CatalogException e) {
             throw new CvdbException("Checking user query permissions", e);
         }
+    }
+
+    private List<String> getIncludeList(QueryOptions queryOptions, List<String> allFields) {
+        List<String> includeList = new ArrayList<>();
+        if (queryOptions.containsKey(INCLUDE)) {
+            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
+        } else if (queryOptions.containsKey(EXCLUDE)) {
+            List<String> excludeFields = queryOptions.getAsStringList(EXCLUDE, ",").stream().map(field -> field.split("\\.")[0])
+                    .collect(Collectors.toList());
+            includeList = allFields.stream()
+                    .filter(field -> !excludeFields.contains(field))
+                    .collect(Collectors.toList());
+        }
+        return  includeList;
     }
 
     //----------------------------------------------------------------------
