@@ -29,9 +29,9 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
         super(clientConfiguration);
     }
 
-    public EnterpriseOpenCGAClient(String user, String password, ClientConfiguration clientConfiguration)
-            throws ClientException {
-        super(user, password, clientConfiguration);
+    public EnterpriseOpenCGAClient(String organizationId, String user, String password,
+                                   ClientConfiguration clientConfiguration) throws ClientException {
+        super(organizationId, user, password, clientConfiguration);
     }
 
     public EnterpriseOpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {

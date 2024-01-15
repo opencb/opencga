@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-11-13 OpenCB
+* Copyright 2015-2024-01-15 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -106,7 +106,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         JCommander projectsSubCommands = jCommander.getCommands().get("projects");
         projectsSubCommands.addCommand("create", projectsCommandOptions.createCommandOptions);
         projectsSubCommands.addCommand("search", projectsCommandOptions.searchCommandOptions);
-        projectsSubCommands.addCommand("aggregationstats", projectsCommandOptions.aggregationStatsCommandOptions);
         projectsSubCommands.addCommand("info", projectsCommandOptions.infoCommandOptions);
         projectsSubCommands.addCommand("increlease", projectsCommandOptions.incReleaseCommandOptions);
         projectsSubCommands.addCommand("studies", projectsCommandOptions.studiesCommandOptions);
@@ -129,6 +128,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
@@ -153,6 +153,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("acl", analysisClinicalCommandOptions.aclCommandOptions);
         analysisClinicalSubCommands.addCommand("delete", analysisClinicalCommandOptions.deleteCommandOptions);
         analysisClinicalSubCommands.addCommand("update", analysisClinicalCommandOptions.updateCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-annotations-update", analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
         analysisClinicalSubCommands.addCommand("info", analysisClinicalCommandOptions.infoCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-create", analysisClinicalCommandOptions.createInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-clear", analysisClinicalCommandOptions.clearInterpretationCommandOptions);
@@ -164,7 +165,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("jobs", jobsCommandOptions);
         JCommander jobsSubCommands = jCommander.getCommands().get("jobs");
         jobsSubCommands.addCommand("acl-update", jobsCommandOptions.updateAclCommandOptions);
-        jobsSubCommands.addCommand("aggregationstats", jobsCommandOptions.aggregationStatsCommandOptions);
         jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
@@ -182,7 +182,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("admin", adminCommandOptions);
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
-        adminSubCommands.addCommand("catalog-index-stats", adminCommandOptions.indexStatsCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
@@ -195,7 +194,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("individuals", individualsCommandOptions);
         JCommander individualsSubCommands = jCommander.getCommands().get("individuals");
         individualsSubCommands.addCommand("acl-update", individualsCommandOptions.updateAclCommandOptions);
-        individualsSubCommands.addCommand("aggregationstats", individualsCommandOptions.aggregationStatsCommandOptions);
         individualsSubCommands.addCommand("annotation-sets-load", individualsCommandOptions.loadAnnotationSetsCommandOptions);
         individualsSubCommands.addCommand("create", individualsCommandOptions.createCommandOptions);
         individualsSubCommands.addCommand("distinct", individualsCommandOptions.distinctCommandOptions);
@@ -211,7 +209,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("families", familiesCommandOptions);
         JCommander familiesSubCommands = jCommander.getCommands().get("families");
         familiesSubCommands.addCommand("acl-update", familiesCommandOptions.updateAclCommandOptions);
-        familiesSubCommands.addCommand("aggregationstats", familiesCommandOptions.aggregationStatsCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-load", familiesCommandOptions.loadAnnotationSetsCommandOptions);
         familiesSubCommands.addCommand("create", familiesCommandOptions.createCommandOptions);
         familiesSubCommands.addCommand("distinct", familiesCommandOptions.distinctCommandOptions);
@@ -225,6 +222,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
+        usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
@@ -232,7 +230,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
         usersSubCommands.addCommand("filters", usersCommandOptions.filtersCommandOptions);
         usersSubCommands.addCommand("password-reset", usersCommandOptions.resetPasswordCommandOptions);
-        usersSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         usersSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
         usersSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
 
@@ -240,7 +237,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("samples", samplesCommandOptions);
         JCommander samplesSubCommands = jCommander.getCommands().get("samples");
         samplesSubCommands.addCommand("acl-update", samplesCommandOptions.updateAclCommandOptions);
-        samplesSubCommands.addCommand("aggregationstats", samplesCommandOptions.aggregationStatsCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-load", samplesCommandOptions.loadAnnotationSetsCommandOptions);
         samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
         samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
@@ -293,7 +289,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("create", studiesCommandOptions.createCommandOptions);
         studiesSubCommands.addCommand("search", studiesCommandOptions.searchCommandOptions);
         studiesSubCommands.addCommand("acl", studiesCommandOptions.aclCommandOptions);
-        studiesSubCommands.addCommand("aggregationstats", studiesCommandOptions.aggregationStatsCommandOptions);
         studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
         studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
         studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
@@ -313,7 +308,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("files", filesCommandOptions);
         JCommander filesSubCommands = jCommander.getCommands().get("files");
         filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
-        filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
         filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
         filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
         filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
@@ -376,7 +370,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("cohorts", cohortsCommandOptions);
         JCommander cohortsSubCommands = jCommander.getCommands().get("cohorts");
         cohortsSubCommands.addCommand("acl-update", cohortsCommandOptions.updateAclCommandOptions);
-        cohortsSubCommands.addCommand("aggregationstats", cohortsCommandOptions.aggregationStatsCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-load", cohortsCommandOptions.loadAnnotationSetsCommandOptions);
         cohortsSubCommands.addCommand("create", cohortsCommandOptions.createCommandOptions);
         cohortsSubCommands.addCommand("distinct", cohortsCommandOptions.distinctCommandOptions);

@@ -6,7 +6,6 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpe
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.ProjectsCommandOptions;
 import java.util.HashMap;
 import java.util.List;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -38,6 +37,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "projects";
     public ProjectsCommandOptions projectsCommandOptions;
 
     public ProjectsCommandExecutor(ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
@@ -60,9 +60,6 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
                 break;
             case "search":
                 queryResponse = search();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "info":
                 queryResponse = info();
@@ -98,10 +95,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
 
         ProjectCreateParams projectCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectCreateParams = new ProjectCreateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(projectCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             projectCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -139,7 +135,7 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
-        queryParams.putIfNotEmpty("owner", commandOptions.owner);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("fqn", commandOptions.fqn);
@@ -155,23 +151,6 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
         }
 
         return enterpriseOpenCGAClient.getEnterpriseProjectClient().search(queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Projects command line");
-
-        ProjectsCommandOptions.AggregationStatsCommandOptions commandOptions = projectsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("fileFields", commandOptions.fileFields);
-        queryParams.putIfNotEmpty("individualFields", commandOptions.individualFields);
-        queryParams.putIfNotEmpty("familyFields", commandOptions.familyFields);
-        queryParams.putIfNotEmpty("sampleFields", commandOptions.sampleFields);
-        queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
-        queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
-
-        return enterpriseOpenCGAClient.getEnterpriseProjectClient().aggregationStats(commandOptions.projects, queryParams);
     }
 
     private RestResponse<Project> info() throws Exception {
@@ -220,10 +199,9 @@ public class ProjectsCommandExecutor extends com.zettagenomics.opencga.enterpris
 
         ProjectUpdateParams projectUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            projectUpdateParams = new ProjectUpdateParams();
             RestResponse<Project> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(projectUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/projects/{project}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             projectUpdateParams = JacksonUtils.getDefaultObjectMapper()

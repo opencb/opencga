@@ -34,7 +34,6 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public RetryCommandOptions retryCommandOptions;
@@ -52,7 +51,6 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         super(commonCommandOptions,jCommander);
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.retryCommandOptions = new RetryCommandOptions();
@@ -90,68 +88,6 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--job"}, description = "The body web service job parameter", required = false, arity = 1)
         public String job;
-    
-    }
-
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog job stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--tool-id"}, description = "Tool id", required = false, arity = 1)
-        public String toolId; 
-    
-        @Parameter(names = {"--tool-scope"}, description = "Tool scope", required = false, arity = 1)
-        public String toolScope; 
-    
-        @Parameter(names = {"--tool-type"}, description = "Tool type", required = false, arity = 1)
-        public String toolType; 
-    
-        @Parameter(names = {"--tool-resource"}, description = "Tool resource", required = false, arity = 1)
-        public String toolResource; 
-    
-        @Parameter(names = {"--user-id"}, description = "User id", required = false, arity = 1)
-        public String userId; 
-    
-        @Parameter(names = {"--priority"}, description = "Priority", required = false, arity = 1)
-        public String priority; 
-    
-        @Parameter(names = {"--tags"}, description = "Tags", required = false, arity = 1)
-        public String tags; 
-    
-        @Parameter(names = {"--executor-id"}, description = "Executor id", required = false, arity = 1)
-        public String executorId; 
-    
-        @Parameter(names = {"--executor-framework"}, description = "Executor framework", required = false, arity = 1)
-        public String executorFramework; 
-    
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
-    
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
-    
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
-    
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
-    
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
-        public String status; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
-        public String release; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
-        public boolean default_values = false; 
-    
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
     
     }
 
