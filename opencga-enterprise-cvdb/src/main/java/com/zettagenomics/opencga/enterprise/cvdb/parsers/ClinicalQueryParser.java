@@ -562,10 +562,10 @@ public class ClinicalQueryParser {
             return;
         }
 
-        if (StringUtils.isNotEmpty(QueryOptions.LIMIT)) {
+        if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
         }
-        if (StringUtils.isNotEmpty(QueryOptions.SKIP)) {
+        if (queryOptions.containsKey(QueryOptions.SKIP)) {
             solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
         }
     }
