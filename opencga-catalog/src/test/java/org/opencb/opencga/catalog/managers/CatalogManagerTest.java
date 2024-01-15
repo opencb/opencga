@@ -108,6 +108,31 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expectMessage("expired");
         assertEquals("opencga", catalogManager.getUserManager().validateToken(expiringToken).getUserId());
     }
+
+    @Test
+    public void loginWithoutOrganizationId() throws CatalogException {
+        String token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).getToken();
+        assertTrue(StringUtils.isNotEmpty(token));
+        JwtPayload jwtPayload = new JwtPayload(token);
+        assertEquals(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getOrganization());
+
+        token = catalogManager.getUserManager().login(null, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
+        assertTrue(StringUtils.isNotEmpty(token));
+        jwtPayload = new JwtPayload(token);
+        assertEquals(organizationId, jwtPayload.getOrganization());
+
+        // Create a third organization
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("other").setName("Test"), QueryOptions.empty(), opencgaToken);
+        token = catalogManager.getUserManager().login(null, ParamConstants.OPENCGA_USER_ID, TestParamConstants.ADMIN_PASSWORD).getToken();
+        assertTrue(StringUtils.isNotEmpty(token));
+        jwtPayload = new JwtPayload(token);
+        assertEquals(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getOrganization());
+
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage("organizationId");
+        catalogManager.getUserManager().login(null, orgOwnerUserId, TestParamConstants.PASSWORD);
+    }
+
     @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);

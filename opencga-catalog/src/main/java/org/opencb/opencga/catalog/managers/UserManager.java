@@ -732,6 +732,20 @@ public class UserManager extends AbstractManager {
         String authId = null;
         AuthenticationResponse response = null;
 
+        if (StringUtils.isEmpty(organizationId)) {
+            // Try to automatically set the organization id
+            if (OPENCGA.equals(username)) {
+                organizationId = ParamConstants.ADMIN_ORGANIZATION;
+            } else {
+                List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+                if (organizationIds.size() == 2) {
+                    organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s)).findFirst().get();
+                } else {
+                    throw CatalogParameterException.isNull("organizationId");
+                }
+            }
+        }
+
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_ACCOUNT);
         if (userOpenCGAResult.getNumResults() == 1) {
             authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
