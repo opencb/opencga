@@ -66,7 +66,7 @@ public class OrganizationMigration extends MigrationTool {
         this.oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
 
         MongoCollection<Document> userCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
-        FindIterable<Document> iterable = userCol.find(Filters.eq("id", "opencga"));
+        FindIterable<Document> iterable = userCol.find(Filters.eq("id", ParamConstants.OPENCGA_USER_ID));
         try (MongoCursor<Document> cursor = iterable.cursor()) {
             if (!cursor.hasNext()) {
                 MongoIterable<String> collectionNames = oldDatastore.getDb().listCollectionNames();
@@ -220,8 +220,8 @@ public class OrganizationMigration extends MigrationTool {
 
         // Create admin organization
         MongoCollection<Document> oldUserCollection = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
-        queryMongo(oldUserCollection, Filters.eq("id", "opencga"), Projections.exclude("_id"), document -> {
-            String organizationId = "opencga";
+        queryMongo(oldUserCollection, Filters.eq("id", ParamConstants.OPENCGA_USER_ID), Projections.exclude("_id"), document -> {
+            String organizationId = ParamConstants.ADMIN_ORGANIZATION;
             try {
                 MongoCollection<Document> userCollection = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb()
                         .getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
@@ -284,14 +284,14 @@ public class OrganizationMigration extends MigrationTool {
                 }
 
                 // Remove user from the source database
-                oldUserCollection.deleteOne(Filters.eq("id", "opencga"));
+                oldUserCollection.deleteOne(Filters.eq("id", ParamConstants.OPENCGA_USER_ID));
             } catch (CatalogException e) {
                 throw new RuntimeException(e);
             }
         });
 
         // Create new organization
-        String opencgaToken = catalogManager.getUserManager().login(ParamConstants.ADMIN_ORGANIZATION, "opencga", adminPassword).getToken();
+        String opencgaToken = catalogManager.getUserManager().login(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID, adminPassword).getToken();
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId), null, opencgaToken);
         OrganizationMongoDBAdaptorFactory orgFactory = mongoDBAdaptorFactory.getOrganizationMongoDBAdaptorFactory(organizationId);
         String newDatabase = orgFactory.getMongoDataStore().getDatabaseName();
