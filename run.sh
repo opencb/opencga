@@ -41,6 +41,7 @@ function printTestUsage() {
   echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
   echo "     -f     --fail-never          FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
+  echo "     -p     --publish             FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -s     --skip-tests          FLAG           Publish the results on a reports server without rerunning the test."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
