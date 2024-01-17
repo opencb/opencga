@@ -271,13 +271,15 @@ public class OrganizationManager extends AbstractManager {
         organization.setAdmins(Collections.emptyList());
         organization.setProjects(Collections.emptyList());
 
-        if (organization.getConfiguration() != null
-                && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
+        if (organization.getConfiguration() == null) {
+            organization.setConfiguration(new OrganizationConfiguration());
+        }
+        if (CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
             for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
             }
         } else {
-            organization.setConfiguration(new OrganizationConfiguration());
+            // FIXME : Add default authentication origin?
         }
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }

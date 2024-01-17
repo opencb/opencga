@@ -46,6 +46,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.ProjectManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -546,7 +547,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     /**
      * Update Cellbase configuration.
      *
-     * @param project               Study identifier
+     * @param project               Project identifier
      * @param cellbaseConfiguration New cellbase configuration
      * @param annotate              Launch variant annotation if needed
      * @param annotationSaveId      Save previous variant annotation before annotating
@@ -992,8 +993,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
             throws StorageEngineException, CatalogException {
-        DataStore dataStore = getDataStoreByProjectId(project, token);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, null, project, token);
+        String projectFqn = getProjectFqn(project, Collections.emptyList(), token);
+        DataStore dataStore = getDataStoreByProjectId(projectFqn, token);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineByDatastore(dataStore, null, projectFqn, token);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
         }
@@ -1638,19 +1640,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
-        if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
-            // Extract organization from token
-            JwtPayload jwtPayload = new JwtPayload(token);
-            String organizationId = jwtPayload.getOrganization();
-            // Look for projects from own organization
-            List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults();
-            if (projects.size() == 1) {
-                projectStr = projects.get(0).getFqn();
-            } else {
-                throw new IllegalArgumentException("Expected either studies or project to annotate");
-            }
-        }
-
+        final String projectFqn;
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
@@ -1660,7 +1650,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     .map(Study::getFqn)
                     .collect(Collectors.toList());
 
-            projectStr = catalogManager.getStudyManager().getProjectFqn(studies.get(0));
+            if (StringUtils.isEmpty(projectStr)) {
+                projectFqn = catalogManager.getStudyManager().getProjectFqn(studies.get(0));
+            } else {
+                projectFqn = catalogManager.getProjectManager().get(projectStr, ProjectManager.INCLUDE_PROJECT_IDS, token).first().getFqn();
+            }
 
             if (studies.size() > 1) {
                 for (String studyStr : studies) {
@@ -1669,8 +1663,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
+        } else if (StringUtils.isNotEmpty(projectStr)) {
+            projectFqn = catalogManager.getProjectManager().get(projectStr, ProjectManager.INCLUDE_PROJECT_IDS, token).first().getFqn();
+        } else {
+            // Extract organization from token
+            JwtPayload jwtPayload = new JwtPayload(token);
+            String organizationId = jwtPayload.getOrganization();
+            // Look for projects from own organization
+            List<Project> projects = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token)
+                    .getResults();
+            if (projects.size() == 1) {
+                projectFqn = projects.get(0).getFqn();
+            } else {
+                throw new IllegalArgumentException("Expected either studies or project to annotate");
+            }
         }
-        return projectStr;
+        return projectFqn;
     }
 
     public DataStore getDataStore(String study, String token) throws CatalogException {
@@ -1705,7 +1713,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         }
 
         if (dataStore == null) { //get default datastore
-            dataStore = defaultDataStore(catalogManager, project, token);
+            dataStore = defaultDataStore(catalogManager, project);
         }
         if (dataStore.getOptions() == null) {
             dataStore.setOptions(new ObjectMap());
@@ -1714,26 +1722,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return dataStore;
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String token) throws CatalogException {
-        return defaultDataStore(catalogManager, project, catalogManager.getConfiguration().getDatabasePrefix(), token);
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) throws CatalogException {
+        return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project, String databasePrefix, String token)
+    public static DataStore defaultDataStore(String databasePrefix, String projectFqnStr)
             throws CatalogException {
-        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(project.getFqn());
-        String organizationId = projectFqn.getOrganizationId();
-        DataStore dataStore;
-        //Must use the UserByStudyId instead of the file owner.
-        String userId = catalogManager.getProjectManager().getOwner(organizationId, project.getUid());
-        // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
-        userId = userId.replace('.', '_');
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
 
-        String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
-        dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
-        return dataStore;
+        String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId());
+        return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
     }
 
-    public static String buildDatabaseName(String databasePrefix, String userId, String projectId) {
+    public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId) {
+        // Replace possible dots at the organization. Usually a special character in almost all databases. See #532
+        organizationId = organizationId.replace('.', '_');
+
         String prefix;
         if (StringUtils.isNotEmpty(databasePrefix)) {
             prefix = databasePrefix;
@@ -1750,7 +1754,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             projectId = projectId.substring(idx + 1);
         }
 
-        return prefix + userId + '_' + projectId;
+        return prefix + organizationId + '_' + projectId;
     }
 
 }

@@ -49,8 +49,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private static CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
+    private String adminToken;
 
-    private static boolean firstExecutionFinished = false;
+//    private static boolean firstExecutionFinished = false;
 
     public CatalogManagerExternalResource() {
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
@@ -75,13 +76,13 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
         catalogManager = new CatalogManager(configuration);
-        if (!firstExecutionFinished) {
-            clearCatalog(configuration);
-            firstExecutionFinished = true;
-
-            String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
-            catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-        }
+//        if (!firstExecutionFinished) {
+        clearCatalog(configuration);
+//            firstExecutionFinished = true;
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
+//        }
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     @Override
@@ -105,7 +106,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public String getAdminToken() {
-        return "";
+        return adminToken;
     }
 
     public Path getOpencgaHome() {

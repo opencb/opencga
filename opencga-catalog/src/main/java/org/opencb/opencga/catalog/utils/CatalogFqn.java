@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.JwtPayload;
 
 import java.util.regex.Matcher;
@@ -65,9 +64,9 @@ public final class CatalogFqn {
         }
     }
 
-    public static CatalogFqn extractFqnFromProjectFqn(String projectFqn) throws CatalogException {
+    public static CatalogFqn extractFqnFromProjectFqn(String projectFqn) {
         if (StringUtils.isEmpty(projectFqn)) {
-            throw new CatalogException("Missing project fqn");
+            throw new IllegalArgumentException("Missing project fqn");
         }
 
         String[] split = projectFqn.split("@");
@@ -75,7 +74,25 @@ public final class CatalogFqn {
             return new CatalogFqn(split[0], projectFqn)
                     .setProjectId(split[1]);
         } else {
-            throw new CatalogException("Provided string '" + projectFqn + "' is not a valid project fqn.");
+            throw new IllegalArgumentException("Provided string '" + projectFqn + "' is not a valid project fqn.");
+        }
+    }
+
+    public static CatalogFqn extractFqnFromStudyFqn(String studyFqn) {
+        if (StringUtils.isEmpty(studyFqn)) {
+            throw new IllegalArgumentException("Missing study fqn");
+        }
+        Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyFqn);
+        if (matcher.find()) {
+            // studyStr contains the full path (organization@project:study)
+            String organizationId = matcher.group(1);
+            String projectId = matcher.group(2);
+            String studyId = matcher.group(3);
+            return new CatalogFqn(organizationId, studyFqn)
+                    .setProjectId(projectId)
+                    .setStudyId(studyId);
+        } else {
+            throw new IllegalArgumentException("Provided string '" + studyFqn + "' is not a valid study fqn.");
         }
     }
 

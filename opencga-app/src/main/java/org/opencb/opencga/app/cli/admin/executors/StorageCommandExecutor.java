@@ -180,9 +180,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
 
                 final DataStore defaultDataStore;
                 if (StringUtils.isEmpty(commandOptions.dbPrefix)) {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, token);
+                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
                 } else {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project, commandOptions.dbPrefix, token);
+                    defaultDataStore = VariantStorageManager.defaultDataStore(commandOptions.dbPrefix, project.getFqn());
                 }
 
                 final DataStore newDataStore;

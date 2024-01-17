@@ -126,8 +126,6 @@ public abstract class StorageManager {
         studyInfo.setProjectUid(project.getUid());
         studyInfo.setProjectId(project.getId());
         studyInfo.setOrganism(project.getOrganism());
-        String user = catalogManager.getProjectManager().getOwner(organizationId, project.getUid());
-        studyInfo.setUserId(user);
 
         Map<File.Bioformat, DataStore> dataStores = new HashMap<>();
         dataStores.put(File.Bioformat.VARIANT, getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, token));

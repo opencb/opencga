@@ -105,6 +105,7 @@ public class OrganizationMongoDBAdaptorFactory {
             DELETED_INTERPRETATION_COLLECTION,
 
             MIGRATION_COLLECTION,
+            // FIXME metadata collection is unused
             METADATA_COLLECTION,
             AUDIT_COLLECTION
     );

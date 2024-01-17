@@ -85,11 +85,6 @@ public class ProjectManager extends AbstractManager {
         this.catalogIOManager = catalogIOManager;
     }
 
-    @Deprecated
-    public String getOwner(String organizationId, long projectId) throws CatalogException {
-        return organizationId;
-    }
-
     /**
      * Fetch the project qualifying the projectStr structure as long as userId has permissions to see it.
      *
