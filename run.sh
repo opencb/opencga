@@ -102,6 +102,7 @@ OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
+TESTS_DIR="tests"
 ## 2. Parse CLI options
 if [ "$1" != "build" ] && [ "$1" != "test" ];then
   printUsage
@@ -177,6 +178,9 @@ done
 ## 3. Execute scripts
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
+if [ -d "$TESTS_DIR" ]; then
+  rm -rf "$TESTS_DIR"
+fi
 
 if [ "$DEBUG" == "true" ];then
   echo "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
@@ -231,7 +235,9 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
         echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
         exit 1
       fi
-      mvn install surefire-report:report ${FAIL_NEVER} -P storage-hadoop,hdp3.1,"${TEST_TAG}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      if [ "$SKIP_TESTS" != "true" ]; then
+        mvn install surefire-report:report ${FAIL_NEVER} -P storage-hadoop,hdp3.1,"${TEST_TAG}" -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+      fi
       # shellcheck disable=SC2181
       if [ $? -eq 0 ]; then
         echo "Opencga tests success!"
@@ -274,6 +280,14 @@ if [ "$COMMAND" == "build" ];then
   mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
 fi
 
-if [ "$COMMAND" == "test" ];then
-  mvn -B verify surefire-report:report "${FAIL_NEVER}"
+if [ "$COMMAND" == "test" ]; then
+  if [ "$SKIP_TESTS" != "true" ]; then
+    mvn -B verify surefire-report:report "${FAIL_NEVER}"
+  fi
+  mkdir tests
+  cp **/target/surefire-reports/TEST*.xml "$TESTS_DIR"
 fi
+
+
+
+
