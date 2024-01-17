@@ -715,7 +715,7 @@ public class MigrationManager {
             migrationRun.setEnd(TimeUtils.getDate());
             migrationRun.setPatch(annotation.patch());
             try {
-                String adminStudy = "opencga@admin:admin";
+                String adminStudy = ParamConstants.ADMIN_ORGANIZATION + "@admin:admin";
                 dbAdaptorFactory.getMigrationDBAdaptor(organizationId).upsert(migrationRun);
                 OpenCGAResult<File> outdir = catalogManager.getFileManager()
                         .createFolder(adminStudy, path, true, "Migration job " + migrationRun.getId(), null,

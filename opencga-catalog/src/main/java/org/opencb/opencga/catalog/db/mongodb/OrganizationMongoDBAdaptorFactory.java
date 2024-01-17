@@ -482,9 +482,6 @@ public class OrganizationMongoDBAdaptorFactory {
     private String getCatalogOrganizationDatabase(String prefix, String organization) {
         String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
         dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
-
-        String dbOrganization = organization.endsWith("_") ? organization : organization + "_";
-
-        return (dbPrefix + dbOrganization + "catalog").toLowerCase();
+        return (dbPrefix + "catalog_" + organization).toLowerCase();
     }
 }
