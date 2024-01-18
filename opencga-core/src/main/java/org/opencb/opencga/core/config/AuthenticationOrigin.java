@@ -60,8 +60,8 @@ public class AuthenticationOrigin {
                 Collections.emptyMap());
     }
 
-    public AuthenticationOrigin(String id, String type, String host, Map<String, Object> options) {
-        this(id, type, host, "HS256", PasswordUtils.getStrongRandomPassword(32), 3600L, options);
+    public AuthenticationOrigin(String id, AuthenticationType type, String host, Map<String, Object> options) {
+        this(id, type.name(), host, "HS256", PasswordUtils.getStrongRandomPassword(32), 3600L, options);
     }
 
     public AuthenticationOrigin(String id, String type, String host, String algorithm, String secretKey, long expiration,

@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -158,39 +157,6 @@ public abstract class AbstractManager {
             query.remove(currentKey);
             query.put(newKey, value);
         }
-    }
-
-    /**
-     * Prior to the conversion to a numerical featureId, there is a need to know in which user/project/study look for the string.
-     * This method calculates those parameters to know how to obtain the numerical id.
-     *
-     * @param userId     User id of the user asking for the id. If no user is found in featureStr, we will assume that it is asking for its
-     *                   projects/studies...
-     * @param featureStr Feature id in string format. Could be one of [user@aliasProject:aliasStudy:XXXXX
-     *                   | user@aliasStudy:XXXXX | aliasStudy:XXXXX | XXXXX].
-     * @return an objectMap with the following possible keys: "user", "project", "study", "featureName"
-     */
-    protected ObjectMap parseFeatureId(String userId, String featureStr) {
-        ObjectMap result = new ObjectMap("user", userId);
-
-        String[] split = featureStr.split("@");
-        if (split.length == 2) { // user@project:study
-            result.put("user", split[0]);
-            featureStr = split[1];
-        }
-
-        split = featureStr.split(":", 3);
-        if (split.length == 2) {
-            result.put("study", split[0]);
-            result.put("featureName", split[1]);
-        } else if (split.length == 3) {
-            result.put("project", split[0]);
-            result.put("study", split[1]);
-            result.put("featureName", split[2]);
-        } else {
-            result.put("featureName", featureStr);
-        }
-        return result;
     }
 
     AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {

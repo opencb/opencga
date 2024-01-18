@@ -585,7 +585,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--id"}, description = "Comma separated list of resource ids (users or applications) or single group id to be imported.", arity = 1)
         public String id;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the users or group will be associated to."
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study where the users or group will be associated to."
                 + " Parameter --study-group is needed to perform this action.", arity = 1)
         public String study;
 
@@ -620,7 +620,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", arity = 1)
         public String to;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.",
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study where the list of users will be associated to.",
                 required = true, arity = 1)
         public String study;
 

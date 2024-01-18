@@ -47,7 +47,7 @@ public class CatalogCohortToSolrCohortConverterTest {
 
     @Test
     public void CohortToSolrTest() {
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+        Study study = new Study().setFqn("organization@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Cohort cohort = new Cohort("id", "", Enums.CohortType.CASE_SET, TimeUtils.getTime(), TimeUtils.getTime(),
                 "test", Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null)

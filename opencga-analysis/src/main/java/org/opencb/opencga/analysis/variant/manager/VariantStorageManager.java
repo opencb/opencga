@@ -1747,8 +1747,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             prefix = "opencga_";
         }
-        // Project id might contain the userId:
-        // userId@projectId
+        // Project id might contain the organization:
+        // organization@projectId
         int idx = projectId.indexOf('@');
         if (idx >= 0) {
             projectId = projectId.substring(idx + 1);

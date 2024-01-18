@@ -22,6 +22,7 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.PasswordUtils;
@@ -60,6 +61,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
+        if (catalogManager != null) {
+            catalogManager.close();
+            catalogManager = null;
+        }
         int c = 0;
         do {
             opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
@@ -75,13 +80,13 @@ public class CatalogManagerExternalResource extends ExternalResource {
         FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
 
-        catalogManager = new CatalogManager(configuration);
-//        if (!firstExecutionFinished) {
+        // Clear before creating a new instance of CatalogManager
         clearCatalog(configuration);
-//            firstExecutionFinished = true;
+
+        catalogManager = new CatalogManager(configuration);
+
         String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-//        }
         adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
@@ -117,6 +122,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
             dbAdaptorFactory.deleteCatalogDB();
         }
+        AuthenticationFactory.clear();
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());

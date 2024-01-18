@@ -87,7 +87,7 @@ public class CustomFilesCommandOptions {
         @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Checksum", arity = 1)
         public String checksum;
 
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or" +
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or" +
                 " UUID", required = false, arity = 1)
         public String study;
     }

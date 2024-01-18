@@ -41,7 +41,7 @@ public class CatalogFamilyToSolrFamilyConverterTest {
 
     @Test
     public void FamilyToSolrTest() {
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+        Study study = new Study().setFqn("organization@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Family family = new Family("id", "family", null, null,
                 Arrays.asList(new Individual().setId("I1"), new Individual().setId("I2")), "test", 1000, AnnotationHelper.createAnnotation(), null);

@@ -37,7 +37,7 @@ public class CohortCommandOptions {
 //        @ParametersDelegate
 //        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 //
-//        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
+//        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[organization@]project:]study.", required = false,
 //                arity = 1)
 //        public String studyId;
 //
@@ -54,7 +54,7 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[organization@]project:]study.", required = true,
                 arity = 1)
         public String studyId;
 

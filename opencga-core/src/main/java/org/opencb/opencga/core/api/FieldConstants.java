@@ -355,7 +355,7 @@ public class FieldConstants {
     public static final String JOB_STUDY_PARAM_OTHERS = "List of strings.";
 
     //Project
-    public static final String PROJECT_FQN = "Full Qualified Name (user@projectId).";
+    public static final String PROJECT_FQN = "Full Qualified Name (organization@projectId).";
     public static final String PROJECT_ORGANISM = "Organism to which the project belongs.";
     public static final String PROJECT_STUDIES = "Project study list.";
 

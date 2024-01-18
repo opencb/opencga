@@ -1,10 +1,12 @@
 package org.opencb.opencga.catalog.auth.authentication.azure;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.catalog.auth.authentication.*;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class AuthenticationFactory {
 
@@ -25,7 +28,7 @@ public final class AuthenticationFactory {
     private static Logger logger = LoggerFactory.getLogger(AuthenticationFactory.class);
 
     static {
-        authenticationManagerMap = new HashMap<>();
+        authenticationManagerMap = new ConcurrentHashMap<>();
     }
 
     private AuthenticationFactory() {
@@ -63,9 +66,9 @@ public final class AuthenticationFactory {
                 }
             }
         }
-        tmpAuthenticationManagerMap.putIfAbsent(CatalogAuthenticationManager.INTERNAL,
-                new CatalogAuthenticationManager(dbAdaptorFactory, email,
-                        PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH), 3600L));
+        if (tmpAuthenticationManagerMap.isEmpty()) {
+            throw new CatalogException("No authentication origin found for organization '" + organization.getId() + "'");
+        }
         authenticationManagerMap.put(organization.getId(), tmpAuthenticationManagerMap);
     }
 

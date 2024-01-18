@@ -169,7 +169,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
                     + "<ul>"
                     + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
-                    + "<li><b>study</b>: Study [[user@]project:]study where the list of users will be associated to.</li>"
+                    + "<li><b>study</b>: Study [[organization@]project:]study where the list of users will be associated to.</li>"
                     + "<li><b>from</b>: Group defined in the authenticated origin to be synchronised.</li>"
                     + "<li><b>to</b>: Group in a study that will be synchronised.</li>"
                     + "<li><b>syncAll</b>: Flag indicating whether to synchronise all the groups present in the study with"

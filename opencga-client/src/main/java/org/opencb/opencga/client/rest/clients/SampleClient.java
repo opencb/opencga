@@ -60,7 +60,7 @@ public class SampleClient extends AbstractParentClient {
      * @param data JSON containing the parameters to update the permissions. If propagate flag is set to true, it will propagate the
      *     permissions defined to the individuals that are associated to the matching samples.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -78,7 +78,7 @@ public class SampleClient extends AbstractParentClient {
      * @param path Path where the TSV file is located in OpenCGA or where it should be located.
      * @param data JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       parents: Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously
      *            associated).
      *       annotationSetId: Annotation set id. If not provided, variableSetId will be used.
@@ -100,7 +100,7 @@ public class SampleClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -115,7 +115,7 @@ public class SampleClient extends AbstractParentClient {
      * Sample distinct method.
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list sample UUIDs up to a maximum of 100.
@@ -172,7 +172,7 @@ public class SampleClient extends AbstractParentClient {
      * Load samples from a ped file [EXPERIMENTAL].
      * @param file file.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       variableSet: variableSet.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -193,7 +193,7 @@ public class SampleClient extends AbstractParentClient {
      *       count: Get the total number of results matching the query. Deactivated by default.
      *       includeIndividual: Include Individual object as an attribute.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list sample UUIDs up to a maximum of 100.
@@ -249,7 +249,7 @@ public class SampleClient extends AbstractParentClient {
      * Returns the acl of the samples. If member is provided, it will only return the acl for the member.
      * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       member: User or group id.
      *       silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
      *            looked for cannot be shown for whichever reason.
@@ -269,7 +269,7 @@ public class SampleClient extends AbstractParentClient {
      *       emptyFilesAction: Action to be performed over files that were associated only to the sample to be deleted. Possible actions
      *            are NONE, TRASH, DELETE.
      *       deleteEmptyCohorts: Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -286,7 +286,7 @@ public class SampleClient extends AbstractParentClient {
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       includeIndividual: Include Individual object as an attribute.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       version: Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids
      *            are provided.
      *       deleted: Boolean to retrieve deleted entries.
@@ -305,7 +305,7 @@ public class SampleClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       annotationSetsAction: Action to be performed if the array of annotationSets is being updated.
      *       phenotypesAction: Action to be performed if the array of phenotypes is being updated [SET, ADD, REMOVE].
      *       includeResult: Flag indicating to include the created or updated document result in the response.
@@ -326,7 +326,7 @@ public class SampleClient extends AbstractParentClient {
      *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
      *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       action: Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation;
      *            SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to
      *            set some annotations to the default value configured in the corresponding variables of the VariableSet if any.

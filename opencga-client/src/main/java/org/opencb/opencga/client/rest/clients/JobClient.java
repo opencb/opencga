@@ -73,7 +73,7 @@ public class JobClient extends AbstractParentClient {
      * Register an executed job with POST method.
      * @param data job.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -87,7 +87,7 @@ public class JobClient extends AbstractParentClient {
      * Job distinct method.
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       otherStudies: Flag indicating the entries being queried can belong to any related study, not just the primary one.
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
@@ -127,7 +127,7 @@ public class JobClient extends AbstractParentClient {
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
      *       jobTags: Job tags.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -145,7 +145,7 @@ public class JobClient extends AbstractParentClient {
      *       limit: Number of results to be returned.
      *       skip: Number of results to skip.
      *       count: Get the total number of results matching the query. Deactivated by default.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       otherStudies: Flag indicating the entries being queried can belong to any related study, not just the primary one.
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
@@ -180,7 +180,7 @@ public class JobClient extends AbstractParentClient {
      * Provide a summary of the running jobs.
      * @param params Map containing any of the following optional parameters.
      *       limit: Maximum number of jobs to be returned.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       internalStatus: Filter by internal status.
      *       priority: Priority of the job.
      *       userId: User that created the job.
@@ -213,7 +213,7 @@ public class JobClient extends AbstractParentClient {
      * Delete existing jobs.
      * @param jobs Comma separated list of job ids.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -228,7 +228,7 @@ public class JobClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       deleted: Boolean to retrieve deleted jobs.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -245,7 +245,7 @@ public class JobClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -260,7 +260,7 @@ public class JobClient extends AbstractParentClient {
      * Show the first lines of a log file (up to a limit).
      * @param job Job ID or UUID.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       offset: Starting byte from which the file will be read.
      *       lines: Maximum number of lines to be returned up to a maximum of 1000.
      *       type: Log file to be shown (stdout or stderr).
@@ -276,7 +276,7 @@ public class JobClient extends AbstractParentClient {
      * Show the last lines of a log file (up to a limit).
      * @param job Job ID or UUID.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       lines: Maximum number of lines to be returned up to a maximum of 1000.
      *       type: Log file to be shown (stdout or stderr).
      * @return a RestResponse object.

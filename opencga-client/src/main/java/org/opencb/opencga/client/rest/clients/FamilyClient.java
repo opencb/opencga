@@ -59,7 +59,7 @@ public class FamilyClient extends AbstractParentClient {
      * @param action Action to be performed [ADD, SET, REMOVE or RESET].
      * @param data JSON containing the parameters to add ACLs.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       propagate: Propagate family permissions to related individuals and samples.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -78,7 +78,7 @@ public class FamilyClient extends AbstractParentClient {
      * @param path Path where the TSV file is located in OpenCGA or where it should be located.
      * @param data JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       parents: Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously
      *            associated).
      *       annotationSetId: Annotation set id. If not provided, variableSetId will be used.
@@ -100,7 +100,7 @@ public class FamilyClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       members: Comma separated list of member ids to be associated to the created family.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
@@ -116,7 +116,7 @@ public class FamilyClient extends AbstractParentClient {
      * Family distinct method.
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       name: Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~',
@@ -159,7 +159,7 @@ public class FamilyClient extends AbstractParentClient {
      *       skip: Number of results to skip.
      *       count: Get the total number of results matching the query. Deactivated by default.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       name: Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~',
@@ -196,7 +196,7 @@ public class FamilyClient extends AbstractParentClient {
      * Returns the acl of the families. If member is provided, it will only return the acl for the member.
      * @param families Comma separated list of family IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       member: User or group id.
      *       silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
      *            looked for cannot be shown for whichever reason.
@@ -212,7 +212,7 @@ public class FamilyClient extends AbstractParentClient {
      * Delete existing families.
      * @param families Comma separated list of family ids.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -228,7 +228,7 @@ public class FamilyClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       version: Comma separated list of family versions. 'all' to get all the family versions. Not supported if multiple family ids
      *            are provided.
      *       deleted: Boolean to retrieve deleted families.
@@ -247,7 +247,7 @@ public class FamilyClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       updateRoles: Update the member roles within the family.
      *       updatePedigreeGraph: Update the family pedigree graph.
      *       annotationSetsAction: Action to be performed if the array of annotationSets is being updated.
@@ -269,7 +269,7 @@ public class FamilyClient extends AbstractParentClient {
      *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
      *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       action: Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation;
      *            SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to
      *            set some annotations to the default value configured in the corresponding variables of the VariableSet if any.

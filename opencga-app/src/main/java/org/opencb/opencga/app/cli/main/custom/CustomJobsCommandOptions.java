@@ -70,7 +70,7 @@ public class CustomJobsCommandOptions {
         @Parameter(names = {"--internal-status"}, description = ParamConstants.JOB_STATUS_DESCRIPTION, arity = 1)
         public String internalStatus;
 
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or" +
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or" +
                 " UUID", required = false, arity = 1)
         public String study;
     }
@@ -96,7 +96,7 @@ public class CustomJobsCommandOptions {
         @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", arity = 1)
         public int delay = 2;
 
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or" +
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or" +
                 " UUID", required = false, arity = 1)
         public String study;
     }

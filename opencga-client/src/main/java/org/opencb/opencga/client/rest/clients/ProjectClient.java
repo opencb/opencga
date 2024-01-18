@@ -73,7 +73,7 @@ public class ProjectClient extends AbstractParentClient {
      *       limit: Number of results to be returned.
      *       skip: Number of results to skip.
      *       organization: Project organization.
-     *       id: Project [user@]project where project can be either the ID or the alias.
+     *       id: Project [organization@]project where project can be either the ID or the alias.
      *       name: Project name.
      *       fqn: Project fqn.
      *       organization: Project organization.
@@ -93,7 +93,7 @@ public class ProjectClient extends AbstractParentClient {
 
     /**
      * Fetch project information.
-     * @param projects Comma separated list of projects [user@]project up to a maximum of 100.
+     * @param projects Comma separated list of projects [organization@]project up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -107,7 +107,7 @@ public class ProjectClient extends AbstractParentClient {
 
     /**
      * Increment current release number in the project.
-     * @param project Project [user@]project where project can be either the ID or the alias.
+     * @param project Project [organization@]project where project can be either the ID or the alias.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -118,7 +118,7 @@ public class ProjectClient extends AbstractParentClient {
 
     /**
      * Fetch all the studies contained in the project.
-     * @param project Project [user@]project where project can be either the ID or the alias.
+     * @param project Project [organization@]project where project can be either the ID or the alias.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -134,7 +134,7 @@ public class ProjectClient extends AbstractParentClient {
 
     /**
      * Update some project attributes.
-     * @param project Project [user@]project where project can be either the ID or the alias.
+     * @param project Project [organization@]project where project can be either the ID or the alias.
      * @param data JSON containing the params to be updated. It will be only possible to update organism fields not previously defined.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.

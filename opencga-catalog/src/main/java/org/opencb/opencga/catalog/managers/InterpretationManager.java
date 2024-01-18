@@ -798,7 +798,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     /**
      * Update interpretations from catalog.
      *
-     * @param studyStr           Study id in string format. Could be one of [id|user@projectId:studyId|projectId:studyId].
+     * @param studyStr           Study id in string format. Could be one of [id|organization@projectId:studyId|projectId:studyId].
      * @param clinicalAnalysisId ClinicalAnalysis id.
      * @param interpretationIds  List of interpretation ids. Could be either the id or uuid.
      * @param updateParams       Data model filled only with the parameters to be updated.

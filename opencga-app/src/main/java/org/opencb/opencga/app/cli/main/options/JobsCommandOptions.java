@@ -103,7 +103,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
@@ -171,7 +171,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
@@ -257,7 +257,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--job"}, description = "The body web service job parameter", required = false, arity = 1)
@@ -292,7 +292,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
         public boolean count = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
@@ -374,7 +374,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--jobs"}, description = "Comma separated list of job ids", required = true, arity = 1)
@@ -397,7 +397,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--jobs"}, description = "Comma separated list of job IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String jobs; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted jobs", required = false, help = true, arity = 0)
@@ -426,7 +426,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--jobs"}, description = "Comma separated list of job IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String jobs; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -455,7 +455,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job"}, description = "Job ID or UUID", required = true, arity = 1)
         public String job; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", required = false, arity = 1)
@@ -478,7 +478,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job"}, description = "Job ID or UUID", required = true, arity = 1)
         public String job; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)

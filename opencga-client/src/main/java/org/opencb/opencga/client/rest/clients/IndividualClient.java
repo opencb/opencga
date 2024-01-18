@@ -60,7 +60,7 @@ public class IndividualClient extends AbstractParentClient {
      * @param data JSON containing the parameters to update the permissions. If propagate flag is set to true, it will propagate the
      *     permissions defined to the samples that are associated to the matching individuals.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       propagate: Propagate individual permissions to related samples.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -79,7 +79,7 @@ public class IndividualClient extends AbstractParentClient {
      * @param path Path where the TSV file is located in OpenCGA or where it should be located.
      * @param data JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       parents: Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously
      *            associated).
      *       annotationSetId: Annotation set id. If not provided, variableSetId will be used.
@@ -101,7 +101,7 @@ public class IndividualClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       samples: Comma separated list of sample ids to be associated to the created individual.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
@@ -117,7 +117,7 @@ public class IndividualClient extends AbstractParentClient {
      * Individual distinct method.
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
      *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list individual UUIDs up to a maximum of 100.
@@ -171,7 +171,7 @@ public class IndividualClient extends AbstractParentClient {
      *       skip: Number of results to skip.
      *       count: Get the total number of results matching the query. Deactivated by default.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~',
      *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list individual UUIDs up to a maximum of 100.
@@ -219,7 +219,7 @@ public class IndividualClient extends AbstractParentClient {
      * Return the acl of the individual. If member is provided, it will only return the acl for the member.
      * @param individuals Comma separated list of individual IDs, names or UUIDs up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       member: User or group id.
      *       silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
      *            looked for cannot be shown for whichever reason.
@@ -236,7 +236,7 @@ public class IndividualClient extends AbstractParentClient {
      * @param individuals Comma separated list of individual ids.
      * @param params Map containing any of the following optional parameters.
      *       force: Force the deletion of individuals that already belong to families.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -252,7 +252,7 @@ public class IndividualClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       version: Comma separated list of individual versions. 'all' to get all the individual versions. Not supported if multiple
      *            individual ids are provided.
      *       deleted: Boolean to retrieve deleted individuals.
@@ -271,7 +271,7 @@ public class IndividualClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       samplesAction: Action to be performed if the array of samples is being updated.
      *       phenotypesAction: Action to be performed if the array of phenotypes is being updated [SET, ADD, REMOVE].
      *       disordersAction: Action to be performed if the array of disorders is being updated [SET, ADD, REMOVE].
@@ -294,7 +294,7 @@ public class IndividualClient extends AbstractParentClient {
      *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
      *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       action: Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation;
      *            SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to
      *            set some annotations to the default value configured in the corresponding variables of the VariableSet if any.
@@ -315,7 +315,7 @@ public class IndividualClient extends AbstractParentClient {
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       flattenAnnotations: Flatten the annotations?.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       degree: Pedigree degree.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
