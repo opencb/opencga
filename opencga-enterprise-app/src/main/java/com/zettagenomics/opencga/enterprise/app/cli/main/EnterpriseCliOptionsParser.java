@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-11-13 OpenCB
+* Copyright 2015-2024-01-18 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -129,6 +129,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
@@ -153,12 +154,14 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("acl", analysisClinicalCommandOptions.aclCommandOptions);
         analysisClinicalSubCommands.addCommand("delete", analysisClinicalCommandOptions.deleteCommandOptions);
         analysisClinicalSubCommands.addCommand("update", analysisClinicalCommandOptions.updateCommandOptions);
+        analysisClinicalSubCommands.addCommand("annotation-sets-annotations-update", analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
         analysisClinicalSubCommands.addCommand("info", analysisClinicalCommandOptions.infoCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-create", analysisClinicalCommandOptions.createInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-clear", analysisClinicalCommandOptions.clearInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-delete", analysisClinicalCommandOptions.deleteInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-revert", analysisClinicalCommandOptions.revertInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-update", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("report-update", analysisClinicalCommandOptions.updateReportCommandOptions);
 
         jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobsCommandOptions);

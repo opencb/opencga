@@ -32,6 +32,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class CvaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "cva";
     public CvaCommandOptions cvaCommandOptions;
 
     public CvaCommandExecutor(CvaCommandOptions cvaCommandOptions) throws CatalogAuthenticationException {
