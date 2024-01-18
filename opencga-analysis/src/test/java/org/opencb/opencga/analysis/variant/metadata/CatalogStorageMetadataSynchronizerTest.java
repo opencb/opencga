@@ -35,6 +35,8 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -71,7 +73,7 @@ public class CatalogStorageMetadataSynchronizerTest {
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     static private CatalogManager catalogManager;
-    static private final String organizationId = "test";
+    static private final String ORGANIZATION = "test";
     static private String sessionId;
     static private String projectId;
     static private String studyId;
@@ -90,9 +92,15 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, catalogManagerExternalResource.getAdminToken()).first();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
+                catalogManagerExternalResource.getAdminToken());
+        catalogManager.getUserManager().create(ORGANIZATION, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
+                1000L, catalogManagerExternalResource.getAdminToken());
+        catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
+                null,
+                catalogManagerExternalResource.getAdminToken());
+        sessionId = catalogManager.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).getToken();
 
-        sessionId = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", "Study " + "1", null, null,

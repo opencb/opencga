@@ -183,7 +183,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        Study study = catalogManager.getFileManager().getStudy(organizationId, inputFile, sessionId);
+        Study study = catalogManager.getFileManager().getStudy(ORGANIZATION, inputFile, sessionId);
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("The status is READY");

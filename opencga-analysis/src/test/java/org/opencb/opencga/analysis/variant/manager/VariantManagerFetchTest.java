@@ -146,7 +146,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD,
                 sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -168,7 +168,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -186,14 +186,14 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(SamplePermissions.VIEW + "," + SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(2, variant.getStudies().get(0).getSamples().size());
         }
 
-        query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
+        query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
                 .append(VariantQueryParam.SAMPLE.key(), "NA19600")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         result = variantManager.get(query, new QueryOptions(), null);
@@ -214,7 +214,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         // Filter sample "NA19601" is unauthorized, even if the result is not returned
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA19600,NA19660")
                 .append(VariantQueryParam.SAMPLE.key(), "NA19661");
 
@@ -234,7 +234,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         // Include sample "NA19601" is unauthorized
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA19600,NA19660,NA19601");
 
         thrown.expectMessage("'includeSample'");
@@ -251,7 +251,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS.name()),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
