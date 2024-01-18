@@ -95,6 +95,22 @@ function install_dependency() {
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
 
+function validateTags() {
+
+  #Split input string
+  IFS=',' read -ra my_array <<< "$1"
+
+  #Check the split string
+  for i in "${my_array[@]}"
+  do
+    if [ "$i" != "runShortTests" ] && [ "$i" != "runMediumTests" ] && [ "$i" != "runLongTests" ];then
+      echo "Level of test must be a combination of runShortTests,runMediumTests,runLongTests without spaces"
+      exit 1
+    fi
+  done
+
+}
+
 ###################################
 ####### Script starts here  #######
 ###################################
@@ -104,7 +120,8 @@ STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 TESTS_DIR="tests"
-## 2. Parse CLI options
+
+## 2. Parse and validate CLI options
 if [ "$1" != "build" ] && [ "$1" != "test" ];then
   printUsage
   exit 0
@@ -175,6 +192,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   esac
 done
+
+## 2.1 Validate options
+validateTags "$TEST_TAG"
+echo "Ready to execute $TEST_TAG tests"
 
 ## 3. Execute scripts
 cd "$(dirname "$0")" || exit 2
