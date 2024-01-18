@@ -220,14 +220,14 @@ public class  AbstractManagerTest extends GenericTest {
         // Create new organization, owner and admins
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId(orgOwnerUserId).setName(orgOwnerUserId), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, orgAdminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, orgAdminUserId2, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, studyAdminUserId1, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, noAccessUserId1, "Name", "user.6@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId(orgOwnerUserId).setName(orgOwnerUserId).setOrganization(organizationId), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(orgAdminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(orgAdminUserId2, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(studyAdminUserId1, "User3 Name", "user.3@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(normalUserId1, "User4 Name", "user.4@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(normalUserId2, "User5 Name", "user.5@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(normalUserId3, "User6 Name", "user.6@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create(noAccessUserId1, "Name", "user.6@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
 
         catalogManager.getOrganizationManager().update(organizationId, 
                 new OrganizationUpdateParams()

@@ -78,7 +78,7 @@ public class FamilyAnalysisTest extends GenericTest {
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
         sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 

@@ -84,11 +84,11 @@ public class AbstractSolrManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create(organizationId, "owner", "Owner", "owner@mail.com", TestParamConstants.PASSWORD, "", null, null);
-        catalogManager.getUserManager().create(organizationId, "admin1", "Admin", "admin@mail.com", TestParamConstants.PASSWORD, "", null, null);
-        catalogManager.getUserManager().create(organizationId, "user1", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, null);
-        catalogManager.getUserManager().create(organizationId, "user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, null);
-        catalogManager.getUserManager().create(organizationId, "user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, null);
+        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", TestParamConstants.PASSWORD, organizationId, null, null);
+        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", TestParamConstants.PASSWORD, organizationId, null, null);
+        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, organizationId, null, null);
 
         sessionIdOwner = catalogManager.getUserManager().login(organizationId, "owner", TestParamConstants.PASSWORD).getToken();
         sessionIdAdmin = catalogManager.getUserManager().login(organizationId, "admin1", TestParamConstants.PASSWORD).getToken();

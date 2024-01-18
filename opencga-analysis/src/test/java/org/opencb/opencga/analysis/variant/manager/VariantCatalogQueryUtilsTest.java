@@ -117,7 +117,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create(organizationId, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, organizationId,
                 1000L, catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalog.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();

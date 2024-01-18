@@ -154,7 +154,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
             User user;
             try {
-                user = catalogManager.getUserManager().create(commandOptions.organizationId, commandOptions.userId, commandOptions.userName, commandOptions.userEmail,
+                user = catalogManager.getUserManager().create(commandOptions.userId, commandOptions.userName, commandOptions.userEmail,
                         commandOptions.userPassword, commandOptions.userOrganization, userQuota, token).first();
             } catch (CatalogException e) {
                 if (e.getMessage().contains("already exists")) {

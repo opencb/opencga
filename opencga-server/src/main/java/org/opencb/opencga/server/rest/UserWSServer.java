@@ -53,7 +53,6 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class)
     public Response create(
-            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
     ) {
         try {
@@ -62,7 +61,7 @@ public class UserWSServer extends OpenCGAWSServer {
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
-                    .create(organizationId, user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, token);
+                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, token);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {

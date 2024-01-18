@@ -90,7 +90,8 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create(organizationId, userId, "User", "user@email.org", TestParamConstants.PASSWORD, "ACME", null, catalogManagerExternalResource.getAdminToken()).first();
+        catalogManager.getUserManager().create(userId, "User", "user@email.org", TestParamConstants.PASSWORD, organizationId, null,
+                catalogManagerExternalResource.getAdminToken()).first();
 
         sessionId = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",

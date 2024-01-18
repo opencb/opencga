@@ -2343,7 +2343,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
 
@@ -2359,7 +2359,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions2() throws CatalogException {
-        catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
 
@@ -2409,7 +2409,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);
         assertTrue(catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);
 
-        catalogManager.getUserManager().create(organizationId, "dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, organizationId, 50000L,
                 opencgaToken);
         token = catalogManager.getUserManager().login(organizationId, "dummy", TestParamConstants.PASSWORD).getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);

@@ -269,7 +269,7 @@ public class CatalogManager implements AutoCloseable {
         User user = new User(OPENCGA, new Account().setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
-        userManager.create(ADMIN_ORGANIZATION, user, password, null);
+        userManager.create(user, password, null);
         String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).getToken();
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION

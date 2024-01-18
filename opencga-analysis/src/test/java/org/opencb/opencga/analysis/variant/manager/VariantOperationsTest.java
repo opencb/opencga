@@ -273,7 +273,7 @@ public class VariantOperationsTest {
     }
 
     public void setUpCatalogManager() throws Exception {
-        catalogManager.getUserManager().create(ORGANIZATION, USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
         token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",

@@ -225,7 +225,8 @@ public class AlignmentAnalysisTest {
 
     public void setUpCatalogManager() throws CatalogException {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test"), null, opencga.getAdminToken());
-        catalogManager.getUserManager().create("test", new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk"), PASSWORD, opencga.getAdminToken());
+        catalogManager.getUserManager().create(new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk").setOrganization("test"),
+                PASSWORD, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update("test", new OrganizationUpdateParams().setOwner(USER), null, opencga.getAdminToken());
 
         token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();

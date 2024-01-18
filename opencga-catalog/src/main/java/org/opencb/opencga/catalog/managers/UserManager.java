@@ -114,7 +114,21 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<User> create(String organizationId, User user, String password, String token) throws CatalogException {
+    public OpenCGAResult<User> create(User user, String password, String token) throws CatalogException {
+        if (StringUtils.isEmpty(user.getOrganization())) {
+            if (StringUtils.isEmpty(token)) {
+                throw CatalogParameterException.isNull("user.organization");
+            }
+            JwtPayload payload = new JwtPayload(token);
+            if (ParamConstants.ADMIN_ORGANIZATION.equals(payload.getOrganization())) {
+                // Administrators always need to provide the user organization
+                throw CatalogParameterException.isNull("user.organization");
+            }
+            logger.warn("User organization was missing. Setting it with the token's organization id '{}'.", payload.getOrganization());
+            user.setOrganization(payload.getOrganization());
+        }
+        String organizationId = user.getOrganization();
+
         if (token == null && (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId()))) {
             throw new CatalogException("Missing token parameter");
         }
@@ -129,7 +143,6 @@ public class UserManager extends AbstractManager {
         if (StringUtils.isNotEmpty(user.getEmail())) {
             checkEmail(user.getEmail());
         }
-        user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
         user.setAccount(ParamUtils.defaultObject(user.getAccount(), Account::new));
         user.getAccount().setCreationDate(TimeUtils.getTime());
         user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
@@ -198,23 +211,22 @@ public class UserManager extends AbstractManager {
     /**
      * Create a new user.
      *
-     * @param organizationId Organization id.
-     * @param id             User id
-     * @param name           Name
-     * @param email          Email
-     * @param password       Encrypted Password
-     * @param organization   Optional organization
-     * @param quota          Maximum user disk quota
-     * @param token          JWT token.
+     * @param id           User id
+     * @param name         Name
+     * @param email        Email
+     * @param password     Encrypted Password
+     * @param organization Optional organization
+     * @param quota        Maximum user disk quota
+     * @param token        JWT token.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
-    public OpenCGAResult<User> create(String organizationId, String id, String name, String email, String password, String organization,
-                                      Long quota, String token) throws CatalogException {
+    public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota, String token)
+            throws CatalogException {
         User user = new User(id, name, email, organization, new UserInternal(new UserStatus()))
                 .setAccount(new Account("", "", null))
                 .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
-        return create(organizationId, user, password, token);
+        return create(user, password, token);
     }
 
     public JwtPayload validateToken(String token) throws CatalogException {
@@ -268,8 +280,9 @@ public class UserManager extends AbstractManager {
                 Iterator<User> iterator = userList.iterator();
                 while (iterator.hasNext()) {
                     User user = iterator.next();
+                    user.setOrganization(organizationId);
                     try {
-                        create(organizationId, user, null, token);
+                        create(user, null, token);
                         logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
                     } catch (CatalogParameterException e) {
                         logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
@@ -343,8 +356,9 @@ public class UserManager extends AbstractManager {
                 // Register the users
                 userList = AuthenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
                 for (User user : userList) {
+                    user.setOrganization(organizationId);
                     try {
-                        create(organizationId, user, null, token);
+                        create(user, null, token);
                         logger.info("User '{}' successfully created", user.getId());
                     } catch (CatalogException e) {
                         logger.warn("{}", e.getMessage());
@@ -425,7 +439,8 @@ public class UserManager extends AbstractManager {
                 logger.info("Fetching user information from authentication origin '{}'", authOrigin);
                 List<User> parsedUserList = AuthenticationFactory.getRemoteUserInformation(organizationId, authOrigin, idList);
                 for (User user : parsedUserList) {
-                    create(organizationId, user, null, token);
+                    user.setOrganization(organizationId);
+                    create(user, null, token);
                     auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, user.getId(), "",
                             "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User '{}' successfully created", user.getId());
@@ -435,7 +450,8 @@ public class UserManager extends AbstractManager {
                     User application = new User(applicationId, new Account()
                             .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
                             .setEmail("mail@mail.co.uk");
-                    create(organizationId, application, null, token);
+                    application.setOrganization(organizationId);
+                    create(application, null, token);
                     auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, application.getId(),
                             "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User (application) '{}' successfully created", application.getId());
@@ -789,9 +805,10 @@ public class UserManager extends AbstractManager {
                 // The user does not exist so we register it
                 User user = AuthenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
+                user.setOrganization(organizationId);
                 // Generate a root token to be able to create the user even if the installation is private
                 String rootToken = AuthenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
-                create(organizationId, user, null, rootToken);
+                create(user, null, rootToken);
             }
 
             try {
