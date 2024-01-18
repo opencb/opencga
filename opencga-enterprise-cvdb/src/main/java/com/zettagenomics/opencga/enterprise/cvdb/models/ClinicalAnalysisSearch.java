@@ -62,6 +62,18 @@ public class ClinicalAnalysisSearch {
     @Field("familyMemberIds")
     private List<String> familyMemberIds;
 
+    @Field("interpretationId")
+    private String interpretationId;
+
+    @Field("interpretationStats")
+    private List<String> interpretationStats;
+
+    @Field("panels")
+    private List<String> panels;
+
+    @Field("panelsStats")
+    private List<String> panelsStats;
+
     @Field("report")
     private String report;
 
@@ -79,6 +91,9 @@ public class ClinicalAnalysisSearch {
         fileNames = new ArrayList<>();
         familyPhenotypeNames = new ArrayList<>();
         familyMemberIds = new ArrayList<>();
+        interpretationStats = new ArrayList<>();
+        panels = new ArrayList<>();
+        panelsStats = new ArrayList<>();
     }
 
     @Override
@@ -95,6 +110,10 @@ public class ClinicalAnalysisSearch {
         sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", familyPhenotypeNames=").append(familyPhenotypeNames);
         sb.append(", familyMemberIds=").append(familyMemberIds);
+        sb.append(", interpretationId='").append(interpretationId).append('\'');
+        sb.append(", interpretationStats=").append(interpretationStats);
+        sb.append(", panels=").append(panels);
+        sb.append(", panelsStats=").append(panelsStats);
         sb.append(", report='").append(report).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", locked=").append(locked);
@@ -199,6 +218,42 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setFamilyMemberIds(List<String> familyMemberIds) {
         this.familyMemberIds = familyMemberIds;
+        return this;
+    }
+
+    public String getInterpretationId() {
+        return interpretationId;
+    }
+
+    public ClinicalAnalysisSearch setInterpretationId(String interpretationId) {
+        this.interpretationId = interpretationId;
+        return this;
+    }
+
+    public List<String> getInterpretationStats() {
+        return interpretationStats;
+    }
+
+    public ClinicalAnalysisSearch setInterpretationStats(List<String> interpretationStats) {
+        this.interpretationStats = interpretationStats;
+        return this;
+    }
+
+    public List<String> getPanels() {
+        return panels;
+    }
+
+    public ClinicalAnalysisSearch setPanels(List<String> panels) {
+        this.panels = panels;
+        return this;
+    }
+
+    public List<String> getPanelsStats() {
+        return panelsStats;
+    }
+
+    public ClinicalAnalysisSearch setPanelsStats(List<String> panelsStats) {
+        this.panelsStats = panelsStats;
         return this;
     }
 

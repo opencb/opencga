@@ -583,6 +583,12 @@
     <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
+
+    <field name="interpretationId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="interpretationStats" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="panels" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="panelsStats" type="string" indexed="false" stored="true" multiValued="true"/>
+
     <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>

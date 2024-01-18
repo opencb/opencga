@@ -32,6 +32,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -2162,6 +2163,41 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getFamily() != null);
             assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
             assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+        }
+    }
+
+    @Test
+    public void testBuildClinicalAnalysisNotUsingJsonAndMultipleFields() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+//        queryOptions.put(LIMIT, 100);
+        queryOptions.put(INCLUDE, "id,family.members.id,panels.id,panels.name,panels.stats,interpretation.stats,interpretation.id");
+
+        DataResult<ClinicalAnalysis> result;
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getType() == null);
+            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+            assertTrue(ca.getFamily() != null);
+            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+            assertTrue(CollectionUtils.isNotEmpty(ca.getPanels()));
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(MapUtils.isNotEmpty(panel.getStats()));
+            }
         }
     }
 

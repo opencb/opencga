@@ -27,9 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
@@ -89,7 +87,7 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
         super.parseQueryOptions(queryOptions, solrQuery);
 
-        List<String> casFields = new ArrayList<>();
+        Set<String> casFields = new HashSet<>();
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             List<String> caFields = queryOptions.getAsStringList(QueryOptions.INCLUDE);
             for (String caField : caFields) {
@@ -104,6 +102,12 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         if (CollectionUtils.isEmpty(casFields)) {
             solrQuery.setFields("json");
         } else {
+            // In Solr/search model, panels and panelsStats work together
+            if (casFields.contains("panels")) {
+                casFields.add("panelsStats");
+            } else if (casFields.contains("panelsStats")) {
+                casFields.add("panels");
+            }
             solrQuery.setFields(StringUtils.join(casFields, ","));
         }
     }

@@ -210,6 +210,13 @@ public class ClinicalIncludeHandler {
         caToCasFieldMap.put("family.id", "familyId");
         caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
         caToCasFieldMap.put("family.members.id", "familyMemberIds");
+        caToCasFieldMap.put("interpretation.id", "interpretationId");
+        caToCasFieldMap.put("interpretation.stats", "interpretationStats");
+        caToCasFieldMap.put("interpretation.stats.primaryFindings", "interpretationStats");
+        caToCasFieldMap.put("panels.id", "panels");
+        caToCasFieldMap.put("panels.name", "panels");
+        caToCasFieldMap.put("panels.source", "panels");
+        caToCasFieldMap.put("panels.stats", "panelsStats");
         caToCasFieldMap.put("report.discussion.text", "report");
         caToCasFieldMap.put("status.id", "status");
         caToCasFieldMap.put("locked", "locked");
