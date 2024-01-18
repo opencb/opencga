@@ -365,7 +365,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //    @Path("/{studies}/aggregationStats")
 //    @ApiOperation(value = "Fetch catalog study stats", response = FacetField.class)
 //    public Response getAggregationStats(
-//            @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
+//            @ApiParam(value = "Comma separated list of studies [[organization@]project:]study up to a maximum of 100", required = true)
 //            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
 //            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
 //            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "

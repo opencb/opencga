@@ -1136,7 +1136,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     /**
      * Update a Clinical Analysis from catalog.
      *
-     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr     Study id in string format. Could be one of
+     *                     [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param clinicalIds  List of clinical analysis ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.

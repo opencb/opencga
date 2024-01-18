@@ -883,7 +883,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //                    + " RECOVERED)", dataType = "boolean", defaultValue = "false", paramType = "query")
 //    })
 //    public Response delete(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+//            @ApiParam(value = "Study [[organization@]project:]study where study and project can be either the id or alias")
 //            @QueryParam("study") String studyStr,
 //            @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
 //            @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,

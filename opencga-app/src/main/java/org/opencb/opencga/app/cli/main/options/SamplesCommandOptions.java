@@ -76,7 +76,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--members"}, description = "Comma separated list of user or group ids", required = true, arity = 1)
@@ -117,7 +117,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ID or name", required = true, arity = 1)
@@ -155,7 +155,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -247,7 +247,7 @@ public class SamplesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -372,7 +372,7 @@ public class SamplesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--file"}, description = "file", required = true, arity = 1)
@@ -410,7 +410,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
         public boolean flattenAnnotations = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -535,7 +535,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String samples; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
@@ -561,7 +561,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--delete-empty-cohorts"}, description = "Boolean indicating if the cohorts associated only to the sample to be deleted should be also deleted.", required = false, help = true, arity = 0)
         public boolean deleteEmptyCohorts = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
@@ -590,7 +590,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String samples; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--version"}, description = "Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids are provided", required = false, arity = 1)
@@ -622,7 +622,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String samples; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -726,7 +726,7 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID", required = true, arity = 1)
         public String sample; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--annotation-set"}, description = "AnnotationSet ID to be updated.", required = true, arity = 1)

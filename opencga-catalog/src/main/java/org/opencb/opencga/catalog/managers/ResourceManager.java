@@ -77,7 +77,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Create an entry in catalog.
      *
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr Study id in string format. Could be one of
+     *                [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param entry    entry that needs to be added in Catalog.
      * @param options  QueryOptions object.
      * @param token    Session id of the user logged in.
@@ -90,7 +91,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Fetch the R object.
      *
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr Study id in string format. Could be one of
+     *                 [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param entryStr Entry id to be fetched.
      * @param options  QueryOptions object, like "include", "exclude", "limit" and "skip".
      * @param token    token
@@ -109,7 +111,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Fetch all the R objects matching the query.
      *
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr  Study id in string format. Could be one of
+     *                  [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param entryList Comma separated list of entries to be fetched.
      * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
      * @param token     token
@@ -195,7 +198,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Obtain an entry iterator to iterate over the matching entries.
      *
-     * @param studyStr study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr study id in string format. Could be one of
+     *                 [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query    Query object.
      * @param options  QueryOptions object.
      * @param token    Session id of the user logged in.
@@ -208,7 +212,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Search of entries in catalog.
      *
-     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyId study id in string format. Could be one of
+     *                [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query   Query object.
      * @param options QueryOptions object.
      * @param token   Session id of the user logged in.
@@ -222,7 +227,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * Fetch a list containing all the distinct values of the key {@code field}.
      *
      * @param organizationId Organization id.
-     * @param studyId        study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyId        study id in string format. Could be one of
+     *                       [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param field          The field for which to return distinct values.
      * @param query          Query object.
      * @param token          Token of the user logged in.
@@ -237,7 +243,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Fetch a list containing all the distinct values of the key {@code field}.
      *
-     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyId study id in string format. Could be one of
+     *                [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param fields  Fields for which to return distinct values.
      * @param query   Query object.
      * @param token   Token of the user logged in.
@@ -250,7 +257,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Count matching entries in catalog.
      *
-     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyId study id in string format. Could be one of
+     *                [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query   Query object.
      * @param token   Session id of the user logged in.
      * @return A OpenCGAResult with the total number of entries matching the query.
@@ -264,7 +272,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Delete all entries matching the query.
      *
-     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr Study id in string format. Could be one of
+     *                 [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query    Query object.
      * @param options  Map containing additional parameters to be considered for the deletion.
      * @param token    Session id of the user logged in.
@@ -277,7 +286,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *
-     * @param studyStr   study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr   study id in string format. Could be one of
+     *                   [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query      Query object containing the query that will be executed.
      * @param field      A field or a comma separated list of fields by which the results will be grouped in.
      * @param numResults Maximum number of results to be reported.
@@ -293,7 +303,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * Groups the matching entries by some fields.
      *
      * @param organizationId Organization id.
-     * @param studyStr       study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr       study id in string format. Could be one of
+     *                       [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query          Query object.
      * @param fields         A field or a comma separated list of fields by which the results will be grouped in.
      * @param options        QueryOptions object.
@@ -312,7 +323,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Groups the matching entries by some fields.
      *
-     * @param studyStr study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr study id in string format. Could be one of
+     *                 [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param query    Query object.
      * @param fields   A field or a comma separated list of fields by which the results will be grouped in.
      * @param options  QueryOptions object.

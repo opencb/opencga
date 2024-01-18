@@ -26,6 +26,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
@@ -132,5 +134,14 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         }
 
         return result;
+    }
+
+    public static AuthenticationOrigin createRandomInternalAuthenticationOrigin() {
+        return new AuthenticationOrigin()
+                .setId(CatalogAuthenticationManager.INTERNAL)
+                .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                .setAlgorithm("HS256")
+                .setExpiration(3600L)
+                .setSecretKey(PasswordUtils.getStrongRandomPassword(32));
     }
 }

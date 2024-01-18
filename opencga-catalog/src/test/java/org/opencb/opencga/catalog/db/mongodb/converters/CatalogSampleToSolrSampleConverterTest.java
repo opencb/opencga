@@ -53,7 +53,7 @@ public class CatalogSampleToSolrSampleConverterTest {
     public void SampleToSolrTest() throws JsonProcessingException {
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
 
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+        Study study = new Study().setFqn("organization@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         List<Map<String, Object>> studyAclEntry = Arrays.asList(
                 objectMapper.readValue(objectMapper.writeValueAsString(new AclEntry<>("user1", EnumSet.noneOf(StudyPermissions.Permissions.class))), Map.class),

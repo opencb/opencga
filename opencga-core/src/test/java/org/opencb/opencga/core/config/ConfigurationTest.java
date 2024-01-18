@@ -46,7 +46,7 @@ public class ConfigurationTest {
         configuration.setMonitor(new Monitor());
         configuration.getAnalysis().setExecution(new Execution());
 
-        configuration.setHooks(Collections.singletonMap("user@project:study", Collections.singletonMap("file",
+        configuration.setHooks(Collections.singletonMap("organization@project:study", Collections.singletonMap("file",
                 Collections.singletonList(
                         new HookConfiguration("name", "~*SV*", HookConfiguration.Stage.CREATE, HookConfiguration.Action.ADD, "tags", "SV")
         ))));
@@ -55,7 +55,7 @@ public class ConfigurationTest {
         authenticationOriginList.add(new AuthenticationOrigin());
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("ou", "People");
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
+        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP,
                 "ldap://10.10.0.20:389", myMap));
         configuration.getAuthentication().setAuthenticationOrigins(authenticationOriginList);
 

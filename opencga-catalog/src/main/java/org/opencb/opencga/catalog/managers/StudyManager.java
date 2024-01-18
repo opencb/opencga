@@ -102,9 +102,9 @@ public class StudyManager extends AbstractManager {
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
     private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
-    private static final Pattern ORGANIZATION_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN
-            + "):(" + STUDY_PATTERN + ")$");
-    private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
+
+    private static final Pattern ORGANIZATION_PROJECT_STUDY_PATTERN = CatalogFqn.ORGANIZATION_PROJECT_STUDY_PATTERN;
+    private static final Pattern PROJECT_STUDY_PATTERN = CatalogFqn.PROJECT_STUDY_PATTERN;
 
     static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
     public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -164,7 +164,7 @@ public class StudyManager extends AbstractManager {
                 studyMessage = " given '" + studyStr + "'";
             }
             throw new CatalogException("More than one study found" + studyMessage + ". Please, be more specific."
-                    + " The accepted pattern is [ownerId@projectId:studyId]");
+                    + " The accepted pattern is [" + CatalogFqn.STUDY_FQN_FORMAT + "]");
         }
 
         return studyDataResult.first();
@@ -179,7 +179,7 @@ public class StudyManager extends AbstractManager {
                 studyMessage = " given '" + catalogFqn.getProvidedId() + "'";
             }
             throw new CatalogException("More than one study found" + studyMessage + ". Please, be more specific."
-                    + " The accepted pattern is [ownerId@projectId:studyId]");
+                    + " The accepted pattern is [" + CatalogFqn.STUDY_FQN_FORMAT + "]");
         }
 
         return studyDataResult.first();
@@ -289,7 +289,7 @@ public class StudyManager extends AbstractManager {
 
                 Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyStr);
                 if (matcher.find()) {
-                    // studyStr contains the full path (owner@project:study)
+                    // studyStr contains the full path (org@project:study)
                     organizationFqn = matcher.group(1);
                     project = matcher.group(2);
                     study = matcher.group(3);
@@ -1934,15 +1934,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public String getProjectFqn(String studyFqn) throws CatalogException {
-        Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyFqn);
-        if (matcher.find()) {
-            // studyStr contains the full path (owner@project:study)
-            String owner = matcher.group(1);
-            String project = matcher.group(2);
-            return owner + '@' + project;
-        } else {
-            throw new CatalogException("Invalid Study FQN. The accepted pattern is [ownerId@projectId:studyId]");
-        }
+        return CatalogFqn.extractFqnFromStudyFqn(studyFqn).toProjectFqn();
     }
 
     /*

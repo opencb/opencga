@@ -83,7 +83,7 @@ public class StudyClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       project: Project [user@]project where project can be either the ID or the alias.
+     *       project: Project [organization@]project where project can be either the ID or the alias.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -96,7 +96,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Search studies.
-     * @param project Project [user@]project where project can be either the ID or the alias.
+     * @param project Project [organization@]project where project can be either the ID or the alias.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -124,7 +124,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Return the acl of the study. If member is provided, it will only return the acl for the member.
-     * @param studies Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a
+     * @param studies Comma separated list of Studies [[organization@]project:]study where study and project can be either the ID or UUID up to a
      *     maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       member: User or group id.
@@ -140,7 +140,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Fetch study information.
-     * @param studies Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a
+     * @param studies Comma separated list of Studies [[organization@]project:]study where study and project can be either the ID or UUID up to a
      *     maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -180,7 +180,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Return the groups present in the study. For owners and administrators only.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param params Map containing any of the following optional parameters.
      *       id: Group id. If provided, it will only fetch information for the provided group.
      *       silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
@@ -195,7 +195,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Add or remove a group.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param data JSON containing the parameters.
      * @param params Map containing any of the following optional parameters.
      *       action: Action to be performed: ADD or REMOVE a group.
@@ -210,7 +210,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Add, set or remove users from an existing group.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param group Group name.
      * @param data JSON containing the parameters.
      * @param params Map containing any of the following optional parameters.
@@ -227,7 +227,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Fetch permission rules.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param entity Entity where the permission rules should be applied to.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -240,7 +240,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Add or remove a permission rule.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param entity Entity where the permission rules should be applied to.
      * @param data JSON containing the permission rule to be created or removed.
      * @param params Map containing any of the following optional parameters.
@@ -261,7 +261,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Execute template.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param data Template loader parameters.
      * @param params Map containing any of the following optional parameters.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
@@ -279,7 +279,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Resource to upload a zipped template.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param params Map containing any of the following optional parameters.
      *       file: File to upload.
      * @return a RestResponse object.
@@ -292,10 +292,10 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Delete template.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param templateId Template id.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -307,7 +307,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Update some study attributes.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param data JSON containing the params to be updated.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -324,7 +324,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Fetch variableSets from a study.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param params Map containing any of the following optional parameters.
      *       id: Id of the variableSet to be retrieved. If no id is passed, it will show all the variableSets of the study.
      * @return a RestResponse object.
@@ -337,7 +337,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Add or remove a variableSet.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param data JSON containing the VariableSet to be created or removed.
      * @param params Map containing any of the following optional parameters.
      *       action: Action to be performed: ADD, REMOVE or FORCE_REMOVE a variableSet.
@@ -353,7 +353,7 @@ public class StudyClient extends AbstractParentClient {
 
     /**
      * Add or remove variables to a VariableSet.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param variableSet VariableSet id of the VariableSet to be updated.
      * @param data JSON containing the variable to be added or removed. For removing, only the variable id will be needed.
      * @param params Map containing any of the following optional parameters.

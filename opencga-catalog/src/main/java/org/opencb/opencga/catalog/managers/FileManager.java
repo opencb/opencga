@@ -2139,7 +2139,8 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Update a File from catalog.
      *
-     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
+     * @param studyStr     Study id in string format. Could be one of
+     *                     [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
      * @param fileIds      List of file ids. Could be either the id, path or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.

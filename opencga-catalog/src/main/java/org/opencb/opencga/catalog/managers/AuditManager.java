@@ -218,7 +218,9 @@ public class AuditManager {
         } else {
             try {
                 dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).insertAuditRecord(auditRecord);
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | RuntimeException e) {
+                // FIXME : How to raise attention on this silent error?
+                // This is a critical error that should not happen.
                 logger.error("Could not audit '{}' -> Error: {}", auditRecord, e.getMessage(), e);
             }
         }

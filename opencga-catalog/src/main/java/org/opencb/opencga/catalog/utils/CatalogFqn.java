@@ -8,6 +8,9 @@ import java.util.regex.Pattern;
 
 public final class CatalogFqn {
 
+    public static final String PROJECT_FQN_FORMAT = "projectId:studyId";
+    public static final String STUDY_FQN_FORMAT = "organizationId@projectId:studyId";
+
     private String organizationId;
     private String projectId;
     private String studyId;
@@ -20,9 +23,9 @@ public final class CatalogFqn {
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
     private static final String STUDY_PATTERN = "[A-Za-z0-9\\-_.]+|\\*";
-    private static final Pattern ORGANIZATION_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN
+    public static final Pattern ORGANIZATION_PROJECT_STUDY_PATTERN = Pattern.compile("^(" + USER_PATTERN + ")@(" + PROJECT_PATTERN
             + "):(" + STUDY_PATTERN + ")$");
-    private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
+    public static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
 
     private CatalogFqn(String organizationId, String id) {
         this.organizationId = organizationId;
@@ -92,7 +95,8 @@ public final class CatalogFqn {
                     .setProjectId(projectId)
                     .setStudyId(studyId);
         } else {
-            throw new IllegalArgumentException("Provided string '" + studyFqn + "' is not a valid study fqn.");
+            throw new IllegalArgumentException("Provided string '" + studyFqn + "' is not a valid study FQN. "
+                    + "The accepted pattern is [" + STUDY_FQN_FORMAT + "]");
         }
     }
 
@@ -172,5 +176,13 @@ public final class CatalogFqn {
     public CatalogFqn setStudyUuid(String studyUuid) {
         this.studyUuid = studyUuid;
         return this;
+    }
+
+    public String toProjectFqn() {
+        // check if any of the fields is null
+        if (StringUtils.isEmpty(organizationId) || StringUtils.isEmpty(projectId)) {
+            throw new IllegalArgumentException("Missing organization or project");
+        }
+        return organizationId + "@" + projectId;
     }
 }

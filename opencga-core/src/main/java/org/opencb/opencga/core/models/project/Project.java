@@ -60,7 +60,7 @@ public class Project extends PrivateFields {
     private String name;
 
     /**
-     * Full Qualified Name (user@projectId).
+     * Full Qualified Name (organization@projectId).
      */
 
     @DataField(id = "fqn", indexed = true,

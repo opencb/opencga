@@ -57,7 +57,7 @@ public class GA4GHClient extends AbstractParentClient {
 
     /**
      * Fetch alignment files using HTSget protocol.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @param file File id, name or path.
      * @param params Map containing any of the following optional parameters.
      *       referenceName: Reference sequence name (Example: 'chr1', '1' or 'chrX'.

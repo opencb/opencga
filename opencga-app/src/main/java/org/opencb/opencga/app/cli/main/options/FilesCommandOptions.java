@@ -105,7 +105,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--members"}, description = "Comma separated list of user or group ids", required = true, arity = 1)
@@ -137,7 +137,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ID or name", required = true, arity = 1)
@@ -177,7 +177,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, help = true, arity = 0)
@@ -254,7 +254,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -361,7 +361,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--url"}, description = "The body web service url parameter", required = true, arity = 1)
@@ -392,7 +392,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--parents"}, description = "Create the parent directories if they do not exist", required = false, help = true, arity = 0)
@@ -442,7 +442,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
@@ -489,7 +489,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
@@ -536,7 +536,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--flatten-annotations"}, description = "Boolean indicating to flatten the annotations.", required = false, help = true, arity = 0)
         public boolean flattenAnnotations = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -625,7 +625,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--files"}, description = "Comma separated list of file IDs or names up to a maximum of 100", required = true, arity = 1)
         public String files; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Comma separated list of Studies [[organization@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
@@ -642,7 +642,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--files"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
@@ -671,7 +671,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--files"}, description = "Comma separated list of file IDs or names up to a maximum of 100", required = true, arity = 1)
         public String files; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted files", required = false, help = true, arity = 0)
@@ -685,7 +685,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--files"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
@@ -714,7 +714,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--files"}, description = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /", required = true, arity = 1)
         public String files; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--sample-ids-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
@@ -839,7 +839,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--annotation-set"}, description = "AnnotationSet ID to be updated.", required = true, arity = 1)
@@ -859,7 +859,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
     }
@@ -873,7 +873,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File uuid, id, or name.", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--pattern"}, description = "String pattern", required = false, arity = 1)
@@ -896,7 +896,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File uuid, id, or name.", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", required = false, arity = 1)
@@ -916,7 +916,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File ID", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
     }
@@ -930,7 +930,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
     }
@@ -944,7 +944,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File uuid, id, or name.", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
@@ -976,7 +976,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--folder"}, description = "Folder ID, name or path", required = true, arity = 1)
         public String folder; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
     }
@@ -996,7 +996,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--folder"}, description = "Folder id or name. Paths must be separated by : instead of /", required = true, arity = 1)
         public String folder; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--max-depth"}, description = "Maximum depth to get files from", required = false, arity = 1)

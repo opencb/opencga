@@ -333,8 +333,13 @@ public class ProjectManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.PROJECT, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            try {
+                auditManager.auditSearch(organizationId, userId, Enums.Resource.PROJECT, "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            } catch (RuntimeException ex) {
+                logger.error("Could not generate audit log", ex);
+                e.addSuppressed(ex);
+            }
 
             throw e;
         }

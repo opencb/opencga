@@ -50,7 +50,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
 
     @Test
     public void IndividualToSolrTest() {
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+        Study study = new Study().setFqn("organization@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual("Id", "individual", new Individual(), new Individual(), new Location(),
                 SexOntologyTermAnnotation.initMale(), null, new OntologyTermAnnotation().setId("Spanish"),

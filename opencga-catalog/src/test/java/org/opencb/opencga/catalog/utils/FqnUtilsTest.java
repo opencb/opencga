@@ -11,21 +11,21 @@ public class FqnUtilsTest {
 
     @Test
     public void testFqnFull() {
-        FqnUtils.FQN fqn = new FqnUtils.FQN("user@project:study");
-        assertEquals("user", fqn.getOrganization());
+        FqnUtils.FQN fqn = new FqnUtils.FQN("org@project:study");
+        assertEquals("org", fqn.getOrganization());
         assertEquals("project", fqn.getProject());
-        assertEquals("user@project", fqn.getProjectFqn());
+        assertEquals("org@project", fqn.getProjectFqn());
         assertEquals("study", fqn.getStudy());
-        assertEquals("user@project:study", fqn.toString());
+        assertEquals("org@project:study", fqn.toString());
     }
 
     @Test
     public void testFqnPartial() {
-        FqnUtils.FQN fqn = new FqnUtils.FQN("user@project");
-        assertEquals("user", fqn.getOrganization());
+        FqnUtils.FQN fqn = new FqnUtils.FQN("org@project");
+        assertEquals("org", fqn.getOrganization());
         assertEquals("project", fqn.getProject());
-        assertEquals("user@project", fqn.getProjectFqn());
+        assertEquals("org@project", fqn.getProjectFqn());
         assertEquals(null, fqn.getStudy());
-        assertEquals("user@project", fqn.toString());
+        assertEquals("org@project", fqn.toString());
     }
 }

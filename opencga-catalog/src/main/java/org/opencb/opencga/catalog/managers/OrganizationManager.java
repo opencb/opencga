@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -279,7 +280,9 @@ public class OrganizationManager extends AbstractManager {
                 ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
             }
         } else {
-            // FIXME : Add default authentication origin?
+            organization.getConfiguration()
+                    .setAuthenticationOrigins(Collections.singletonList(
+                            CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
         }
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }

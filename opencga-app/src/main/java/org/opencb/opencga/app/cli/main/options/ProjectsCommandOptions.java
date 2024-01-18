@@ -137,7 +137,7 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
         public String organization; 
     
-        @Parameter(names = {"--id"}, description = "Project [user@]project where project can be either the ID or the alias", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--name", "-n"}, description = "Project name", required = false, arity = 1)
@@ -178,7 +178,7 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--projects"}, description = "Comma separated list of projects [user@]project up to a maximum of 100", required = true, arity = 1)
+        @Parameter(names = {"--projects"}, description = "Comma separated list of projects [organization@]project up to a maximum of 100", required = true, arity = 1)
         public String projects; 
     
     }
@@ -195,7 +195,7 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
     }
@@ -218,7 +218,7 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
         public Integer skip; 
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
     }
@@ -241,7 +241,7 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
