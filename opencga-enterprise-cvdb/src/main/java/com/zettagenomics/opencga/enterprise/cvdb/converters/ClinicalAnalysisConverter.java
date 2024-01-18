@@ -21,7 +21,18 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.util.StringUtil;
+import org.opencb.biodata.formats.pubmed.v233jaxb.I;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,12 +123,65 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         return clinicalAnalysisSearchList;
     }
 
-    public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch clinicalAnalysisSearch) throws CvdbException {
-        try {
-            return clinicalAnalysisReader.readValue(decompressFromBase64(clinicalAnalysisSearch.getJson()));
-        } catch (IOException e) {
-            throw new CvdbException("Error when converting to clinical analysis", e);
+    public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch cas) throws CvdbException {
+        ClinicalAnalysis ca;
+        if (StringUtils.isNotEmpty(cas.getJson())) {
+            // Build clinical analysis from the field 'json'
+            try {
+                ca = clinicalAnalysisReader.readValue(decompressFromBase64(cas.getJson()));
+            } catch (IOException e) {
+                throw new CvdbException("Error when converting to clinical analysis from the field JSON", e);
+            }
+        } else {
+            // Build clinical analysis from other fields
+            ca = new ClinicalAnalysis();
+            ca.setId(cas.getId());
+            ca.setDescription(cas.getDescription());
+            if (StringUtils.isNotEmpty(cas.getType())) {
+                ca.setType(ClinicalAnalysis.Type.valueOf(cas.getType()));
+            }
+            if (StringUtils.isNotEmpty(cas.getDisorderId())) {
+                ca.setDisorder(new Disorder().setId(cas.getDisorderId()));
+            }
+            if (CollectionUtils.isNotEmpty(cas.getFileNames())) {
+                List<File> files = new ArrayList<>();
+                for (String fileName : cas.getFileNames()) {
+                    files.add(new File().setName(fileName));
+                }
+                ca.setFiles(files);
+            }
+            if (StringUtils.isNotEmpty(cas.getProbandId())) {
+                ca.setProband(new Individual().setId(cas.getProbandId()));
+            }
+            if (StringUtils.isNotEmpty(cas.getFamilyId()) || CollectionUtils.isNotEmpty(cas.getFamilyPhenotypeNames())
+                    || CollectionUtils.isNotEmpty(cas.getFamilyMemberIds())) {
+                Family family = new Family().setId(cas.getFamilyId());
+                if (CollectionUtils.isNotEmpty(cas.getFamilyPhenotypeNames())) {
+                    List<Phenotype> phenotypes = new ArrayList<>();
+                    for (String familyPhenotypeName : cas.getFamilyPhenotypeNames()) {
+                        phenotypes.add(new Phenotype().setName(familyPhenotypeName));
+                    }
+                    family.setPhenotypes(phenotypes);
+                }
+                if (CollectionUtils.isNotEmpty(cas.getFamilyMemberIds())) {
+                    List<Individual> members = new ArrayList<>();
+                    for (String familyMemberId : cas.getFamilyMemberIds()) {
+                        members.add(new Individual().setId(familyMemberId));
+                    }
+                    family.setMembers(members);
+                }
+                ca.setFamily(family);
+            }
+            if (StringUtils.isNotEmpty(cas.getReport())) {
+                ca.setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion().setText(cas.getReport())));
+            }
+            if (StringUtils.isNotEmpty(cas.getStatus())) {
+                ca.setStatus(new Status().setId(cas.getStatus()));
+            }
+            ca.setLocked(cas.isLocked());
         }
+
+        return ca;
     }
 
     @Override

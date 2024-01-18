@@ -557,11 +557,6 @@ public class ClinicalQueryParser {
     //-------------------------------------------------------------------------
 
     protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
-        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            // Nothing to do
-            return;
-        }
-
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
         }

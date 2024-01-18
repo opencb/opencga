@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -39,6 +40,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.*;
@@ -2134,6 +2136,89 @@ public class CvdbSolrEngineQueryTest {
         }
     }
 
+    @Test
+    public void testBuildClinicalAnalysisNotUsingJson() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+//        queryOptions.put(LIMIT, 100);
+        queryOptions.put(INCLUDE, "id,family.members.id");
+
+        DataResult<ClinicalAnalysis> result;
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getType() == null);
+            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+            assertTrue(ca.getFamily() != null);
+            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+        }
+    }
+
+    @Test
+    public void testBuildClinicalAnalysisUsingJsonNotInclude() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        DataResult<ClinicalAnalysis> result;
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getType() != null);
+            assertTrue(ca.getFamily() != null);
+            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getPhenotypes()));
+        }
+    }
+
+    @Test
+    public void testBuildClinicalAnalysisUsingJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,family.members.name");
+
+        DataResult<ClinicalAnalysis> result;
+
+        // Check boolean (true)
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        System.out.println("result.getNumResults() = " + result.getNumResults() + ", result.getNumMatches() = " + result.getNumMatches());
+        assertTrue(result.getNumResults() > 0);
+
+        for (ClinicalAnalysis ca : result.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getFamily() != null);
+            assertTrue(CollectionUtils.isNotEmpty(ca.getFamily().getMembers()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isNotEmpty(member.getName()));
+            }
+            assertTrue(CollectionUtils.isEmpty(ca.getFamily().getPhenotypes()));
+        }
+    }
 
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------

@@ -18,6 +18,8 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
@@ -25,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -75,5 +78,33 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         logger.info("Solr query: {}", solrQuery.toQueryString());
 
         return solrQuery;
+    }
+
+    @Override
+    protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            // Nothing to do
+            return;
+        }
+
+        super.parseQueryOptions(queryOptions, solrQuery);
+
+        List<String> casFields = new ArrayList<>();
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> caFields = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            for (String caField : caFields) {
+                if (ClinicalIncludeHandler.caToCasFieldMap.containsKey(caField)) {
+                    casFields.add(ClinicalIncludeHandler.caToCasFieldMap.get(caField));
+                } else {
+                    casFields.clear();
+                    break;
+                }
+            }
+        }
+        if (CollectionUtils.isEmpty(casFields)) {
+            solrQuery.setFields("json");
+        } else {
+            solrQuery.setFields(StringUtils.join(casFields, ","));
+        }
     }
 }

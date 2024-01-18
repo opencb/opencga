@@ -29,9 +29,17 @@ public class ClinicalIncludeHandler {
 
     protected List<String> includeList;
 
+    // Clinical analysis
     public static List<String> caFields;
+    public static Map<String, String> caToCasFieldMap; // key = ca field name; value = cas field name
+
+    // Clinical interpretation
     public static List<String> ciFields;
+
+    // Clinical variant
     public static List<String> cvFields;
+
+    // Clinical variant evidence
     public static List<String> cveFields;
 
     public ClinicalIncludeHandler() {
@@ -191,6 +199,20 @@ public class ClinicalIncludeHandler {
                 "internal",
                 "attributes",
                 "status");
+
+        caToCasFieldMap = new HashMap<>();
+        caToCasFieldMap.put("id", "id");
+        caToCasFieldMap.put("description", "description");
+        caToCasFieldMap.put("type", "type");
+        caToCasFieldMap.put("disorder.id", "disorderId");
+        caToCasFieldMap.put("files.name", "fileNames");
+        caToCasFieldMap.put("proband.id", "probandId");
+        caToCasFieldMap.put("family.id", "familyId");
+        caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
+        caToCasFieldMap.put("family.members.id", "familyMemberIds");
+        caToCasFieldMap.put("report.discussion.text", "report");
+        caToCasFieldMap.put("status.id", "status");
+        caToCasFieldMap.put("locked", "locked");
 
         ciFields = Arrays.asList("studyUid",
                 "uid",
