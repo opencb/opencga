@@ -309,7 +309,15 @@ if [ "$COMMAND" == "test" ]; then
   mkdir tests
   cp **/target/surefire-reports/TEST*.xml "$TESTS_DIR"
 fi
+if [ "$PUBLISH" == "true" ];then
 
-
-
-
+  export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
+  export AZCOPY_AUTO_LOGIN_TYPE="SPN"
+  export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
+  export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
+  azcopy login --service-principal
+  BRANCH_FOLDER=$(git branch --show-current)
+  VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+  COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
+  azcopy copy tests https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+fi
