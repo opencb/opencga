@@ -310,7 +310,6 @@ if [ "$COMMAND" == "test" ]; then
   cp **/target/surefire-reports/TEST*.xml "$TESTS_DIR"
 fi
 if [ "$PUBLISH" == "true" ];then
-
   export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
   export AZCOPY_AUTO_LOGIN_TYPE="SPN"
   export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
