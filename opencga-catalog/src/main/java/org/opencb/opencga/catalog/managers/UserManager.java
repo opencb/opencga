@@ -191,7 +191,6 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
 
-            catalogIOManager.createUser(organizationId, user.getId());
             getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
 
             auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
@@ -199,11 +198,6 @@ public class UserManager extends AbstractManager {
 
             return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
-            if (getUserDBAdaptor(organizationId).exists(user.getId())) {
-                logger.error("Deleting user '{}'...", user.getId());
-                catalogIOManager.deleteUser(organizationId, user.getId());
-            }
-
             auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 

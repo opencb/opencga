@@ -29,26 +29,20 @@ import java.nio.file.Paths;
 
 public class CatalogIOManager {
 
-    /**
+    /*
      * OpenCGA folders are created in the ROOTDIR.
      * OPENCGA_ORGANIZATIONS_FOLDER contains organization workspaces organized by 'organizationId'
-     * OPENCGA_USERS_FOLDER contains users workspaces organized by 'userId'
      * OPENCGA_ANONYMOUS_USERS_FOLDER contains anonymous users workspaces organized by 'randomStringId'
      * OPENCGA_BIN_FOLDER contains all packaged binaries delivered within OpenCGA
      */
     private static final String OPENCGA_ORGANIZATIONS_FOLDER = "orgs/";
-    // FIXME: Pedro, please, remove this folder
-    @Deprecated
-    private static final String OPENCGA_USERS_FOLDER = "users/";
     private static final String OPENCGA_ANONYMOUS_USERS_FOLDER = "anonymous/";
     private static final String OPENCGA_BIN_FOLDER = "bin/";
 
-    /**
-     * Users folders are created inside user workspace.
-     * USER_PROJECTS_FOLDER this folder stores all the projects with the studies and files
-     * USER_BIN_FOLDER contains user specific binaries
+    /*
+     * ORGANIZATION_PROJECTS_FOLDER this folder stores all the projects with the studies and files.
+     * ORGANIZATION_BIN_FOLDER contains user specific binaries
      */
-    protected static final String ORGANIZATION_USERS_FOLDER = "users/";
     protected static final String ORGANIZATION_PROJECTS_FOLDER = "projects/";
     protected static final String ORGANIZATION_BIN_FOLDER = "bin/";
     protected static Logger logger = LoggerFactory.getLogger(CatalogIOManager.class);
@@ -105,15 +99,6 @@ public class CatalogIOManager {
         return Paths.get(getOrganizationsUri()).resolve(organizationId.endsWith("/") ? organizationId : (organizationId + "/")).toUri();
     }
 
-    public URI getUsersUri(String organizationId) {
-        return Paths.get(getOrganizationsUri()).resolve(organizationId).resolve(OPENCGA_USERS_FOLDER).toUri();
-    }
-
-    public URI getUserUri(String organizationId, String userId) throws CatalogIOException {
-        checkParam(userId);
-        return Paths.get(getUsersUri(organizationId)).resolve(userId.endsWith("/") ? userId : (userId + "/")).toUri();
-    }
-
     public URI getProjectsUri(String organizationId) throws CatalogIOException {
         return Paths.get(getOrganizationsUri(organizationId)).resolve(ORGANIZATION_PROJECTS_FOLDER).toUri();
     }
@@ -140,7 +125,6 @@ public class CatalogIOManager {
                 ioManager.createDirectory(organizationUri);
                 ioManager.createDirectory(organizationPath.resolve(CatalogIOManager.ORGANIZATION_PROJECTS_FOLDER).toUri());
                 ioManager.createDirectory(organizationPath.resolve(CatalogIOManager.ORGANIZATION_BIN_FOLDER).toUri());
-                ioManager.createDirectory(organizationPath.resolve(CatalogIOManager.ORGANIZATION_USERS_FOLDER).toUri());
 
                 return organizationUri;
             }
@@ -154,33 +138,6 @@ public class CatalogIOManager {
         URI organizationsUri = getOrganizationsUri(organization);
         ioManager.checkUriExists(organizationsUri);
         ioManager.deleteDirectory(organizationsUri);
-    }
-
-    public URI createUser(String organizationId, String userId) throws CatalogIOException {
-        checkParam(userId);
-
-        URI usersUri = getUsersUri(organizationId);
-        ioManager.checkDirectoryUri(usersUri, true);
-
-        URI userPath = getUserUri(organizationId, userId);
-        try {
-            if (!ioManager.exists(userPath)) {
-                ioManager.createDirectory(userPath);
-                ioManager.createDirectory(Paths.get(userPath).resolve(CatalogIOManager.ORGANIZATION_PROJECTS_FOLDER).toUri());
-                ioManager.createDirectory(Paths.get(userPath).resolve(CatalogIOManager.ORGANIZATION_BIN_FOLDER).toUri());
-
-                return userPath;
-            }
-        } catch (CatalogIOException e) {
-            throw e;
-        }
-        return null;
-    }
-
-    public void deleteUser(String organizationId, String userId) throws CatalogIOException {
-        URI userUri = getUserUri(organizationId, userId);
-        ioManager.checkUriExists(userUri);
-        ioManager.deleteDirectory(userUri);
     }
 
     public URI createProject(String organizationId, String projectId) throws CatalogIOException {
