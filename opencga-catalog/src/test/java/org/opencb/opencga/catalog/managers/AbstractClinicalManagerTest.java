@@ -81,7 +81,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
-        catalogManager.getUserManager().create(organizationId, "user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, catalogManagerResource.getAdminToken());
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, organizationId, null, catalogManagerResource.getAdminToken());
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 

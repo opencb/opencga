@@ -120,8 +120,8 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
                 catalogManagerExternalResource.getAdminToken());
-        catalog.getUserManager().create(ORGANIZATION, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
-                1000L, catalogManagerExternalResource.getAdminToken()).first();
+        catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, ORGANIZATION, 1000L,
+                catalogManagerExternalResource.getAdminToken()).first();
         catalog.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,
                 catalogManagerExternalResource.getAdminToken());

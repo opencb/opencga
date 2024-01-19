@@ -277,8 +277,7 @@ public class VariantOperationsTest {
     public void setUpCatalogManager() throws Exception {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
                 opencga.getAdminToken());
-        catalogManager.getUserManager().create(ORGANIZATION, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
-                1000L, opencga.getAdminToken()).first();
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,
                 opencga.getAdminToken());

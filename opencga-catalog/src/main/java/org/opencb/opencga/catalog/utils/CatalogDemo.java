@@ -62,7 +62,7 @@ public final class CatalogDemo {
             throws CatalogException, IOException {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId), QueryOptions.empty(),
                 opencgaToken);
-        catalogManager.getUserManager().create(organizationId, "owner", "owner", "owner@mail.com", "owner_pass", organizationId, 2000L,
+        catalogManager.getUserManager().create("owner", "owner", "owner@mail.com", "owner_pass", organizationId, 2000L,
                 null);
         catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner("owner"),
                 QueryOptions.empty(), opencgaToken);
@@ -75,7 +75,7 @@ public final class CatalogDemo {
             String name = "User" + i;
             String password = id + "_pass";
             String email = id + "@gmail.com";
-            catalogManager.getUserManager().create(organizationId, id, name, email, password, organizationId, 2000L,
+            catalogManager.getUserManager().create(id, name, email, password, organizationId, 2000L,
                     ownerToken);
             userSessions.put(id, catalogManager.getUserManager().login(organizationId, id, password).getToken());
         }

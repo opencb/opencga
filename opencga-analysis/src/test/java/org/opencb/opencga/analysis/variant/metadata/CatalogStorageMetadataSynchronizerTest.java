@@ -94,7 +94,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
                 catalogManagerExternalResource.getAdminToken());
-        catalogManager.getUserManager().create(ORGANIZATION, "user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME",
+        catalogManager.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, ORGANIZATION,
                 1000L, catalogManagerExternalResource.getAdminToken());
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,

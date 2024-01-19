@@ -587,7 +587,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
     public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 
@@ -649,7 +649,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
     public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create(organizationId, "user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
         String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
 

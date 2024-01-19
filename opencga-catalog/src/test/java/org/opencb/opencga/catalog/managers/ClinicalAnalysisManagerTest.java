@@ -255,8 +255,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     public void updateClinicalAnalystsTest() throws CatalogException {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
 
-        catalogManager.getUserManager().create(organizationId, new User().setId("u1").setName("u1").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
-        catalogManager.getUserManager().create(organizationId, new User().setId("u2").setName("u2").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("u2").setName("u2").setOrganization(organizationId).setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
 
         // Add analysts
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
@@ -308,7 +308,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
         assertTrue(StringUtils.isEmpty(case1.getRequest().getId()));
 
-        catalogManager.getUserManager().create(organizationId, new User().setId("u1").setName("u1").setEmail("mail@mail.com").setAccount(new Account()),
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setOrganization(organizationId).setEmail("mail@mail.com").setAccount(new Account()),
                 TestParamConstants.PASSWORD, opencgaToken);
 
         ClinicalRequest request = new ClinicalRequest("requestId", "bla", null, new ClinicalResponsible().setId("u1"), new HashMap<>());
@@ -345,7 +345,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
         assertEquals(orgOwnerUserId, case1.getResponsible().getId());
 
-        catalogManager.getUserManager().create(organizationId, new User().setId("u1").setName("u1").setEmail("mail@mail.com")
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setEmail("mail@mail.com")
+                        .setOrganization(organizationId)
                         .setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
 
         ClinicalResponsible responsible = new ClinicalResponsible().setId("u1");
@@ -1306,7 +1307,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     @Test
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
-        catalogManager.getUserManager().create(organizationId, "external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
+        catalogManager.getUserManager().create("external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
 
         OpenCGAResult<AclEntryList<ClinicalAnalysisPermissions>> aclResult =

@@ -89,7 +89,8 @@ public class ProjectManagerTest extends AbstractManagerTest {
     public void searchProjects() throws CatalogException {
         String org2 = "otherOrg";
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(org2), QueryOptions.empty(), opencgaToken);
-        catalogManager.getUserManager().create(org2, new User().setId("userFromOrg2").setName("name").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setAccount(new Account()).setOrganization(org2),
+                TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
         String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
         Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
@@ -98,14 +99,14 @@ public class ProjectManagerTest extends AbstractManagerTest {
                 INCLUDE_RESULT, owner2Token).first();
         Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, owner2Token).first();
 
-        catalogManager.getUserManager().create(org2, "userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, owner2Token);
+        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
         String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
-        catalogManager.getUserManager().create(org2, otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, owner2Token);
+        catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
         String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(org2, new Query(), QueryOptions.empty(), otherUsertoken);

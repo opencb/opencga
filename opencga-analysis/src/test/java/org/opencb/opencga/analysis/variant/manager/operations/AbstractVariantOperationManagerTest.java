@@ -138,8 +138,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
                 opencga.getAdminToken());
-        catalogManager.getUserManager().create(ORGANIZATION, USER, USER, "my@email.org", TestParamConstants.PASSWORD, "ACME",
-                1000L, opencga.getAdminToken()).first();
+        catalogManager.getUserManager().create(USER, USER, "my@email.org", TestParamConstants.PASSWORD, ORGANIZATION, 1000L, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
                 null,
                 opencga.getAdminToken());
