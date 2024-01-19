@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -114,7 +113,8 @@ public interface AuthorizationManager {
     void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
 
     /**
-     * Check if user is named "opencga"
+     * Check if user is named "opencga".
+     *
      * @param userId user id
      * @return true if user is named "opencga"
      * @deprecated use {@link #isOpencgaAdministrator(String, String)} instead

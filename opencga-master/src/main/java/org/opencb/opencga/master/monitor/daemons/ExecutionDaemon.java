@@ -606,36 +606,43 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         String user = job.getUserId();
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
 
+        if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+            // Hard check. Within READ_ONLY mode, if the tool is an operation on variant, rga or alignment, we forbid it.
+            // Neither opencga administrators can run it.
+            if (tool.type() ==  Tool.Type.OPERATION
+                    && (tool.resource() == Enums.Resource.VARIANT
+                    || tool.resource() == Enums.Resource.RGA
+                    || tool.resource() == Enums.Resource.ALIGNMENT)) {
+                // Forbid storage operations!
+                throw new CatalogAuthorizationException("Unable to execute tool '" + tool.id() + "', "
+                        + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
+                        + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
+        }
+
         if (authorizationManager.isOpencgaAdministrator(jwtPayload)) {
             // Installation administrator user can run everything
             return;
         }
 
         if (tool.scope() == Tool.Scope.GLOBAL) {
-            throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation("run tools with scope '" + Tool.Scope.GLOBAL + "'");
-        } if (tool.scope() == Tool.Scope.ORGANIZATION) {
+            // Only installation administrators can run tools with scope global
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "run tools with scope '" + Tool.Scope.GLOBAL + "'");
+        } else if (tool.scope() == Tool.Scope.ORGANIZATION) {
+            // Only organization owners or administrators can run tools with scope organization
             authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, user);
         } else {
             long studyUid = catalogManager.getStudyManager().get(job.getStudy().getId(), new QueryOptions(QueryOptions.INCLUDE,
                     StudyDBAdaptor.QueryParams.UID.key()), token).first().getUid();
-            if (authorizationManager.isStudyAdministrator(organizationId, studyUid, user)) {
-                // Study administrators can run everything
+            if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)
+                    || authorizationManager.isStudyAdministrator(organizationId, studyUid, user)) {
+                // Study and organization administrators can run tools with scope study or project
                 return;
             }
 
             // Validate user is owner or belongs to the right group
             String requiredGroup;
             if (tool.type() == Tool.Type.OPERATION) {
-                if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
-                    if (tool.resource() == Enums.Resource.VARIANT
-                            || tool.resource() == Enums.Resource.RGA
-                            || tool.resource() == Enums.Resource.ALIGNMENT) {
-                        // Forbid storage operations!
-                        abortJob(job, "Unable to execute tool '" + tool.id() + "', "
-                                + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
-                                + "The storage engine is in mode=" + storageConfiguration.getMode());
-                    }
-                }
                 requiredGroup = ParamConstants.ADMINS_GROUP;
             } else {
                 requiredGroup = ParamConstants.MEMBERS_GROUP;
