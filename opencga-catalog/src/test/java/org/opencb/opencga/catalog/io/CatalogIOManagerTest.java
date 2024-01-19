@@ -25,12 +25,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(ShortTests.class)
 public class CatalogIOManagerTest {
@@ -55,21 +55,6 @@ public class CatalogIOManagerTest {
         configuration.setWorkspace(tmpOutdir.toUri().toString());
         ioManager = new CatalogIOManager(configuration);
         ioManager.createDefaultOpenCGAFolders();
-    }
-
-    @Test
-    public void testCreateAccount() throws Exception {
-        String organizationId = "opencb";
-        ioManager.createOrganization(organizationId);
-        String userId = "imedina";
-        URI userUri = ioManager.createUser(organizationId, userId);
-
-        Path userPath = Paths.get(userUri);
-        assertTrue(Files.exists(userPath));
-        assertEquals(tmpOutdir.resolve("orgs").resolve(organizationId).resolve("users/").resolve(userId).toAbsolutePath().toString(), userUri.getPath());
-
-        ioManager.deleteUser(organizationId, userId);
-        assertFalse(Files.exists(userPath));
     }
 
     @Test

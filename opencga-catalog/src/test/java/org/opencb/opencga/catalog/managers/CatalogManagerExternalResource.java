@@ -72,8 +72,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
         //Catalog database might be already installed. Need to delete it before installing it again.
         clearCatalog(configuration);
 
-        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager = new CatalogManager(configuration);
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
 
         adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();

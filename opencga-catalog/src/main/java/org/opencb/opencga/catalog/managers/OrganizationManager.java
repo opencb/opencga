@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -230,8 +231,11 @@ public class OrganizationManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
 
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Organization> result = OpenCGAResult.empty(Organization.class);
         try {
+            ParamUtils.checkObj(updateParams, "OrganizationUpdateParams");
+
             OpenCGAResult<Organization> internalResult = get(organizationId, INCLUDE_ORGANIZATION_ADMINS, token);
             if (internalResult.getNumResults() == 0) {
                 throw new CatalogException("Organization '" + organizationId + "' not found");
@@ -241,20 +245,54 @@ public class OrganizationManager extends AbstractManager {
             // We set the proper values for the audit
             organizationId = organization.getId();
 
-            OpenCGAResult<Organization> updateResult = getOrganizationDBAdaptor(organizationId)
-                    .update(organizationId, updateMap, options);
-            result.append(updateResult);
+            // Avoid duplicated authentication origin ids.
+            // Validate all mandatory authentication origin fields are filled in.
+            if (updateParams.getConfiguration() != null && updateParams.getConfiguration().getAuthenticationOrigins() != null) {
+                String authOriginsPrefixKey = OrganizationDBAdaptor.QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key();
+                boolean internal = false;
+                Set<String> authenticationOriginIds = new HashSet<>();
+                for (AuthenticationOrigin authenticationOrigin : updateParams.getConfiguration().getAuthenticationOrigins()) {
+                    if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)) {
+                        if (internal) {
+                            throw new CatalogException("Found duplicated authentication origin of type OPENCGA.");
+                        }
+                        internal = true;
+                        // Set id to INTERNAL
+                        authenticationOrigin.setId(CatalogAuthenticationManager.INTERNAL);
+                    }
+                    ParamUtils.checkIdentifier(authenticationOrigin.getId(), authOriginsPrefixKey + ".id");
+                    ParamUtils.checkObj(authenticationOrigin.getType(), authOriginsPrefixKey + ".type");
+                    ParamUtils.checkParameter(authenticationOrigin.getSecretKey(), authOriginsPrefixKey + ".secretKey");
+                    ParamUtils.checkParameter(authenticationOrigin.getAlgorithm(), authOriginsPrefixKey + ".algorithm");
+                    if (authenticationOriginIds.contains(authenticationOrigin.getId())) {
+                        throw new CatalogException("Found duplicated authentication origin id '" + authenticationOrigin.getId() + "'.");
+                    }
+                    authenticationOriginIds.add(authenticationOrigin.getId());
+                }
+                if (!internal) {
+                    throw new CatalogException("Missing mandatory AuthenticationOrigin of type OPENCGA.");
+                }
+            }
+
+            result = getOrganizationDBAdaptor(organizationId).update(organizationId, updateMap, options);
 
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "",
                     "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        } catch (CatalogException e) {
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated organization
+                OpenCGAResult<Organization> queryResult = getOrganizationDBAdaptor(organizationId).get(options);
+                result.setResults(queryResult.getResults());
+            }
+        } catch (Exception e) {
             Event event = new Event(Event.Type.ERROR, organizationId, e.getMessage());
             result.getEvents().add(event);
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update organization {}: {}", organizationId, e.getMessage());
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Update organization",
+                            e.getMessage())));
             throw e;
         }
         return result;

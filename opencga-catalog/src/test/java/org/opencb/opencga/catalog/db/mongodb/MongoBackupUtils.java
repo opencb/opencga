@@ -141,10 +141,8 @@ public class MongoBackupUtils {
             databaseExists = false;
         }
 
-        // Write users folder in disk
+        // Write projects folder in disk
         IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
-        Path usersFolder = opencgaHome.resolve("sessions").resolve("orgs").resolve(organizationId).resolve("users");
-        ioManager.createDirectory(usersFolder.toUri(), true);
         Path projectsFolder = opencgaHome.resolve("sessions").resolve("orgs").resolve(organizationId).resolve("projects");
         ioManager.createDirectory(projectsFolder.toUri(), true);
 

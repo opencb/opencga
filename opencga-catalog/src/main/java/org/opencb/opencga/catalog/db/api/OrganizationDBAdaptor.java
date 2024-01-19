@@ -26,10 +26,10 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_MIGRATION_EXECUTIONS("internal.migrationExecutions", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS("configuration.authenticationOrigins", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),
-        AUTHENTICATION_ORIGINS("authenticationOrigins", OBJECT, ""),
         ATTRIBUTES("attributes", OBJECT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();

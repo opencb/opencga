@@ -112,10 +112,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
 
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organization", commandOptions.organization);
-
-
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<User> res = new RestResponse<>();
@@ -131,13 +127,13 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.bodyOrganization, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
             userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
-        return openCGAClient.getUserClient().create(userCreateParams, queryParams);
+        return openCGAClient.getUserClient().create(userCreateParams);
     }
 
     private RestResponse<AuthenticationResponse> login() throws Exception {
