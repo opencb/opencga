@@ -64,13 +64,16 @@ public class UserManager extends AbstractManager {
             UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
+    private final AuthenticationFactory authenticationFactory;
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+                AuthenticationFactory authenticationFactory, Configuration configuration)
             throws CatalogException {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
+        this.authenticationFactory = authenticationFactory;
 
         AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
         if (configuration.getAuthentication().getAuthenticationOrigins() == null) {
@@ -104,7 +107,7 @@ public class UserManager extends AbstractManager {
 
             getUserDBAdaptor(organizationId).checkId(userId);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            AuthenticationFactory.changePassword(organizationId, authOrigin, userId, oldPassword, newPassword);
+            authenticationFactory.changePassword(organizationId, authOrigin, userId, oldPassword, newPassword);
             auditManager.auditUser(organizationId, userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
@@ -245,12 +248,12 @@ public class UserManager extends AbstractManager {
             authOrigin = userResult.first().getAccount().getAuthentication().getId();
         }
 
-        AuthenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
         return jwtPayload;
     }
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
-        if (!OPENCGA.equals(AuthenticationFactory.getUserId(organizationId, authOrigin, token))) {
+        if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
@@ -265,7 +268,7 @@ public class UserManager extends AbstractManager {
 
                 List<User> userList;
                 try {
-                    userList = AuthenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
+                    userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
                             group.getSyncedFrom().getRemoteGroup());
                 } catch (CatalogException e) {
                     // There was some kind of issue for which we could not retrieve the group information.
@@ -339,7 +342,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!OPENCGA.equals(AuthenticationFactory.getUserId(organizationId, authOrigin, token))) {
+            if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
                 throw new CatalogAuthorizationException("Only the root user can perform this action");
             }
 
@@ -354,7 +357,7 @@ public class UserManager extends AbstractManager {
                 logger.info("Fetching users from authentication origin '{}'", authOrigin);
 
                 // Register the users
-                userList = AuthenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
+                userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
                 for (User user : userList) {
                     user.setOrganization(organizationId);
                     try {
@@ -437,7 +440,7 @@ public class UserManager extends AbstractManager {
 
             if (!isApplication) {
                 logger.info("Fetching user information from authentication origin '{}'", authOrigin);
-                List<User> parsedUserList = AuthenticationFactory.getRemoteUserInformation(organizationId, authOrigin, idList);
+                List<User> parsedUserList = authenticationFactory.getRemoteUserInformation(organizationId, authOrigin, idList);
                 for (User user : parsedUserList) {
                     user.setOrganization(organizationId);
                     create(user, null, token);
@@ -725,7 +728,7 @@ public class UserManager extends AbstractManager {
         try {
             authorizationManager.checkIsInstallationAdministrator(jwtPayload);
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = AuthenticationFactory.resetPassword(organizationId, authOrigin, userId);
+            OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
             auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -766,7 +769,7 @@ public class UserManager extends AbstractManager {
         if (userOpenCGAResult.getNumResults() == 1) {
             authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
             try {
-                response = AuthenticationFactory.authenticate(organizationId, authId, username, password);
+                response = authenticationFactory.authenticate(organizationId, authId, username, password);
             } catch (CatalogAuthenticationException e) {
                 auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -775,7 +778,7 @@ public class UserManager extends AbstractManager {
         } else {
             // We attempt to login the user with the different authentication managers
             for (Map.Entry<String, AuthenticationManager> entry
-                    : AuthenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
+                    : authenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
                 AuthenticationManager authenticationManager = entry.getValue();
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
@@ -795,7 +798,7 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = AuthenticationFactory.getUserId(organizationId, authId, response.getToken());
+        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
@@ -803,16 +806,16 @@ public class UserManager extends AbstractManager {
                 getUserDBAdaptor(organizationId).checkId(userId);
             } catch (CatalogDBException e) {
                 // The user does not exist so we register it
-                User user = AuthenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
+                User user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
                 user.setOrganization(organizationId);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = AuthenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
+                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
                 create(user, null, rootToken);
             }
 
             try {
-                List<String> remoteGroups = AuthenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
+                List<String> remoteGroups = authenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 
                 // Resync synced groups of user in OpenCGA
                 getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroups, authId);
@@ -834,7 +837,7 @@ public class UserManager extends AbstractManager {
             throw CatalogAuthenticationException.userNotFound(organizationId, ParamConstants.ANONYMOUS_USER_ID);
         }
 
-        String token = AuthenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL,
+        String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL,
                 ParamConstants.ANONYMOUS_USER_ID);
         return new AuthenticationResponse(token);
     }
@@ -853,7 +856,7 @@ public class UserManager extends AbstractManager {
         String userId = "";
         // We attempt to renew the token with the different authentication managers
         for (Map.Entry<String, AuthenticationManager> entry
-                : AuthenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
+                : authenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
                 response = authenticationManager.refreshToken(token);
@@ -928,7 +931,7 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(user, INCLUDE_ACCOUNT);
         if (userOpenCGAResult.getNumResults() == 1) {
             String authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
-            return AuthenticationFactory.getOrganizationAuthenticationManager(organizationId, authId);
+            return authenticationFactory.getOrganizationAuthenticationManager(organizationId, authId);
         } else {
             throw new CatalogException("User '" + user + "' not found.");
         }

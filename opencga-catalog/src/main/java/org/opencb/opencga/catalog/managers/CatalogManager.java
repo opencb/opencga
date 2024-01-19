@@ -70,6 +70,7 @@ public class CatalogManager implements AutoCloseable {
     private AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory;
     private IOManagerFactory ioManagerFactory;
     private CatalogIOManager catalogIOManager;
+    private AuthenticationFactory authenticationFactory;
 
     private AdminManager adminManager;
     private SettingsManager settingsManager;
@@ -104,6 +105,7 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
+        authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
@@ -124,7 +126,7 @@ public class CatalogManager implements AutoCloseable {
 //                        + "'. Associated database could not be found.");
 //            }
             if (organization != null) {
-                AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
+                authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
         }
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
@@ -134,8 +136,9 @@ public class CatalogManager implements AutoCloseable {
         settingsManager = new SettingsManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
-                configuration);
-        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
+                authenticationFactory, configuration);
+        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
+                authenticationFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
@@ -316,9 +319,6 @@ public class CatalogManager implements AutoCloseable {
         // Clear DB
         catalogDBAdaptorFactory.deleteCatalogDB();
         catalogDBAdaptorFactory.close();
-
-        // Clear AuthenticationManager
-        AuthenticationFactory.clear();
 
         // Clear workspace folder
         Path rootdir;

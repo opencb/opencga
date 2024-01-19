@@ -37,6 +37,8 @@ public class CatalogIOManager {
      * OPENCGA_BIN_FOLDER contains all packaged binaries delivered within OpenCGA
      */
     private static final String OPENCGA_ORGANIZATIONS_FOLDER = "orgs/";
+    // FIXME: Pedro, please, remove this folder
+    @Deprecated
     private static final String OPENCGA_USERS_FOLDER = "users/";
     private static final String OPENCGA_ANONYMOUS_USERS_FOLDER = "anonymous/";
     private static final String OPENCGA_BIN_FOLDER = "bin/";

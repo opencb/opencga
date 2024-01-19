@@ -24,17 +24,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AuthenticationFactory {
 
     // Map of organizationId -> authenticationOriginId -> AuthenticationManager
-    private static Map<String, Map<String, AuthenticationManager>> authenticationManagerMap;
-    private static Logger logger = LoggerFactory.getLogger(AuthenticationFactory.class);
+    private final Map<String, Map<String, AuthenticationManager>> authenticationManagerMap;
+    private final Logger logger = LoggerFactory.getLogger(AuthenticationFactory.class);
+    private final DBAdaptorFactory catalogDBAdaptorFactory;
 
-    static {
+    public AuthenticationFactory(DBAdaptorFactory catalogDBAdaptorFactory) {
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         authenticationManagerMap = new ConcurrentHashMap<>();
     }
 
-    private AuthenticationFactory() {
-    }
-
-    public static void configureOrganizationAuthenticationManager(Organization organization, DBAdaptorFactory dbAdaptorFactory)
+    public void configureOrganizationAuthenticationManager(Organization organization)
             throws CatalogException {
         // TODO: Pass proper email values
         Email email = new Email();
@@ -54,7 +53,7 @@ public final class AuthenticationFactory {
                             break;
                         case OPENCGA:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new CatalogAuthenticationManager(dbAdaptorFactory, email, authOrigin.getSecretKey(),
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, authOrigin.getSecretKey(),
                                             authOrigin.getExpiration()));
                             break;
                         default:
@@ -72,55 +71,55 @@ public final class AuthenticationFactory {
         authenticationManagerMap.put(organization.getId(), tmpAuthenticationManagerMap);
     }
 
-    public static String createToken(String organizationId, String authOriginId, String userId) throws CatalogException {
+    public String createToken(String organizationId, String authOriginId, String userId) throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).createToken(organizationId, userId);
     }
 
-    public static void validateToken(String organizationId, String authOriginId, String token) throws CatalogException {
+    public void validateToken(String organizationId, String authOriginId, String token) throws CatalogException {
         getOrganizationAuthenticationManager(organizationId, authOriginId).getUserId(token);
     }
 
-    public static AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password)
+    public AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password)
             throws CatalogException {
         AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
                 authenticationOriginId);
         return organizationAuthenticationManager.authenticate(organizationId, userId, password);
     }
 
-    public static void changePassword(String organizationId, String authOriginId, String userId, String oldPassword, String newPassword)
+    public void changePassword(String organizationId, String authOriginId, String userId, String oldPassword, String newPassword)
             throws CatalogException {
         getOrganizationAuthenticationManager(organizationId, authOriginId).changePassword(organizationId, userId, oldPassword, newPassword);
     }
 
-    public static OpenCGAResult resetPassword(String organizationId, String authOriginId, String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String organizationId, String authOriginId, String userId) throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).resetPassword(organizationId, userId);
     }
 
-    public static String getUserId(String organizationId, String authOriginId, String token) throws CatalogException {
+    public String getUserId(String organizationId, String authOriginId, String token) throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).getUserId(token);
     }
 
-    public static List<User> getRemoteUserInformation(String organizationId, String authOriginId, List<String> userStringList)
+    public List<User> getRemoteUserInformation(String organizationId, String authOriginId, List<String> userStringList)
             throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).getRemoteUserInformation(userStringList);
     }
 
-    public static List<User> getUsersFromRemoteGroup(String organizationId, String authOriginId, String group) throws CatalogException {
+    public List<User> getUsersFromRemoteGroup(String organizationId, String authOriginId, String group) throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).getUsersFromRemoteGroup(group);
     }
 
-    public static List<String> getRemoteGroups(String organizationId, String authOriginId, String token) throws CatalogException {
+    public List<String> getRemoteGroups(String organizationId, String authOriginId, String token) throws CatalogException {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).getRemoteGroups(token);
     }
 
-    public static Map<String, AuthenticationManager> getOrganizationAuthenticationManagers(String organizationId) throws CatalogException {
+    public Map<String, AuthenticationManager> getOrganizationAuthenticationManagers(String organizationId) throws CatalogException {
         if (!authenticationManagerMap.containsKey(organizationId)) {
             throw new CatalogException("Organization '" + organizationId + "' not found.");
         }
         return authenticationManagerMap.get(organizationId);
     }
 
-    public static AuthenticationManager getOrganizationAuthenticationManager(String organizationId, String authOriginId)
+    public AuthenticationManager getOrganizationAuthenticationManager(String organizationId, String authOriginId)
             throws CatalogException {
         Map<String, AuthenticationManager> organizationAuthenticationManagers = getOrganizationAuthenticationManagers(organizationId);
         if (!organizationAuthenticationManagers.containsKey(authOriginId)) {
@@ -129,7 +128,4 @@ public final class AuthenticationFactory {
         return organizationAuthenticationManagers.get(authOriginId);
     }
 
-    public static void clear() {
-        authenticationManagerMap.clear();
-    }
 }

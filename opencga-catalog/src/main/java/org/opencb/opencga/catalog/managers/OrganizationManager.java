@@ -45,11 +45,14 @@ public class OrganizationManager extends AbstractManager {
             Collections.singletonList(OrganizationDBAdaptor.QueryParams.CONFIGURATION.key()));
     protected static Logger logger = LoggerFactory.getLogger(OrganizationManager.class);
     private final CatalogIOManager catalogIOManager;
+    private final AuthenticationFactory authenticationFactory;
 
     OrganizationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
+                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+                        AuthenticationFactory authenticationFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
+        this.authenticationFactory = authenticationFactory;
     }
 
 //    OpenCGAResult<Organization> internalGet(String organizationId, QueryOptions options, String user) throws CatalogException {
@@ -174,7 +177,7 @@ public class OrganizationManager extends AbstractManager {
             }
 
             // Add required authentication manager for the new organization
-            AuthenticationFactory.configureOrganizationAuthenticationManager(organization, catalogDBAdaptorFactory);
+            authenticationFactory.configureOrganizationAuthenticationManager(organization);
         } catch (CatalogException e) {
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
                 auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,

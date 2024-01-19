@@ -22,7 +22,6 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
-import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.PasswordUtils;
@@ -47,12 +46,10 @@ import java.nio.file.StandardCopyOption;
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private static CatalogManager catalogManager;
+    private CatalogManager catalogManager;
     private Configuration configuration;
     private Path opencgaHome;
     private String adminToken;
-
-    private static boolean firstExecutionFinished = false;
 
     public CatalogManagerExternalResource() {
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
@@ -61,13 +58,29 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("Initializing CatalogManagerExternalResource");
+        System.out.println("-------------------------------------------------------------------------------");
         if (catalogManager != null) {
             catalogManager.close();
             catalogManager = null;
         }
+        clearOpenCGAHome("static");
+
+        //Catalog database might be already installed. Need to delete it before installing it again.
+        clearCatalog(configuration);
+
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        catalogManager = new CatalogManager(configuration);
+        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
+
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+    }
+
+    public Path clearOpenCGAHome(String testName) throws IOException {
         int c = 0;
         do {
-            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + testName + "_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
             c++;
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
@@ -79,31 +92,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
         FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
-
-        catalogManager = new CatalogManager(configuration);
-        if (!firstExecutionFinished) {
-            clearCatalog(configuration);
-            firstExecutionFinished = true;
-
-            String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
-            catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-        }
-////        if (!firstExecutionFinished) {
-//        clearCatalog(configuration);
-////            firstExecutionFinished = true;
-//        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
-//        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-////        }
-//        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-
-//        // Clear before creating a new instance of CatalogManager
-//        clearCatalog(configuration);
-//
-//        catalogManager = new CatalogManager(configuration);
-//
-//        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
-//        catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
-//        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        return opencgaHome;
     }
 
     @Override
@@ -116,6 +105,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("Shutting down CatalogManagerExternalResource");
+        System.out.println("-------------------------------------------------------------------------------");
     }
 
     public Configuration getConfiguration() {
@@ -123,6 +115,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
+    public CatalogManager resetCatalogManager() throws CatalogException {
+        catalogManager.close();
+        catalogManager = new CatalogManager(configuration);
         return catalogManager;
     }
 
@@ -138,7 +136,6 @@ public class CatalogManagerExternalResource extends ExternalResource {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
             dbAdaptorFactory.deleteCatalogDB();
         }
-        AuthenticationFactory.clear();
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());

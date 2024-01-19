@@ -18,9 +18,11 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -49,6 +51,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -65,7 +68,11 @@ public class  AbstractManagerTest extends GenericTest {
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public TestName testName = new TestName();
+
+    @ClassRule
+    public static CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+    public static Path mongoDumpFolder;
 
     protected CatalogManager catalogManager;
     protected String organizationId = "test";
@@ -177,12 +184,15 @@ public class  AbstractManagerTest extends GenericTest {
             MongoBackupUtils.dump(catalogManager, catalogManagerResource.getOpencgaHome());
             firstExecutionFinished = true;
         } else {
+            // Clear sessions folder
+            catalogManagerResource.clearOpenCGAHome(testName.getMethodName());
             MongoBackupUtils.restore(catalogManager, catalogManagerResource.getOpencgaHome());
             initVariables();
         }
     }
 
     private void initVariables() throws CatalogException {
+        catalogManager = catalogManagerResource.resetCatalogManager();
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         ownerToken = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
         orgAdminToken1 = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).getToken();
