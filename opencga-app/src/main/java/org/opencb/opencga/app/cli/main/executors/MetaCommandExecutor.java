@@ -32,6 +32,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class MetaCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "meta";
     public MetaCommandOptions metaCommandOptions;
 
     public MetaCommandExecutor(MetaCommandOptions metaCommandOptions) throws CatalogAuthenticationException {

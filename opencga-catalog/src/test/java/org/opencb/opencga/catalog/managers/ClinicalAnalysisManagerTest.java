@@ -21,10 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.ClinicalAudit;
-import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.ClinicalDiscussion;
-import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
@@ -50,16 +47,14 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileReferenceParam;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -68,9 +63,12 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -287,6 +285,196 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 assertEquals(2, casee.getFamily().getVersion());
             }
         }
+    }
+
+    @Test
+    public void updateClinicalAnalystsTest() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("u2").setName("u2").setAccount(new Account()), TestParamConstants.PASSWORD, opencgaToken);
+
+        // Add analysts
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setAnalysts(
+                        Arrays.asList(new ClinicalAnalystParam("u1"), new ClinicalAnalystParam("u2"))), INCLUDE_RESULT, sessionIdUser);
+        assertEquals(3, result.first().getAnalysts().size());
+        assertTrue(result.first().getAnalysts().stream().map(ClinicalAnalyst::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("u1", "u2")));
+
+        // Check analyst params
+        for (ClinicalAnalyst analyst : result.first().getAnalysts()) {
+            assertNotNull(analyst.getId());
+            assertNotNull(analyst.getName());
+            assertNotNull(analyst.getRole());
+            assertNotNull(analyst.getAttributes());
+        }
+
+        // Remove analysts
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setAnalysts(
+                        Arrays.asList(new ClinicalAnalystParam("u1"), new ClinicalAnalystParam("u2"))), options, sessionIdUser);
+        assertEquals(1, result.first().getAnalysts().size());
+        assertTrue(result.first().getAnalysts().stream().map(ClinicalAnalyst::getId).noneMatch(x -> Arrays.asList("u1", "u2").contains(x)));
+
+        // Set analysts
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setAnalysts(
+                        Arrays.asList(new ClinicalAnalystParam("u1"), new ClinicalAnalystParam("u2"))), options, sessionIdUser);
+        assertEquals(2, result.first().getAnalysts().size());
+        assertTrue(result.first().getAnalysts().stream().map(ClinicalAnalyst::getId).allMatch(x -> Arrays.asList("u1", "u2").contains(x)));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setAnalysts(
+                        Arrays.asList(new ClinicalAnalystParam("unknown"), new ClinicalAnalystParam("u2"))), options, sessionIdUser);
+    }
+
+    @Test
+    public void updateClinicalAnalysisRequest() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        assertTrue(StringUtils.isEmpty(case1.getRequest().getId()));
+
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setEmail("mail@mail.com").setAccount(new Account()),
+                TestParamConstants.PASSWORD, opencgaToken);
+
+        ClinicalRequest request = new ClinicalRequest("requestId", "bla", null, new ClinicalResponsible().setId("u1"), new HashMap<>());
+
+        // Change request
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setRequest(request), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getRequest());
+        assertTrue(StringUtils.isNotEmpty(result.first().getRequest().getDate()));
+        assertEquals("requestId", result.first().getRequest().getId());
+        assertEquals("u1", result.first().getRequest().getResponsible().getId());
+        assertEquals("u1", result.first().getRequest().getResponsible().getName());
+        assertEquals("mail@mail.com", result.first().getRequest().getResponsible().getEmail());
+
+        // Remove request responsible
+        request.setResponsible(null);
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setRequest(request), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getRequest());
+        assertTrue(StringUtils.isNotEmpty(result.first().getRequest().getDate()));
+        assertEquals("requestId", result.first().getRequest().getId());
+        assertNull(result.first().getRequest().getResponsible());
+
+        // Add non existing request responsible user id
+        request.setResponsible(new ClinicalResponsible().setId("unknown"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setRequest(request), INCLUDE_RESULT, sessionIdUser);
+    }
+
+    @Test
+    public void updateClinicalAnalysisResponsible() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        assertEquals("user", case1.getResponsible().getId());
+
+        catalogManager.getUserManager().create(new User().setId("u1").setName("u1").setEmail("mail@mail.com").setAccount(new Account()),
+                TestParamConstants.PASSWORD, opencgaToken);
+
+        ClinicalResponsible responsible = new ClinicalResponsible().setId("u1");
+
+        // Change responsible
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setResponsible(responsible), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getResponsible());
+        assertEquals("u1", result.first().getResponsible().getId());
+        assertEquals("u1", result.first().getResponsible().getName());
+        assertEquals("mail@mail.com", result.first().getResponsible().getEmail());
+
+        // Change to non existing request responsible user id
+        responsible.setId("unknown");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setResponsible(responsible), INCLUDE_RESULT, sessionIdUser);
+    }
+
+    @Test
+    public void updateClinicalAnalysisReport() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        assertNull(case1.getReport());
+
+        ClinicalReport report = new ClinicalReport()
+                .setTitle("my report")
+                .setComments(Arrays.asList(new ClinicalComment("author", "msg", null, null), new ClinicalComment("author2", "msg", null, null)));
+
+        // Change report
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getReport());
+        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(2, result.first().getReport().getComments().size());
+        for (ClinicalComment comment : result.first().getReport().getComments()) {
+            assertEquals("user", comment.getAuthor());
+            assertTrue(StringUtils.isNotEmpty(comment.getDate()));
+        }
+
+        // Add files
+        catalogManager.getFileManager().create(STUDY,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/file1.txt")
+                        .setType(File.Type.FILE),
+                true, sessionIdUser);
+        catalogManager.getFileManager().create(STUDY,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/file2.txt")
+                        .setType(File.Type.FILE),
+                true, sessionIdUser);
+
+        List<File> fileList = Arrays.asList(new File().setId("data:file1.txt"), new File().setId("data:file2.txt"));
+        report.setSupportingEvidences(fileList);
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getReport());
+        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(2, result.first().getReport().getComments().size());
+        for (ClinicalComment comment : result.first().getReport().getComments()) {
+            assertEquals("user", comment.getAuthor());
+            assertTrue(StringUtils.isNotEmpty(comment.getDate()));
+        }
+        assertEquals(2, result.first().getReport().getSupportingEvidences().size());
+        assertEquals("data/file1.txt", result.first().getReport().getSupportingEvidences().get(0).getPath());
+        assertEquals("data/file2.txt", result.first().getReport().getSupportingEvidences().get(1).getPath());
+        assertNull(result.first().getReport().getFiles());
+
+        report.setFiles(fileList);
+        result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, sessionIdUser);
+        assertNotNull(result.first().getReport());
+        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(2, result.first().getReport().getComments().size());
+        for (ClinicalComment comment : result.first().getReport().getComments()) {
+            assertEquals("user", comment.getAuthor());
+            assertTrue(StringUtils.isNotEmpty(comment.getDate()));
+        }
+        assertEquals(2, result.first().getReport().getSupportingEvidences().size());
+        assertEquals("data/file1.txt", result.first().getReport().getSupportingEvidences().get(0).getPath());
+        assertEquals("data/file2.txt", result.first().getReport().getSupportingEvidences().get(1).getPath());
+        assertEquals(2, result.first().getReport().getFiles().size());
+        assertEquals("data/file1.txt", result.first().getReport().getFiles().get(0).getPath());
+        assertEquals("data/file2.txt", result.first().getReport().getFiles().get(1).getPath());
+
+        // Provide non existing file
+        report.setFiles(Collections.singletonList(new File().setId("nonexisting.txt")));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, sessionIdUser);
     }
 
     @Test
@@ -3527,5 +3715,127 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
                 sessionIdUser).first();
         Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
+    }
+
+    // Annotation sets
+    @Test
+    public void searchByInternalAnnotationSetTest() throws CatalogException {
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+        catalogManager.getStudyManager().createVariableSet(STUDY, variableSet, sessionIdUser);
+
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("a", "hello");
+        annotations.put("b", new ObjectMap("b1", 2).append("b2", 3));
+        AnnotationSet annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "bye");
+        annotations.put("b", new ObjectMap("b1", Integer.MAX_VALUE + 1L).append("b2", 5));
+        AnnotationSet annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = createDummyEnvironment(true, true);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysisDataResult.first().getId(),
+                new ClinicalAnalysisUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), INCLUDE_RESULT, sessionIdUser).first();
+        assertEquals(0, clinicalAnalysis.getAnnotationSets().size());
+
+        // Create a different case with different annotations
+        annotations = new HashMap<>();
+        annotations.put("a", "hi");
+        annotations.put("b", new ObjectMap("b1", 12).append("b2", 13));
+        annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "goodbye");
+        annotations.put("b", new ObjectMap("b1", 14).append("b2", 15));
+        annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult2 = createDummyEnvironment(false, true);
+        ClinicalAnalysis clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysisDataResult2.first().getId(),
+                new ClinicalAnalysisUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), INCLUDE_RESULT, sessionIdUser).first();
+        assertEquals(0, clinicalAnalysis2.getAnnotationSets().size());
+
+        // Query by one of the annotations
+        Query query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(1, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertEquals(clinicalAnalysis.getId(), catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser).first()
+                .getId());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=" + (Integer.MAX_VALUE + 1L));
+        assertEquals(1, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertEquals(clinicalAnalysis.getId(), catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser).first()
+                .getId());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(1, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertEquals(clinicalAnalysis2.getId(), catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser).first()
+                .getId());
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(1, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertEquals(clinicalAnalysis2.getId(), catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser).first()
+                .getId());
+
+        // Update sample annotation to be exactly the same as sample2
+        ObjectMap action = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), options, sessionIdUser);
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(0, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        assertEquals(0, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(2, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertTrue(Arrays.asList(clinicalAnalysis.getId(), clinicalAnalysis2.getId())
+                .containsAll(catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser)
+                        .getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList())));
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(2, catalogManager.getClinicalAnalysisManager().count(STUDY, query, sessionIdUser).getNumMatches());
+        assertTrue(Arrays.asList(clinicalAnalysis.getId(), clinicalAnalysis2.getId())
+                .containsAll(catalogManager.getClinicalAnalysisManager().search(STUDY, query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, sessionIdUser)
+                        .getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void testSearchAnnotation() throws CatalogException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "",
+                "", null, Collections.emptyMap()));
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
+                "", null, Collections.emptyMap()));
+        variables.add(new Variable("OTHER", "", "", Variable.VariableType.OBJECT, null, false, false, null, null, 1, "", "", null,
+                Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(STUDY, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.CLINICAL_ANALYSIS), sessionIdUser).first();
+
+        ObjectMap annotations = new ObjectMap()
+                .append("var_name", "Joe")
+                .append("AGE", 25)
+                .append("HEIGHT", 180);
+        AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
+
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = createDummyEnvironment(true, true);
+        createDummyEnvironment(false, true);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysisDataResult.first().getId(),
+                new ClinicalAnalysisUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)), QueryOptions.empty(),
+                sessionIdUser);
+
+        Query query = new Query(Constants.ANNOTATION, "var_name=Joe;" + vs1.getId() + ":AGE=25");
+        DataResult<ClinicalAnalysis> annotDataResult = catalogManager.getClinicalAnalysisManager().search(STUDY, query,
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, annotDataResult.getNumResults());
+
+        query.put(Constants.ANNOTATION, "var_name=Joe;" + vs1.getId() + ":AGE=23");
+        annotDataResult = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, annotDataResult.getNumResults());
     }
 }

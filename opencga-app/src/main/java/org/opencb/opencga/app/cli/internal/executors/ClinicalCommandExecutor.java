@@ -25,6 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -120,6 +121,9 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 break;
             case ClinicalCommandOptions.ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND:
                 //importClinicalAnalyses();
+                break;
+            case "tsv-load":
+                tsvLoad();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -338,5 +342,20 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis);
 //        exomiserInterpretationAnalysis.setPrimary(cliOptions.primary);
         exomiserInterpretationAnalysis.start();
+    }
+
+    private void tsvLoad() throws ToolException {
+        ClinicalCommandOptions.TsvLoad options = clinicalCommandOptions.tsvLoad;
+
+        Path outDir = Paths.get(options.outDir);
+
+        ClinicalTsvAnnotationLoader annotationLoader = new ClinicalTsvAnnotationLoader();
+        annotationLoader.setAnnotationSetId(options.annotationSetId);
+        annotationLoader.setVariableSetId(options.variableSetId);
+        annotationLoader.setPath(options.filePath);
+        annotationLoader.setStudy(options.study);
+
+        annotationLoader.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        annotationLoader.start();
     }
 }

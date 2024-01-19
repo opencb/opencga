@@ -228,6 +228,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalSubCommands.addCommand(RGA_AUX_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions);
         clinicalSubCommands.addCommand(EXOMISER_INTERPRETATION_RUN_COMMAND, clinicalCommandOptions.exomiserInterpretationCommandOptions);
         clinicalSubCommands.addCommand(IMPORT_COMMAND, clinicalCommandOptions.importClinicalAnalysesCommandOptions);
+        clinicalSubCommands.addCommand("tsv-load", clinicalCommandOptions.tsvLoad);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);

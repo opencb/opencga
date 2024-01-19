@@ -265,7 +265,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, VIRTUAL, DIRECTORY", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
@@ -808,7 +808,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--checksum"}, description = "The body web service checksum parameter", required = false, arity = 1)
         public String checksum;
     
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)

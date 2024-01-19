@@ -49,6 +49,7 @@ public class ClinicalAnalysisQualityControlUpdateParam {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisQualityControlUpdateParam{");
         sb.append("summary=").append(summary);
         sb.append(", comments=").append(comments);
+        sb.append(", files=").append(files);
         sb.append('}');
         return sb.toString();
     }
@@ -59,6 +60,24 @@ public class ClinicalAnalysisQualityControlUpdateParam {
 
     public ClinicalAnalysisQualityControlUpdateParam setSummary(ClinicalAnalysisQualityControl.QualityControlSummary summary) {
         this.summary = summary;
+        return this;
+    }
+
+    public List<String> getComments() {
+        return comments;
+    }
+
+    public ClinicalAnalysisQualityControlUpdateParam setComments(List<String> comments) {
+        this.comments = comments;
+        return this;
+    }
+
+    public List<String> getFiles() {
+        return files;
+    }
+
+    public ClinicalAnalysisQualityControlUpdateParam setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 }

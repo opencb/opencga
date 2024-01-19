@@ -50,6 +50,7 @@ import org.opencb.opencga.core.tools.result.Status;
  */
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "jobs";
     public JobsCommandOptions jobsCommandOptions;
 
     public JobsCommandExecutor(JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
@@ -128,10 +129,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobAclUpdateParams jobAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobAclUpdateParams = new JobAclUpdateParams();
             RestResponse<JobAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -193,10 +193,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobCreateParams jobCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobCreateParams = new JobCreateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -280,10 +279,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobRetryParams jobRetryParams = null;
         if (commandOptions.jsonDataModel) {
-            jobRetryParams = new JobRetryParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobRetryParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/retry"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobRetryParams = JacksonUtils.getDefaultObjectMapper()
@@ -416,10 +414,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobUpdateParams jobUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobUpdateParams = new JobUpdateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/{jobs}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper()
