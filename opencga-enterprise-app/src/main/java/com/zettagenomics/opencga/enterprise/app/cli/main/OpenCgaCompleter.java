@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-01-15 OpenCB
+* Copyright 2015-2024-01-19 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","cva","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","cva","alignments","meta","organizations","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -110,6 +110,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
+    private List<Candidate> organizationsList = asList( "create","info","update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
     private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-update","groups-users-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
             .stream()
             .map(Candidate::new)
@@ -151,6 +156,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "cva", cvaList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
+        mapCandidates.put( "organizations", organizationsList);
         mapCandidates.put( "studies", studiesList);
         mapCandidates.put( "files", filesList);
         mapCandidates.put( "operations", operationsList);

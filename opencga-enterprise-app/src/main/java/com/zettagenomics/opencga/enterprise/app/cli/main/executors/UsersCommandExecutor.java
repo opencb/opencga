@@ -113,10 +113,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
 
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organization", commandOptions.organization);
-
-
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<User> res = new RestResponse<>();
@@ -132,13 +128,13 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.bodyOrganization, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
             userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseUserClient().create(userCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().create(userCreateParams);
     }
 
     private RestResponse<AuthenticationResponse> login() throws Exception {

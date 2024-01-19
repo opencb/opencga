@@ -145,9 +145,6 @@ public class AdminCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
-        public String organization; 
-    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
@@ -160,8 +157,8 @@ public class AdminCommandOptions {
         @Parameter(names = {"--password"}, description = "The body web service password parameter", required = false, arity = 1)
         public String password;
     
-        @Parameter(names = {"--body_organization"}, description = "The body web service organization parameter", required = false, arity = 1)
-        public String bodyOrganization;
+        @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
+        public String organization;
     
     }
 

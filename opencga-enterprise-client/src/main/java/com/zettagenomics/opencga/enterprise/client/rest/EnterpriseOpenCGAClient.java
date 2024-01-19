@@ -38,6 +38,10 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
         super(authenticationTokens, clientConfiguration);
     }
 
+    public OrganizationClient getEnterpriseOrganizationClient() {
+        return this.getClient(OrganizationClient.class, () -> new OrganizationClient(this.token, this.clientConfiguration));
+    }
+
     public UserClient getEnterpriseUserClient() {
         return this.getClient(UserClient.class, () -> new UserClient(this.token, this.clientConfiguration));
     }

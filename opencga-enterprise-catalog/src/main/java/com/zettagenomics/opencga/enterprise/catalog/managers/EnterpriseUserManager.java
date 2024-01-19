@@ -83,7 +83,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
                         enterpriseConfiguration.getSso().getAttributes().getOrganization(), ""));
             }
 
-            catalogManager.getUserManager().create(organizationId, user, null, opencgaToken);
+            catalogManager.getUserManager().create(user, null, opencgaToken);
         }
 
         syncGroups(organizationId, principal);

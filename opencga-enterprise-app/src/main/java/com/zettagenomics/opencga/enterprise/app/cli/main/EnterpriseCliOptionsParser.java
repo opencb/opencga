@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-01-15 OpenCB
+* Copyright 2015-2024-01-19 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     private final CvaCommandOptions cvaCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
+    private final OrganizationsCommandOptions organizationsCommandOptions;
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
@@ -282,6 +283,13 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         metaSubCommands.addCommand("sso-logout", metaCommandOptions.logoutSsoCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
 
+        organizationsCommandOptions = new OrganizationsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("organizations", organizationsCommandOptions);
+        JCommander organizationsSubCommands = jCommander.getCommands().get("organizations");
+        organizationsSubCommands.addCommand("create", organizationsCommandOptions.createCommandOptions);
+        organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
+        organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
+
         studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studiesCommandOptions);
         JCommander studiesSubCommands = jCommander.getCommands().get("studies");
@@ -444,6 +452,11 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     
     public MetaCommandOptions getMetaCommandOptions() {
         return metaCommandOptions;
+    }
+    
+    
+    public OrganizationsCommandOptions getOrganizationsCommandOptions() {
+        return organizationsCommandOptions;
     }
     
     
