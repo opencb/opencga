@@ -121,10 +121,6 @@ public class CatalogManager implements AutoCloseable {
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
                     .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
-//            if (organization == null) {
-//                throw new CatalogException("Could not initialise OpenCGA for organization '" + organizationId
-//                        + "'. Associated database could not be found.");
-//            }
             if (organization != null) {
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }

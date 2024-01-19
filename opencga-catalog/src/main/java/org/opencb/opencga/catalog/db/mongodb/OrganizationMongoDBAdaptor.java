@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -32,8 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterMapParams;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements OrganizationDBAdaptor {
 
@@ -157,7 +155,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             throws CatalogParameterException, CatalogDBException {
         checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.OWNER.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
-                QueryParams.AUTHENTICATION_ORIGINS.key(), QueryParams.ATTRIBUTES.key()));
+                QueryParams.CONFIGURATION.key(), QueryParams.ATTRIBUTES.key()));
 
         UpdateDocument document = new UpdateDocument();
 
@@ -165,6 +163,9 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                 QueryParams.NAME.key(), QueryParams.OWNER.key(),
         };
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        String[] acceptedObjectParams = { QueryParams.CONFIGURATION.key() };
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         String owner = parameters.getString(QueryParams.OWNER.key(), null);
         if (StringUtils.isNotEmpty(owner)) {
@@ -213,29 +214,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                     default:
                         throw new IllegalArgumentException("Unknown operation " + operation);
                 }
-            }
-        }
-
-        if (parameters.containsKey(QueryParams.AUTHENTICATION_ORIGINS.key())) {
-            List<AuthenticationOrigin> authenticationOrigins = parameters.getAsList(QueryParams.AUTHENTICATION_ORIGINS.key(),
-                    AuthenticationOrigin.class);
-            List<Document> authenticationOriginDocumentList = organizationConverter.convertAuthenticationOrigins(authenticationOrigins);
-
-            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.AUTHENTICATION_ORIGINS.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
-            switch (operation) {
-                case SET:
-                    document.getSet().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
-                    break;
-                case REMOVE:
-                    document.getPullAll().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
-                    break;
-                case ADD:
-                    document.getAddToSet().put(QueryParams.AUTHENTICATION_ORIGINS.key(), authenticationOriginDocumentList);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown operation " + operation);
             }
         }
 
