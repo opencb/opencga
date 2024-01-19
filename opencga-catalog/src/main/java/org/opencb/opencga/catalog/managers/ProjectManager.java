@@ -576,7 +576,7 @@ public class ProjectManager extends AbstractManager {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
         if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin("import data");
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("import data");
         }
 
         OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(owner, new QueryOptions(QueryOptions.INCLUDE,
@@ -695,7 +695,7 @@ public class ProjectManager extends AbstractManager {
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
         if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin("export data");
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 
         if (!filePath.exists() || !filePath.isFile()) {
@@ -882,7 +882,7 @@ public class ProjectManager extends AbstractManager {
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
         if (!authorizationManager.isOpencga(userId) && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin("export data");
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 
         Path outputDir = Paths.get(outputDirStr);

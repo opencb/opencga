@@ -712,7 +712,7 @@ public class JobManager extends ResourceManager<Job> {
     public DBIterator<Job> iteratorInOrganization(String organizationId, Query query, QueryOptions options, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        authorizationManager.isInstallationAdministrator(tokenPayload);
+        authorizationManager.isOpencgaAdministrator(tokenPayload);
         return getJobDBAdaptor(organizationId).iterator(query, options);
     }
 
@@ -735,7 +735,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {
         JwtPayload jwtPayload = userManager.validateToken(token);
-        authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+        authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
         return catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organizationId).count(query);
     }
 

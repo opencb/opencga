@@ -456,7 +456,7 @@ public class RgaManager implements AutoCloseable {
 
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -503,7 +503,7 @@ public class RgaManager implements AutoCloseable {
 
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");

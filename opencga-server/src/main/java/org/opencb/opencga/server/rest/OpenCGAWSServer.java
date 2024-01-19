@@ -866,9 +866,7 @@ public class OpenCGAWSServer {
                                    String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
-            if (!catalogManager.getAuthorizationManager().isInstallationAdministrator(jwtPayload)) {
-                throw new CatalogAuthorizationException("Only organization administrators can run this operation!");
-            }
+            catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "submit job from tool '" + toolId + "'");
             return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
         });
     }

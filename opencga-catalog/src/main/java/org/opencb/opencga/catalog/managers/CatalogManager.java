@@ -175,7 +175,7 @@ public class CatalogManager implements AutoCloseable {
     public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isInstallationAdministrator(payload)
+        if (!authorizationManager.isOpencgaAdministrator(payload)
                 || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw new CatalogException("Operation only allowed for the organization owner or admins");
         }
@@ -289,7 +289,7 @@ public class CatalogManager implements AutoCloseable {
     public void installIndexes(String organizationId, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isInstallationAdministrator(payload)
+        if (!authorizationManager.isOpencgaAdministrator(payload)
                 || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw new CatalogException("Operation only allowed for the organization owner or admins");
         }

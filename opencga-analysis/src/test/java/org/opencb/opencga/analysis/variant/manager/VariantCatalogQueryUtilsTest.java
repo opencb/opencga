@@ -90,7 +90,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 @Category(MediumTests.class)
 public class VariantCatalogQueryUtilsTest {
 
-    @ClassRule
+    @ClassRule(order = -1)
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private static String assembly;
 

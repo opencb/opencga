@@ -570,7 +570,7 @@ public class UserManager extends AbstractManager {
         auditManager.initAuditBatch(operationUuid);
         try {
             // 1. If the user is an opencga administrator or the organization owner or admin - return info
-            if (authorizationManager.isInstallationAdministrator(jwtPayload)
+            if (authorizationManager.isOpencgaAdministrator(jwtPayload)
                     || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)
                     || (userIdList.size() == 1 && userId.equals(userIdList.get(0)))) {
                 Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIdList);
@@ -586,7 +586,7 @@ public class UserManager extends AbstractManager {
                 }
                 return userDataResult;
             } else {
-                throw CatalogAuthorizationException.notOwnerOrAdmin("retrieve user's information.");
+                throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("retrieve user's information.");
             }
         } catch (CatalogException e) {
             for (String tmpUserId : userIdList) {
@@ -726,7 +726,7 @@ public class UserManager extends AbstractManager {
         JwtPayload jwtPayload = validateToken(token);
         String organizationId = jwtPayload.getOrganization();
         try {
-            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "reset password");
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
             OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
@@ -894,10 +894,9 @@ public class UserManager extends AbstractManager {
      */
     public String getToken(String organizationId, String userId, Map<String, Object> attributes, Long expiration, String token)
             throws CatalogException {
-        JwtPayload payload = validateToken(token);
-        if (!authorizationManager.isInstallationAdministrator(payload)) {
-            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
-        }
+        JwtPayload jwtPayload = validateToken(token);
+        authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "create tokens");
+
         if (expiration != null && expiration <= 0) {
             throw new CatalogException("Expiration time must be higher than 0");
         }
@@ -920,9 +919,8 @@ public class UserManager extends AbstractManager {
     public String getNonExpiringToken(String organizationId, String userId, Map<String, Object> attributes, String token)
             throws CatalogException {
         JwtPayload payload = validateToken(token);
-        if (!authorizationManager.isInstallationAdministrator(payload)) {
-            throw new CatalogException("Only user '" + OPENCGA + "' is allowed to create tokens");
-        }
+        authorizationManager.checkIsOpencgaAdministrator(payload, "create tokens");
+
         AuthenticationManager authManager = getAuthenticationManagerForUser(organizationId, userId);
         return authManager.createNonExpiringToken(organizationId, userId, attributes);
     }

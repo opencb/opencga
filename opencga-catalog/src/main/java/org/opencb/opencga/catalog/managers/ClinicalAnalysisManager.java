@@ -2384,7 +2384,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 .append("token", token);
 
         try {
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
             ParamUtils.checkObj(clinicalConfiguration, "ClinicalConfiguration");
             ParamUtils.checkObj(clinicalConfiguration.getFlags(), "flags");
             ParamUtils.checkObj(clinicalConfiguration.getPriorities(), "priorities");

@@ -87,7 +87,7 @@ public class OrganizationMigration extends MigrationTool {
             // Check admin password
             try {
                 if (!CryptoUtils.sha1(adminPassword).equals(password)) {
-                    throw CatalogAuthorizationException.adminOnlySupportedOperation();
+                    throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation();
                 }
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);

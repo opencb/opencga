@@ -49,7 +49,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
 
             // Fix query object
             if (query.containsKey(ParamConstants.USER)) {
@@ -87,7 +87,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -135,7 +135,7 @@ public class AdminManager extends AbstractManager {
     public List<String> getOrganizationIds(String token) throws CatalogException {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(payload);
+            authorizationManager.checkIsOpencgaAdministrator(payload);
             List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
 
             auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, payload.getUserId(), Enums.Action.FETCH_ORGANIZATION_IDS,
@@ -172,7 +172,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         try {
-            authorizationManager.checkIsInstallationAdministrator(jwtPayload);
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
 
             // Check userId exists
             Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);

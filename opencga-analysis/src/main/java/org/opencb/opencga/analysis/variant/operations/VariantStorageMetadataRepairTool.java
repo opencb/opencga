@@ -5,9 +5,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
@@ -36,33 +34,30 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
     @ToolParams
     protected VariantStorageMetadataRepairToolParams toolParams;
 
-    private String organizationId;
-
     @Override
     protected void check() throws Exception {
         super.check();
 
         JwtPayload payload = getCatalogManager().getUserManager().validateToken(getToken());
-        organizationId = payload.getOrganization();
-        String userId = payload.getUserId();
-        if (!userId.equals(ParamConstants.OPENCGA_USER_ID)) {
-            throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
-        }
+        getCatalogManager().getAuthorizationManager().checkIsOpencgaAdministrator(payload);
     }
 
     @Override
     protected void run() throws Exception {
         if (CollectionUtils.isEmpty(toolParams.getStudies())) {
-            // Get all studies
-            Query query = new Query();
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    StudyDBAdaptor.QueryParams.UID.key(),
-                    StudyDBAdaptor.QueryParams.ID.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key()));
-            OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().searchInOrganization(organizationId, query, options, token);
+            for (String organizationId : catalogManager.getOrganizationManager().getOrganizationIds(getToken())) {
+                // Get all studies
+                Query query = new Query();
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        StudyDBAdaptor.QueryParams.UID.key(),
+                        StudyDBAdaptor.QueryParams.ID.key(),
+                        StudyDBAdaptor.QueryParams.FQN.key()));
+                OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager()
+                        .searchInOrganization(organizationId, query, options, token);
 
-            for (Study study : studyDataResult.getResults()) {
-                fixStudy(study.getFqn(), true);
+                for (Study study : studyDataResult.getResults()) {
+                    fixStudy(study.getFqn(), true);
+                }
             }
         } else {
             for (String study : toolParams.getStudies()) {

@@ -84,13 +84,6 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
-    default void checkIsOrganizationOwnerOrAdmin(String organization, String userId)
-            throws CatalogAuthorizationException, CatalogDBException {
-        if (!isOrganizationOwnerOrAdmin(organization, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin();
-        }
-    }
-
     void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException;
 
     void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException;
@@ -120,19 +113,84 @@ public interface AuthorizationManager {
 
     void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
 
+    /**
+     * Check if user is named "opencga"
+     * @param userId user id
+     * @return true if user is named "opencga"
+     * @deprecated use {@link #isOpencgaAdministrator(String, String)} instead
+     */
+    @Deprecated
     default boolean isOpencga(String userId) {
         return ParamConstants.OPENCGA_USER_ID.equals(userId) || ParamConstants.OPENCGA_USER_FQN.equals(userId);
     }
 
-    boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException;
+    default boolean isOpencgaAdministrator(JwtPayload payload) throws CatalogException {
+        return isOpencgaAdministrator(payload.getOrganization(), payload.getUserId());
+    }
 
-    void checkIsInstallationAdministrator(JwtPayload payload) throws CatalogException;
+    boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException;
 
-    void checkIsOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException;
+    default void checkIsOpencgaAdministrator(JwtPayload payload) throws CatalogException {
+        checkIsOpencgaAdministrator(payload, null);
+    }
 
+    default void checkIsOpencgaAdministrator(JwtPayload payload, String action) throws CatalogException {
+        checkIsOpencgaAdministrator(payload.getOrganization(), payload.getUserId(), action);
+    }
+
+    default void checkIsOpencgaAdministrator(String organization, String userId) throws CatalogException {
+        checkIsOpencgaAdministrator(organization, userId, null);
+    }
+
+    void checkIsOpencgaAdministrator(String organization, String userId, String action) throws CatalogException;
+
+    /**
+     * Check if the given user is the owner of the organization or if it is an admin.
+     * It does not include the opencga admins.
+     * If the user is not the owner or an admin, it will throw an exception.
+     *
+     * @param organizationId    Organization id
+     * @param userId            User id
+     * @throws CatalogException CatalogException
+     */
+    void checkIsOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException;
+
+    /**
+     * Check if the given user is the owner of the organization or if it is an admin.
+     * It does not include opencga admins.
+     *
+     * @param organization Organization
+     * @param userId User id
+     * @return true if the user is the owner or an admin of the organization
+     * @throws CatalogDBException CatalogDBException
+     */
     boolean isOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogDBException;
 
+    /**
+     * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
+     * Keep in mind that all organization admins and the organization owner are also study admins.
+     * It does not include the opencga admins.
+     *
+     * @param organizationId Organization id
+     * @param studyId        Study id
+     * @param userId         User id
+     * @return true if the user is part of the admins group of the study
+     * @throws CatalogException CatalogException
+     */
     boolean isStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
+
+    /**
+     * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
+     * Keep in mind that all organization admins and the organization owner are also study admins.
+     * It does not include the opencga admins.
+     * If the check fails, it will throw an exception.
+     *
+     * @param organizationId Organization id
+     * @param studyId       Study id
+     * @param userId       User id
+     * @throws CatalogException CatalogException
+     */
+    void checkIsStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
 
     void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException;

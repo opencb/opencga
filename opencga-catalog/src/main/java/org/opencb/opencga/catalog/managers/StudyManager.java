@@ -228,7 +228,7 @@ public class StudyManager extends AbstractManager {
         OpenCGAResult<Study> studyDataResult;
         if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
             // If it is the administrator, we allow it without checking the user anymore
-            authorizationManager.checkIsInstallationAdministrator(payload);
+            authorizationManager.checkIsOpencgaAdministrator(payload);
             studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
         } else {
             studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
@@ -1106,7 +1106,7 @@ public class StudyManager extends AbstractManager {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
 
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
             // Fix the groupId
             if (groupId != null && !groupId.startsWith("@")) {
@@ -1275,7 +1275,7 @@ public class StudyManager extends AbstractManager {
                 .append("recessiveGeneSummaryIndex", summaryIndex)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
             summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
@@ -1843,7 +1843,7 @@ public class StudyManager extends AbstractManager {
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
                 tokenPayload);
 
-        authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+        authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
@@ -1865,7 +1865,7 @@ public class StudyManager extends AbstractManager {
                         StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
                 tokenPayload);
 
-        authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+        authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
@@ -1968,7 +1968,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkParameter(filename, "File name");
             if (!filename.endsWith(".zip") && !filename.endsWith(".tar.gz")) {
@@ -2061,7 +2061,7 @@ public class StudyManager extends AbstractManager {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = Paths.get(study.getUri());

@@ -91,6 +91,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclParams;
@@ -603,16 +604,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();
-        if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)) {
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+
+        if (authorizationManager.isOpencgaAdministrator(jwtPayload)) {
             // Installation administrator user can run everything
             return;
         }
-        if (tool.scope().equals(Tool.Scope.GLOBAL)) {
-            throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
-                    + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
+
+        if (tool.scope() == Tool.Scope.GLOBAL) {
+            throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation("run tools with scope '" + Tool.Scope.GLOBAL + "'");
+        } if (tool.scope() == Tool.Scope.ORGANIZATION) {
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, user);
         } else {
-            if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.ORGANIZATION_PROJECT_SEPARATOR)) {
-                // If the user is the owner of the project, accept all.
+            long studyUid = catalogManager.getStudyManager().get(job.getStudy().getId(), new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.UID.key()), token).first().getUid();
+            if (authorizationManager.isStudyAdministrator(organizationId, studyUid, user)) {
+                // Study administrators can run everything
                 return;
             }
 

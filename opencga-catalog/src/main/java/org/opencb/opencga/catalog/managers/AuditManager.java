@@ -242,7 +242,7 @@ public class AuditManager {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOwnerOrAdmin(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
 
             query.remove(AuditDBAdaptor.QueryParams.STUDY_ID.key());
             query.put(AuditDBAdaptor.QueryParams.STUDY_UUID.key(), study.getUuid());

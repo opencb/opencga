@@ -48,10 +48,6 @@ public class CatalogAuthorizationException extends CatalogException {
         return deny(userId, "execute", resource, id, name);
     }
 
-    public static CatalogAuthorizationException adminOnlySupportedOperation() {
-        return new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
-    }
-
     @Deprecated
     public static CatalogAuthorizationException deny(String userId, String permission, String resource, long id, String name) {
         return new CatalogAuthorizationException("Permission denied. "
@@ -82,20 +78,31 @@ public class CatalogAuthorizationException extends CatalogException {
                 + " cannot " + permission + " any " + resource + ".");
     }
 
-    public static CatalogAuthorizationException notOwnerOrAdmin() {
-        return notOwnerOrAdmin("perform this action");
+    public static CatalogAuthorizationException notOrganizationOwnerOrAdmin() {
+        return notOrganizationOwnerOrAdmin("perform this action");
     }
 
-    public static CatalogAuthorizationException notOwnerOrAdmin(String action) {
+    public static CatalogAuthorizationException notOrganizationOwnerOrAdmin(String action) {
         return new CatalogAuthorizationException("Permission denied: Only the owner or administrators of the organization can " + action);
     }
 
     public static CatalogAuthorizationException notStudyAdmin(String action) {
-        return new CatalogAuthorizationException("Permission denied: Only the study administrators of the organization can " + action);
+        return new CatalogAuthorizationException("Permission denied: Only the study administrators can " + action);
     }
 
     public static CatalogAuthorizationException notStudyMember(String action) {
         return new CatalogAuthorizationException("Permission denied: Only the members of the study can " + action);
+    }
+
+    public static CatalogAuthorizationException opencgaAdminOnlySupportedOperation() {
+        return opencgaAdminOnlySupportedOperation("perform this action");
+    }
+
+    public static CatalogAuthorizationException opencgaAdminOnlySupportedOperation(String action) {
+        if (action == null || action.isEmpty()) {
+            action = "perform this action";
+        }
+        return new CatalogAuthorizationException("Permission denied: Only the OPENCGA ADMINISTRATOR users can " + action);
     }
 
 }

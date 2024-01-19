@@ -56,9 +56,12 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 @Category(MediumTests.class)
 public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest {
 
+    private String anonToken;
+
     @Before
     public void setUp() throws Exception {
         indexFile(getSmallFile(), new QueryOptions(), outputId);
+        anonToken = catalogManager.getUserManager().loginAnonymous(ORGANIZATION).getToken();
     }
 
     @Override
@@ -146,8 +149,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new StudyAclParams(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD,
                 sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1");
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1");
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(0, variant.getStudies().get(0).getSamples().size());
@@ -187,7 +190,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(2, variant.getStudies().get(0).getSamples().size());
@@ -196,7 +199,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
                 .append(VariantQueryParam.SAMPLE.key(), "NA19600")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
-        result = variantManager.get(query, new QueryOptions(), null);
+        result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(2, variant.getStudies().get(0).getSamples().size());
@@ -220,7 +223,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         thrown.expectMessage("'sample'");
         thrown.expect(CatalogAuthorizationException.class);
-        variantManager.get(query, new QueryOptions(), null);
+        variantManager.get(query, new QueryOptions(), anonToken);
     }
 
     @Test
@@ -239,7 +242,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         thrown.expectMessage("'includeSample'");
         thrown.expect(CatalogAuthorizationException.class);
-        variantManager.get(query, new QueryOptions(), null);
+        variantManager.get(query, new QueryOptions(), anonToken);
     }
 
     @Test
@@ -252,7 +255,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(4, variant.getStudies().get(0).getSamples().size());
@@ -265,7 +268,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
         thrown.expectMessage(expected.getMessage());
         thrown.expect(expected.getClass());
-        variantManager.get(query, new QueryOptions(), null);
+        variantManager.get(query, new QueryOptions(), anonToken);
     }
 
     @Test
@@ -276,7 +279,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         thrown.expectMessage("Permission denied");
         thrown.expect(CatalogAuthorizationException.class);
-        variantManager.get(query, new QueryOptions(), null);
+        variantManager.get(query, new QueryOptions(), anonToken);
     }
 
     @Test
@@ -298,7 +301,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
             Assert.assertEquals(0, variant.getStudies().size());
         }
 
-        result = variantManager.get(query, new QueryOptions(), null);
+        result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(1, variant.getStudies().size());
@@ -317,7 +320,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
         indexFile(file, new QueryOptions(), outputId2);
 
-        DataResult<Variant> result = variantManager.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        DataResult<Variant> result = variantManager.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(0, variant.getStudies().size());
@@ -350,7 +353,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         Query query = new Query();
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(0, variant.getStudies().size());

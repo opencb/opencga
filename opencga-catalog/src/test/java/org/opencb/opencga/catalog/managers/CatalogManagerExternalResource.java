@@ -50,6 +50,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private Configuration configuration;
     private Path opencgaHome;
     private String adminToken;
+    public boolean initialized = false;
 
     public CatalogManagerExternalResource() {
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
@@ -58,6 +59,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
+        initialized = true;
         System.out.println("-------------------------------------------------------------------------------");
         System.out.println("Initializing CatalogManagerExternalResource");
         System.out.println("-------------------------------------------------------------------------------");

@@ -101,7 +101,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkStudyPermission(String organizationId, long studyUid, JwtPayload payload, StudyPermissions.Permissions permission)
             throws CatalogException {
         String userId = payload.getUserId(organizationId);
-        if (isInstallationAdministrator(payload)) {
+        if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         } else {
             if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyUid, userId, permission)) {
@@ -175,7 +175,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for " + MEMBERS_GROUP + " group.");
         }
         if (ADMINS_GROUP.equals(group) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin("assign or remove users to the " + ADMINS_GROUP + " group.");
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("assign or remove users to the " + ADMINS_GROUP + " group.");
         }
         if (!isStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("assign or remove users to groups.");
@@ -201,36 +201,32 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
         if (!isOpencga(userId) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOwnerOrAdmin("create, update or delete variable sets.");
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("create, update or delete variable sets.");
         }
     }
 
     @Override
-    public boolean isInstallationAdministrator(JwtPayload payload) throws CatalogException {
-        if (!ParamConstants.ADMIN_ORGANIZATION.equals(payload.getOrganization())) {
+    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException {
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organization)) {
             return false;
         }
 
         // Check user exists in ADMIN ORGANIZATION
-        dbAdaptorFactory.getCatalogUserDBAdaptor(payload.getOrganization()).checkId(payload.getUserId());
+        dbAdaptorFactory.getCatalogUserDBAdaptor(organization).checkId(userId);
         return true;
     }
 
     @Override
-    public void checkIsInstallationAdministrator(JwtPayload payload) throws CatalogException {
-        if (!isInstallationAdministrator(payload)) {
-            throw new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
+    public void checkIsOpencgaAdministrator(String organizationId, String userId, String action) throws CatalogException {
+        if (!isOpencgaAdministrator(organizationId, userId)) {
+            throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation(action);
         }
     }
 
     @Override
-    public void checkIsOwnerOrAdmin(String organizationId, long studyId, String userId) throws CatalogException {
-        if (isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            return;
-        }
-
-        if (!isStudyAdministrator(organizationId, studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to perform this action");
+    public void checkIsOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
+        if (!isOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
     }
 
@@ -242,6 +238,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void checkIsStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("perform this action");
+        }
     }
 
     @Override

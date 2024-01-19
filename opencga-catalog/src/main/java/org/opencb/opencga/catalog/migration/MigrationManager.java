@@ -477,7 +477,7 @@ public class MigrationManager {
 
     private String validateAdmin(String token) throws CatalogException {
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
-        catalogManager.getAuthorizationManager().checkIsInstallationAdministrator(jwtPayload);
+        catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload);
         // Extend token life
         return catalogManager.getUserManager().getNonExpiringToken(jwtPayload.getOrganization(), jwtPayload.getUserId(),
                 Collections.emptyMap(), token);

@@ -159,7 +159,7 @@ public class OrganizationManager extends AbstractManager {
                 userId = jwtPayload.getUserId(organizationCreateParams.getId());
 
                 if (!ParamConstants.ADMIN_ORGANIZATION.equals(jwtPayload.getOrganization())) {
-                    throw CatalogAuthorizationException.adminOnlySupportedOperation();
+                    throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation();
                 }
             }
 
@@ -306,4 +306,9 @@ public class OrganizationManager extends AbstractManager {
         return users;
     }
 
+    public List<String> getOrganizationIds(String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        authorizationManager.checkIsOpencgaAdministrator(tokenPayload, "get all organization ids");
+        return catalogDBAdaptorFactory.getOrganizationIds();
+    }
 }
