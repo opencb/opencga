@@ -329,10 +329,26 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         List<String> fileIds = files.stream().map(File::getPath).collect(Collectors.toList());
 
         List<StoragePipelineResult> etlResults;
+        Exception etlException = null;
         try {
             etlResults = variantManager.index(studyId, fileIds, tmpOutdir, queryOptions, sessionId);
+        } catch (Exception e) {
+            etlResults = null;
+            etlException = e;
         } finally {
-            copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
+            try {
+                copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
+            } catch (Exception e) {
+                logger.error("Error copying results", e);
+                if (etlException != null) {
+                    etlException.addSuppressed(e);
+                } else {
+                    throw e;
+                }
+            }
+            if (etlException != null) {
+                throw etlException;
+            }
         }
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
@@ -434,7 +450,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     protected DummyVariantStorageEngine mockVariantStorageManager() {
         DummyVariantStorageEngine vsm = spy(new DummyVariantStorageEngine());
-        String dbName = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), USER, projectId);
+        String dbName = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), ORGANIZATION, projectId);
         vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID, dbName);
         StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm, dbName, null);
         StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm, dbName, studyFqn);

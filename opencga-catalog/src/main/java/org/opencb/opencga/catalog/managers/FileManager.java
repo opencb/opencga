@@ -242,7 +242,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
 
-            throw CatalogException.notFound("files", getMissingFields(uniqueList, fileDataResult.getResults(), fileStringFunction));
+            throw CatalogException.notFound("files at " + studyUid , getMissingFields(uniqueList, fileDataResult.getResults(), fileStringFunction));
         }
     }
 

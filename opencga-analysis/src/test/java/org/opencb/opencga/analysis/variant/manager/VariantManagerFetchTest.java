@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -61,6 +62,11 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Before
     public void setUp() throws Exception {
         indexFile(getSmallFile(), new QueryOptions(), outputId);
+
+        String dummyStudy = catalogManager.getStudyManager().create(projectId, "s_dummy", "s_dummy", "s_dummy", "", null, null,
+                null, null, null, sessionId).first().getId();
+        catalogManager.getStudyManager().updateGroup(dummyStudy, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID)), sessionId);
         anonToken = catalogManager.getUserManager().loginAnonymous(ORGANIZATION).getToken();
     }
 
@@ -171,8 +177,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new SampleAclParams().setPermissions(SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(1, variant.getStudies().get(0).getSamples().size());
@@ -189,14 +195,14 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(SamplePermissions.VIEW + "," + SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(2, variant.getStudies().get(0).getSamples().size());
         }
 
-        query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
+        query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1")
                 .append(VariantQueryParam.SAMPLE.key(), "NA19600")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         result = variantManager.get(query, new QueryOptions(), anonToken);
@@ -217,7 +223,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         // Filter sample "NA19601" is unauthorized, even if the result is not returned
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA19600,NA19660")
                 .append(VariantQueryParam.SAMPLE.key(), "NA19661");
 
@@ -237,7 +243,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 ADD, sessionId);
 
         // Include sample "NA19601" is unauthorized
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1")
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1")
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA19600,NA19660,NA19601");
 
         thrown.expectMessage("'includeSample'");
@@ -254,7 +260,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(StudyPermissions.Permissions.VIEW_SAMPLE_VARIANTS.name()),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), USER + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -284,8 +290,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousOneStudyPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID)), sessionId);
         catalogManager.getStudyManager().updateAcl(studyFqn, "*",
                 new StudyAclParams()
                         .setPermissions(StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS.name()),
@@ -295,7 +301,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         indexFile(file, new QueryOptions(), outputId2);
 
         Query query = new Query();
-        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(0, variant.getStudies().size());
@@ -329,7 +335,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         CatalogAuthorizationException expected = CatalogAuthorizationException.denyAny(ParamConstants.ANONYMOUS_USER_ID, "view", "study");
         thrown.expectMessage(expected.getMessage());
         thrown.expect(expected.getClass());
-        variantManager.get(new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId + "," + studyId2), new QueryOptions(), null);
+        variantManager.get(new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId + "," + studyId2), new QueryOptions(), anonToken);
     }
 
     @Test
@@ -359,7 +365,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
             Assert.assertEquals(0, variant.getStudies().size());
         }
 
-        result = variantManager.get(query, new QueryOptions(), null);
+        result = variantManager.get(query, new QueryOptions(), anonToken);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
             Assert.assertEquals(2, variant.getStudies().size());

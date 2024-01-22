@@ -90,6 +90,7 @@ public class VariantOperationsTest {
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
+    public static final String STUDY_FQN = ORGANIZATION + '@' + PROJECT + ':' + STUDY;
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
@@ -376,7 +377,7 @@ public class VariantOperationsTest {
 
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
-                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY),
+                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
                 Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
@@ -395,7 +396,8 @@ public class VariantOperationsTest {
 
         // Everything should look the same, but with newer version
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager()
+                    .get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
