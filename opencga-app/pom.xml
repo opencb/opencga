@@ -58,6 +58,10 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
         <dependency>
@@ -495,11 +499,11 @@
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
-                                <exec executable="cp">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
-                                    <arg value="${build.dir}"/>
-                                </exec>
+                                <!--  <exec executable="cp">
+                                  <arg value="-r"/>
+                                  <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
+                                  <arg value="${build.dir}"/>
+                              </exec>-->
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>
