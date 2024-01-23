@@ -17,6 +17,8 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -312,8 +314,12 @@ public class OrganizationMigration extends MigrationTool {
             }
         }
 
+        CatalogIOManager ioManager = new CatalogIOManager(configuration);
+
         // Loop over all organizations to perform additional data model changes
         for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
+            ioManager.createOrganization(organizationId);
+
             MongoDatabase database = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb();
             MongoCollection<Document> userCollection = database.getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
 
@@ -321,6 +327,16 @@ public class OrganizationMigration extends MigrationTool {
             queryMongo(userCollection, new Document(), Projections.exclude("_id"), document -> {
                 List<Document> projects = document.getList("projects", Document.class);
                 if (CollectionUtils.isNotEmpty(projects)) {
+                    // Create project directory
+                    for (Document project : projects) {
+                        Long projectUid = project.get("uid", Long.class);
+                        try {
+                            ioManager.createProject(organizationId, Long.toString(projectUid));
+                        } catch (CatalogIOException e) {
+                            throw new RuntimeException("Couldn't create project folder for project '" + project.getString("fqn") + "'.", e);
+                        }
+                    }
+
                     MongoCollection<Document> projectCol = database.getCollection(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION);
                     projectCol.insertMany(projects);
                 }
