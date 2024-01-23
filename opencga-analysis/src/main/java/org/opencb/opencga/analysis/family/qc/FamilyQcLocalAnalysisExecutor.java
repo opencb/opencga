@@ -111,9 +111,11 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
             return;
         }
 
+
         // Run IBD/IBS computation using PLINK in docker
+        String resourceBaseUrl = getAnalysisResourceUtils().getResourceBaseUrl();
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(),
-                getRelatednessThresholds(), getRelatednesResourcePath(), getOutDir(), getVariantStorageManager(), getToken());
+                getRelatednessThresholds(), resourceBaseUrl, getOutDir(), getVariantStorageManager(), getToken());
 
         // Sanity check
         if (report == null) {

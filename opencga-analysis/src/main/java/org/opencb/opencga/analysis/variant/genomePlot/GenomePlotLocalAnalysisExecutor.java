@@ -30,7 +30,7 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -127,7 +127,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
 
             // Get genome version
             String genomeVersion = "hg38";
-            String assembly = ResourceUtils.getAssembly(storageManager.getCatalogManager(), getStudy(), getToken());
+            String assembly = AnalysisResourceUtils.getAssembly(storageManager.getCatalogManager(), getStudy(), getToken());
             if (StringUtils.isNotEmpty(assembly) && assembly.toUpperCase(Locale.ROOT).equals("GRCH37")) {
                 genomeVersion = "hg19";
             }

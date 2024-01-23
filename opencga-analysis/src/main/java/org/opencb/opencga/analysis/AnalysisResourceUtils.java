@@ -18,50 +18,65 @@ package org.opencb.opencga.analysis;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.URLUtils;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.InvalidParameterException;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ResourceUtils {
+public class AnalysisResourceUtils {
 
-    public static final String URL = "http://resources.opencb.org/opencb/opencga/";
+    protected String resourceBaseUrl;
+
+    private static Logger logger = LoggerFactory.getLogger(AnalysisResourceUtils.class);
+
+    public AnalysisResourceUtils(Configuration configuration) {
+        resourceBaseUrl = configuration.getAnalysis().getResourceUrl();
+        // Sanity check
+        if (StringUtils.isEmpty(resourceBaseUrl)) {
+            throw new InvalidParameterException("Missing resource URL in configuration file");
+        }
+    }
 
     public static File downloadThirdParty(URL url, Path outDir) throws IOException {
         return URLUtils.download(url, outDir);
     }
 
-    public static File downloadAnalysis(String analysisId, String resouceName, Path outDir, Path openCgaHome) throws IOException {
+    public File downloadAnalysis(String analysisId, String resouceName, Path outDir, Path openCgaHome) throws IOException {
         Path path = null;
-        String filename = "analysis/" + analysisId + "/" + resouceName;
+        String filename = analysisId + "/" + resouceName;
         if (openCgaHome != null) {
             path = openCgaHome.resolve(filename);
         }
         if (path != null && path.toFile().exists()) {
             File outFile = outDir.resolve(path.toFile().getName()).toFile();
-            System.out.println("downloadAnalysis from path: " + path + " to " + outFile.getAbsolutePath());
+            logger.info("Downloading from path: " + path + " to " + outFile.getAbsolutePath());
             FileUtils.copyFile(path.toFile(), outFile);
 
             return outFile;
         } else {
-            System.out.println("downloadAnalysis from URL: " + (URL + filename) + ", (path does not exist: " + path + ")");
-            return URLUtils.download(new URL(URL + filename), outDir);
+            logger.info("Downloading from URL: " + (resourceBaseUrl + filename) + ", (path does not exist: " + path + ")");
+            return URLUtils.download(new URL(resourceBaseUrl + filename), outDir);
         }
     }
 
-    public static DownloadedRefGenome downloadRefGenome(String assembly, Path outDir, Path openCgaHome) throws IOException {
-
+    public DownloadedRefGenome downloadRefGenome(String assembly, Path outDir, Path openCgaHome)
+            throws IOException {
         // Download files
         File gzFile = null;
         File faiFile = null;
@@ -78,16 +93,16 @@ public class ResourceUtils {
             File file;
 
             if (openCgaHome != null) {
-                path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
+                path = openCgaHome.resolve("commons/reference-genomes/" + filename);
             }
             if (path != null && path.toFile().exists()) {
                 File outFile = outDir.resolve(path.toFile().getName()).toFile();
-                System.out.println("downloadRefGenome from path: " + path + " to " + outFile.getAbsolutePath());
+                logger.info("Downloading from path: " + path + " to " + outFile.getAbsolutePath());
                 FileUtils.copyFile(path.toFile(), outFile);
                 file = outFile;
             } else {
-                URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
-                System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
+                URL url = new URL(resourceBaseUrl + "commons/reference-genomes/" + filename);
+                logger.info("Downloading from URL: " + resourceBaseUrl + ", (path does not exist: " + path + ")");
                 file = URLUtils.download(url, outDir);
                 if (file == null) {
                     // Something wrong happened, remove downloaded files
@@ -176,11 +191,15 @@ public class ResourceUtils {
         }
     }
 
+    public String getResourceBaseUrl() {
+        return resourceBaseUrl;
+    }
+
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private static void cleanRefGenome(List<String> links, Path outDir) {
+    private void cleanRefGenome(List<String> links, Path outDir) {
         for (String link : links) {
             String name = new File(link).getName();
             File file = outDir.resolve(name).toFile();

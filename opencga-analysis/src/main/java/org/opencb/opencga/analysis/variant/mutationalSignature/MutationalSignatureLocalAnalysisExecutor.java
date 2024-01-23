@@ -32,7 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -158,8 +158,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
         try {
             // First,
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(getAssembly(), getOutDir(),
-                    opencgaHome);
+            AnalysisResourceUtils resourceUtils = getAnalysisResourceUtils();
+            AnalysisResourceUtils.DownloadedRefGenome refGenome = resourceUtils.downloadRefGenome(getAssembly(), getOutDir(), opencgaHome);
 
             if (refGenome == null) {
                 throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path"

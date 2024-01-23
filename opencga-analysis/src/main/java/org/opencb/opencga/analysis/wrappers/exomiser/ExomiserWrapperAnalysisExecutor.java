@@ -10,7 +10,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
@@ -51,10 +51,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String studyId;
     private String sampleId;
 
+    private AnalysisResourceUtils resourceUtils;
+
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException {
+        // Get analysis resource utils
+        resourceUtils = getAnalysisResourceUtils();
+
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
         logger.info("{}: Checking individual for sample {} in study {}", ID, sampleId, studyId);
@@ -446,15 +451,13 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private void downloadAndUnzip(Path exomiserDataPath, String filename) throws ToolException {
-        URL url = null;
-
         // Download data
         try {
-            url = new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + filename);
+            URL url = new URL(resourceUtils.getResourceBaseUrl() + "/exomiser/" + filename);
             logger.info("{}: Downloading Exomiser data: {} in {}", ID, url, exomiserDataPath);
-            ResourceUtils.downloadThirdParty(url, exomiserDataPath);
+            AnalysisResourceUtils.downloadThirdParty(url, exomiserDataPath);
         } catch (IOException e) {
-            throw new ToolException("Error downloading Exomiser data from " + url, e);
+            throw new ToolException("Error downloading Exomiser data from resource URL", e);
         }
 
         // Unzip

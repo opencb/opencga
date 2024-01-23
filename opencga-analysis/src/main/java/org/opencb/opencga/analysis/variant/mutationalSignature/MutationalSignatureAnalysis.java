@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -51,9 +51,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
@@ -312,7 +309,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     }
 
     public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException, ToolException {
-        String assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+        String assembly = AnalysisResourceUtils.getAssembly(catalogManager, study, token);
         if (StringUtils.isEmpty(assembly)) {
             throw new ToolException("Missing assembly for study '" + study + "'");
         }

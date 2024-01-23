@@ -20,9 +20,9 @@ import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
@@ -41,12 +41,13 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         // Sanity check to compute
         String opencgaHome = getExecutorParams().getString("opencgaHome");
         if (!Paths.get(opencgaHome).toFile().exists()) {
-
+            throw new ToolExecutorException("Missing OpenCGA home");
         }
 
         // Run IBD/IBS computation using PLINK in docker
+        String resourceBaseUrl = getAnalysisResourceUtils().getResourceBaseUrl();
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(),
-                getResourcePath(), getOutDir(), variantStorageManager, getToken());
+                resourceBaseUrl, getOutDir(), variantStorageManager, getToken());
 
         // Sanity check
         if (report == null) {

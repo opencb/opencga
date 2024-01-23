@@ -16,37 +16,32 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,33 +55,24 @@ public class IBDComputation {
     private static final String PRUNE_IN_FILENAME = BASENAME + ".prune.in";
 
     public static RelatednessReport compute(String study, Family family, List<String> samples, String maf,
-                                            Map<String, Map<String, Float>> thresholds, Path resourcesPath, Path outDir,
+                                            Map<String, Map<String, Float>> thresholds, String resourceUrl, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
         // Check resource (variants.frq and variants.prune.in) and download if necessary
         // TODO: download into the folder /analysis/relatedness
         try {
-            URL url = new URL(ResourceUtils.URL + "analysis/" + RelatednessAnalysis.ID + "/" + PRUNE_IN_FILENAME);
-            ResourceUtils.downloadThirdParty(url, outDir);
+            URL url = new URL(resourceUrl + RelatednessAnalysis.ID + "/" + PRUNE_IN_FILENAME);
+            AnalysisResourceUtils.downloadThirdParty(url, outDir);
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
         }
         Path pruneInPath = outDir.resolve(PRUNE_IN_FILENAME);
-//        Path pruneInPath = resourcesPath.resolve(PRUNE_IN_FILENAME);
-
-        //        if (!resourcesPath.resolve(FREQ_FILENAME).toFile().exists()) {
-//            // Download freq file from resources
-//        }
         try {
-            URL url = new URL(ResourceUtils.URL + "analysis/" + RelatednessAnalysis.ID + "/" + FREQ_FILENAME);
-            ResourceUtils.downloadThirdParty(url, outDir);
+            URL url = new URL(resourceUrl + RelatednessAnalysis.ID + "/" + FREQ_FILENAME);
+            AnalysisResourceUtils.downloadThirdParty(url, outDir);
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
         }
         Path freqPath = outDir.resolve(FREQ_FILENAME);
-//        Path freqPath = resourcesPath.resolve(FREQ_FILENAME);
-//        if (!resourcesPath.resolve(PRUNE_IN_FILENAME).toFile().exists()) {
-//            // Download prune-in variant file from resources
-//        }
 
         // Export family VCF
         if (family != null) {
@@ -223,9 +209,6 @@ public class IBDComputation {
 
     private static void exportData(Query query, QueryOptions queryOptions, String basename, Path outDir,
                                    VariantStorageManager storageManager, String token) throws ToolException {
-        System.out.println(">>>> export, query = " + query.toJson());
-        System.out.println(">>>> export, query options = " + queryOptions.toJson());
-
         File tpedFile = outDir.resolve(basename + ".tped").toFile();
         File tfamFile = outDir.resolve(basename + ".tfam").toFile();
 
