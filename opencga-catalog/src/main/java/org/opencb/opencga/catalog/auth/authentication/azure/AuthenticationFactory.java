@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManag
 import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -33,8 +34,7 @@ public final class AuthenticationFactory {
         authenticationManagerMap = new ConcurrentHashMap<>();
     }
 
-    public void configureOrganizationAuthenticationManager(Organization organization)
-            throws CatalogException {
+    public void configureOrganizationAuthenticationManager(Organization organization) throws CatalogException {
         // TODO: Pass proper email values
         Email email = new Email();
 
@@ -114,6 +114,15 @@ public final class AuthenticationFactory {
 
     public Map<String, AuthenticationManager> getOrganizationAuthenticationManagers(String organizationId) throws CatalogException {
         if (!authenticationManagerMap.containsKey(organizationId)) {
+            // Check if the organization exists (it must have been created on a different instance)
+            for (String id : catalogDBAdaptorFactory.getOrganizationIds()) {
+                if (id.equals(organizationId)) {
+                    Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
+                            .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+                    configureOrganizationAuthenticationManager(organization);
+                    return authenticationManagerMap.get(organizationId);
+                }
+            }
             throw new CatalogException("Organization '" + organizationId + "' not found.");
         }
         return authenticationManagerMap.get(organizationId);
