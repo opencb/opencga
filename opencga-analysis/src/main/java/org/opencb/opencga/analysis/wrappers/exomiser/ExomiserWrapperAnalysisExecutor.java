@@ -16,6 +16,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
@@ -44,9 +45,6 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private final static String EXOMISER_ANALYSIS_TEMPLATE_FILENAME = "exomiser-analysis.yml";
     private final static String EXOMISER_PROPERTIES_TEMPLATE_FILENAME = "application.properties";
     private static final String EXOMISER_OUTPUT_OPTIONS_FILENAME = "output.yml";
-
-    public final static String DOCKER_IMAGE_NAME = "exomiser/exomiser-cli";
-    public final static String DOCKER_IMAGE_VERSION = "13.1.0";
 
     private String studyId;
     private String sampleId;
@@ -179,7 +177,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 .append(" --mount type=bind,source=" + getOutDir() + ",target=/jobdir ");
 
         // Append docker image, version and command
-        appendCommand("", sb);
+        appendCommand(getDockerImageName(Docker.EXOMISER_IMAGE_KEY), "", sb);
 
         // Append input file params
         sb.append(" --analysis /jobdir/").append(EXOMISER_ANALYSIS_TEMPLATE_FILENAME);
@@ -424,16 +422,6 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         preparingFile.delete();
 
         return exomiserDataPath;
-    }
-
-    @Override
-    public String getDockerImageName() {
-        return DOCKER_IMAGE_NAME;
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return DOCKER_IMAGE_VERSION;
     }
 
     public String getStudyId() {

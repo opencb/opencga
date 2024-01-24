@@ -38,12 +38,6 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         // Get managers
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
-        // Sanity check to compute
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
-        if (!Paths.get(opencgaHome).toFile().exists()) {
-
-        }
-
         // Run IBD/IBS computation using PLINK in docker
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(),
                 getResourcePath(), getOutDir(), variantStorageManager, getToken());

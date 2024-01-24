@@ -25,6 +25,8 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -59,11 +61,12 @@ public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws ToolException {
         step("pull-docker", () -> {
+            String dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY, configuration);
             // Be sure docker is alive and that opencga-ext-tools is downloaded
             logger.info("Checking if docker daemon is alive");
             DockerUtils.checkDockerDaemonAlive();
-            logger.info("Pulling docker '{}'", PedigreeGraphUtils.R_DOCKER_IMAGE);
-            new Command("docker pull " + PedigreeGraphUtils.R_DOCKER_IMAGE).run();
+            logger.info("Pulling docker '{}'", dockerImage);
+            new Command("docker pull " + dockerImage).run();
         });
 
         step(getId(), () -> {

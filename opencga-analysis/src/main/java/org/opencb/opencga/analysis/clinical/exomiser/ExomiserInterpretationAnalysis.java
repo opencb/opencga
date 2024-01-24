@@ -38,6 +38,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -136,13 +138,21 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
             CatalogException, IOException {
+        // Get Docker image name and version
+        String dockerImage = ConfigurationUtils.getDockerImage(Docker.EXOMISER_IMAGE_KEY, configuration);
+        String dockerVersion = "";
+        String[] split = dockerImage.split(":");
+        String dockerName = split[0];
+        if (split.length > 1) {
+            dockerVersion = split[1];
+        }
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.getInstance().getBuildVersion(),
                 GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
                 new Software()
                         .setName("Exomiser")
-                        .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
-                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
+                        .setRepository("Docker: " + dockerName)
+                        .setVersion(dockerVersion)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);

@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -32,21 +30,19 @@ import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
-import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,7 +118,9 @@ public class IBDComputation {
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when copying files during the relatedness analysis execution");
         }
-        File outFile = runIBD(FILTERED_BASENAME, freqPath, outDir);
+        String dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY,
+                storageManager.getCatalogManager().getConfiguration());
+        File outFile = runIBD(dockerImage, FILTERED_BASENAME, freqPath, outDir);
 
         if (!outFile.exists()) {
             throw new ToolException("Something wrong happened executing relatedness analysis");
@@ -303,7 +301,7 @@ public class IBDComputation {
         bw.close();
     }
 
-    private static File runIBD(String basename, Path freqPath, Path outDir) throws ToolException {
+    private static File runIBD(String dockerImage, String basename, Path freqPath, Path outDir) throws ToolException {
         // Input bindings
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(freqPath.getParent().toString(), "/input"));
@@ -316,8 +314,7 @@ public class IBDComputation {
         String plinkParams = "plink1.9 --tfile /output/" + basename + " --genome rel-check --read-freq /input/" + FREQ_FILENAME
                 + " --out /output/" + basename;
         try {
-            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
-            DockerUtils.run(plinkExecutor.getDockerImageName(), inputBindings, outputBinding, plinkParams, null);
+            DockerUtils.run(dockerImage, inputBindings, outputBinding, plinkParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

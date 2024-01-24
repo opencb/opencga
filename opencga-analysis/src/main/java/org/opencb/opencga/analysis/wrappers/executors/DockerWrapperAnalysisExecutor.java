@@ -7,19 +7,18 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.*;
 
-public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
+public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";
@@ -27,15 +26,25 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
 
-    public String getDockerImageName() {
-        return "opencb/opencga-ext-tools";
-    }
-
-    public String getDockerImageVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
-    }
+    private Configuration configuration = null;
 
     private Logger privateLogger = LoggerFactory.getLogger(DockerWrapperAnalysisExecutor.class);
+
+    public String getDockerImageName(String key) throws ToolExecutorException {
+        if (configuration == null) {
+            String opencgaHome = getExecutorParams().getString("opencgaHome");
+            if (StringUtils.isEmpty(opencgaHome)) {
+                throw new ToolExecutorException("Missing OpenCGA in Docker wrapper executor parameters");
+            }
+            try {
+                configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
+            } catch (IOException e) {
+                throw new ToolExecutorException("Error loading configuration file", e);
+            }
+        }
+
+        return ConfigurationUtils.getDockerImage(key, configuration);
+    }
 
     public String getShortPrefix() {
         return "-";
@@ -78,15 +87,9 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
         return mountMap;
     }
 
-    protected void appendCommand(String command, StringBuilder sb) {
-        // Docker image and version
-        sb.append(getDockerImageName());
-        if (StringUtils.isNotEmpty(getDockerImageVersion())) {
-            sb.append(":").append(getDockerImageVersion());
-        }
-
-        // Append command
-        sb.append(" ").append(command);
+    protected void appendCommand(String dockerImage, String command, StringBuilder sb) {
+        // Append Docker image and version; and command
+        sb.append(dockerImage).append(" ").append(command);
     }
 
     protected void appendInputFiles(List<Pair<String, String>> inputFilenames, Map<String, String> srcTargetMap, StringBuilder sb) {

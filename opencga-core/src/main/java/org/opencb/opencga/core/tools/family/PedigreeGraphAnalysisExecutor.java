@@ -21,6 +21,9 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 public abstract class PedigreeGraphAnalysisExecutor extends OpenCgaToolExecutor {
 
+    public static final String ID = "pedigree-graph";
+    public static final String DESCRIPTION = "Compute the family pedigree graph image.";
+
     private String study;
     private Family family;
 

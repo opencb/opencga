@@ -24,11 +24,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
@@ -83,7 +84,9 @@ public class IndividualQcUtils {
 
         exportData(tpedFile, tfamFile, query, storageManager, token);
         if (tpedFile.exists() && tpedFile.length() > 0) {
-            pruneVariants(basename, outputBinding);
+            String dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY,
+                    storageManager.getCatalogManager().getConfiguration());
+            pruneVariants(dockerImage, basename, outputBinding);
         }
 
         if (!tpedFile.exists() || tpedFile.length() == 0) {
@@ -355,12 +358,11 @@ public class IndividualQcUtils {
         }
     }
 
-    private static void pruneVariants(String basename, AbstractMap.SimpleEntry<String, String> outputBinding) throws ToolException {
+    private static void pruneVariants(String dockerImage, String basename, AbstractMap.SimpleEntry<String, String> outputBinding) throws ToolException {
         // Variant pruning using PLINK in docker
         String plinkParams = "plink1.9 --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
         try {
-            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
-            DockerUtils.run(plinkExecutor.getDockerImageName(), null, outputBinding, plinkParams, null);
+            DockerUtils.run(dockerImage, null, outputBinding, plinkParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

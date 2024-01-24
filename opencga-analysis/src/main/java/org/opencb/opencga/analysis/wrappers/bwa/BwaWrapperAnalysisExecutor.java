@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
@@ -50,7 +51,8 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand("bwa " + command, sb);
+        String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
+        appendCommand(dockerImage, "bwa " + command, sb);
 
         // Append other params
         appendOtherParams(null, sb);
@@ -85,7 +87,8 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand(command, sb);
+        String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
+        appendCommand(dockerImage, command, sb);
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("o"));

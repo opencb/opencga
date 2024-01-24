@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.wrappers.plink;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,8 @@ public class PlinkWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor 
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand("plink1.9", sb);
+        String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
+        appendCommand(dockerImage, "plink1.9", sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, mountMap, sb);

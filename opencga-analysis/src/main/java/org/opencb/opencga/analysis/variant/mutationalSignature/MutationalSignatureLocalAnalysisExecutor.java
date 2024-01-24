@@ -36,8 +36,9 @@ import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -67,15 +68,15 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private static final String SVCLASS = "SVCLASS";
     private static final String EXT_SVTYPE = "EXT_SVTYPE";
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
-            + GitRepositoryState.getInstance().getBuildVersion();
-
+    private String dockerImage;
     private Path opencgaHome;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
+        dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY,
+                getVariantStorageManager().getCatalogManager().getConfiguration());
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
         // Check genome context file for that sample, and create it if necessary
@@ -457,7 +458,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     + " /jobdir/" + outputFile.getName();
 
             // Execute R script in docker
-            DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, inputBindings, outputBinding, rParams, null);
+            DockerUtils.run(dockerImage, inputBindings, outputBinding, rParams, null);
         } catch (Exception e) {
             throw new ToolException(e);
         }
@@ -634,7 +635,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
         }
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
+        String cmdline = DockerUtils.run(dockerImage, inputBindings, outputBinding, scriptParams.toString(),
                 null);
         logger.info("Docker command line: {}", cmdline);
 

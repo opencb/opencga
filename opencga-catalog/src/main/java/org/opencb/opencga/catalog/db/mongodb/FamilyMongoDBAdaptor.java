@@ -209,7 +209,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         // Pedigree graph
         try {
             PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, Paths.get(configuration.getWorkspace()).getParent(),
-                    Paths.get(configuration.getAnalysis().getScratchDir()));
+                    configuration);
             family.setPedigreeGraph(pedigreeGraph);
         } catch (IOException e) {
             throw new CatalogDBException("Error computing pedigree graph for family " + family.getId(), e);
@@ -514,7 +514,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         try {
             return PedigreeGraphUtils.getPedigreeGraph(tmpFamily,
                     Paths.get(configuration.getWorkspace()).getParent(),
-                    Paths.get(configuration.getAnalysis().getScratchDir()));
+                    configuration);
         } catch (IOException e) {
             String msg = "Error computing/updating the pedigree graph for the family " + family.getId();
             logger.error(msg);

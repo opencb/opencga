@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
@@ -26,16 +27,6 @@ public class DeeptoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecu
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public String getDockerImageName() {
-        return "dhspence/docker-deeptools";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return null;
-    }
-
-    @Override
     public void run() throws ToolException {
         switch (command) {
             case "bamCoverage":
@@ -56,7 +47,8 @@ public class DeeptoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecu
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand(command, sb);
+        String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
+        appendCommand(dockerImage, command, sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, mountMap, sb);

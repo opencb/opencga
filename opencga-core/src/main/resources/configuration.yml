@@ -108,6 +108,14 @@ healthCheck:
 
 analysis:
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
+  docker:
+    images:
+      opecgaExtTools: "opencb/opencga-ext-tools"
+      gatk: "broadinstitute/gatk:4.5.0.0"
+      picard: "broadinstitute/picard:3.1.1"
+      deeptools: "dhspence/docker-deeptools"
+      exomiser: "exomiser/exomiser-cli:13.1.0"
+      rvtests: "zhanxw/rvtests-docker"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

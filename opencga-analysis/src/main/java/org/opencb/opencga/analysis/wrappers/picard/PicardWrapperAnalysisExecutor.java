@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
@@ -23,16 +24,6 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
     private String command;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    @Override
-    public String getDockerImageName() {
-        return "broadinstitute/picard";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return "";
-    }
 
     @Override
     public String getShortPrefix() {
@@ -72,7 +63,8 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand("java -jar /usr/picard/picard.jar " + command, sb);
+        String dockerImage = getDockerImageName(Docker.PICARD_IMAGE_KEY);
+        appendCommand(dockerImage, "java -jar /usr/picard/picard.jar " + command, sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, mountMap, sb);
