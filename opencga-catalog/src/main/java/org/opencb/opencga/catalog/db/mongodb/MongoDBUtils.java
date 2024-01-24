@@ -801,7 +801,7 @@ public class MongoDBUtils {
         }
     }
     public static String getMongoDBCli(DatabaseCredentials credentials, String database) {
-        String sb = "mongo" + getMongoDBCliOpts(credentials)
+        String sb = "mongosh" + getMongoDBCliOpts(credentials)
                 + "'" + getMongoDBUri(credentials, database) + "'";
         return sb;
 

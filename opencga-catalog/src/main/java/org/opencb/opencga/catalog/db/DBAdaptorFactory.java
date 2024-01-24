@@ -59,11 +59,9 @@ public interface DBAdaptorFactory extends AutoCloseable {
     void initialiseMetaCollection(Admin admin) throws CatalogException;
 
     default String getCatalogDatabase(String prefix, String organization) {
-        if (StringUtils.isEmpty(organization)) {
-            throw new IllegalArgumentException("Missing organization");
-        }
         String dbPrefix = StringUtils.isEmpty(prefix) ? "opencga" : prefix;
-        return dbPrefix + "_" + organization + "_catalog";
+        dbPrefix = dbPrefix.endsWith("_") ? dbPrefix : dbPrefix + "_";
+        return (dbPrefix + "catalog_" + organization).toLowerCase();
     }
 
     boolean getDatabaseStatus() throws CatalogDBException;
