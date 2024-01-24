@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -74,26 +73,6 @@ public class UserManager extends AbstractManager {
 
         this.catalogIOManager = catalogIOManager;
         this.authenticationFactory = authenticationFactory;
-
-        AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
-        if (configuration.getAuthentication().getAuthenticationOrigins() == null) {
-            configuration.getAuthentication().setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
-        } else {
-            // Check if OPENCGA authentication is already present in catalog configuration
-            boolean catalogPresent = false;
-            for (AuthenticationOrigin origin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (AuthenticationOrigin.AuthenticationType.OPENCGA == origin.getType()) {
-                    catalogPresent = true;
-                    break;
-                }
-            }
-            if (!catalogPresent) {
-                List<AuthenticationOrigin> linkedList = new LinkedList<>();
-                linkedList.addAll(configuration.getAuthentication().getAuthenticationOrigins());
-                linkedList.add(authenticationOrigin);
-                configuration.getAuthentication().setAuthenticationOrigins(linkedList);
-            }
-        }
     }
 
     public void changePassword(String organizationId, String userId, String oldPassword, String newPassword) throws CatalogException {
@@ -157,12 +136,8 @@ public class UserManager extends AbstractManager {
         user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
 
         if (StringUtils.isEmpty(password)) {
-            // The authentication origin must be different than internal
-            Set<String> authOrigins = configuration.getAuthentication().getAuthenticationOrigins()
-                    .stream()
-                    .map(AuthenticationOrigin::getId)
-                    .collect(Collectors.toSet());
-            if (!authOrigins.contains(user.getAccount().getAuthentication().getId())) {
+            Map<String, AuthenticationManager> authOriginMap = authenticationFactory.getOrganizationAuthenticationManagers(organizationId);
+            if (!authOriginMap.containsKey(user.getAccount().getAuthentication().getId())) {
                 throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
             }
         } else {

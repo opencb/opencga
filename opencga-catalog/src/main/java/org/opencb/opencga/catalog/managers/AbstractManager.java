@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.study.Group;
@@ -157,17 +156,6 @@ public abstract class AbstractManager {
             query.remove(currentKey);
             query.put(newKey, value);
         }
-    }
-
-    AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
     }
 
 
