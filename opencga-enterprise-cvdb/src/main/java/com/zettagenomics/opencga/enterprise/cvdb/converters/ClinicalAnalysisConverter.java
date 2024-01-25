@@ -109,46 +109,10 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 }
             }
 
-            if (ca.getInterpretation() != null) {
-                cas.setInterpretationId(ca.getInterpretation().getId());
-                if (ca.getInterpretation().getStats() != null && ca.getInterpretation().getStats().getPrimaryFindings() != null) {
-                    List<String> statsLines = new ArrayList<>();
-                    InterpretationFindingStats stats = ca.getInterpretation().getStats().getPrimaryFindings();
-                    statsLines.add(NUM_VARIANTS + FIELD_SEPARATOR + stats.getNumVariants());
-                    if (MapUtils.isNotEmpty(stats.getGeneCount())) {
-                        statsLines.addAll(stats.getGeneCount().entrySet().stream().map(e -> GENE_COUNT + FIELD_SEPARATOR + e.getKey()
-                                        + FIELD_SEPARATOR + e.getValue()).collect(Collectors.toList()));
-                    }
-                    if (MapUtils.isNotEmpty(stats.getTierCount())) {
-                        statsLines.addAll(stats.getTierCount().entrySet().stream().map(e -> TIER_COUNT + FIELD_SEPARATOR + e.getKey()
-                                        + FIELD_SEPARATOR + e.getValue()).collect(Collectors.toList()));
-                    }
-                    if (MapUtils.isNotEmpty(stats.getStatusCount())) {
-                        statsLines.addAll(stats.getStatusCount().entrySet().stream().map(e -> STATUS_COUNT + FIELD_SEPARATOR + e.getKey()
-                                        + FIELD_SEPARATOR + e.getValue()).collect(Collectors.toList()));
-                    }
-                    cas.setInterpretationStats(statsLines);
-                }
-            }
-
             if (CollectionUtils.isNotEmpty(ca.getPanels())) {
-                List<String> panelLines = new LinkedList();
-                List<String> panelStatsLines = new LinkedList<>();
-                for (Panel panel : ca.getPanels()) {
-                    panelLines.add(panel.getId() + FIELD_SEPARATOR + panel.getName() + FIELD_SEPARATOR
-                            + (panel.getSource() != null ? panel.getSource().getId() : EMPTY_VALUE));
-                    if (MapUtils.isNotEmpty(panel.getStats())) {
-                        String line = StringUtils.join(panel.getStats().entrySet().stream().map(e -> e.getKey() + FIELD_SEPARATOR
-                                + e.getValue()).collect(Collectors.toList()), UP_FIELD_SEPARATOR);
-                        panelStatsLines.add(line);
-                    } else {
-                        panelStatsLines.add(EMPTY_VALUE);
-                    }
-                }
-                cas.setPanels(panelLines);
-                cas.setPanelsStats(panelStatsLines);
+                List<String> panelIds = ca.getPanels().stream().map(Panel::getId).collect(Collectors.toList());
+                cas.setPanelIds(panelIds);
             }
-
 
             if (ca.getReport() != null && ca.getReport().getDiscussion() != null) {
                 cas.setReport(ca.getReport().getDiscussion().getText());
@@ -161,8 +125,26 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             cas.setLocked(ca.isLocked());
 
             try {
+                // Full JSON
                 String json = mapper.writeValueAsString(ca);
-                cas.setJson(ConverterUtils.compressToBase64(json));
+                cas.setFullJson(json);
+
+                // Lite JSON
+                if (CollectionUtils.isNotEmpty(ca.getPanels())) {
+                    litePanels(ca.getPanels());
+                }
+                if (ca.getInterpretation() != null && CollectionUtils.isNotEmpty(ca.getInterpretation().getPanels())) {
+                    litePanels(ca.getInterpretation().getPanels());
+                }
+                if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
+                    for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
+                        if (CollectionUtils.isNotEmpty(secondaryInterpretation.getPanels())) {
+                            litePanels(secondaryInterpretation.getPanels());
+                        }
+                    }
+                }
+                json = mapper.writeValueAsString(ca);
+                cas.setLiteJson(json);
             } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical analysis JSON field", e);
             }
@@ -173,16 +155,32 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         return clinicalAnalysisSearchList;
     }
 
+    private void litePanels(List<Panel> panels) {
+        for (Panel panel : panels) {
+            panel.setVariants(null);
+            panel.setStrs(null);
+            panel.setGenes(null);
+            panel.setRegions(null);
+        }
+    }
+
     public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch cas) throws CvdbException {
         ClinicalAnalysis ca;
-        if (StringUtils.isNotEmpty(cas.getJson())) {
-            // Build clinical analysis from the field 'json'
+        if (StringUtils.isNotEmpty(cas.getFullJson())) {
+            // Build clinical analysis from the field 'fullJson'
             try {
-                ca = clinicalAnalysisReader.readValue(decompressFromBase64(cas.getJson()));
+                ca = clinicalAnalysisReader.readValue(cas.getFullJson());
             } catch (IOException e) {
-                throw new CvdbException("Error when converting to clinical analysis from the field JSON", e);
+                throw new CvdbException("Error when converting to clinical analysis from the field fullJson", e);
             }
-        } else {
+        } else if (StringUtils.isNotEmpty(cas.getLiteJson())) {
+            // Build clinical analysis from the field 'liteJson'
+            try {
+                ca = clinicalAnalysisReader.readValue(cas.getLiteJson());
+            } catch (IOException e) {
+                throw new CvdbException("Error when converting to clinical analysis from the field liteJson", e);
+            }
+        }  else {
             // Build clinical analysis from other fields
             ca = new ClinicalAnalysis();
             ca.setId(cas.getId());
@@ -222,63 +220,10 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 }
                 ca.setFamily(family);
             }
-            if (StringUtils.isNotEmpty(cas.getInterpretationId()) || CollectionUtils.isNotEmpty(cas.getInterpretationStats())) {
-                Interpretation interpretation = new Interpretation();
-                if (StringUtils.isNotEmpty(cas.getInterpretationId())) {
-                    interpretation.setId(cas.getInterpretationId());
-                }
-                if (CollectionUtils.isNotEmpty(cas.getInterpretationStats())) {
-                    InterpretationFindingStats stats = new InterpretationFindingStats();
-                    int numVariants = 0;
-                    Map<String, Integer> tierCount = new HashMap<>();
-                    Map<ClinicalVariant.Status, Integer> statusCount = new HashMap<>();
-                    Map<String, Integer> geneCount = new HashMap<>();
-                    for (String line : cas.getInterpretationStats()) {
-                        String[] split = line.split(FIELD_SEPARATOR, -1);
-                        switch (split[0]) {
-                            case NUM_VARIANTS:
-                                numVariants = Integer.parseInt(split[1]);
-                                break;
-                            case TIER_COUNT:
-                                tierCount.put(split[1], Integer.parseInt(split[2]));
-                                break;
-                            case STATUS_COUNT:
-                                statusCount.put(ClinicalVariant.Status.valueOf(split[1]), Integer.parseInt(split[2]));
-                                break;
-                            case GENE_COUNT:
-                                geneCount.put(split[1], Integer.parseInt(split[2]));
-                                break;
-                        }
-                    }
-                    interpretation.setStats(new InterpretationStats().setPrimaryFindings(
-                            new InterpretationFindingStats(numVariants, tierCount, statusCount, geneCount)));
-                }
-                ca.setInterpretation(interpretation);
-            }
-            if (CollectionUtils.isNotEmpty(cas.getPanels())) {
-                // In Solr/search data model, panels and panelStats work together (both empties or both non-empties)
+            if (CollectionUtils.isNotEmpty(cas.getPanelIds())) {
                 List<Panel> panels = new ArrayList<>();
-                int size = cas.getPanels().size();
-                for (int i = 0 ; i < size ; i++) {
-                    Panel panel = new Panel();
-                    // First: ID, name and source
-                    String[] splits = cas.getPanels().get(i).split(FIELD_SEPARATOR, -1);
-                    panel.setId(splits[0]);
-                    panel.setName(splits[1]);
-                    if (!EMPTY_VALUE.equals(splits[2])) {
-                        panel.setSource(new DiseasePanel.SourcePanel().setId(splits[2]));
-                    }
-                    // Second: stats
-                    Map<String, Integer> stats = new HashMap<>();
-                    String[] upSplits = cas.getPanelsStats().get(i).split(UP_FIELD_SEPARATOR, -1);
-                    for (String upSplit : upSplits) {
-                        splits = upSplit.split(FIELD_SEPARATOR, -1);
-                        stats.put(splits[0], Integer.parseInt(splits[1]));
-                    }
-                    panel.setStats(stats);
-
-                    // Add panel to the list of panels
-                    panels.add(panel);
+                for (String panelId : cas.getPanelIds()) {
+                    panels.add(new Panel().setId(panelId));
                 }
                 ca.setPanels(panels);
             }

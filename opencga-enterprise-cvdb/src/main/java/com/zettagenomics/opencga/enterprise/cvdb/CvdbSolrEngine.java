@@ -321,12 +321,12 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.caFields);
+        //List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.caFields);
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalAnalysisSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalAnalysisSearch.class,
                     ClinicalAnalysisConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -391,12 +391,11 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.ciFields);
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), INTERPRETATIONS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalInterpretationSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalInterpretationSearch.class,
                     ClinicalInterpretationConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -461,8 +460,8 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = new ArrayList<>();
         if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
             for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
                 switch (include) {
                     case "evidences":
@@ -480,12 +479,13 @@ public class CvdbSolrEngine {
                         break;
                 }
             }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
         }
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList, ClinicalVariantSearch.class,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalVariantSearch.class,
                     ClinicalVariantConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
@@ -550,12 +550,11 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.cveFields);
 
         // Execute query
         try {
             String collection = getCollectionName(query.getString(PROJECT_PARAM_NAME), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, includeList,
+            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions,
                     ClinicalVariantEvidenceSearch.class, ClinicalVariantEvidenceConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {

@@ -25,11 +25,15 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
+import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
 public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
@@ -85,30 +89,70 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
             return;
         }
 
+        // Parse common options
         super.parseQueryOptions(queryOptions, solrQuery);
 
-        Set<String> casFields = new HashSet<>();
+        // Parse include and exclude options to get Solr fields to include
+        Set<String> casFields = getCasInclude(queryOptions);
+        solrQuery.setFields(StringUtils.join(casFields, ","));
+    }
+
+    private Set<String> getCasInclude(QueryOptions queryOptions) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> caFields = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-            for (String caField : caFields) {
-                if (ClinicalIncludeHandler.caToCasFieldMap.containsKey(caField)) {
-                    casFields.add(ClinicalIncludeHandler.caToCasFieldMap.get(caField));
-                } else {
-                    casFields.clear();
-                    break;
-                }
+            return getCasIncludeFromInclude(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            return getCasIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        }
+        return Collections.singleton("fullJson");
+    }
+
+    private Set<String> getCasIncludeFromInclude(List<String> caFields) {
+        boolean useLiteJson = false;
+        Set<String> casFields = new HashSet<>();
+        for (String caField : caFields) {
+            if (ClinicalIncludeHandler.caToCasFieldMap.containsKey(caField)) {
+                casFields.add(ClinicalIncludeHandler.caToCasFieldMap.get(caField));
+            } else if (needsFullJson(caField)) {
+                return Collections.singleton("fullJson");
+            } else {
+                useLiteJson = true;
             }
         }
-        if (CollectionUtils.isEmpty(casFields)) {
-            solrQuery.setFields("json");
-        } else {
-            // In Solr/search model, panels and panelsStats work together
-            if (casFields.contains("panels")) {
-                casFields.add("panelsStats");
-            } else if (casFields.contains("panelsStats")) {
-                casFields.add("panels");
-            }
-            solrQuery.setFields(StringUtils.join(casFields, ","));
+        if (useLiteJson) {
+            return Collections.singleton("liteJson");
         }
+        return casFields;
+    }
+
+    private Set<String> getCasIncludeFromExclude(List<String> caFields) {
+        if (caFields.contains("panels")
+                && caFields.contains("interpretation.panels")
+                && caFields.contains("secondaryInterpretations.panels")) {
+            return Collections.singleton("liteJson");
+        }
+        return Collections.singleton("fullJson");
+    }
+
+    private boolean needsFullJson(String caField) {
+        // Checking:
+        //     panels.variants | genes | strs | regions
+        //     interpretation.panels.variants | genes | strs | regions
+        //     secondaryInterpretations.panels.variants | genes | strs | regions
+        return (caField.equals("panels")
+                || caField.startsWith("panels.variants")
+                || caField.startsWith("panels.genes")
+                || caField.startsWith("panels.strs")
+                || caField.startsWith("panels.regions")
+                || caField.equals("interpretation.panels")
+                || caField.startsWith("interpretation.panels.variants")
+                || caField.startsWith("interpretation.panels.genes")
+                || caField.startsWith("interpretation.panels.strs")
+                || caField.startsWith("interpretation.panels.regions")
+                || caField.equals("secondaryInterpretations.panels")
+                || caField.startsWith("secondaryInterpretations.panels.variants")
+                || caField.startsWith("secondaryInterpretations.panels.genes")
+                || caField.startsWith("secondaryInterpretations.panels.strs")
+                || caField.startsWith("secondaryInterpretations.panels.regions"));
     }
 }

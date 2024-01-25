@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.iterators;
 
 import org.apache.avro.Schema;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -27,33 +28,27 @@ import java.util.*;
  */
 public class ClinicalIncludeHandler {
 
-    protected List<String> includeList;
+    protected boolean exclude;
+    protected List<String> inputFields;
 
-    // Clinical analysis
-    public static List<String> caFields;
-    public static Map<String, String> caToCasFieldMap; // key = ca field name; value = cas field name
+    // Map from clinical analysis fields (keys) to Solr indexed fields (values)
+    public static Map<String, String> caToCasFieldMap;
 
-    // Clinical interpretation
-    public static List<String> ciFields;
-
-    // Clinical variant
-    public static List<String> cvFields;
-
-    // Clinical variant evidence
-    public static List<String> cveFields;
-
-    public ClinicalIncludeHandler() {
-    }
-
-    public ClinicalIncludeHandler(List<String> includeList) {
-        this.includeList = includeList;
+    public ClinicalIncludeHandler(QueryOptions queryOptions) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            exclude = false;
+            inputFields = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            exclude = true;
+            inputFields = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+        }
     }
 
     public <T> T applyInclude(T object) {
-        if (CollectionUtils.isEmpty(includeList)) {
+        if (CollectionUtils.isEmpty(inputFields)) {
             return object;
         }
-        return applyIncludeRecursive(object, includeList);
+        return applyIncludeRecursive(object, inputFields);
     }
 
     private <T> T applyIncludeRecursive(T object, List<String> includes) {
@@ -67,14 +62,13 @@ public class ClinicalIncludeHandler {
 
         for (Field field : allFields) {
             field.setAccessible(true);
-            boolean toInclude = isIncluded(field.getName(), includes);
+            boolean toInclude;
             try {
                 Object fieldValue = field.get(object);
                 // Only set to null, field non-primitive and no-enum types
                 // Primitive types: boolean, byte, char, short, int, long, float, and double
                 // Enum types: Enum, EnumMap, EnumSet, Enumeration
-                if (!field.getType().isPrimitive() && field.getType() != String.class && !isEnum(field.getType())
-                        && field.getType() != Schema.class) {
+                if (!field.getType().isPrimitive() && !isEnum(field.getType()) && field.getType() != Schema.class) {
                     if (isNested(field.getName(), includes)) {
                         // Field belonging to a nested object, e.g.: disorder.id
                         if (field.getType() == List.class && fieldValue instanceof List) {
@@ -87,6 +81,11 @@ public class ClinicalIncludeHandler {
                         }
                     } else {
                         // Field belonging to the current object, e.g.: id
+                        if (isIncluded(field.getName(), includes)) {
+                            toInclude = !exclude;
+                        } else {
+                            toInclude = exclude;
+                        }
                         if (!toInclude) {
                             try {
                                 field.set(object, null);
@@ -161,45 +160,18 @@ public class ClinicalIncludeHandler {
         return updatedIncludeList;
     }
 
-    public List<String> getIncludeList() {
-        return includeList;
+    public List<String> getInputFields() {
+        return inputFields;
     }
 
-    public ClinicalIncludeHandler setIncludeList(List<String> includeList) {
-        this.includeList = includeList;
+    public ClinicalIncludeHandler setInputFields(List<String> inputFields) {
+        this.inputFields = inputFields;
         return this;
     }
 
     static {
 
-        caFields = Arrays.asList("id",
-                "description",
-                "type",
-                "disorder",
-                "files",
-                "proband",
-                "family",
-                "panels",
-                "panelLock",
-                "locked",
-                "interpretation",
-                "secondaryInterpretations",
-                "consent",
-                "analyst",
-                "report",
-                "priority",
-                "flags",
-                "creationDate",
-                "modificationDate",
-                "dueDate",
-                "qualityControl",
-                "release",
-                "comments",
-                "audit",
-                "internal",
-                "attributes",
-                "status");
-
+        // Map from clinical analysis fields to Solr indexed fields
         caToCasFieldMap = new HashMap<>();
         caToCasFieldMap.put("id", "id");
         caToCasFieldMap.put("description", "description");
@@ -210,51 +182,10 @@ public class ClinicalIncludeHandler {
         caToCasFieldMap.put("family.id", "familyId");
         caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
         caToCasFieldMap.put("family.members.id", "familyMemberIds");
-        caToCasFieldMap.put("interpretation.id", "interpretationId");
-        caToCasFieldMap.put("interpretation.stats", "interpretationStats");
-        caToCasFieldMap.put("interpretation.stats.primaryFindings", "interpretationStats");
-        caToCasFieldMap.put("panels.id", "panels");
-        caToCasFieldMap.put("panels.name", "panels");
-        caToCasFieldMap.put("panels.source", "panels");
-        caToCasFieldMap.put("panels.stats", "panelsStats");
+        caToCasFieldMap.put("panels.id", "panelIds");
         caToCasFieldMap.put("report.discussion.text", "report");
         caToCasFieldMap.put("status.id", "status");
         caToCasFieldMap.put("locked", "locked");
 
-        ciFields = Arrays.asList("studyUid",
-                "uid",
-                "panels",
-                "internal",
-                "release",
-                "id",
-                "uuid",
-                "description",
-                "clinicalAnalysisId",
-                "analyst",
-                "method",
-                "primaryFindings",
-                "secondaryFindings",
-                "comments",
-                "stats",
-                "locked",
-                "status",
-                "creationDate",
-                "modificationDate",
-                "version",
-                "attributes");
-
-        cveFields = Arrays.asList("interpretationMethodName",
-                "phenotypes",
-                "genomicFeature",
-                "modeOfInheritances",
-                "panelId",
-                "classification",
-                "penetrance",
-                "score",
-                "fullyExplainPhenotypes",
-                "compoundHeterozygousVariantIds",
-                "rolesInCancer",
-                "review",
-                "attributes");
     }
 }

@@ -583,16 +583,15 @@
     <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
-
-    <field name="interpretationId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="interpretationStats" type="string" indexed="false" stored="true" multiValued="true"/>
-    <field name="panels" type="string" indexed="false" stored="true" multiValued="true"/>
-    <field name="panelsStats" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <field name="report" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="json" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- JSON without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
+    <field name="liteJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- JSON with all information -->
+    <field name="fullJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
 
 </schema>
