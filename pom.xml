@@ -146,12 +146,8 @@
         <servlet-api.version>2.5-20081211</servlet-api.version>
 
         <kryo.version>2.23.0</kryo.version>
-        <!--TO REMOVE:
-        The version of Java (11.0.21) used to run this analysis is deprecated, and SonarCloud no longer supports it. Please upgrade to Java 17 or later.
-        As a temporary measure, you can set the property 'sonar.scanner.force-deprecated-java-version' to 'true' to continue using Java 11.0.21
-        This workaround will only be effective until January 28, 2024. After this date, all scans using the deprecated Java 11 will fail.
-        -->
-        <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
+        <lombok.version>1.18.30</lombok.version>
+        <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
     </properties>
 
     <scm>
@@ -994,6 +990,12 @@
                 <version>${grep4j.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson</artifactId>
                 <version>${redisson.version}</version>
@@ -1093,6 +1095,7 @@
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -1116,6 +1119,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-report-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>${maven-war-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
