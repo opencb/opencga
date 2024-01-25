@@ -7,10 +7,6 @@ if [[ -z $BRANCH_NAME  ]]; then
   exit 1
 fi
 
-if [[ $BRANCH_NAME != "TASK-"* ]]; then
-  echo "No need to check dependencies."
-  exit 0
-fi
 
 function install(){
   local REPO=$1
