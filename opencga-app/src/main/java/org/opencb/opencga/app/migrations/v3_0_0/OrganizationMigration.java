@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
@@ -369,13 +370,21 @@ public class OrganizationMigration extends MigrationTool {
             MongoCollection<Document> orgCol = database.getCollection(OrganizationMongoDBAdaptorFactory.ORGANIZATION_COLLECTION);
             
             List<Document> authOrigins = new ArrayList<>();
+            boolean internalAuthOriginFound = false;
             if (configuration.getAuthentication() != null && CollectionUtils.isNotEmpty(configuration.getAuthentication().getAuthenticationOrigins())) {
                 for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
+                    if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                            && authenticationOrigin.getId().equals(CatalogAuthenticationManager.INTERNAL)) {
+                        internalAuthOriginFound = true;
+                    }
                     authenticationOrigin.setAlgorithm(algorithm);
                     authenticationOrigin.setSecretKey(secretKey);
                     authenticationOrigin.setExpiration(3600);
                     authOrigins.add(convertToDocument(authenticationOrigin));
                 }
+            }
+            if (!internalAuthOriginFound) {
+                authOrigins.add(convertToDocument(CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
             }
 
             // Set organization counter, owner and authOrigins
