@@ -342,14 +342,20 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 // Validate users
                 Set<String> userIds = new HashSet<>();
                 for (ClinicalAnalyst analyst : clinicalAnalysis.getAnalysts()) {
-                    userIds.add(analyst.getId());
+                    if (StringUtils.isNotEmpty(analyst.getId())) {
+                        userIds.add(analyst.getId());
+                    }
                 }
-                Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIds);
-                OpenCGAResult<User> result = userDBAdaptor.get(query, userInclude);
-                if (result.getNumResults() < userIds.size()) {
-                    throw new CatalogException("Some clinical analysts could not be found.");
+                if (CollectionUtils.isNotEmpty(userIds)) {
+                    Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIds);
+                    OpenCGAResult<User> result = userDBAdaptor.get(query, userInclude);
+                    if (result.getNumResults() < userIds.size()) {
+                        throw new CatalogException("Some clinical analysts could not be found.");
+                    }
+                    userList = result.getResults();
+                } else {
+                    userList = userDBAdaptor.get(userId, userInclude).getResults();
                 }
-                userList = result.getResults();
             }
             List<ClinicalAnalyst> clinicalAnalystList = new ArrayList<>(userList.size());
             for (User user : userList) {
@@ -663,7 +669,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     counter++;
                 } catch (Exception e) {
                     logger.error("Error loading clinical analysis" + (clinicalAnalysis != null ? (": " + clinicalAnalysis.getId()) : "")
-                    + ": " + e.getMessage());
+                            + ": " + e.getMessage());
                     result.getFailures().put(clinicalAnalysis.getId(), e.getMessage());
                 }
             }
@@ -2328,8 +2334,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     }
 
     public OpenCGAResult<ClinicalAnalysis> updateAnnotations(String studyStr, String clinicalStr, String annotationSetId,
-                                                   Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                                   QueryOptions options, String token) throws CatalogException {
+                                                             Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                                             QueryOptions options, String token) throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
             throw new CatalogException("Missing array of annotations.");
         }
