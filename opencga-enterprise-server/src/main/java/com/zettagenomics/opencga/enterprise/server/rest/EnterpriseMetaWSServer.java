@@ -4,11 +4,10 @@ import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseUserManag
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
-import org.opencb.opencga.catalog.auth.authentication.JwtManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -26,7 +25,6 @@ import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.rest.MetaWSServer;
 
-import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -35,7 +33,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
-import java.security.Key;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -60,26 +57,25 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                 try {
                     OpenCGAResult<Organization> result;
                     try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
-                        result = dbAdaptorFactory .getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
+                        result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
                                 .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
-                    }
-                    if (result.getNumResults() == 0) {
-                        throw new CatalogException("Organization '" + ParamConstants.ADMIN_ORGANIZATION + "' not found.");
-                    }
-                    Organization organization = result.first();
-                    if (organization.getConfiguration() == null
-                            || CollectionUtils.isEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
-                        throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
-                                + "' organization.");
-                    }
-                    AuthenticationOrigin authOrigin = organization.getConfiguration().getAuthenticationOrigins().get(0);
 
-                    Key key = new SecretKeySpec(authOrigin.getSecretKey().getBytes(),
-                            SignatureAlgorithm.forName(authOrigin.getAlgorithm()).getJcaName());
-                    JwtManager jwtManager = new JwtManager(authOrigin.getAlgorithm(), key);
-                    // Generate non-expiring superadmin token
-                    opencgaToken = jwtManager.createJWTToken(ParamConstants.ADMIN_ORGANIZATION,
-                            ParamConstants.OPENCGA_USER_ID, null, 0L);
+                        if (result.getNumResults() == 0) {
+                            throw new CatalogException("Organization '" + ParamConstants.ADMIN_ORGANIZATION + "' not found.");
+                        }
+                        Organization organization = result.first();
+                        if (organization.getConfiguration() == null
+                                || CollectionUtils.isEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
+                            throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
+                                    + "' organization.");
+                        }
+
+                        AuthenticationOrigin authOrigin = organization.getConfiguration().getAuthenticationOrigins().get(0);
+                        CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
+                                null, authOrigin.getSecretKey(), authOrigin.getExpiration());
+                        opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
+                                ParamConstants.OPENCGA_USER_ID, null);
+                    }
                 } catch (CatalogException e) {
                     throw new IllegalStateException(e);
                 }
