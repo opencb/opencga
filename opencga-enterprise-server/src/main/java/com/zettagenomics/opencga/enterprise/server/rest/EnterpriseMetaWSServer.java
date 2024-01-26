@@ -69,8 +69,17 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                             throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
                                     + "' organization.");
                         }
-
-                        AuthenticationOrigin authOrigin = organization.getConfiguration().getAuthenticationOrigins().get(0);
+                        AuthenticationOrigin authOrigin = null;
+                        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                            if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)) {
+                                authOrigin = authenticationOrigin;
+                                break;
+                            }
+                        }
+                        if (authOrigin == null) {
+                            throw new CatalogException("Missing internal authentication origin in '"
+                                    + ParamConstants.ADMIN_ORGANIZATION + "' organization.");
+                        }
                         CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
                                 null, authOrigin.getSecretKey(), authOrigin.getExpiration());
                         opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
