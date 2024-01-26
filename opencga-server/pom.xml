@@ -248,7 +248,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
                 <configuration>
                     <warName>${opencga.war.name}</warName>
                     <!--
