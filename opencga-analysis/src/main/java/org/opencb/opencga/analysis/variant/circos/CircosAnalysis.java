@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.circos;
 
-import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -35,8 +34,6 @@ public class CircosAnalysis extends OpenCgaTool {
     private String study;
     private CircosAnalysisParams circosParams;
 
-    private String assembly;
-
     @Override
     protected void check() throws Exception {
         super.check();
@@ -45,24 +42,6 @@ public class CircosAnalysis extends OpenCgaTool {
         if (study == null || study.isEmpty()) {
             throw new ToolException("Missing study");
         }
-
-//        String sampleName = query.getString(SAMPLE.key());
-//        try {
-//            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
-//
-//            if (StringUtils.isNotEmpty(sampleName)) {
-//                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleName, new QueryOptions(), token);
-//                if (sampleResult.getNumResults() != 1) {
-//                    throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sampleName + "' not found");
-//                }
-//            }
-//        } catch (CatalogException e) {
-//            throw new ToolException(e);
-//        }
-//
-//        addAttribute("sampleName", sampleName);
-
-        assembly = AnalysisResourceUtils.getAssembly(catalogManager, study, token);
     }
 
     @Override

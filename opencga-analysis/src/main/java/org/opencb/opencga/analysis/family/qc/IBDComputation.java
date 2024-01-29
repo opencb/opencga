@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.AnalysisResourceUtils;
+import org.opencb.commons.utils.URLUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -61,14 +61,14 @@ public class IBDComputation {
         // TODO: download into the folder /analysis/relatedness
         try {
             URL url = new URL(resourceUrl + RelatednessAnalysis.ID + "/" + PRUNE_IN_FILENAME);
-            AnalysisResourceUtils.downloadThirdParty(url, outDir);
+            URLUtils.download(url, outDir);
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
         }
         Path pruneInPath = outDir.resolve(PRUNE_IN_FILENAME);
         try {
             URL url = new URL(resourceUrl + RelatednessAnalysis.ID + "/" + FREQ_FILENAME);
-            AnalysisResourceUtils.downloadThirdParty(url, outDir);
+            URLUtils.download(url, outDir);
         } catch (IOException e) {
             throw new ToolException("Something wrong happened when downloading resource files during the relatedness analysis execution");
         }

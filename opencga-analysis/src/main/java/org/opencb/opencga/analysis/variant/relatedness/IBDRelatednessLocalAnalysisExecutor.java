@@ -33,8 +33,13 @@ import java.nio.file.Paths;
         source = ToolExecutor.Source.STORAGE)
 public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisExecutor implements StorageToolExecutor {
 
+    private String resourceUrl;
+
     @Override
     public void run() throws ToolException {
+        // Get analysis resource URL
+        resourceUrl = getAnalysisResourceUrl();
+
         // Get managers
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
@@ -45,9 +50,8 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         }
 
         // Run IBD/IBS computation using PLINK in docker
-        String resourceBaseUrl = getAnalysisResourceUtils().getResourceBaseUrl();
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), getSampleIds(), getMinorAlleleFreq(), getThresholds(),
-                resourceBaseUrl, getOutDir(), variantStorageManager, getToken());
+                resourceUrl, getOutDir(), variantStorageManager, getToken());
 
         // Sanity check
         if (report == null) {

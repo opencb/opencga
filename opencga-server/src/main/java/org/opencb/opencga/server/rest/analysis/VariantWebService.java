@@ -46,6 +46,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysisUtils;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -102,7 +103,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.geneRegionIntersect;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -979,7 +979,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Check for genome context index
-            File genomeContextFile = MutationalSignatureAnalysis.getGenomeContextFile(query.getString(SAMPLE.key()),
+            File genomeContextFile = MutationalSignatureAnalysisUtils.getGenomeContextFile(query.getString(SAMPLE.key()),
                     query.getString(STUDY.key()), catalogManager, token);
             if (genomeContextFile == null || !genomeContextFile.exists()) {
                 return createErrorResponse(new Exception("Build the genome context file for sample " + query.getString(SAMPLE.key())

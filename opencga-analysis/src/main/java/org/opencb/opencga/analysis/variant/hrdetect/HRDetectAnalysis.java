@@ -26,9 +26,9 @@ import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.AnalysisResourceUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.manager.CatalogUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -81,7 +81,8 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing study");
         }
 
-        assembly = AnalysisResourceUtils.getAssembly(catalogManager, study, token);
+        CatalogUtils catalogUtils = new CatalogUtils(catalogManager);
+        assembly = catalogUtils.getAssembly(study, token);
         if (StringUtils.isEmpty(assembly)) {
             throw new ToolException("Missing assembly for study '" + study + "'");
         }

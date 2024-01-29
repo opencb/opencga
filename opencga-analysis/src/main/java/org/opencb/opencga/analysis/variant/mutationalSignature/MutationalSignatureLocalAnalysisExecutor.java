@@ -32,7 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.AnalysisResourceUtils;
+import org.opencb.commons.utils.URLUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -71,12 +72,16 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             + GitRepositoryState.getInstance().getBuildVersion();
 
     private Path opencgaHome;
+    private String resourceUrl;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+
+        // Get analysis resource URL
+        resourceUrl = getAnalysisResourceUrl();
 
         // Check genome context file for that sample, and create it if necessary
         if (StringUtils.isNotEmpty(getSkip())
@@ -137,7 +142,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // Context index filename
         File indexFile;
         try {
-            indexFile = MutationalSignatureAnalysis.getGenomeContextFile(getSample(), getStudy(), getVariantStorageManager().getCatalogManager(), getToken());
+            indexFile = MutationalSignatureAnalysisUtils.getGenomeContextFile(getSample(), getStudy(), getVariantStorageManager().getCatalogManager(), getToken());
         } catch (CatalogException | ToolException e) {
             indexFile = null;
         }
@@ -146,7 +151,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
 
         // The genome context file does not exist, we have to create it !!!
-        indexFile = getOutDir().resolve(MutationalSignatureAnalysis.getContextIndexFilename(getSample(), getAssembly())).toFile();
+        indexFile = getOutDir().resolve(MutationalSignatureAnalysisUtils.getContextIndexFilename(getSample(), getAssembly())).toFile();
         createGenomeContextFile(indexFile);
 
         if (!indexFile.exists()) {
@@ -158,8 +163,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
         try {
             // First,
-            AnalysisResourceUtils resourceUtils = getAnalysisResourceUtils();
-            AnalysisResourceUtils.DownloadedRefGenome refGenome = resourceUtils.downloadRefGenome(getAssembly(), getOutDir(), opencgaHome);
+            DownloadedRefGenome refGenome = downloadRefGenome(getAssembly(), getOutDir());
 
             if (refGenome == null) {
                 throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path"
@@ -272,7 +276,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 throw new ToolExecutorException("Something wrong happened: counts file " + CATALOGUES_FILENAME_DEFAULT + " could not be"
                         + " generated");
             }
-            List<Signature.GenomeContextCount> genomeContextCounts = parseCatalogueResults(getOutDir());
+            List<Signature.GenomeContextCount> genomeContextCounts = MutationalSignatureAnalysisUtils.parseCatalogueResults(getOutDir());
             Signature signature = new Signature()
                     .setId(getQueryId())
                     .setDescription(getQueryDescription())
@@ -644,9 +648,68 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             throw new ToolExecutorException("Something wrong happened: signature coeffs. file " + SIGNATURE_COEFFS_FILENAME + " could not"
                     + " be generated");
         }
-        SignatureFitting signatureFitting = parseFittingResults(getOutDir(), getFitId(), getFitMethod(), getSigVersion(), getnBoot(),
+        SignatureFitting signatureFitting = MutationalSignatureAnalysisUtils.parseFittingResults(getOutDir(), getFitId(), getFitMethod(),
+                getSigVersion(), getnBoot(),
                 getOrgan(), getThresholdPerc(), getThresholdPval(), getMaxRareSigs());
         JacksonUtils.getDefaultObjectMapper().writerFor(SignatureFitting.class).writeValue(getOutDir()
                 .resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_FITTING_DATA_MODEL_FILENAME).toFile(), signatureFitting);
+    }
+
+    private DownloadedRefGenome downloadRefGenome(String assembly, Path outDir) throws IOException {
+        // Download files
+        File gzFile = null;
+        File faiFile = null;
+        File gziFile = null;
+
+        // Get files to downloadAnalysis
+        List<String> filenames = new LinkedList<>();
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
+
+        Path path = null;
+        for (String filename : filenames) {
+            File file;
+
+            if (opencgaHome != null) {
+                path = opencgaHome.resolve("commons/reference-genomes/" + filename);
+            }
+            if (path != null && path.toFile().exists()) {
+                File outFile = outDir.resolve(path.toFile().getName()).toFile();
+                logger.info("Downloading from path: " + path + " to " + outFile.getAbsolutePath());
+                org.apache.commons.io.FileUtils.copyFile(path.toFile(), outFile);
+                file = outFile;
+            } else {
+                URL url = new URL(resourceUrl + "/commons/reference-genomes/" + filename);
+                logger.info("Downloading from URL: " + resourceUrl + ", (path does not exist: " + path + ")");
+                file = URLUtils.download(url, outDir);
+                if (file == null) {
+                    // Something wrong happened, remove downloaded files
+                    removeFiles(filenames, outDir);
+                    return null;
+                }
+            }
+            if (filename.endsWith("gz")) {
+                gzFile = file;
+            } else if (filename.endsWith("fai")) {
+                faiFile = file;
+            } else if (filename.endsWith("gzi")) {
+                gziFile = file;
+            }
+
+            // Reset path for the next iteration
+            path = null;
+        }
+        return new DownloadedRefGenome(assembly, gzFile, faiFile, gziFile);
+    }
+
+    private void removeFiles(List<String> links, Path outDir) {
+        for (String link : links) {
+            String name = new File(link).getName();
+            File file = outDir.resolve(name).toFile();
+            if (file.exists()) {
+                file.delete();
+            }
+        }
     }
 }

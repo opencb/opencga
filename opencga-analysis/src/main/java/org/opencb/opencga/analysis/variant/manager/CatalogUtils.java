@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -26,6 +28,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -164,6 +167,22 @@ public class CatalogUtils {
                 throw new CatalogException("Multiple projects found: " + projectFqn + ". "
                         + "Please, specify one project.");
             }
+        }
+    }
+
+    public String getAssembly(String studyId, String sessionId) throws CatalogException {
+        OpenCGAResult<Project> result = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+        if (result.getNumResults() == 0) {
+            throw new CatalogException("Unable to get assembly from study ID: " + studyId);
+        }
+        if (result.getNumResults() == 1) {
+            if (result.first().getOrganism() == null || StringUtils.isEmpty(result.first().getOrganism().getAssembly())) {
+                throw new CatalogException("Missing assembly for study ID: " + studyId);
+            }
+            return result.first().getOrganism().getAssembly();
+        } else {
+            throw new CatalogException("Multiple projects found for study ID " + studyId + ". Please, specify one project.");
         }
     }
 

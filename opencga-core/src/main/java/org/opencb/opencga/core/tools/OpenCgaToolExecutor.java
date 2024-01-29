@@ -16,13 +16,18 @@
 
 package org.opencb.opencga.core.tools;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public abstract class OpenCgaToolExecutor {
 
@@ -79,6 +84,22 @@ public abstract class OpenCgaToolExecutor {
 
     protected final String getToken() {
         return getExecutorParams().getString("token");
+    }
+
+    protected final String getAnalysisResourceUrl() throws ToolExecutorException {
+        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        if (StringUtils.isEmpty(opencgaHome)) {
+            throw new ToolExecutorException("Missing OpenCGA home within the executor parameters");
+        }
+        try {
+            Configuration configuration = Configuration.load(FileUtils.newInputStream(Paths.get(opencgaHome)));
+            if (StringUtils.isEmpty(configuration.getAnalysis().getResourceUrl())) {
+                throw new ToolExecutorException("Missing analysis resource URL in the configuration file");
+            }
+            return configuration.getAnalysis().getResourceUrl();
+        } catch (IOException e) {
+            throw new ToolExecutorException(e);
+        }
     }
 
     protected final void addWarning(String warning) throws ToolException {

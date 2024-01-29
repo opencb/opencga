@@ -10,7 +10,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.AnalysisResourceUtils;
+import org.opencb.commons.utils.URLUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
@@ -51,14 +51,14 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String studyId;
     private String sampleId;
 
-    private AnalysisResourceUtils resourceUtils;
+    private String resourceUrl;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException {
-        // Get analysis resource utils
-        resourceUtils = getAnalysisResourceUtils();
+        // Get analysis resource URL
+        resourceUrl = getAnalysisResourceUrl();
 
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
@@ -453,9 +453,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private void downloadAndUnzip(Path exomiserDataPath, String filename) throws ToolException {
         // Download data
         try {
-            URL url = new URL(resourceUtils.getResourceBaseUrl() + "/exomiser/" + filename);
+            URL url = new URL(resourceUrl + "/exomiser/" + filename);
             logger.info("{}: Downloading Exomiser data: {} in {}", ID, url, exomiserDataPath);
-            AnalysisResourceUtils.downloadThirdParty(url, exomiserDataPath);
+            URLUtils.download(url, exomiserDataPath);
         } catch (IOException e) {
             throw new ToolException("Error downloading Exomiser data from resource URL", e);
         }
