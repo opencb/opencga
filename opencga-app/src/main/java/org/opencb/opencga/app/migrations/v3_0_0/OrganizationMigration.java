@@ -370,22 +370,22 @@ public class OrganizationMigration extends MigrationTool {
             MongoCollection<Document> orgCol = database.getCollection(OrganizationMongoDBAdaptorFactory.ORGANIZATION_COLLECTION);
             
             List<Document> authOrigins = new ArrayList<>();
-            boolean internalAuthOriginFound = false;
-            if (configuration.getAuthentication() != null && CollectionUtils.isNotEmpty(configuration.getAuthentication().getAuthenticationOrigins())) {
-                for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                    if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                            && authenticationOrigin.getId().equals(CatalogAuthenticationManager.INTERNAL)) {
-                        internalAuthOriginFound = true;
+            // Super admins organization will only have one authentication origin - internal
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                if (configuration.getAuthentication() != null && CollectionUtils.isNotEmpty(configuration.getAuthentication().getAuthenticationOrigins())) {
+                    for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
+                        if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
+                                && authenticationOrigin.getId().equals(CatalogAuthenticationManager.INTERNAL)) {
+                            continue;
+                        }
+                        authenticationOrigin.setAlgorithm(algorithm);
+                        authenticationOrigin.setSecretKey(secretKey);
+                        authenticationOrigin.setExpiration(3600);
+                        authOrigins.add(convertToDocument(authenticationOrigin));
                     }
-                    authenticationOrigin.setAlgorithm(algorithm);
-                    authenticationOrigin.setSecretKey(secretKey);
-                    authenticationOrigin.setExpiration(3600);
-                    authOrigins.add(convertToDocument(authenticationOrigin));
                 }
             }
-            if (!internalAuthOriginFound) {
-                authOrigins.add(convertToDocument(CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
-            }
+            authOrigins.add(convertToDocument(CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
 
             // Set organization counter, owner and authOrigins
             orgCol.updateOne(Filters.eq("id", organizationId), Updates.combine(
