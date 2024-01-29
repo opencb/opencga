@@ -23,7 +23,6 @@ import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretati
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import com.zettagenomics.opencga.enterprise.cvdb.models.mappings.*;
@@ -767,7 +766,7 @@ public class CvdbSolrEngine {
 
             if (!exists) {
                 // Clinical analysis
-                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, studyId, viewers);
+                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, FqnUtils.getStudy(studyId), viewers);
 
                 // Index
                 updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), cas);
@@ -807,7 +806,8 @@ public class CvdbSolrEngine {
             UpdateResponse updateResponse;
 
             // Interpretation
-            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary, studyId, viewers);
+            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimary, FqnUtils.getStudy(studyId),
+                    viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, INTERPRETATIONS_COLLECTION_SUFFIX), cis);
             if (updateResponse.getStatus() != 0) {
@@ -838,7 +838,7 @@ public class CvdbSolrEngine {
             clinicalVariant.getAttributes().put(CA_ID_NAME, clinicalAnalysisId);
             clinicalVariant.getAttributes().put(CI_ID_NAME, interpretationId);
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, primary, interpretationId,
-                    clinicalAnalysisId, studyId, viewers);
+                    clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvs);
             if (updateResponse.getStatus() != 0) {
@@ -867,7 +867,7 @@ public class CvdbSolrEngine {
             clinicalVariantEvidence.getAttributes().put(CI_ID_NAME, interpretationId);
             clinicalVariantEvidence.getAttributes().put(CV_ID_NAME, variantId);
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, variantId,
-                    interpretationId, clinicalAnalysisId, studyId, viewers);
+                    interpretationId, clinicalAnalysisId, FqnUtils.getStudy(studyId), viewers);
 
             updateResponse = solrClient.addBean(getCollectionName(projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX), cves);
             if (updateResponse.getStatus() != 0) {
@@ -970,20 +970,6 @@ public class CvdbSolrEngine {
         } catch (CatalogException e) {
             throw new CvdbException("Checking user query permissions", e);
         }
-    }
-
-    private List<String> getIncludeList(QueryOptions queryOptions, List<String> allFields) {
-        List<String> includeList = new ArrayList<>();
-        if (queryOptions.containsKey(INCLUDE)) {
-            includeList.addAll(queryOptions.getAsStringList(INCLUDE, ","));
-        } else if (queryOptions.containsKey(EXCLUDE)) {
-            List<String> excludeFields = queryOptions.getAsStringList(EXCLUDE, ",").stream().map(field -> field.split("\\.")[0])
-                    .collect(Collectors.toList());
-            includeList = allFields.stream()
-                    .filter(field -> !excludeFields.contains(field))
-                    .collect(Collectors.toList());
-        }
-        return  includeList;
     }
 
     //----------------------------------------------------------------------

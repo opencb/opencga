@@ -1,11 +1,9 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalAnalysisQueryParser;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -26,13 +24,9 @@ import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.Study;
@@ -41,14 +35,11 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
