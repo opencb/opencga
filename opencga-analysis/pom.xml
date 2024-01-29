@@ -71,15 +71,20 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
+            <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <version>${project.parent.version}</version>
-            <classifier>tests</classifier>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -87,10 +92,12 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -105,7 +112,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.commons</groupId>
@@ -158,10 +164,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -232,10 +234,11 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- TODO Review -->
         <dependency>
+            <!-- Need dependency for running hadoop tests. -->
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>test</scope>
@@ -271,12 +274,17 @@
                             <!-- This plugin is having a weird issue with biodata libraries. It fails if biodata is declared before. -->
                             <ignoredUsedUndeclaredDependencies>
                                 <ignoredUsedUndeclaredDependency>
-                                    com.google.code.findbugs:jsr305:jar:3.0.2
+                                    com.google.code.findbugs:jsr305
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
+                            <ignoredNonTestScopedDependencies>
+                                <ignoredNonTestScopedDependency>
+                                    org.opencb.commons:commons-datastore-mongodb
+                                </ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>

@@ -25,9 +25,11 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
@@ -38,6 +40,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public abstract class MRExecutor {
 
+    public static final String HADOOP_LIB_VERSION_PROPERTIES = "org/opencb/opencga/storage/hadoop/lib/version.properties";
     private ObjectMap options;
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
@@ -51,7 +54,16 @@ public abstract class MRExecutor {
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
         String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
         if (jar == null) {
-            jar = "opencga-storage-hadoop-core-" + GitRepositoryState.getInstance().getBuildVersion() + "-jar-with-dependencies.jar";
+            Properties properties = new Properties();
+            try {
+                properties.load(MRExecutor.class.getClassLoader()
+                        .getResourceAsStream(HADOOP_LIB_VERSION_PROPERTIES));
+            } catch (IOException e) {
+                throw new StorageEngineException("Error reading classpath file \"" + HADOOP_LIB_VERSION_PROPERTIES + "\" for building the "
+                        + "\"" + MR_JAR_WITH_DEPENDENCIES + "\"" + " parameter", e);
+            }
+            jar = "opencga-storage-hadoop-" + properties.getProperty("opencga-hadoop-shaded.id") + "-"
+                    + GitRepositoryState.getInstance().getBuildVersion() + "-jar-with-dependencies.jar";
 //            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {

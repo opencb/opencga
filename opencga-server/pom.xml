@@ -379,9 +379,8 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storage-hadoop</name>
+                    <name>!skipStorageHadoop</name>
                 </property>
-                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -391,9 +390,8 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                    <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
                     <version>${project.parent.version}</version>
-                    <classifier>shaded</classifier>
                 </dependency>
             </dependencies>
         </profile>

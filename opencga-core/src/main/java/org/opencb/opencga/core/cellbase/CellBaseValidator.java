@@ -9,6 +9,7 @@ import org.opencb.cellbase.core.config.SpeciesConfiguration;
 import org.opencb.cellbase.core.config.SpeciesProperties;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.VersionUtils;
 
@@ -307,9 +308,13 @@ public class CellBaseValidator {
     public String getVersionFromServer() throws IOException {
         if (serverVersion == null) {
             synchronized (this) {
-                String serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version");
+                ObjectMap result = cellBaseClient.getMetaClient().about().firstResult();
+                if (result == null) {
+                    throw new IOException("Unable to get version from server for cellbase " + toString());
+                }
+                String serverVersion = result.getString("Version");
                 if (StringUtils.isEmpty(serverVersion)) {
-                    serverVersion = cellBaseClient.getMetaClient().about().firstResult().getString("Version: ");
+                    serverVersion = result.getString("Version: ");
                 }
                 this.serverVersion = serverVersion;
             }

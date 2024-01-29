@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.util.RunJar;
 import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -30,6 +31,12 @@ public class SshMRExecutor extends MRExecutor {
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
+
+    @Override
+    public SshMRExecutor init(ObjectMap options) {
+        super.init(options);
+        return this;
+    }
 
     @Override
     public int run(String executable, String[] args) throws StorageEngineException {

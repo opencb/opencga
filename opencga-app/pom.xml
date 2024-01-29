@@ -139,10 +139,6 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -221,7 +217,6 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -302,7 +297,7 @@
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
                     <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
-                    <programs>
+                    <programs combine.children="append">
                         <program>
                             <id>opencga.sh</id>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
@@ -409,21 +404,13 @@
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
-                                    ${build.dir}/completion
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion
                                 </echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
-                                </exec>
-                                <exec executable="cp">
-                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
-                                    <arg value="${build.dir}/bin/utils"/>
-                                </exec>
-                                <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
-                                    <arg value="${build.dir}/misc/completion"/>
                                 </exec>
 
                                 <exec executable="mkdir">
@@ -474,33 +461,17 @@
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
-                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">
+                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh" failonerror="true">
                                     <arg value="${project.basedir}/.."/>
                                     <arg value="${project.parent.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Copying Acceptance testing files</echo>
-                                <!--                                <exec executable="mvn">-->
-                                <!--                                    <arg value="-f"/>-->
-                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-                                <!--                                    <arg value="install"/>-->
-                                <!--                                </exec>-->
-                                <exec executable="cp">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>
-                                    <arg value="${build.dir}/bin"/>
-                                </exec>
-                                <exec executable="cp">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
-                                    <arg value="${build.dir}"/>
-                                </exec>
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>
@@ -523,6 +494,21 @@
                                         <exclude name="**/opencga-env.sh"/>
                                     </fileset>
                                 </chmod>
+
+                                <echo>Create clicompretion</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
+                                    <arg value="${build.dir}/bin/utils"/>
+                                </exec>
+                                <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
+                                <exec executable="sed" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
+                                    <arg value="${build.dir}/bin/utils/opencga-clicompletion.sh"/>
+                                </exec>
+                                <exec executable="${build.dir}/bin/utils/opencga-clicompletion.sh" failonerror="true">
+                                    <arg value="${build.dir}/misc/completion"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -612,6 +598,7 @@
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
+                            <ignoreAllNonTestScoped>true</ignoreAllNonTestScoped>
                         </configuration>
                     </execution>
                 </executions>
@@ -668,9 +655,8 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storage-hadoop</name>
+                    <name>!skipStorageHadoop</name>
                 </property>
-                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -679,13 +665,36 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                    <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
                     <version>${project.parent.version}</version>
-                    <classifier>shaded</classifier>
                 </dependency>
             </dependencies>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <version>1.10</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>assemble</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <programs>
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.8</version>
@@ -696,9 +705,84 @@
                                 <configuration>
                                     <target>
                                         <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
-                                        <exec executable="cp">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${project.parent.version}-jar-with-dependencies.jar"/>
+                                        <exec executable="cp" failonerror="true">
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-lib/target/opencga-storage-hadoop-${opencga-hadoop-shaded.id}-${project.parent.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
+                                        </exec>
+                                        <exec executable="cp" failonerror="true">
+                                            <arg value="${project.basedir}/target/appassembler/bin/opencga-storage-hadoop.sh"/>
+                                            <arg value="${build.dir}/misc/scripts/"/>
+                                        </exec>
+                                        <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
+                                        <exec executable="sed" failonerror="true">
+                                            <arg value="-i"/>
+                                            <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
+                                            <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>opencga-test</id>
+            <activation>
+                <property>
+                    <name>!skipOpencgaTest</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-test</artifactId>
+                    <version>2.13.0-SNAPSHOT</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <version>1.10</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>assemble</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <programs>
+                                <program>
+                                    <id>opencga-test.sh</id>
+                                    <mainClass>org.opencb.opencga.test.manager.TestGeneratorManager</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>install-test-binaries</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Copying Acceptance testing files</echo>
+                                        <exec executable="cp">
+                                            <arg value="${project.basedir}/target/appassembler/bin/opencga-test.sh"/>
+                                            <arg value="${build.dir}/bin"/>
                                         </exec>
                                     </target>
                                 </configuration>
@@ -737,7 +821,7 @@
                                 <configuration>
                                     <target>
                                         <echo>Compiling R client</echo>
-                                        <exec executable="${build.dir}/clients/R/build.sh">
+                                        <exec executable="${build.dir}/clients/R/build.sh" failonerror="true">
                                             <arg value="${build.dir}/clients/R"/>
                                         </exec>
                                         <echo>Copying docker-compose files</echo>
@@ -751,6 +835,59 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>docker-build</id>
+            <activation>
+                <property>
+                    <name>docker</name>
+                </property>
+            </activation>
+            <properties>
+                <docker.tag></docker.tag>
+                <docker.images>base</docker.images>
+                <docker.org>opencb</docker.org>
+                <docker.server>docker.io</docker.server>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>execute docker build</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo>Execute docker</echo>
+                                        <condition property="my.docker.action" value="push" else="build">
+                                            <or>
+                                                <equals arg1="${docker}" arg2="push"/>
+                                                <equals arg1="${docker.push}" arg2="true"/>
+                                            </or>
+                                        </condition>
+                                        <exec executable="${build.dir}/cloud/docker/docker-build.py" failonerror="true">
+                                            <arg value="--images"/>
+                                            <arg value="${docker.images}"/>
+                                            <arg value="--org"/>
+                                            <arg value="${docker.org}"/>
+                                            <arg value="--tag"/>
+                                            <arg value="${docker.tag}"/>
+                                            <arg value="--server"/>
+                                            <arg value="${docker.server}"/>
+                                            <arg value="${my.docker.action}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

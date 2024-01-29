@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.family;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
