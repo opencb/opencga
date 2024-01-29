@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -49,6 +50,20 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
         }
 
         String userId = principal.getName();
+
+        if (StringUtils.isEmpty(organizationId)) {
+            // Try to automatically set the organization id
+            logger.debug("Organization id field is null. Fetching current organizations in installation.");
+            List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(opencgaToken);
+            logger.debug("List of available organization ids '{}'.", StringUtils.join(organizationIds, "', '"));
+            if (organizationIds.size() == 2) {
+                organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s))
+                        .findFirst().get();
+            } else {
+                throw CatalogParameterException.isNull("organizationId");
+            }
+        }
+
         // Check user exists
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
         OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(organizationId, query,
