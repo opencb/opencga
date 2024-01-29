@@ -71,7 +71,8 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                         }
                         AuthenticationOrigin authOrigin = null;
                         for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
-                            if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)) {
+                            if (AuthenticationOrigin.AuthenticationType.OPENCGA.equals(authenticationOrigin.getType())
+                                    && CatalogAuthenticationManager.INTERNAL.equals(authenticationOrigin.getId())) {
                                 authOrigin = authenticationOrigin;
                                 break;
                             }
