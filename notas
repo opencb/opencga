@@ -1,0 +1,70 @@
+
+if [ -d "$OPENCGA_HOME_DIR" ]; then
+
+  OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
+  cd "$OPENCGA_HOME_DIR" || exit 2
+  OPENCGA_CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+
+  echo "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
+  echo "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
+
+  if [ "$OPENCGA_DEPENDENCY_VERSION" == "$OPENCGA_CURRENT_VERSION" ]; then
+    echo "Compiling opencga..."
+    if ! (mvn enforcer:enforce -Denforcer.rules=requireProfileIdsExist -P"$STORAGE_HADOOP_DEPS" -pl :opencga) ; then
+      echo OpenCGA storage hadoop "$STORAGE_HADOOP_DEPS" not found!
+      exit 1
+    fi
+
+    mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
+    # shellcheck disable=SC2181
+    if [ $? -eq 0 ]; then
+      echo "Opencga compilation success!"
+    else
+      echo "Opencga compilation ERROR"
+      exit 1
+    fi
+  else
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
+    OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
+
+    REF_TYPE=
+    REF=
+    if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
+      REF_TYPE="tag"
+      REF="$OPENCGA_EXPECTED_TAG"
+    else
+      REF_TYPE="branch"
+      REF="$OPENCGA_EXPECTED_BRANCH"
+    fi
+    echo "Opencga version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
+    echo "Please, execute bellow command and retry:"
+    echo "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
+    exit 1
+  fi
+else
+  echo "ERROR OPENCGA HOME NOT FOUND!!!"
+  echo "You must create in the current directory a symbolic link to the directory where you have downloaded opencga and call it opencga-home"
+  echo "         ln -s /path/to/opencga $OPENCGA_HOME_DIR    "
+  printUsage
+  exit 1
+fi
+
+cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+
+if [ $PREPARE_BRANCHES == "true" ]; then
+  JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+  install "java-common-libs" $JCL_DEPENDENCY_VERSION
+  BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+  install "biodata" $BIODATA_DEPENDENCY_VERSION
+  CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+  install "cellbase" $CELLBASE_DEPENDENCY_VERSION
+fi
+
+if [ "$COMMAND" == "build" ];then
+  mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
+fi
+
+if [ "$COMMAND" == "test" ];then
+  mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${TEST_PROFILE} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
+fi
