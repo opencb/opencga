@@ -146,7 +146,7 @@ public class ProjectWSServerTest {
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
         try {
-            org.codehaus.jackson.map.ObjectMapper objectMapper = new org.codehaus.jackson.map.ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper();
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse.class);
             //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
             assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());

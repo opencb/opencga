@@ -35,7 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "2.13.0",
+@Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "3.0.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212)
 public class OrganizationMigration extends MigrationTool {
     private final Configuration configuration;
