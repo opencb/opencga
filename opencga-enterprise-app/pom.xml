@@ -397,11 +397,7 @@
 
                                 <exec executable="cp">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
-                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
-                                </exec>
-
-
-                                <exec executable="cp">
+                                    <arg value="${build.dir}/conf/configuration.yml"/>
                                     <arg value="${build.dir}/conf/enterprise-configuration.yml"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
                                 </exec>
