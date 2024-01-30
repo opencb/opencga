@@ -2,6 +2,7 @@ categories:
   - name: catalog
     description: "Catalog commands:"
     options:
+      - organizations
       - users
       - projects
       - studies
