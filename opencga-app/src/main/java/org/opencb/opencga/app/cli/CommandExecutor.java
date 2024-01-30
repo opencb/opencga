@@ -335,7 +335,7 @@ public abstract class CommandExecutor {
             if (parameter.getData() == null) {
                 res += printParameter(parameter, tab);
             } else {
-                res += tab + parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+                res += tab + "\"" +parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
             }
         }
         res += tabs + "}";
