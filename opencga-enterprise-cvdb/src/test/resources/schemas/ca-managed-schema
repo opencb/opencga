@@ -589,9 +589,11 @@
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
-	<!-- JSON without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
-    <field name="liteJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
-	<!-- JSON with all information -->
-    <field name="fullJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Minimum JSON -->
+    <field name="minJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Medium JSON, i.e. without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
+    <field name="mediumJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Max JSON, i.e. with all information -->
+    <field name="maxJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
 
 </schema>

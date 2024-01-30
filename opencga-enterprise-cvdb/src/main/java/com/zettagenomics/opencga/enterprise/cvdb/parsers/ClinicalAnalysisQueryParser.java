@@ -18,24 +18,20 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
-import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
 public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
+
+    // Map from clinical analysis fields (keys) to Solr indexed fields (values)
+    public static Map<String, String> caToCasFieldMap;
 
     public ClinicalAnalysisQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         super(variantStorageMetadataManager);
@@ -104,23 +100,32 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
             return getCasIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
         }
-        return Collections.singleton("fullJson");
+        return Collections.singleton("maxJson");
     }
 
     private Set<String> getCasIncludeFromInclude(List<String> caFields) {
-        boolean useLiteJson = false;
+        boolean useMinJson = false;
+        boolean useMediumJson = false;
         Set<String> casFields = new HashSet<>();
         for (String caField : caFields) {
-            if (ClinicalIncludeHandler.caToCasFieldMap.containsKey(caField)) {
-                casFields.add(ClinicalIncludeHandler.caToCasFieldMap.get(caField));
-            } else if (needsFullJson(caField)) {
-                return Collections.singleton("fullJson");
+            if (caToCasFieldMap.containsKey(caField)) {
+                // This field is stored in a Solr indexed field
+                casFields.add(caToCasFieldMap.get(caField));
+            } else if (needsMaxJson(caField)) {
+                // This field is stored only the maxJson field
+                return Collections.singleton("maxJson");
+            } else if (containnedInMinJson(caField)) {
+                // This field can be retrieved from the minJson field
+                useMinJson = true;
             } else {
-                useLiteJson = true;
+                // Otherwise, use the medium JSON field
+                useMediumJson = true;
             }
         }
-        if (useLiteJson) {
-            return Collections.singleton("liteJson");
+        if (useMediumJson) {
+            return Collections.singleton("mediumJson");
+        } else if (useMinJson) {
+            return Collections.singleton("minJson");
         }
         return casFields;
     }
@@ -129,13 +134,13 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         if (caFields.contains("panels")
                 && caFields.contains("interpretation.panels")
                 && caFields.contains("secondaryInterpretations.panels")) {
-            return Collections.singleton("liteJson");
+            return Collections.singleton("mediumJson");
         }
-        return Collections.singleton("fullJson");
+        return Collections.singleton("maxJson");
     }
 
-    private boolean needsFullJson(String caField) {
-        // Checking:
+    private boolean needsMaxJson(String caField) {
+        // Checking fields for using the maximum JSON:
         //     panels.variants | genes | strs | regions
         //     interpretation.panels.variants | genes | strs | regions
         //     secondaryInterpretations.panels.variants | genes | strs | regions
@@ -154,5 +159,72 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
                 || caField.startsWith("secondaryInterpretations.panels.genes")
                 || caField.startsWith("secondaryInterpretations.panels.strs")
                 || caField.startsWith("secondaryInterpretations.panels.regions"));
+    }
+
+
+    private boolean containnedInMinJson(String caField) {
+        // Checking fields for using the minimum JSON
+        return (caField.equals("disorder.id")
+                || caField.equals("disorder.name")
+                || caField.equals("disorder.description")
+                || caField.equals("disorder.source")
+                || caField.equals("disorder.url")
+                || caField.equals("files.id")
+                || caField.equals("files.name")
+                || caField.equals("proband.id")
+                || caField.equals("proband.sex")
+                || caField.equals("proband.samples.id")
+                || caField.equals("family.id")
+                || caField.equals("family.name")
+                || caField.equals("family.members.id")
+                || caField.equals("family.members.sex")
+                || caField.equals("family.members.samples.id")
+                || caField.equals("family.panels.id")
+                || caField.equals("family.panels.name")
+                || caField.equals("family.panels.source")
+                || caField.equals("family.panels.stats")
+                || caField.equals("panels.id")
+                || caField.equals("panels.name")
+                || caField.equals("panels.source")
+                || caField.equals("panels.stats")
+                || caField.equals("interpretation.id")
+                || caField.equals("interpretation.method")
+                || caField.equals("interpretation.stats")
+                || caField.startsWith("consent")
+                || caField.startsWith("analyst")
+                || caField.startsWith("analysts")
+                || caField.startsWith("report")
+                || caField.startsWith("request")
+                || caField.startsWith("responsible")
+                || caField.startsWith("priority")
+                || caField.startsWith("flags")
+                || caField.equals("creationDate")
+                || caField.equals("modificationDate")
+                || caField.equals("dueDate")
+                || caField.equals("release")
+                || caField.startsWith("qualityControl")
+                || caField.startsWith("comments")
+                || caField.startsWith("audit")
+                || caField.startsWith("internal")
+                || caField.startsWith("attributes")
+                || caField.startsWith("status"));
+    }
+
+    static {
+        // Map from clinical analysis fields to Solr indexed fields
+        caToCasFieldMap = new HashMap<>();
+        caToCasFieldMap.put("id", "id");
+        caToCasFieldMap.put("description", "description");
+        caToCasFieldMap.put("type", "type");
+        caToCasFieldMap.put("disorder.id", "disorderId");
+        caToCasFieldMap.put("files.name", "fileNames");
+        caToCasFieldMap.put("proband.id", "probandId");
+        caToCasFieldMap.put("family.id", "familyId");
+        caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
+        caToCasFieldMap.put("family.members.id", "familyMemberIds");
+        caToCasFieldMap.put("panels.id", "panelIds");
+        caToCasFieldMap.put("report.discussion.text", "report");
+        caToCasFieldMap.put("status.id", "status");
+        caToCasFieldMap.put("locked", "locked");
     }
 }

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -2101,7 +2102,7 @@ public class CvdbSolrEngineQueryTest {
     //-----------------------------------------------------------------------
 
     @Test
-    public void testExcludeQueryClinicalAInterpretationsUsingLiteJson() throws IOException, CvdbException, CatalogException {
+    public void testExcludeQueryClinicalAInterpretationsUsingMediumJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2112,11 +2113,11 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("liteJson", solrQuery.getFields());
+        assertEquals("mediumJson", solrQuery.getFields());
     }
 
     @Test
-    public void testExcludeQueryClinicalInterpretationsUsingFullJson1() throws IOException, CvdbException, CatalogException {
+    public void testExcludeQueryClinicalInterpretationsUsingMaxJson1() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2127,7 +2128,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("fullJson", solrQuery.getFields());
+        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2141,7 +2142,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testExcludeQueryClinicalInterpretationsUsingFullJson2() throws IOException, CvdbException, CatalogException {
+    public void testExcludeQueryClinicalInterpretationsUsingMaxJson2() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2152,7 +2153,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("fullJson", solrQuery.getFields());
+        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2200,7 +2201,76 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testIncludeClinicalAnalysisUsingLiteJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
+    public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,family.members.sex");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(StringUtils.isEmpty(ca.getDescription()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isEmpty(member.getId()));
+                assertTrue(StringUtils.isEmpty(member.getName()));
+                assertTrue(member.getSex() != null);
+            }
+            assertTrue(ca.getDisorder() == null);
+            assertTrue(ca.getPanels() == null);
+            assertTrue(ca.getInterpretation() == null);
+            assertTrue(ca.getSecondaryInterpretations() == null);
+        }
+    }
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMinJsonIncludeWithField1() throws IOException, CvdbException, CatalogException {
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(INCLUDE, "id,type,proband.id,proband.samples.id,family.id,family.members.id,disorder.id,interpretation.id,interpretation.stats,panels.id,panels.name,panels.source,panels.stats");
+
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+            assertTrue(ca.getType() != null);
+            assertTrue(StringUtils.isNotEmpty(ca.getProband().getId()));
+            for (Sample sample : ca.getProband().getSamples()) {
+                assertTrue(StringUtils.isNotEmpty(sample.getId()));
+            }
+            assertTrue(StringUtils.isNotEmpty(ca.getFamily().getId()));
+            for (Individual member : ca.getFamily().getMembers()) {
+                assertTrue(StringUtils.isNotEmpty(member.getId()));
+            }
+            assertTrue(StringUtils.isNotEmpty(ca.getDisorder().getId()));
+            assertTrue(StringUtils.isNotEmpty(ca.getInterpretation().getId()));
+            assertTrue(ca.getInterpretation().getId() != null);
+            for (Panel panel : ca.getPanels()) {
+                assertTrue(StringUtils.isNotEmpty(panel.getId()));
+                assertTrue(StringUtils.isNotEmpty(panel.getName()));
+                assertTrue(panel.getSource() != null);
+                assertTrue(panel.getStats() != null);
+            }
+        }
+    }
+
+
+    @Test
+    public void testIncludeClinicalAnalysisUsingMediumJsonIncludeWithField() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2211,7 +2281,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("liteJson", solrQuery.getFields());
+        assertEquals("mediumJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2229,7 +2299,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testIncludeClinicalAnalysisLiteJson() throws IOException, CvdbException, CatalogException {
+    public void testIncludeClinicalAnalysisMediumJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2240,7 +2310,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("liteJson", solrQuery.getFields());
+        assertEquals("mediumJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2267,7 +2337,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testIncludeClinicalAnalysisUsingFullJsonNoInclude() throws IOException, CvdbException, CatalogException {
+    public void testIncludeClinicalAnalysisUsingMaxJsonNoInclude() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2277,7 +2347,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("fullJson", solrQuery.getFields());
+        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2303,7 +2373,7 @@ public class CvdbSolrEngineQueryTest {
     }
 
     @Test
-    public void testIncludeClinicalAnalysisUsingFullJson() throws IOException, CvdbException, CatalogException {
+    public void testIncludeClinicalAnalysisUsingMaxJson() throws IOException, CvdbException, CatalogException {
         Query query;
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
@@ -2314,7 +2384,7 @@ public class CvdbSolrEngineQueryTest {
 
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(cvdbEngine.getVariantStorageMetadataManager());
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        assertEquals("fullJson", solrQuery.getFields());
+        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
         for (ClinicalAnalysis ca : results.getResults()) {

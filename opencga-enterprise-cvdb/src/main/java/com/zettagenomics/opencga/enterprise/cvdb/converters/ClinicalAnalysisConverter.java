@@ -20,17 +20,10 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalAnalysisSearch;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.util.StringUtil;
-import org.opencb.biodata.formats.pubmed.v233jaxb.I;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationFindingStats;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
@@ -39,22 +32,15 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.internal.util.LinkedArrayList;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
-
 public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis, ClinicalAnalysisSearch> {
-
-    public static final String NUM_VARIANTS = "NV";
-    public static final String GENE_COUNT = "GC";
-    public static final String TIER_COUNT = "TC";
-    public static final String STATUS_COUNT = "SC";
 
     private ObjectReader clinicalAnalysisReader;
 
@@ -125,26 +111,79 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             cas.setLocked(ca.isLocked());
 
             try {
-                // Full JSON
+                // Maximum JSON
                 String json = mapper.writeValueAsString(ca);
-                cas.setFullJson(json);
+                cas.setMaxJson(json);
 
-                // Lite JSON
-                if (CollectionUtils.isNotEmpty(ca.getPanels())) {
-                    litePanels(ca.getPanels());
+                // Clinical analysis copy
+                ClinicalAnalysis copy = clinicalAnalysisReader.readValue(cas.getMaxJson());
+
+                // Medium JSON
+                //  - removing panels
+                if (CollectionUtils.isNotEmpty(copy.getPanels())) {
+                    minimizePanels(copy.getPanels());
                 }
-                if (ca.getInterpretation() != null && CollectionUtils.isNotEmpty(ca.getInterpretation().getPanels())) {
-                    litePanels(ca.getInterpretation().getPanels());
+                //  - removing interpretation.panels
+                if (copy.getInterpretation() != null && CollectionUtils.isNotEmpty(copy.getInterpretation().getPanels())) {
+                    minimizePanels(copy.getInterpretation().getPanels());
                 }
-                if (CollectionUtils.isNotEmpty(ca.getSecondaryInterpretations())) {
-                    for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
+                //  - removing secondaryInterpretations.panels
+                if (CollectionUtils.isNotEmpty(copy.getSecondaryInterpretations())) {
+                    for (Interpretation secondaryInterpretation : copy.getSecondaryInterpretations()) {
                         if (CollectionUtils.isNotEmpty(secondaryInterpretation.getPanels())) {
-                            litePanels(secondaryInterpretation.getPanels());
+                            minimizePanels(secondaryInterpretation.getPanels());
                         }
                     }
                 }
-                json = mapper.writeValueAsString(ca);
-                cas.setLiteJson(json);
+                json = mapper.writeValueAsString(copy);
+                cas.setMediumJson(json);
+
+                // Minimum JSON
+                //  - from disorder, removing: attributes and evidences
+                //    and keeping: id, name, description, source, url
+                if (copy.getDisorder() != null) {
+                    copy.getDisorder().setAttributes(null);
+                    copy.getDisorder().setEvidences(null);
+                }
+                //  - from files, removing all except id and name
+                if (CollectionUtils.isNotEmpty(copy.getFiles())) {
+                    List<File> newFiles = new ArrayList<>();
+                    for (File file : copy.getFiles()) {
+                        newFiles.add(new File().setId(file.getId()).setName(file.getName()));
+                    }
+                }
+                //  - from proband, removing all except id, sex and samples.id
+                if (copy.getProband() != null) {
+                    copy.setProband(getMinimizedIndividual(copy.getProband()));
+                }
+
+                //  - from family, removing all except id, name and members.id, members.sex and members.samples.id
+                if (copy.getFamily() != null) {
+                    copy.setFamily(getMinimizedFamily(copy.getFamily()));
+                }
+
+                //  - from panels, removing except id, name, source and stats
+                if (CollectionUtils.isNotEmpty(copy.getPanels())) {
+                    List<Panel> newPanels = copy.getPanels().stream().map(p -> getMinimizedPanel(p)).collect(Collectors.toList());
+                    copy.setPanels(newPanels);
+                }
+
+                //  - from interpretation, remove all except method and stats
+                if (copy.getInterpretation() != null) {
+                    Interpretation newInterpretation = new Interpretation();
+                    newInterpretation.setId(copy.getInterpretation().getId());
+                    newInterpretation.setMethod(copy.getInterpretation().getMethod());
+                    newInterpretation.setStats(copy.getInterpretation().getStats());
+                    copy.setInterpretation(newInterpretation);
+                }
+
+                //  - from secondaryInterpretations, remove all
+                copy.setSecondaryInterpretations(null);
+
+                json = mapper.writeValueAsString(copy);
+                cas.setMinJson(json);
+
+
             } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical analysis JSON field", e);
             }
@@ -155,7 +194,7 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         return clinicalAnalysisSearchList;
     }
 
-    private void litePanels(List<Panel> panels) {
+    private void minimizePanels(List<Panel> panels) {
         for (Panel panel : panels) {
             panel.setVariants(null);
             panel.setStrs(null);
@@ -164,21 +203,61 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         }
     }
 
+    private Individual getMinimizedIndividual(Individual oldIndividual) {
+        Individual newIndividual = new Individual()
+                .setId(oldIndividual.getId())
+                .setName(oldIndividual.getName())
+                .setSex(oldIndividual.getSex());
+        if (CollectionUtils.isNotEmpty(oldIndividual.getSamples())) {
+            List<Sample> newSamples = oldIndividual.getSamples().stream().map(s -> new Sample().setId(s.getId()))
+                    .collect(Collectors.toList());
+            newIndividual.setSamples(newSamples);
+        }
+        return newIndividual;
+    }
+
+    private Family getMinimizedFamily(Family oldFamily) {
+        Family newFamily = new Family()
+                .setId(oldFamily.getId())
+                .setName(oldFamily.getName());
+        if (CollectionUtils.isNotEmpty(oldFamily.getMembers())) {
+            List<Individual> newMembers = oldFamily.getMembers().stream().map(m -> getMinimizedIndividual(m)).collect(Collectors.toList());
+            newFamily.setMembers(newMembers);
+        }
+        return newFamily;
+    }
+
+    private Panel getMinimizedPanel(Panel oldPanel) {
+        Panel newPanel = new Panel();
+        newPanel.setId(oldPanel.getId());
+        newPanel.setName(oldPanel.getName());
+        newPanel.setSource(oldPanel.getSource());
+        newPanel.setStats(oldPanel.getStats());
+        return newPanel;
+    }
+
     public ClinicalAnalysis toClinicalAnalysis(ClinicalAnalysisSearch cas) throws CvdbException {
         ClinicalAnalysis ca;
-        if (StringUtils.isNotEmpty(cas.getFullJson())) {
-            // Build clinical analysis from the field 'fullJson'
+        if (StringUtils.isNotEmpty(cas.getMaxJson())) {
+            // Build clinical analysis from the field 'maxJson'
             try {
-                ca = clinicalAnalysisReader.readValue(cas.getFullJson());
+                ca = clinicalAnalysisReader.readValue(cas.getMaxJson());
             } catch (IOException e) {
-                throw new CvdbException("Error when converting to clinical analysis from the field fullJson", e);
+                throw new CvdbException("Error when converting to clinical analysis from the field maxJson", e);
             }
-        } else if (StringUtils.isNotEmpty(cas.getLiteJson())) {
-            // Build clinical analysis from the field 'liteJson'
+        } else if (StringUtils.isNotEmpty(cas.getMediumJson())) {
+            // Build clinical analysis from the field 'mediumJson'
             try {
-                ca = clinicalAnalysisReader.readValue(cas.getLiteJson());
+                ca = clinicalAnalysisReader.readValue(cas.getMediumJson());
             } catch (IOException e) {
-                throw new CvdbException("Error when converting to clinical analysis from the field liteJson", e);
+                throw new CvdbException("Error when converting to clinical analysis from the field mediumJson", e);
+            }
+        } else if (StringUtils.isNotEmpty(cas.getMinJson())) {
+            // Build clinical analysis from the field 'minJson'
+            try {
+                ca = clinicalAnalysisReader.readValue(cas.getMinJson());
+            } catch (IOException e) {
+                throw new CvdbException("Error when converting to clinical analysis from the field minJson", e);
             }
         }  else {
             // Build clinical analysis from other fields

@@ -74,11 +74,14 @@ public class ClinicalAnalysisSearch {
     @Field("locked")
     private boolean locked;
 
-    @Field("liteJson")
-    private String liteJson;
+    @Field("minJson")
+    private String minJson;
 
-    @Field("fullJson")
-    private String fullJson;
+    @Field("mediumJson")
+    private String mediumJson;
+
+    @Field("maxJson")
+    private String maxJson;
 
     public ClinicalAnalysisSearch() {
         viewers = new ArrayList<>();
@@ -106,8 +109,9 @@ public class ClinicalAnalysisSearch {
         sb.append(", report='").append(report).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", locked=").append(locked);
-        sb.append(", liteJson='").append(liteJson).append('\'');
-        sb.append(", fullJson='").append(fullJson).append('\'');
+        sb.append(", minJson='").append(minJson).append('\'');
+        sb.append(", mediumJson='").append(mediumJson).append('\'');
+        sb.append(", maxJson='").append(maxJson).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -247,21 +251,30 @@ public class ClinicalAnalysisSearch {
         return this;
     }
 
-    public String getLiteJson() {
-        return liteJson;
+    public String getMinJson() {
+        return minJson;
     }
 
-    public ClinicalAnalysisSearch setLiteJson(String liteJson) {
-        this.liteJson = liteJson;
+    public ClinicalAnalysisSearch setMinJson(String minJson) {
+        this.minJson = minJson;
         return this;
     }
 
-    public String getFullJson() {
-        return fullJson;
+    public String getMediumJson() {
+        return mediumJson;
     }
 
-    public ClinicalAnalysisSearch setFullJson(String fullJson) {
-        this.fullJson = fullJson;
+    public ClinicalAnalysisSearch setMediumJson(String mediumJson) {
+        this.mediumJson = mediumJson;
+        return this;
+    }
+
+    public String getMaxJson() {
+        return maxJson;
+    }
+
+    public ClinicalAnalysisSearch setMaxJson(String maxJson) {
+        this.maxJson = maxJson;
         return this;
     }
 }

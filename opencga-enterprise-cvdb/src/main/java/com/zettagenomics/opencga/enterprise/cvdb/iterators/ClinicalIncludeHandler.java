@@ -31,9 +31,6 @@ public class ClinicalIncludeHandler {
     protected boolean exclude;
     protected List<String> inputFields;
 
-    // Map from clinical analysis fields (keys) to Solr indexed fields (values)
-    public static Map<String, String> caToCasFieldMap;
-
     public ClinicalIncludeHandler(QueryOptions queryOptions) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             exclude = false;
@@ -167,25 +164,5 @@ public class ClinicalIncludeHandler {
     public ClinicalIncludeHandler setInputFields(List<String> inputFields) {
         this.inputFields = inputFields;
         return this;
-    }
-
-    static {
-
-        // Map from clinical analysis fields to Solr indexed fields
-        caToCasFieldMap = new HashMap<>();
-        caToCasFieldMap.put("id", "id");
-        caToCasFieldMap.put("description", "description");
-        caToCasFieldMap.put("type", "type");
-        caToCasFieldMap.put("disorder.id", "disorderId");
-        caToCasFieldMap.put("files.name", "fileNames");
-        caToCasFieldMap.put("proband.id", "probandId");
-        caToCasFieldMap.put("family.id", "familyId");
-        caToCasFieldMap.put("family.phenotypes.name", "familyPhenotypeNames");
-        caToCasFieldMap.put("family.members.id", "familyMemberIds");
-        caToCasFieldMap.put("panels.id", "panelIds");
-        caToCasFieldMap.put("report.discussion.text", "report");
-        caToCasFieldMap.put("status.id", "status");
-        caToCasFieldMap.put("locked", "locked");
-
     }
 }
