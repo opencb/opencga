@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-12-15 OpenCB
+* Copyright 2015-2024-01-30 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -160,6 +160,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-delete", analysisClinicalCommandOptions.deleteInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-revert", analysisClinicalCommandOptions.revertInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-update", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("report-update", analysisClinicalCommandOptions.updateReportCommandOptions);
 
         jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobsCommandOptions);
