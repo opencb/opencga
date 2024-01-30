@@ -1,7 +1,6 @@
 package org.opencb.opencga.core.models.settings;
 
 import java.util.List;
-import java.util.Map;
 
 public class Settings {
 
@@ -12,19 +11,28 @@ public class Settings {
     private List<String> tags;
     private String creationDate;
     private String modificationDate;
-    private Map<String, Object> value; // TODO: Rename to values
+    private Type valueType;
+    private Object value;
+
+    public enum Type {
+        OBJECT,
+        ARRAY,
+        STRING,
+        INTEGER,
+        DOUBLE
+    }
 
     public Settings() {
     }
 
-    public Settings(String id, int version, String userId, List<String> tags, String creationDate, String modificationDate,
-                    Map<String, Object> value) {
+    public Settings(String id, int version, String userId, List<String> tags, String creationDate, String modificationDate, Type valueType, Object value) {
         this.id = id;
         this.version = version;
         this.userId = userId;
         this.tags = tags;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
+        this.valueType = valueType;
         this.value = value;
     }
 
@@ -37,6 +45,7 @@ public class Settings {
         sb.append(", tags=").append(tags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", valueType=").append(valueType);
         sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
@@ -96,11 +105,20 @@ public class Settings {
         return this;
     }
 
-    public Map<String, Object> getValue() {
+    public Type getValueType() {
+        return valueType;
+    }
+
+    public Settings setValueType(Type valueType) {
+        this.valueType = valueType;
+        return this;
+    }
+
+    public Object getValue() {
         return value;
     }
 
-    public Settings setValue(Map<String, Object> value) {
+    public Settings setValue(Object value) {
         this.value = value;
         return this;
     }
