@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -72,7 +73,6 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration);
              VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
-//            token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
             token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
             ObjectMap status = new ObjectMap();
@@ -101,8 +101,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             solrStatus.put("collections", solrClient.request(new CollectionAdminRequest.List()).get("collections"));
             status.put("solr", solrStatus);
 
+            List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
             List<ObjectMap> dataStores = new ArrayList<>();
-            List<String> variantStorageProjects = getVariantStorageProjects(commandOptions.organizationId, catalogManager, variantStorageManager);
+            List<String> variantStorageProjects = getVariantStorageProjects(organizationIds, catalogManager, variantStorageManager);
             for (String project : variantStorageProjects) {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
                 ObjectMap map = new ObjectMap("project", project);
@@ -138,11 +139,13 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             String adminPassword = getAdminPassword(true);
             token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
             Set<String> variantStorageProjects = Collections.emptySet();
+            List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
+
             if (commandOptions.projectsWithoutStorage || commandOptions.projectsWithStorage) {
-                variantStorageProjects = new HashSet<>(getVariantStorageProjects(commandOptions.organizationId, catalogManager, variantStorageManager));
+                variantStorageProjects = new HashSet<>(getVariantStorageProjects(organizationIds, catalogManager, variantStorageManager));
             }
 
-            for (Project project : catalogManager.getProjectManager().search(commandOptions.organizationId, new Query(), new QueryOptions(), token).getResults()) {
+            for (Project project : getAllProjects(catalogManager, organizationIds)) {
                 if (projects != null && !projects.contains(project.getFqn())) {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
@@ -161,19 +164,19 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                         continue;
                     }
                 }
-                final DataStore actualDataStore;
+                final DataStore currentDataStore;
                 if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
-                    actualDataStore = project.getInternal().getDatastores().getVariant();
+                    currentDataStore = project.getInternal().getDatastores().getVariant();
                 } else {
-                    actualDataStore = null;
+                    currentDataStore = null;
                 }
                 if (commandOptions.projectsWithUndefinedDBName) {
                     // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
-                    boolean undefinedDBName = actualDataStore == null || StringUtils.isEmpty(actualDataStore.getDbName());
+                    boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
                     if (!undefinedDBName) {
                         logger.info("Skip project '{}' as its dbName is already defined. dbName : '{}'",
                                 project.getFqn(),
-                                actualDataStore.getDbName());
+                                currentDataStore.getDbName());
                         continue;
                     }
                 }
@@ -188,19 +191,33 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 final DataStore newDataStore;
                 logger.info("------");
                 logger.info("Project " + project.getFqn());
-                if (actualDataStore == null) {
+                if (currentDataStore == null) {
                     newDataStore = defaultDataStore;
                     logger.info("Old DBName: null");
                 } else {
-                    logger.info("Old DBName: " + actualDataStore.getDbName());
-                    actualDataStore.setDbName(defaultDataStore.getDbName());
-                    newDataStore = actualDataStore;
+                    logger.info("Old DBName: " + currentDataStore.getDbName());
+                    currentDataStore.setDbName(defaultDataStore.getDbName());
+                    newDataStore = currentDataStore;
                 }
                 logger.info("New DBName: " + newDataStore.getDbName());
 
-                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), defaultDataStore, token);
+                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);
             }
         }
+    }
+
+    private List<String> parseOrganizationIds(CatalogManager catalogManager, String organizationId) throws CatalogException {
+        return StringUtils.isEmpty(organizationId)
+                ? catalogManager.getOrganizationManager().getOrganizationIds(token)
+                : Arrays.asList(organizationId.split(","));
+    }
+
+    private List<Project> getAllProjects(CatalogManager catalogManager, List<String> organizationIds) throws CatalogException {
+        List<Project> projects = new ArrayList<>();
+        for (String organizationId : organizationIds) {
+            projects.addAll(catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults());
+        }
+        return projects;
     }
 
     /**
@@ -208,10 +225,10 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(String organizationId, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageProjects(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
-        for (String studyFqn : getVariantStorageStudies(organizationId, catalogManager, variantStorageManager)) {
+        for (String studyFqn : getVariantStorageStudies(organizationIds, catalogManager, variantStorageManager)) {
             projects.add(catalogManager.getStudyManager().getProjectFqn(studyFqn));
         }
 
@@ -223,12 +240,14 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageStudies(String organizationId, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageStudies(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
-        for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList("fqn")), token).getResults()) {
-            if (variantStorageManager.exists(study.getFqn(), token)) {
-                studies.add(study.getFqn());
+        for (String organizationId : organizationIds) {
+            for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(),
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("fqn")), token).getResults()) {
+                if (variantStorageManager.exists(study.getFqn(), token)) {
+                    studies.add(study.getFqn());
+                }
             }
         }
         return new ArrayList<>(studies);

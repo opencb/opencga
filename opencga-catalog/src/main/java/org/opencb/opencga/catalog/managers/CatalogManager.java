@@ -58,6 +58,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -112,8 +114,20 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(configuration);
     }
 
-    public String getCatalogDatabase() {
-        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix(), ADMIN_ORGANIZATION);
+    public String getCatalogDatabase(String organizationId) {
+        return catalogDBAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix(), organizationId);
+    }
+
+    public String getCatalogAdminDatabase() {
+        return getCatalogDatabase(ADMIN_ORGANIZATION);
+    }
+
+    public List<String> getCatalogDatabaseNames() throws CatalogDBException {
+        List<String> databaseNames = new LinkedList<>();
+        for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
+            databaseNames.add(getCatalogDatabase(organizationId));
+        }
+        return databaseNames;
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
@@ -216,17 +230,17 @@ public class CatalogManager implements AutoCloseable {
                 // Check admin password ...
                 try {
                     userManager.loginAsAdmin(password);
-                    logger.warn("A database called {} already exists", getCatalogDatabase());
+                    logger.warn("A database called {} already exists", getCatalogAdminDatabase());
                     return;
                 } catch (CatalogException e) {
-                    throw new CatalogException("A database called " + getCatalogDatabase() + " with a different admin"
+                    throw new CatalogException("A database called " + getCatalogAdminDatabase() + " with a different admin"
                             + " password already exists. If you are aware of that installation, please delete it first.");
                 }
             }
         }
 
         try {
-            logger.info("Installing database {} in {}", getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
+            logger.info("Installing database {} in {}", getCatalogAdminDatabase(), configuration.getCatalog().getDatabase().getHosts());
             privateInstall(algorithm, secretKey, password, email);
             String token = userManager.loginAsAdmin(password).getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
@@ -280,6 +294,16 @@ public class CatalogManager implements AutoCloseable {
 
         // Skip old available migrations
         migrationManager.skipPendingMigrations(ADMIN_ORGANIZATION, token);
+    }
+
+    public void installIndexes(String token) throws CatalogException {
+        JwtPayload payload = userManager.validateToken(token);
+        if (!authorizationManager.isOpencgaAdministrator(payload)) {
+            throw new CatalogException("Operation only allowed for the opencga administrator");
+        }
+        for (String organizationId : organizationManager.getOrganizationIds(token)) {
+            catalogDBAdaptorFactory.createIndexes(organizationId);
+        }
     }
 
     public void installIndexes(String organizationId, String token) throws CatalogException {

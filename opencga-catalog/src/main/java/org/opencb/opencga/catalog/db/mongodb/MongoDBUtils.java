@@ -831,6 +831,10 @@ public class MongoDBUtils {
         return getMongoDBUri(credentials, null);
     }
 
+    public static URI getMongoDBUriRedacted(DatabaseCredentials credentials) {
+        return getMongoDBUri(new DatabaseCredentials(credentials).setPassword("<redacted>"), null);
+    }
+
     public static URI getMongoDBUri(DatabaseCredentials credentials, String database) {
         Map<String, String> options = credentials.getOptions();
         if (options == null) {

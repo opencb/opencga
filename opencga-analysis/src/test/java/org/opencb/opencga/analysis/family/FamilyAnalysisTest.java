@@ -27,6 +27,8 @@ import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.family.PedigreeGraphAnalysisParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -46,6 +48,7 @@ import static org.junit.Assert.assertTrue;
 public class FamilyAnalysisTest extends GenericTest {
 
     public final static String STUDY = "user@1000G:phase1";
+    public static final String USER = "user";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -57,7 +60,7 @@ public class FamilyAnalysisTest extends GenericTest {
     private static String opencgaToken;
     protected static String sessionIdUser;
 
-    private static String organizationId = "test";
+    private static String ORGANIZATION = "test";
 
     protected static Family family;
     protected static Family family2;
@@ -76,11 +79,15 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        opencgaToken = opencga.getAdminToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
-                opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
+                opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER, USER, "my@email.org", TestParamConstants.PASSWORD, ORGANIZATION, 1000L, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
+                null,
+                opencga.getAdminToken());
+        sessionIdUser = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).getToken();
 
         projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 INCLUDE_RESULT, sessionIdUser).first().getId();

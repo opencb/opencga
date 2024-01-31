@@ -4,13 +4,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.WriteModel;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -21,10 +19,8 @@ import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,65 +101,6 @@ public abstract class MigrationTool {
             }
         }
         return storageConfiguration;
-    }
-
-    protected final void runJavascript(Path file) throws MigrationException {
-        String authentication = "";
-        if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
-                && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
-            authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
-                    + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
-                    + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_ENABLED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.SSL_ENABLED))) {
-            authentication += "--ssl ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
-                .get(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED))) {
-            authentication += "--sslAllowInvalidCertificates ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
-                .get(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED))) {
-            authentication += "--sslAllowInvalidHostnames ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null && StringUtils.isNotEmpty(
-                configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.AUTHENTICATION_MECHANISM))) {
-            authentication += "--authenticationMechanism "
-                    + configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.AUTHENTICATION_MECHANISM) + " ";
-        }
-
-        String catalogCli = "mongo " + authentication
-                + StringUtils.join(configuration.getCatalog().getDatabase().getHosts(), ",") + "/"
-                + catalogManager.getCatalogDatabase() + " " + file.getFileName();
-
-        privateLogger.info("Running Javascript cli {} from {}", catalogCli, file.getParent());
-        ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
-        processBuilder.directory(file.getParent().toFile());
-        Process p;
-        try {
-            p = processBuilder.start();
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-            while ((line = input.readLine()) != null) {
-                privateLogger.info(line);
-            }
-            p.waitFor();
-            input.close();
-        } catch (IOException | InterruptedException e) {
-            throw new MigrationException("Error executing cli: " + e.getMessage(), e);
-        }
-
-        if (p.exitValue() == 0) {
-            privateLogger.info("Finished Javascript catalog migration");
-        } else {
-            throw new MigrationException("Error with Javascript catalog migrating!");
-        }
     }
 
     @FunctionalInterface
