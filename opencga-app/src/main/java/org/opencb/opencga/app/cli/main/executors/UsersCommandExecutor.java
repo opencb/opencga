@@ -65,6 +65,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "anonymous":
+                queryResponse = anonymous();
+                break;
             case "create":
                 queryResponse = create();
                 break;
@@ -105,6 +108,17 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<AuthenticationResponse> anonymous() throws Exception {
+        logger.debug("Executing anonymous in Users command line");
+
+        UsersCommandOptions.AnonymousCommandOptions commandOptions = usersCommandOptions.anonymousCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+        return openCGAClient.getUserClient().anonymous(queryParams);
     }
 
     private RestResponse<User> create() throws Exception {

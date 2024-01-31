@@ -128,6 +128,22 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/anonymous")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get an anonymous token to gain access to the system", response = AuthenticationResponse.class)
+    public Response anonymous(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ORGANIZATION) String organizationId) {
+        try {
+            AuthenticationResponse authenticationResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
+            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authenticationResponse), 1);
+            return createOkResponse(response);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/password")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Change the password of a user",
