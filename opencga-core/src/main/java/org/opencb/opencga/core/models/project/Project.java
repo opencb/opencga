@@ -163,23 +163,24 @@ public class Project extends PrivateFields {
 
     // Clone a project
     public Project(Project project) {
-        this(project.getUid(), project.getId(), project.getName(), project.getUuid(), project.getFqn(), project.getCreationDate(),
-                project.getModificationDate(), project.getDescription(), project.getOrganism(), project.getCurrentRelease(),
-                project.getStudies(), project.getInternal(), project.getAttributes());
+        this(project.getUid(), project.getId(), project.getUuid(), project.getName(), project.getFqn(), project.getCreationDate(),
+                project.getModificationDate(), project.getDescription(), project.getOrganism(), project.getCellbase(),
+                project.getCurrentRelease(), project.getStudies(), project.getInternal(), project.getAttributes());
     }
 
-    public Project(long uid, String id, String name, String uuid, String fqn, String creationDate, String modificationDate,
-                   String description, ProjectOrganism organism, int currentRelease, List<Study> studies, ProjectInternal internal,
-                   Map<String, Object> attributes) {
+    public Project(long uid, String id, String uuid, String name, String fqn, String creationDate, String modificationDate,
+                   String description, ProjectOrganism organism, CellBaseConfiguration cellbase, int currentRelease, List<Study> studies,
+                   ProjectInternal internal, Map<String, Object> attributes) {
         super(uid);
         this.id = id;
-        this.name = name;
         this.uuid = uuid;
+        this.name = name;
         this.fqn = fqn;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
         this.organism = organism;
+        this.cellbase = cellbase;
         this.currentRelease = currentRelease;
         this.studies = studies;
         this.internal = internal;
