@@ -114,6 +114,9 @@ public class UserManager extends AbstractManager {
         if (token == null && (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId()))) {
             throw new CatalogException("Missing token parameter");
         }
+        if (OPENCGA.equals(user.getId()) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            throw new CatalogException("Creating '" + OPENCGA + "' user is forbidden in any organization.");
+        }
 
         ObjectMap auditParams = new ObjectMap("user", user);
 

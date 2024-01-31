@@ -70,6 +70,14 @@ import static org.junit.Assert.*;
 public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
+    public void createOpencgaUserTest() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("forbidden");
+        catalogManager.getUserManager().create(new User().setId(ParamConstants.OPENCGA_USER_ID).setName(orgOwnerUserId)
+                .setOrganization(organizationId), TestParamConstants.PASSWORD, opencgaToken);
+    }
+
+    @Test
     public void createStudyFailMoreThanOneProject() throws CatalogException {
         catalogManager.getProjectManager().incrementRelease(project1, ownerToken);
         catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "Homo sapiens",
