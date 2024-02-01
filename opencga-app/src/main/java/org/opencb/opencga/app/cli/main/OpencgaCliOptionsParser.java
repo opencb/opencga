@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-01-30 OpenCB
+* Copyright 2015-2024-01-31 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -222,6 +222,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
+        usersSubCommands.addCommand("anonymous", usersCommandOptions.anonymousCommandOptions);
         usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);

@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-01-30 OpenCB
+* Copyright 2015-2024-01-31 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "create","login","password","info","configs","configs-update","filters","password-reset","update")
+    private List<Candidate> usersList = asList( "anonymous","create","login","password","info","configs","configs-update","filters","password-reset","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());

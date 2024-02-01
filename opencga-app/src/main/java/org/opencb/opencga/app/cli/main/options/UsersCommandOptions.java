@@ -33,6 +33,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 public class UsersCommandOptions extends CustomUsersCommandOptions {
 
 
+        public AnonymousCommandOptions anonymousCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
@@ -47,6 +48,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     public UsersCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         super(commonCommandOptions,jCommander);
+        this.anonymousCommandOptions = new AnonymousCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
@@ -59,6 +61,23 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
     }
     
+    @Parameters(commandNames = {"anonymous"}, commandDescription ="Get an anonymous token to gain access to the system")
+    public class AnonymousCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new user")
     public class CreateCommandOptions {
     
