@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.13.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -55,6 +55,10 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-master</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-test</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -599,6 +603,9 @@
                                 <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                             <ignoreAllNonTestScoped>true</ignoreAllNonTestScoped>
+                            <ignoredNonTestScopedDependencies>
+                                <ignoredNonTestScopedDependency>*</ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>

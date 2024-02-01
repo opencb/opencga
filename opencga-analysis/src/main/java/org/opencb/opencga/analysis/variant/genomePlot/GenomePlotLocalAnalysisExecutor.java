@@ -30,8 +30,10 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -46,10 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
@@ -79,7 +78,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public void run() throws ToolException, IOException {
+    public void run() throws ToolException, IOException, CatalogException {
 
         plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class).readValue(getConfigFile());
 
@@ -125,10 +124,19 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                     .toAbsolutePath().toString(), DOCKER_OUTPUT_PATH);
+
+            // Get genome version
+            String genomeVersion = "hg38";
+            String assembly = ResourceUtils.getAssembly(storageManager.getCatalogManager(), getStudy(), getToken());
+            if (StringUtils.isNotEmpty(assembly) && assembly.toUpperCase(Locale.ROOT).equals("GRCH37")) {
+                genomeVersion = "hg19";
+            }
+
             String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
                     + (plotCopynumber ? "" : " --no_copynumber")
                     + (plotIndels ? "" : " --no_indels")
                     + (plotRearrangements ? "" : " --no_rearrangements")
+                    + " --genome_version " + genomeVersion
                     + " --out_path " + DOCKER_OUTPUT_PATH
                     + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()

@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.13.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,22 +43,22 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.13.0_dev</pyopencga.version>
-        <opencgar.version>2.13.0_dev</opencgar.version>
-        <cellbase.version>5.9.0-SNAPSHOT</cellbase.version>
-        <biodata.version>2.13.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.13.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.13.0-SNAPSHOT</iva.version>
+        <pyopencga.version>3.0.0_dev</pyopencga.version>
+        <opencgar.version>3.0.0_dev</opencgar.version>
+        <cellbase.version>6.0.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.0.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.0.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.0.0-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
 
-        <jackson.version>2.11.4</jackson.version>
+        <jackson.version>2.14.3</jackson.version>
         <jersey.version>2.30.1</jersey.version>
         <collections.version>4.4</collections.version>
         <avro.version>1.7.7</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
         <grpc.version>1.28.1</grpc.version>
-        <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.8.2</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
@@ -69,8 +69,8 @@
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
         <mongodb-driver.version>4.8.2</mongodb-driver.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-io.version>2.8.0</commons-io.version>
+        <commons-lang3.version>3.14.0</commons-lang3.version>
         <commons-codec.version>1.7</commons-codec.version>
         <reflections.version>0.9.10</reflections.version>
         <mockito.version>2.2.27</mockito.version>
@@ -146,7 +146,16 @@
         <jcl-over-slf4j.version>1.7.24</jcl-over-slf4j.version>
         <servlet-api.version>2.5-20081211</servlet-api.version>
 
+
+        <!--TO REMOVE:
+            The version of Java (11.0.21) used to run this analysis is deprecated, and SonarCloud no longer supports it. Please upgrade to Java 17 or later.
+            As a temporary measure, you can set the property 'sonar.scanner.force-deprecated-java-version' to 'true' to continue using Java 11.0.21
+            This workaround will only be effective until January 28, 2024. After this date, all scans using the deprecated Java 11 will fail.
+         -->
+        <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
         <kryo.version>2.23.0</kryo.version>
+        <lombok.version>1.18.30</lombok.version>
+        <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
     </properties>
 
     <scm>
@@ -254,6 +263,11 @@
                         <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id.default}</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-test</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -970,11 +984,6 @@
             </dependency>
             <dependency>
                 <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson-codehaus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-core-asl</artifactId>
                 <version>${jackson-codehaus.version}</version>
             </dependency>
@@ -1000,6 +1009,12 @@
                 <groupId>com.googlecode.grep4j</groupId>
                 <artifactId>grep4j</artifactId>
                 <version>${grep4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.redisson</groupId>
@@ -1090,6 +1105,7 @@
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -1113,6 +1129,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-report-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>${maven-war-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

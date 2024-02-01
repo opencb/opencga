@@ -6,7 +6,10 @@ public enum ClinicalAnalysisPermissions {
     NONE(Collections.emptyList()),
     VIEW(Collections.emptyList()),
     WRITE(Collections.singletonList(VIEW)),
-    DELETE(Arrays.asList(VIEW, WRITE));
+    DELETE(Arrays.asList(VIEW, WRITE)),
+    VIEW_ANNOTATIONS(Collections.singletonList(VIEW)),
+    WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
+    DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
 
     private final List<ClinicalAnalysisPermissions> implicitPermissions;
 
