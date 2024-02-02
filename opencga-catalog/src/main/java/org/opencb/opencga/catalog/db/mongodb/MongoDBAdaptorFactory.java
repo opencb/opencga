@@ -293,6 +293,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     .insert(organization, options);
 
             // Keep track of current organization in the ADMIN organization
+            if (StringUtils.isNotEmpty(settings.getUserId())) {
+                // Remove admin organization prefix from userId as it's written in that same organization
+                settings.setUserId(settings.getUserId().replace(ParamConstants.ADMIN_ORGANIZATION + ":", ""));
+            }
             getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getCatalogSettingsDBAdaptor().insert(settings);
             return result;
         } catch (Exception e) {

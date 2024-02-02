@@ -346,7 +346,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(StringUtils.isNotEmpty(customGroups.first().getUsers().get(0).getName()));
 
         thrown.expect(CatalogAuthorizationException.class);
-        thrown.expectMessage("Only owners");
+        thrown.expectMessage("study administrators");
         catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), normalToken2);
     }
 

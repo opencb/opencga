@@ -1,11 +1,14 @@
 package org.opencb.opencga.core.models.settings;
 
+import org.opencb.opencga.core.models.PrivateFields;
+
 import java.util.List;
 
-public class Settings {
+public class Settings extends PrivateFields {
 
     // TODO: Indexes - id, version  <---
     private String id;
+    private String uuid;
     private int version;
     private String userId;
     private List<String> tags;
@@ -25,8 +28,10 @@ public class Settings {
     public Settings() {
     }
 
-    public Settings(String id, int version, String userId, List<String> tags, String creationDate, String modificationDate, Type valueType, Object value) {
+    public Settings(String id, String uuid, int version, String userId, List<String> tags, String creationDate, String modificationDate,
+                    Type valueType, Object value) {
         this.id = id;
+        this.uuid = uuid;
         this.version = version;
         this.userId = userId;
         this.tags = tags;
@@ -40,6 +45,7 @@ public class Settings {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Settings{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", version=").append(version);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", tags=").append(tags);
@@ -57,6 +63,15 @@ public class Settings {
 
     public Settings setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Settings setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 

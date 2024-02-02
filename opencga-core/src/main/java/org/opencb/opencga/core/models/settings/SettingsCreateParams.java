@@ -34,7 +34,7 @@ public class SettingsCreateParams {
     }
 
     public Settings toSettings(String userId) {
-        return new Settings(id, 1, userId, tags != null ? tags : Collections.emptyList(), TimeUtils.getTime(), TimeUtils.getTime(),
+        return new Settings(id, null, 1, userId, tags != null ? tags : Collections.emptyList(), TimeUtils.getTime(), TimeUtils.getTime(),
                     type, value != null ? value : Collections.emptyMap());
     }
 

@@ -175,12 +175,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected long getNewUid() {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId();
     }
 
     protected long getNewUid(ClientSession clientSession) {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId(clientSession);
     }
 

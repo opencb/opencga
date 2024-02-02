@@ -946,7 +946,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
         }
 
-        long clinicalUid = getNewUid();
+        long clinicalUid = getNewUid(clientSession);
 
         clinicalAnalysis.setAudit(clinicalAudit);
 

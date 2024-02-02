@@ -17,9 +17,15 @@ public interface SettingsDBAdaptor extends DBAdaptor<Settings> {
     OpenCGAResult<Settings> insert(Settings settings)  throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
-        ID("id", TEXT, ""),
+        UID("uid", LONG, ""),
+        ID("id", STRING, ""),
         VERSION("version", INTEGER, ""),
-        TAGS("tags", TEXT_ARRAY, "");
+        USER_ID("userId", STRING, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
+        VALUE_TYPE("valueType", STRING, ""),
+        VALUE("value", OBJECT, "");
 
         private static Map<String, QueryParams> map;
 

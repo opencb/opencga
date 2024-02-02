@@ -118,6 +118,11 @@ public class VersionedMongoDBAdaptor {
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
 
+    protected <T> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, update, null, null);
+    }
+
     protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
                               PostVersionIncrementIterator<E> postVersionIncrementIterator,
                               ReferenceModelExecution<E> postVersionIncrementExecution)

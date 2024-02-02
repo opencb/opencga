@@ -106,7 +106,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists in this organization");
         }
 
-        long projectUid = getNewUid();
+        long projectUid = getNewUid(clientSession);
         project.setUid(projectUid);
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
