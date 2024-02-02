@@ -110,7 +110,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @GET
     @Path("/model")
     @ApiOperation(value = "Opencga model webservices.", response = String.class)
-    public Response model(@QueryParam("model") String modelStr) {
+    public Response model(@ApiParam(value = "Model description") @QueryParam("model") String modelStr) {
 
         return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(modelStr, false)), 1));
 
