@@ -398,6 +398,9 @@
                                 <ignoredNonTestScopedDependency>
                                     org.apache.zookeeper:zookeeper
                                 </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    org.apache.logging.log4j:log4j-api
+                                </ignoredNonTestScopedDependency>
                             </ignoredNonTestScopedDependencies>
                             <ignoredUsedUndeclaredDependencies>
                                 <ignoredUsedUndeclaredDependency>
