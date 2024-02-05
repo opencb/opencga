@@ -476,19 +476,17 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <exec executable="sed">
+                                <exec executable="sed" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${project.parent.version}/"/>
                                     <arg value="${build.dir}/misc/demo/main.yml"/>
                                     <arg value="${build.dir}/misc/demo/corpasome/manifest.yml"/>
-                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
                                     <arg value="${build.dir}/cloud/kubernetes/charts/opencga/Chart.yaml"/>
                                     <arg value="${build.dir}/cloud/azure/arm-kubernetes/solr/solr-setup.sh"/>
                                 </exec>
-                                <exec executable="sed">
+                                <exec executable="sed" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_IVA_VERSION/${iva.version}/"/>
-                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
                                     <arg value="${build.dir}/cloud/kubernetes/charts/iva/Chart.yaml"/>
                                 </exec>
 
@@ -499,7 +497,7 @@
                                     </fileset>
                                 </chmod>
 
-                                <echo>Create clicompretion</echo>
+                                <echo>Create clicompletion</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
                                     <arg value="${build.dir}/bin/utils"/>
@@ -672,8 +670,9 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
                     <version>${project.parent.version}</version>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
             <build>
@@ -713,7 +712,7 @@
                                     <target>
                                         <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
                                         <exec executable="cp" failonerror="true">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-lib/target/opencga-storage-hadoop-${opencga-hadoop-shaded.id}-${project.parent.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-lib/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}/target/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}-${project.parent.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                         <exec executable="cp" failonerror="true">
@@ -725,6 +724,10 @@
                                             <arg value="-i"/>
                                             <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
                                             <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
+                                        </exec>
+                                        <exec executable="bash" failonerror="true">
+                                            <arg value="-c"/>
+                                            <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
                                         </exec>
                                     </target>
                                 </configuration>

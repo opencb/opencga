@@ -64,7 +64,7 @@
         <jjwt.version>0.11.2</jjwt.version>
 <!--        <jetty.version>9.4.17.v20190418</jetty.version>-->
         <jetty.version>9.4.51.v20230217</jetty.version>
-        <jetty-for-hadoop-core-test.version>${jetty.version}</jetty-for-hadoop-core-test.version>
+        <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
         <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
@@ -121,14 +121,14 @@
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
         <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+
         <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
-        <opencga-hadoop-shaded.artifactId.default>opencga-hadoop-shaded-${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.artifactId.default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
+        <opencga-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-hadoop-lib.artifactId>
         <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-hadoop-shaded.artifactId>
+
         <opencga-storage-hadoop-compat.id-default>hbase2.0</opencga-storage-hadoop-compat.id-default>
-        <opencga-storage-hadoop-compat.artifactId-default>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id-default}</opencga-storage-hadoop-compat.artifactId-default>
         <opencga-storage-hadoop-compat.id>${opencga-storage-hadoop-compat.id-default}</opencga-storage-hadoop-compat.id>
-        <opencga-storage-hadoop-compat.artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</opencga-storage-hadoop-compat.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -278,16 +278,6 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${project.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
-                        <artifactId>${opencga-hadoop-shaded.artifactId.default}</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.opencb.opencga</groupId>
-                        <artifactId>${opencga-storage-hadoop-compat.artifactId}</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -295,12 +285,6 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
-                        <artifactId>${opencga-hadoop-shaded.artifactId.default}</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -1495,40 +1479,56 @@
 
         <profile>
             <id>hdp3.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hdp3.1</value>
+                </property>
+            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>hdp3.1</opencga-hadoop-shaded.id>
-                <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}
-                </opencga-hadoop-shaded.artifactId>
                 <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
-                <jetty-for-hadoop-core-test.version>9.3.25.v20180904</jetty-for-hadoop-core-test.version>
+                <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
             <id>hdi5.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hdi5.1</value>
+                </property>
+            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>hdi5.1</opencga-hadoop-shaded.id>
-                <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}
-                </opencga-hadoop-shaded.artifactId>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>
             <id>emr6.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr6.1</value>
+                </property>
+            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>emr6.1</opencga-hadoop-shaded.id>
-                <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}
-                </opencga-hadoop-shaded.artifactId>
                 <opencga-storage-hadoop-compat.id>hbase2.2</opencga-storage-hadoop-compat.id>
                 <!--  AWS changes the version of Jetty in their custom jar -->
-                <jetty-for-hadoop-core-test.version>9.4.20.v20190813</jetty-for-hadoop-core-test.version>
+                <jetty-for-hadoop-test.version>9.4.20.v20190813</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
             <id>emr6.13</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr6.13</value>
+                </property>
+            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
-                <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}
-                </opencga-hadoop-shaded.artifactId>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>

@@ -27,8 +27,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>opencga-storage-hadoop-lib</artifactId>
+    <packaging>pom</packaging>
 
     <dependencies>
         <dependency>
@@ -42,21 +42,59 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-compat.artifactId}</artifactId>
+            <artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>../src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
     </build>
 
     <profiles>
+        <profile>
+            <id>hdp3.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-hdp3.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>hdi5.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-hdi5.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>emr6.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-emr6.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>emr6.13</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-emr6.13</module>
+            </modules>
+        </profile>
         <profile>
             <id>storage-hadoop</id>
             <activation>
@@ -66,50 +104,43 @@
             </activation>
 
             <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/src.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>test-jar</id>
-                                <goals>
-                                    <goal>test-jar</goal>
-                                </goals>
-                                <configuration>
-                                    <skipIfEmpty>true</skipIfEmpty>
-                                </configuration>
-                            </execution>
-<!--                            <execution>-->
-<!--                                <id>hadoop-shaded</id>-->
-<!--                                <goals>-->
-<!--                                    <goal>jar</goal>-->
-<!--                                </goals>-->
-<!--                                <configuration>-->
-<!--                                    <skipIfEmpty>true</skipIfEmpty>-->
-<!--                                </configuration>-->
-<!--                            </execution>-->
-                        </executions>
-                    </plugin>
-                </plugins>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <version>3.2.0</version>
+                            <configuration>
+                                <basedir>${project.parent.basedir}</basedir>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>make-assembly</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>single</goal>
+                                    </goals>
+                                    <configuration>
+                                        <descriptors>
+                                            <descriptor>src/main/assembly/src.xml</descriptor>
+                                        </descriptors>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-jar-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>test-jar</id>
+                                    <goals>
+                                        <goal>test-jar</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>

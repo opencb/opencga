@@ -126,30 +126,17 @@
             <scope>test</scope>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>-->
-<!--            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>-->
-<!--            <version>${opencga.hadoop.thirdparty.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-        <dependency>
-            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
-            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
-            <version>${opencga.hadoop.thirdparty.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>${opencga-storage-hadoop-compat.artifactId}</artifactId>-->
-<!--            <version>${project.parent.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id}</artifactId>
+            <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
