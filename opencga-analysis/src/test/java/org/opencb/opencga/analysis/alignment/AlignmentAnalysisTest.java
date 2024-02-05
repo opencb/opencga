@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -23,23 +25,33 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.*;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
+import org.opencb.opencga.core.models.alignment.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -47,12 +59,13 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.apache.commons.io.FileUtils.readLines;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 @Category(MediumTests.class)
@@ -103,7 +116,7 @@ public class AlignmentAnalysisTest {
     private static String storageEngine;
     private static boolean indexed = false;
     private static String token;
-    private static File file;
+    private static File bamFile;
 
     @Before
     public void setUp() throws Throwable {
@@ -250,20 +263,230 @@ public class AlignmentAnalysisTest {
 //                .create(CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
 //                        samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
 //        assertEquals(2, individual.getSamples().size());
-    }
-
-
-    @Test
-    public void geneCoverageStatsTest() throws IOException, ToolException, CatalogException {
-        Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
 
         // setup BAM files
         String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
-        String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
-         assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
+    }
+
+    //-----------------------------------------
+    // S A M T O O L S
+    //-----------------------------------------
+
+    @Test
+    public void testSamtoolsSort() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_samtools_sort"));
+        System.out.println("outdir = " + outdir);
+
+        SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+        params.setInputFile(bamFile.getId());
+        Map<String, String> samtoolsParams = new HashMap<>();
+        samtoolsParams.put("o", "sorted.bam");
+        params.setSamtoolsParams(samtoolsParams);
+        params.setCommand("sort");
+
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(samtoolsParams.get("o")).toFile().exists());
+    }
+
+    @Test
+    public void testSamtoolsIndex() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_samtools_index"));
+        System.out.println("outdir = " + outdir);
+
+        SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+        params.setInputFile(bamFile.getId());
+        Map<String, String> samtoolsParams = new HashMap<>();
+        params.setSamtoolsParams(samtoolsParams);
+        params.setCommand("index");
+
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(bamFile.getName() + ".bai").toFile().exists());
+    }
+
+    @Test
+    public void testSamtoolsFlagstats() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_samtools_flagstats"));
+        System.out.println("outdir = " + outdir);
+
+        SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+        params.setInputFile(bamFile.getId());
+        params.setCommand("flagstat");
+
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        // Check results
+        java.io.File stdoutFile = outdir.resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
+        assertTrue(stdoutFile.exists());
+        List<String> lines = readLines(stdoutFile, Charset.defaultCharset());
+        if (CollectionUtils.isEmpty(lines) && !lines.get(0).contains("QC-passed")) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testSamtoolsStats() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_samtools_stats"));
+        System.out.println("outdir = " + outdir);
+
+        SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+        params.setInputFile(bamFile.getId());
+        params.setCommand("stats");
+
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        // Check results
+        java.io.File stdoutFile = outdir.resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
+        assertTrue(stdoutFile.exists());
+        List<String> lines = readLines(stdoutFile, Charset.defaultCharset());
+        if (CollectionUtils.isEmpty(lines) && !lines.get(0).startsWith("# This file was produced by samtools stats")) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testAlignmentFlagStats() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_alignment_flagstats"));
+        System.out.println("outdir = " + outdir);
+
+        AlignmentFlagStatsParams params = new AlignmentFlagStatsParams();
+        params.setFile(bamFile.getId());
+
+        toolRunner.execute(AlignmentFlagStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(AlignmentFlagStatsAnalysis.getResultPath(outdir.toAbsolutePath().toString(), bamFile.getName()).toFile().exists());
+    }
+
+    @Test
+    public void testAlignmentStats() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_alignment_stats"));
+        System.out.println("outdir = " + outdir);
+
+        AlignmentStatsParams params = new AlignmentStatsParams();
+        params.setFile(bamFile.getId());
+
+        toolRunner.execute(AlignmentStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(AlignmentStatsAnalysis.getResultPath(outdir.toAbsolutePath().toString(), bamFile.getName()).toFile().exists());
+    }
+
+    //-----------------------------------------
+    // F A S T Q C
+    //-----------------------------------------
+
+    @Test
+    public void testFastQcZip() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_fast_qc"));
+        System.out.println("outdir = " + outdir);
+
+        FastqcWrapperParams params = new FastqcWrapperParams();
+        params.setInputFile(bamFile.getId());
+        Map<String, String> fastqcParams = new HashMap<>();
+        params.setFastqcParams(fastqcParams);
+
+        toolRunner.execute(FastqcWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        String basename = bamFile.getName().replace(".bam", "");
+        assertTrue(outdir.resolve(basename + "_fastqc.zip").toFile().exists());
+        assertTrue(outdir.resolve(basename + "_fastqc.html").toFile().exists());
+    }
+
+    @Test
+    public void testFastQc() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_fast_qc"));
+        System.out.println("outdir = " + outdir);
+
+        FastqcWrapperParams params = new FastqcWrapperParams();
+        params.setInputFile(bamFile.getId());
+        Map<String, String> fastqcParams = new HashMap<>();
+        fastqcParams.put("extract", "true");
+        params.setFastqcParams(fastqcParams);
+
+        toolRunner.execute(FastqcWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        FastQcMetrics fastQcMetrics = AlignmentFastQcMetricsAnalysis.parseResults(outdir);
+        assertEquals("PASS", fastQcMetrics.getSummary().getBasicStatistics());
+        assertEquals("46", fastQcMetrics.getBasicStats().get("%GC"));
+        assertEquals(8, fastQcMetrics.getFiles().size());
+        //FastQcMetrics{
+        // summary=Summary{basicStatistics='PASS', perBaseSeqQuality='FAIL', perTileSeqQuality='null', perSeqQualityScores='PASS', perBaseSeqContent='WARN', perSeqGcContent='FAIL', perBaseNContent='PASS', seqLengthDistribution='PASS', seqDuplicationLevels='PASS', overrepresentedSeqs='WARN', adapterContent='PASS', kmerContent='null'},
+        // basicStats={Filename=HG00096.chrom20.small.bam, File type=Conventional base calls, Encoding=Sanger / Illumina 1.9, Total Sequences=108, Sequences flagged as poor quality=0, Sequence length=100, %GC=46},
+        // files=[JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/per_sequence_quality.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/duplication_levels.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/per_base_sequence_content.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/per_sequence_gc_content.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/sequence_length_distribution.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/per_base_quality.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/per_base_n_content.png, JOBS/I_tmp_2024-02-05-12-55-37.748_fast_qc/HG00096.chrom20.small_fastqc/Images/adapter_content.png]}
+    }
+
+    //-----------------------------------------
+    // D E E P T O O L S
+    //-----------------------------------------
+
+    @Test
+    public void testDeeptoolsCoverage() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_deeptools_bamcoverage"));
+        System.out.println("outdir = " + outdir);
+
+        {
+            SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+            params.setInputFile(bamFile.getId());
+            Map<String, String> samtoolsParams = new HashMap<>();
+            params.setSamtoolsParams(samtoolsParams);
+            params.setCommand("index");
+
+            toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+            assertTrue(outdir.resolve(bamFile.getName() + ".bai").toFile().exists());
+        }
+
+        DeeptoolsWrapperParams params = new DeeptoolsWrapperParams();
+        params.setCommand("bamCoverage");
+        Map<String, String> deeptoolsParams = new HashMap<>();
+        deeptoolsParams.put("b", bamFile.getId());
+        deeptoolsParams.put("o", bamFile.getName() + ".bw");
+        deeptoolsParams.put("binSize", "500");
+        deeptoolsParams.put("outFileFormat", "bigwig");
+        deeptoolsParams.put("minMappingQuality", "20");
+        params.setDeeptoolsParams(deeptoolsParams);
+
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(bamFile.getName() + ".bw").toFile().exists());
+    }
+
+    //-----------------------------------------
+    // C O V E R A G E
+    //-----------------------------------------
+
+    @Test
+    public void testCoverage() throws IOException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_coverage"));
+        System.out.println("outdir = " + outdir);
+
+        {
+            SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+            params.setInputFile(bamFile.getId());
+            Map<String, String> samtoolsParams = new HashMap<>();
+            params.setSamtoolsParams(samtoolsParams);
+            params.setCommand("index");
+
+            toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+            assertTrue(outdir.resolve(bamFile.getName() + ".bai").toFile().exists());
+        }
+
+        CoverageIndexParams params = new CoverageIndexParams();
+        params.setFile(bamFile.getId());
+        params.setWindowSize(500);
+
+        toolRunner.execute(AlignmentCoverageAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(Paths.get(bamFile.getUri().toURL().getPath() + ".bw").toFile().exists());
+    }
+
+    @Test
+    public void testGeneCoverageStats() throws IOException, ToolException, CatalogException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
+        System.out.println("outdir = " + outdir);
+
+        {
+            SamtoolsWrapperParams params = new SamtoolsWrapperParams();
+            params.setInputFile(bamFile.getId());
+            Map<String, String> samtoolsParams = new HashMap<>();
+            params.setSamtoolsParams(samtoolsParams);
+            params.setCommand("index");
+
+            toolRunner.execute(SamtoolsWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+            assertTrue(outdir.resolve(bamFile.getName() + ".bai").toFile().exists());
+        }
 
         AlignmentGeneCoverageStatsParams params = new AlignmentGeneCoverageStatsParams();
         params.setBamFile(bamFile.getId());
@@ -272,10 +495,11 @@ public class AlignmentAnalysisTest {
 
         toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
 
-        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null, null), false, token).first();
-        assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
-        assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
-        assertEquals(10, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
+        File file = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), null, null,
+                false, token).first();
+
+        assertEquals(1, file.getQualityControl().getCoverage().getGeneCoverageStats().size());
+        assertEquals(geneName, file.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
+        assertEquals(10, file.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
     }
 }

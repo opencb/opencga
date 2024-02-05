@@ -27,6 +27,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -140,7 +141,16 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
 
             // And finally, link the BW file is necessary
             boolean isLinked = true;
-            Path outputCatalogPath = Paths.get(bamCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
+            boolean isParentNull = false;
+            Path outputCatalogPath;
+            String pathDestiny;
+            if (Paths.get(bamCatalogFile.getPath()).getParent() == null) {
+                outputCatalogPath = outputPath.getFileName();
+                pathDestiny = outputPath.getFileName().toString();
+            } else {
+                outputCatalogPath = Paths.get(bamCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
+                pathDestiny = Paths.get(bamCatalogFile.getPath()).getParent().toString();
+            }
             OpenCGAResult<File> fileResult;
             try {
                 fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(),
@@ -153,8 +163,8 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             }
             if (!isLinked) {
                 logger.info("{}: linking file {} in catalog", ID, bwCatalogPath.toFile().getName());
-                catalogManager.getFileManager().link(getStudy(), bwCatalogPath.toUri(), outputCatalogPath.getParent().toString(),
-                        new ObjectMap("parents", true), getToken());
+                catalogManager.getFileManager().link(getStudy(), bwCatalogPath.toUri(), pathDestiny, new ObjectMap("parents", true),
+                        getToken());
             }
         });
     }

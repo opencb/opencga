@@ -47,7 +47,7 @@ public class DeeptoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecu
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
+        String dockerImage = getDockerImageName(Docker.DEEPTOOLS_IMAGE_KEY);
         appendCommand(dockerImage, command, sb);
 
         // Append input file params
