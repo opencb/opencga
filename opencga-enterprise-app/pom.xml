@@ -41,6 +41,13 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-app</artifactId>
+            <version>${opencga.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -124,11 +131,11 @@
             <artifactId>log4j-core</artifactId>
         </dependency>
 
-        <!-- TODO Review -->
+
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
+            <artifactId>${opencga-storage-hadoop-lib.artifactId}</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
         <!--JLINE Terminal dependencies-->
         <!--        <dependency>-->
@@ -215,13 +222,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
-<!--                        <program>-->
-<!--                            <id>opencga-test.sh</id>-->
-<!--                            <mainClass>org.opencb.opencga.test.manager.TestGeneratorManager</mainClass>-->
-<!--                            <platforms>-->
-<!--                                <platform>unix</platform>-->
-<!--                            </platforms>-->
-<!--                        </program>-->
+                        <program>
+                            <id>opencga-storage-hadoop.sh</id>
+                            <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
@@ -270,17 +277,16 @@
                                 </exec>
 
                                 <echo>Copying OpenCGA files and folders to ${build.dir}</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/analysis"/>
                                     <arg value="${opencga.build.dir}/cloud"/>
                                     <arg value="${opencga.build.dir}/conf"/>
                                     <arg value="${opencga.build.dir}/misc"/>
-                                    <arg value="${opencga.build.dir}/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${opencga.build.dir}/cloud/docker/docker-build.py"/>
                                     <arg value="${opencga.build.dir}/cloud/docker/README.md"/>
@@ -288,7 +294,7 @@
                                 </exec>
 
                                 <echo>Copying OpenCGA Enterprise bin and libs folder to ${build.dir}</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
@@ -297,7 +303,7 @@
                                 </exec>
 
                                 <echo>Copying Docker files to ${build.dir}/cloud/docker/opencga-enterprise</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/cloud/docker/opencga-enterprise"/>
                                     <arg value="${app.dir}/cloud/docker/.dockerignore"/>
@@ -305,26 +311,26 @@
                                 </exec>
 
                                 <echo>Copying SSO to ${build.dir}/cloud</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/cloud/sso"/>
                                     <arg value="${build.dir}/cloud/"/>
                                 </exec>
 
                                 <echo>Copying git.properties</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/git-enterprise.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
                                 <echo>Copying Python, R and JavaScript to ${build.dir}/clients</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-enterprise-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-enterprise-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
@@ -334,22 +340,42 @@
 <!--                                    <arg value="${project.basedir}/../opencga-enterprise-client/target/classes/DESCRIPTION"/>-->
 <!--                                    <arg value="${build.dir}/clients/R/"/>-->
 <!--                                </exec>-->
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-enterprise-client/src/main/javascript"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
                                 <echo>Copying configuration files</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/classes/enterprise-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-enterprise-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${opencga.build.dir}/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}-${opencga.version}-jar-with-dependencies.jar"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-storage-hadoop.sh"/>
+                                    <arg value="${build.dir}/misc/scripts/"/>
+                                </exec>
+                                <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
+                                <exec executable="sed" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
+                                    <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
+                                </exec>
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="-c"/>
+                                    <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
                                 </exec>
 
                                 <chmod perm="u+x">
@@ -370,7 +396,7 @@
                         <configuration>
                             <target>
                                 <echo>Preparing 'opencga-client' folder</echo>
-                                <exec executable="mkdir">
+                                <exec executable="mkdir" failonerror="true">
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/bin"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
@@ -378,7 +404,7 @@
                                 </exec>
 
                                 <echo>Copying files to 'opencga-client' folder</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
@@ -389,31 +415,27 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/bin/opencga.sh"/>
                                     <!--<arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
                                     <arg value="${build.dir}/${opencga.client.dir}/bin"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${build.dir}/conf/configuration.yml"/>
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
-                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
-                                </exec>
-
-
-                                <exec executable="cp">
                                     <arg value="${build.dir}/conf/enterprise-configuration.yml"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/misc/completion/opencga"/>
                                     <arg value="${build.dir}/misc/completion/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/completion"/>
                                 </exec>
 
                                 <echo>Creating 'opencga-client' tar.gz file</echo>
-                                <exec executable="tar">
+                                <exec executable="tar" failonerror="true">
                                     <arg value="-C"/>
                                     <arg value="${build.dir}"/>
                                     <arg value="-czf"/>
@@ -422,7 +444,7 @@
                                 </exec>
 
                                 <echo>Deleting temporary 'opencga-client' folder</echo>
-                                <exec executable="rm">
+                                <exec executable="rm" failonerror="true">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>

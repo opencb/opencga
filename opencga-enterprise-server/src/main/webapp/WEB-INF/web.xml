@@ -3,7 +3,7 @@
         "http://java.sun.com/dtd/web-app_2_3.dtd" >
 
 <web-app>
-  <display-name>Archetype Created Web Application</display-name>
+  <display-name>OpenCGA Enterprise</display-name>
 
   <servlet>
     <servlet-name>OpenCGEnterprise</servlet-name>
