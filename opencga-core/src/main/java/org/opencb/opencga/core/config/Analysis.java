@@ -24,13 +24,14 @@ import java.util.Map;
 public class Analysis {
 
     private String scratchDir;
-    private String resourceUrl;
+    private ResourceConfiguration resources;
 
     private Execution execution;
 
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
+        resources = new ResourceConfiguration();
         execution = new Execution();
         frameworks = new ArrayList<>();
     }
@@ -44,12 +45,12 @@ public class Analysis {
         return this;
     }
 
-    public String getResourceUrl() {
-        return resourceUrl;
+    public ResourceConfiguration getResources() {
+        return resources;
     }
 
-    public Analysis setResourceUrl(String resourceUrl) {
-        this.resourceUrl = resourceUrl;
+    public Analysis setResources(ResourceConfiguration resources) {
+        this.resources = resources;
         return this;
     }
 

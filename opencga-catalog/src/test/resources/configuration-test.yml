@@ -17,7 +17,8 @@ audit:
 
 analysis:
   scratchDir: "/tmp/"    # Scratch folder for the analysis.
-  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  resources:
+    url: "http://resources.opencb.org/opencb/opencga/analysis/"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

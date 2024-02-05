@@ -108,7 +108,10 @@ healthCheck:
 
 analysis:
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
-  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  resources:
+    ## External URL from where to download extra analysis resources to be placed at
+    ## ${opencga_home}/analysis/resources
+    url: "http://resources.opencb.org/opencb/opencga/analysis/"
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

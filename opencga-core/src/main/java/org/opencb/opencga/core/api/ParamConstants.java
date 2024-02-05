@@ -74,6 +74,7 @@ public class ParamConstants {
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
 
+    public static final String OPENCGA_ANALYSIS_RESOURCE_URL = "http://resources.opencb.org/opencb/opencga/analysis/";
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.1";

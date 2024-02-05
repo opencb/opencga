@@ -19,6 +19,7 @@ package org.opencb.opencga.core.tools;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -93,10 +94,10 @@ public abstract class OpenCgaToolExecutor {
         }
         try {
             Configuration configuration = Configuration.load(FileUtils.newInputStream(Paths.get(opencgaHome)));
-            if (StringUtils.isEmpty(configuration.getAnalysis().getResourceUrl())) {
-                throw new ToolExecutorException("Missing analysis resource URL in the configuration file");
+            if (StringUtils.isEmpty(configuration.getAnalysis().getResources().getUrl())) {
+                return ParamConstants.OPENCGA_ANALYSIS_RESOURCE_URL;
             }
-            return configuration.getAnalysis().getResourceUrl();
+            return configuration.getAnalysis().getResources().getUrl();
         } catch (IOException e) {
             throw new ToolExecutorException(e);
         }
