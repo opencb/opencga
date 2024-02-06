@@ -687,7 +687,8 @@ public class StudyManager extends AbstractManager {
 
             OpenCGAResult<Study> studyDataResult = getStudyDBAdaptor(organizationId).get(query, qOptions, userId);
             auditManager.auditSearch(organizationId, userId, Enums.Resource.STUDY, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS),
+                    new ObjectMap("numMatches", studyDataResult.getNumMatches()));
             return filterResults(studyDataResult);
         } catch (CatalogException e) {
             auditManager.auditSearch(organizationId, userId, Enums.Resource.STUDY, "", "", auditParams,

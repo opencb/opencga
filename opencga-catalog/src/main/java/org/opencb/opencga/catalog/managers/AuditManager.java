@@ -155,7 +155,12 @@ public class AuditManager {
 
     public void auditSearch(String organizationId, String userId, Enums.Resource resource, String studyId, String studyUuid,
                             ObjectMap params, AuditRecord.Status status) {
-        audit(organizationId, userId, Enums.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+        auditSearch(organizationId, userId, resource, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void auditSearch(String organizationId, String userId, Enums.Resource resource, String studyId, String studyUuid,
+                            ObjectMap params, AuditRecord.Status status, ObjectMap attributes) {
+        audit(organizationId, userId, Enums.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, attributes);
     }
 
     public void auditCount(String organizationId, String userId, Enums.Resource resource, String studyId, String studyUuid,
