@@ -57,8 +57,19 @@ public class AuthorizationMongoDBUtils {
     private static final Pattern REGISTERED_USERS_PATTERN = Pattern.compile("^" + REGISTERED_USERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
+    /**
+     * Checks whether the user belongs to the administration organization.
+     *
+     * @param organizationId Organization id of the user.
+     * @param user           User id.
+     * @return               True if the user is a super administrator, False otherwise.
+     */
+    public static boolean iOpenCGAAdministrator(String organizationId, String user) {
+        return ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || user.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":");
+    }
+
     public static boolean checkCanViewStudy(String organizationId, Document study, String user) {
-        if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+        if (iOpenCGAAdministrator(organizationId, user)) {
             return true;
         }
         // If user does not exist in the members group, the user will not have any permission
@@ -90,7 +101,7 @@ public class AuthorizationMongoDBUtils {
     }
 
     public static boolean isOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
-        if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+        if (iOpenCGAAdministrator(organizationId, user)) {
             return true;
         }
         if (getAdminUsers(study).contains(user)) {
