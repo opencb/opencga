@@ -26,7 +26,8 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -38,17 +39,18 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 
 @ToolExecutor(id="opencga-local", tool = HRDetectAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         implements StorageToolExecutor {
-
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
 
     private final static String CNV_FILENAME = "cnv.tsv";
     private final static String INDEL_FILENAME = "indel.vcf";
@@ -60,13 +62,14 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
     private final static String VIRTUAL_VOLUMEN_SNV = "/snv/";
     private final static String VIRTUAL_VOLUMEN_SV = "/sv/";
 
-    private Path opencgaHome;
+    private String dockerImage;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
-        opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY,
+                getVariantStorageManager().getCatalogManager().getConfiguration());
 
         // Prepare CNV data
         prepareCNVData();
@@ -161,12 +164,12 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         // BGZIP
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
                 .toAbsolutePath().toString(), VIRTUAL_VOLUMEN_DATA);
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "bgzip " + VIRTUAL_VOLUMEN_DATA + INDEL_SORTED_FILENAME,
+        String cmdline = DockerUtils.run(dockerImage, null, outputBinding, "bgzip " + VIRTUAL_VOLUMEN_DATA + INDEL_SORTED_FILENAME,
                 null);
         logger.info("Docker command line: " + cmdline);
 
         // TABIX
-        cmdline = DockerUtils.run(R_DOCKER_IMAGE, null, outputBinding, "tabix -p vcf " + VIRTUAL_VOLUMEN_DATA + INDEL_GZ_FILENAME, null);
+        cmdline = DockerUtils.run(dockerImage, null, outputBinding, "tabix -p vcf " + VIRTUAL_VOLUMEN_DATA + INDEL_GZ_FILENAME, null);
         logger.info("Docker command line: " + cmdline);
     }
 
@@ -177,7 +180,7 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
         pw.close();
     }
 
-    private void executeRScript() throws IOException {
+    private void executeRScript() throws IOException, ToolExecutorException {
         // Input
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(getSnvRDataPath().toFile().getParent(), VIRTUAL_VOLUMEN_SNV));
@@ -222,7 +225,7 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
             }
         }
 
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);
+        String cmdline = DockerUtils.run(dockerImage, inputBindings, outputBinding, scriptParams.toString(), null);
         logger.info("Docker command line: " + cmdline);
     }
 }

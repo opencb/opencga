@@ -32,8 +32,9 @@ import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
@@ -59,9 +60,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
-            + GitRepositoryState.getInstance().getBuildVersion();
     private VariantStorageManager storageManager;
+    private String dockerImage;
 
     private File snvsFile;
     private File rearrsFile;
@@ -96,6 +96,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
     @Override
     public void run() throws ToolException, IOException, CatalogException {
+        dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY,
+                storageManager.getCatalogManager().getConfiguration());
 
         // Create query
         Query query = new Query();
@@ -160,7 +162,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     + " " + getCircosParams().getTitle();
 
             StopWatch stopWatch = StopWatch.createStarted();
-            String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+            String cmdline = DockerUtils.run(dockerImage, inputBindings, outputBinding, scriptParams, null);
             logger.info("Docker command line: " + cmdline);
             logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
         } else {

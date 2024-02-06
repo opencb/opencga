@@ -5,11 +5,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.Docker;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.tools.family.PedigreeGraphAnalysisExecutor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -25,21 +29,20 @@ public class PedigreeGraphUtils {
     public static final String PEDIGREE_JSON_FILENAME = "ped_coords.json";
     public static final String PEDIGREE_TSV_FILENAME = "ped_coords.tsv";
 
-    public static final String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
-
-    public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Path scratchDir) throws IOException {
+    public static PedigreeGraph getPedigreeGraph(Family family, Path openCgaHome, Configuration configuration) throws IOException {
         PedigreeGraph pedigreeGraph = new PedigreeGraph();
 
         if (hasMinTwoGenerations(family)) {
             // Prepare R script and out paths
-            Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
+            Path rScriptPath = openCgaHome.resolve("analysis/" + PedigreeGraphAnalysisExecutor.ID);
 
-            Path outDir = Paths.get(scratchDir + "/pedigree-graph-" + family.getUuid() + "-" + System.nanoTime());
+            Path scratchDir = Paths.get(configuration.getAnalysis().getScratchDir());
+            Path outDir = Paths.get(scratchDir + "/" + PedigreeGraphAnalysisExecutor.ID + "-" + family.getUuid() + "-" + System.nanoTime());
             outDir.toFile().mkdir();
             Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
 
             // Execute R script and get b64 image
-            createPedigreeGraph(family, rScriptPath, outDir);
+            createPedigreeGraph(family, rScriptPath, outDir, configuration);
             pedigreeGraph.setBase64(getB64Image(outDir));
             pedigreeGraph.setJson(getJsonPedigreeGraph(outDir));
 
@@ -52,7 +55,7 @@ public class PedigreeGraphUtils {
         return pedigreeGraph;
     }
 
-    public static void createPedigreeGraph(Family family, Path rScriptPath, Path outDir) throws IOException {
+    public static void createPedigreeGraph(Family family, Path rScriptPath, Path outDir, Configuration configuration) throws IOException {
         File pedFile;
         try {
             pedFile = createPedFile(family, outDir);
@@ -74,8 +77,9 @@ public class PedigreeGraphUtils {
                 .append(" --plot_format png");
 
         try {
-            String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(), null);
-        } catch (IOException e) {
+            String dockerImage = ConfigurationUtils.getDockerImage(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY, configuration);
+            String cmdline = DockerUtils.run(dockerImage, inputBindings, outputBinding, scriptParams.toString(), null);
+        } catch (IOException | ToolExecutorException e) {
             throw new IOException("Error running the command line to create the family pedigree graph", e);
         }
     }

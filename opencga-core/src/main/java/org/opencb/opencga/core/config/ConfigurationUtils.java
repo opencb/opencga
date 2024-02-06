@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.core.config;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +31,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ConfigurationUtils {
+
     private static Logger logger = LoggerFactory.getLogger(ConfigurationUtils.class);
 
     /**
@@ -81,6 +87,23 @@ public class ConfigurationUtils {
             logger.debug("Loading storage configuration from JAR file");
             return StorageConfiguration
                     .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        }
+    }
+
+    public static String getDockerImage(String key, Configuration configuration) throws ToolExecutorException {
+        if (configuration.getAnalysis().getDocker() != null) {
+            Docker docker = configuration.getAnalysis().getDocker();
+            if (docker.getImages().containsKey(key)) {
+                String imageName = docker.getImages().get(key);
+                if (Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY.equals(key) && !imageName.contains(":")) {
+                    imageName += (":" + GitRepositoryState.getInstance().getBuildVersion());
+                }
+                logger.debug("Using Docker image '{}'", imageName);
+                return imageName;
+            }
+            throw new ToolExecutorException("It could not find the Docker image " + key + " in the configuration analysis section");
+        } else {
+            throw new ToolExecutorException("Missing docker in the configuration analysis section");
         }
     }
 }

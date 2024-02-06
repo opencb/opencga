@@ -18,6 +18,8 @@ package org.opencb.opencga.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -24,14 +24,32 @@ import java.util.Map;
 public class Analysis {
 
     private String scratchDir;
-
+    private Docker docker;
     private Execution execution;
-
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
-        execution = new Execution();
-        frameworks = new ArrayList<>();
+        this.docker = new Docker();
+        this.execution = new Execution();
+        this.frameworks = new ArrayList<>();
+    }
+
+    public Analysis(String scratchDir, Docker docker, Execution execution, List<FrameworkConfiguration> frameworks) {
+        this.scratchDir = scratchDir;
+        this.docker = docker;
+        this.execution = execution;
+        this.frameworks = frameworks;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("scratchDir='").append(scratchDir).append('\'');
+        sb.append(", docker=").append(docker);
+        sb.append(", execution=").append(execution);
+        sb.append(", frameworks=").append(frameworks);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getScratchDir() {
@@ -40,6 +58,15 @@ public class Analysis {
 
     public Analysis setScratchDir(String scratchDir) {
         this.scratchDir = scratchDir;
+        return this;
+    }
+
+    public Docker getDocker() {
+        return docker;
+    }
+
+    public Analysis setDocker(Docker docker) {
+        this.docker = docker;
         return this;
     }
 
@@ -60,5 +87,4 @@ public class Analysis {
         this.frameworks = frameworks;
         return this;
     }
-
 }

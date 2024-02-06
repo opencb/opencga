@@ -18,21 +18,16 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.GRCH37_CHROMOSOMES;
 import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.GRCH38_CHROMOSOMES;
@@ -92,14 +87,13 @@ public class InferredSexComputation {
         return new double[]{1.0d * means[1] / means[0], 1.0d * means[2] / means[0]};
     }
 
-    public static java.io.File plot(File inputFile, Path outDir) throws ToolException {
+    public static java.io.File plot(File inputFile, Path outDir, String dockerImage) throws ToolException {
         // Execute R script in docker
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
                 "/data/output");
         String rParams = "R CMD Rscript --vanilla /data/input/" + inputFile.getName();
         try {
-            String cmdline = DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, null, outputBinding, rParams, null);
-            System.out.println("Docker command line: " + cmdline);
+            DockerUtils.run(dockerImage, null, outputBinding, rParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }
