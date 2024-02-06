@@ -35,6 +35,7 @@ import org.opencb.opencga.analysis.alignment.qc.*;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
@@ -501,5 +502,61 @@ public class AlignmentAnalysisTest {
         assertEquals(1, file.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, file.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
         assertEquals(10, file.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
+    }
+
+    @Test
+    public void testBwaIndex() throws IOException, CatalogException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_bwa_index"));
+        System.out.println("outdir = " + outdir);
+
+        String fastaFilename = opencga.getResourceUri("biofiles/cram/hg19mini.fasta").toString();
+        File fastasFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastaFilename, "", "", "", null, null, null,
+                null, null), false, token).first();
+
+        BwaWrapperParams params = new BwaWrapperParams();
+        params.setFastaFile(fastasFile.getId());
+        params.setCommand("index");
+
+        toolRunner.execute(BwaWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(fastasFile.getName() + ".sa").toFile().exists());
+        assertTrue(outdir.resolve(fastasFile.getName() + ".pac").toFile().exists());
+        assertTrue(outdir.resolve(fastasFile.getName() + ".ann").toFile().exists());
+        assertTrue(outdir.resolve(fastasFile.getName() + ".amb").toFile().exists());
+        assertTrue(outdir.resolve(fastasFile.getName() + ".bwt").toFile().exists());
+    }
+
+
+    @Test
+    public void testBwaMem() throws IOException, CatalogException, ToolException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_bwa_index"));
+        System.out.println("outdir = " + outdir);
+
+        String faFilename = opencga.getResourceUri("biofiles/cram/hg19mini.fasta").toString();
+        File faFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(faFilename, "", "", "", null, null, null,
+                null, null), false, token).first();
+
+        BwaWrapperParams params = new BwaWrapperParams();
+        params.setFastaFile(faFile.getId());
+        params.setCommand("index");
+
+        toolRunner.execute(BwaWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(faFile.getName() + ".sa").toFile().exists());
+        assertTrue(outdir.resolve(faFile.getName() + ".pac").toFile().exists());
+        assertTrue(outdir.resolve(faFile.getName() + ".ann").toFile().exists());
+        assertTrue(outdir.resolve(faFile.getName() + ".amb").toFile().exists());
+        assertTrue(outdir.resolve(faFile.getName() + ".bwt").toFile().exists());
+
+        String fqFilename = opencga.getResourceUri("biofiles/cram/reads.fq").toString();
+        File fqFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fqFilename, "", "", "", null, null, null,
+                null, null), false, token).first();
+
+        params.setFastq1File(fqFile.getId());
+        params.setCommand("mem");
+        Map<String, String> bwaParams = new HashMap<>();
+        bwaParams.put("o", fqFile.getName() + ".sam");
+        params.setBwaParams(bwaParams);
+
+        toolRunner.execute(BwaWrapperAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        assertTrue(outdir.resolve(fqFile.getName() + ".sam").toFile().exists());
     }
 }

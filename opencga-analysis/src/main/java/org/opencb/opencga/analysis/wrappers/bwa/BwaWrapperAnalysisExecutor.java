@@ -61,7 +61,7 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: " + sb);
         runCommandLine(sb.toString());
     }
 
@@ -88,7 +88,7 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
         // Append docker image, version and command
         String dockerImage = getDockerImageName(Docker.OPENCGA_EXT_TOOLS_IMAGE_KEY);
-        appendCommand(dockerImage, command, sb);
+        appendCommand(dockerImage, "bwa " + command, sb);
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("o"));
@@ -111,7 +111,7 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: " + sb);
         runCommandLine(sb.toString());
     }
 
