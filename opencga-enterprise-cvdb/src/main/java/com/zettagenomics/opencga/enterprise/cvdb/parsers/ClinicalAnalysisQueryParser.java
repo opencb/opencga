@@ -104,6 +104,12 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
     }
 
     private Set<String> getCasIncludeFromInclude(List<String> caFields) {
+        if (caFields.contains("min")) {
+            Collections.singleton("minJson");
+        } else if (caFields.contains("medium")) {
+            return Collections.singleton("mediumJson");
+        }
+
         boolean useMinJson = false;
         boolean useMediumJson = false;
         Set<String> casFields = new HashSet<>();

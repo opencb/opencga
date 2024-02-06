@@ -582,7 +582,7 @@
     <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
 	<field name="description" type="string" indexed="true" stored="true" multiValued="false"/>
 
-	<!-- Panel IDs contain both IDs and names -->
+	<!-- Panel IDs contain IDs -->
     <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
 
 	<field name="analystId" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -611,6 +611,11 @@
 	<field name="modificationDate" type="pdate" indexed="true" stored="true" multiValued="false"/>
     <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
 
-    <field name="json" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Minimum JSON -->
+    <field name="minJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Medium JSON, i.e. without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
+    <field name="mediumJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- Max JSON, i.e. with all information -->
+    <field name="maxJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
 
 </schema>

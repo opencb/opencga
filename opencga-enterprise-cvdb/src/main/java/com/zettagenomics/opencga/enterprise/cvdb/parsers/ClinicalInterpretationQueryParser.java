@@ -18,16 +18,21 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
-import java.util.List;
+import java.util.*;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 
 public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
+
+    // Map from clinical interpretation fields (keys) to Solr indexed fields (values)
+    public static Map<String, List<String>> ciToCisFieldMap;
 
     public ClinicalInterpretationQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         super(variantStorageMetadataManager);
@@ -77,5 +82,158 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
         logger.info("Solr query: {}", solrQuery.toQueryString());
 
         return solrQuery;
+    }
+
+    @Override
+    protected void parseQueryOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
+            // Nothing to do
+            return;
+        }
+
+        // Parse common options
+        super.parseQueryOptions(queryOptions, solrQuery);
+
+        // Parse include and exclude options to get Solr fields to include
+        Set<String> cisFields = getCisInclude(queryOptions);
+        solrQuery.setFields(StringUtils.join(cisFields, ","));
+    }
+
+    private Set<String> getCisInclude(QueryOptions queryOptions) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            return getCisIncludeFromInclude(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            return getCisIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        }
+        return Collections.singleton("maxJson");
+    }
+
+    private Set<String> getCisIncludeFromInclude(List<String> caFields) {
+        if (caFields.contains("min")) {
+            Collections.singleton("minJson");
+        } else if (caFields.contains("medium")) {
+            return Collections.singleton("mediumJson");
+        }
+
+        boolean useMinJson = false;
+        boolean useMediumJson = false;
+        Set<String> casFields = new HashSet<>();
+        for (String caField : caFields) {
+            if (ciToCisFieldMap.containsKey(caField)) {
+                // This field is stored in a Solr indexed field
+                casFields.addAll(ciToCisFieldMap.get(caField));
+            } else if (needsMaxJson(caField)) {
+                // This field is stored only the maxJson field
+                return Collections.singleton("maxJson");
+            } else if (containnedInMinJson(caField)) {
+                // This field can be retrieved from the minJson field
+                useMinJson = true;
+            } else {
+                // Otherwise, use the medium JSON field
+                useMediumJson = true;
+            }
+        }
+        if (useMediumJson) {
+            return Collections.singleton("mediumJson");
+        } else if (useMinJson) {
+            return Collections.singleton("minJson");
+        }
+        return casFields;
+    }
+
+    private Set<String> getCisIncludeFromExclude(List<String> ciFields) {
+        if (ciFields.contains("panels")) {
+            return Collections.singleton("mediumJson");
+        }
+        return Collections.singleton("maxJson");
+    }
+
+    private boolean needsMaxJson(String ciField) {
+        // Checking fields for using the maximum JSON:
+        //     panels.variants | genes | strs | regions
+        return (ciField.equals("panels")
+                || ciField.startsWith("panels.variants")
+                || ciField.startsWith("panels.genes")
+                || ciField.startsWith("panels.strs")
+                || ciField.startsWith("panels.regions"));
+    }
+
+
+    private boolean containnedInMinJson(String ciField) {
+        // Checking fields for using the minimum JSON
+        return (ciField.equals("disorder.id")
+                || ciField.equals("disorder.name")
+                || ciField.equals("disorder.description")
+                || ciField.equals("disorder.source")
+                || ciField.equals("disorder.url")
+                || ciField.equals("files.id")
+                || ciField.equals("files.name")
+                || ciField.equals("proband.id")
+                || ciField.equals("proband.sex")
+                || ciField.equals("proband.samples.id")
+                || ciField.equals("family.id")
+                || ciField.equals("family.name")
+                || ciField.equals("family.members.id")
+                || ciField.equals("family.members.sex")
+                || ciField.equals("family.members.samples.id")
+                || ciField.equals("family.panels.id")
+                || ciField.equals("family.panels.name")
+                || ciField.equals("family.panels.source")
+                || ciField.equals("family.panels.stats")
+                || ciField.equals("panels.id")
+                || ciField.equals("panels.name")
+                || ciField.equals("panels.source")
+                || ciField.equals("panels.stats")
+                || ciField.equals("interpretation.id")
+                || ciField.equals("interpretation.method")
+                || ciField.equals("interpretation.stats")
+                || ciField.startsWith("consent")
+                || ciField.startsWith("analyst")
+                || ciField.startsWith("analysts")
+                || ciField.startsWith("report")
+                || ciField.startsWith("request")
+                || ciField.startsWith("responsible")
+                || ciField.startsWith("priority")
+                || ciField.startsWith("flags")
+                || ciField.equals("creationDate")
+                || ciField.equals("modificationDate")
+                || ciField.equals("dueDate")
+                || ciField.equals("release")
+                || ciField.startsWith("qualityControl")
+                || ciField.startsWith("comments")
+                || ciField.startsWith("audit")
+                || ciField.startsWith("internal")
+                || ciField.startsWith("attributes")
+                || ciField.startsWith("status"));
+    }
+
+    static {
+        // Map from clinical interpretation fields to Solr indexed fields
+        ciToCisFieldMap = new HashMap<>();
+        ciToCisFieldMap.put("id", Arrays.asList("id"));
+        ciToCisFieldMap.put("description", Arrays.asList("description"));
+        ciToCisFieldMap.put("panels.id", Arrays.asList("panelIds"));
+        ciToCisFieldMap.put("analyst", Arrays.asList("analystId", "analystName", "analystEmail", "analystAssignedBy", "analystDate"));
+        ciToCisFieldMap.put("analyst.id", Arrays.asList("analystId"));
+        ciToCisFieldMap.put("analyst.name", Arrays.asList("analystName"));
+        ciToCisFieldMap.put("analyst.email", Arrays.asList("analystEmail"));
+        ciToCisFieldMap.put("analyst.assignedBy", Arrays.asList("analystAssignedBy"));
+        ciToCisFieldMap.put("analyst.date", Arrays.asList("analystDate"));
+        ciToCisFieldMap.put("method", Arrays.asList("methodName", "methodVersion", "methodCommit", "methodDependencies"));
+        ciToCisFieldMap.put("method.name", Arrays.asList("methodName"));
+        ciToCisFieldMap.put("method.version", Arrays.asList("methodVersion"));
+        ciToCisFieldMap.put("method.commit", Arrays.asList("methodCommit"));
+        ciToCisFieldMap.put("method.dependencies", Arrays.asList("methodDependencies"));
+        ciToCisFieldMap.put("comments", Arrays.asList("comments"));
+        ciToCisFieldMap.put("locked", Arrays.asList("locked"));
+        ciToCisFieldMap.put("status", Arrays.asList("statusId", "statusName", "statusDescription", "statusDate"));
+        ciToCisFieldMap.put("status.id", Arrays.asList("statusId"));
+        ciToCisFieldMap.put("status.name", Arrays.asList("statusName"));
+        ciToCisFieldMap.put("status.description", Arrays.asList("statusDescription"));
+        ciToCisFieldMap.put("status.date", Arrays.asList("statusDate"));
+        ciToCisFieldMap.put("creationDate", Arrays.asList("creationDate"));
+        ciToCisFieldMap.put("modificationDate", Arrays.asList("modificationDate"));
+        ciToCisFieldMap.put("version", Arrays.asList("version"));
     }
 }
