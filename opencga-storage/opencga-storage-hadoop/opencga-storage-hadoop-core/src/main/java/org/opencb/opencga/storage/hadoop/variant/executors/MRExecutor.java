@@ -62,7 +62,7 @@ public abstract class MRExecutor {
                 throw new StorageEngineException("Error reading classpath file \"" + HADOOP_LIB_VERSION_PROPERTIES + "\" for building the "
                         + "\"" + MR_JAR_WITH_DEPENDENCIES + "\"" + " parameter", e);
             }
-            jar = "opencga-storage-hadoop-" + properties.getProperty("opencga-hadoop-shaded.id") + "-"
+            jar = "opencga-storage-hadoop-lib-" + properties.getProperty("opencga-hadoop-shaded.id") + "-"
                     + GitRepositoryState.getInstance().getBuildVersion() + "-jar-with-dependencies.jar";
 //            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
         }
