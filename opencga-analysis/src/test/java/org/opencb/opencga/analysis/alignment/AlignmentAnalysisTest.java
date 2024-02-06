@@ -504,6 +504,10 @@ public class AlignmentAnalysisTest {
         assertEquals(10, file.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
     }
 
+    //-----------------------------------------
+    // B W A
+    //-----------------------------------------
+
     @Test
     public void testBwaIndex() throws IOException, CatalogException, ToolException {
         Path outdir = Paths.get(opencga.createTmpOutdir("_bwa_index"));
