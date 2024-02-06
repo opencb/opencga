@@ -151,8 +151,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     private void validate(Pedigree pedigree, VariableSet variableSet) throws CatalogException {
         for (Map.Entry<String, Individual> entry : pedigree.getIndividuals().entrySet()) {
             Map<String, Object> annotation = loader.getAnnotation(entry.getValue(), null, variableSet, pedigree.getFields());
-            AnnotationUtils.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation, "", 1,
-                    null), null, true);
+            AnnotationUtils.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotation), null, true);
         }
     }
 }

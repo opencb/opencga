@@ -177,8 +177,7 @@ public class AnnotationConverter {
                     String variableSetId = variableSetUidIdMap.getString(String.valueOf(variableSetUid));
 
                     if (!annotationSetMap.containsKey(compoundKey)) {
-                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
-                                Collections.emptyMap()));
+                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>()));
                     }
 
                     annotationSetMap.get(compoundKey).getAnnotations().put(annotationDocument.getString(ID), annotationDocument.get(VALUE));
@@ -203,8 +202,7 @@ public class AnnotationConverter {
                     String variableSetId = variableSetUidIdMap.getString(String.valueOf(variableSetUid));
 
                     if (!annotationSetMap.containsKey(compoundKey)) {
-                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>(),
-                                Collections.emptyMap()));
+                        annotationSetMap.put(compoundKey, new AnnotationSet(annSetName, variableSetId, new HashMap<>()));
                     }
 
                     // We provide the map from the annotation set in order to be automatically filled in
