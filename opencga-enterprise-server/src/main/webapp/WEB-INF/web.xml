@@ -6,7 +6,7 @@
   <display-name>Archetype Created Web Application</display-name>
 
   <servlet>
-    <servlet-name>OpenCGEnterprise</servlet-name>
+    <servlet-name>OpenCGAEnterprise</servlet-name>
     <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
 
     <init-param>
@@ -33,7 +33,7 @@
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>OpenCGEnterprise</servlet-name>
+    <servlet-name>OpenCGAEnterprise</servlet-name>
     <url-pattern>/webservices/rest/*</url-pattern>
   </servlet-mapping>
 

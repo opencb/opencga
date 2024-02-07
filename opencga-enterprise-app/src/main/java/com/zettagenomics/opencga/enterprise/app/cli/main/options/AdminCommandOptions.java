@@ -39,6 +39,7 @@ public class AdminCommandOptions {
         public JwtCatalogCommandOptions jwtCatalogCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
         public ImportUsersCommandOptions importUsersCommandOptions;
+        public PermissionsUsersCommandOptions permissionsUsersCommandOptions;
         public SearchUsersCommandOptions searchUsersCommandOptions;
         public SyncUsersCommandOptions syncUsersCommandOptions;
         public UsersUpdateGroupsCommandOptions usersUpdateGroupsCommandOptions;
@@ -54,6 +55,7 @@ public class AdminCommandOptions {
         this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
+        this.permissionsUsersCommandOptions = new PermissionsUsersCommandOptions();
         this.searchUsersCommandOptions = new SearchUsersCommandOptions();
         this.syncUsersCommandOptions = new SyncUsersCommandOptions();
         this.usersUpdateGroupsCommandOptions = new UsersUpdateGroupsCommandOptions();
@@ -210,6 +212,26 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--study-group"}, description = "The body web service studyGroup parameter", required = false, arity = 1)
         public String studyGroup;
+    
+    }
+
+    @Parameters(commandNames = {"users-permissions"}, commandDescription ="User permissions")
+    public class PermissionsUsersCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--entry-ids"}, description = "Comma separated list of entry ids.", required = false, arity = 1)
+        public String entryIds; 
+    
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of permissions to be retrieved.", required = false, arity = 1)
+        public String permissions; 
+    
+        @Parameter(names = {"--category"}, description = "Category corresponding to the id's provided.", required = false, arity = 1)
+        public String category; 
     
     }
 

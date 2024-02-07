@@ -104,9 +104,4 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
     public MetaClient getEnterpriseMetaClient() {
         return this.getClient(MetaClient.class, () -> new MetaClient(this.token, this.clientConfiguration));
     }
-
-    public CvaClient getEnterpriseCvaClient() {
-        return getClient(CvaClient.class, () -> new CvaClient(token, clientConfiguration));
-    }
-
 }
