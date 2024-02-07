@@ -64,7 +64,6 @@ public class MonitorService {
 
     protected static Logger logger;
 
-
     public MonitorService(Configuration configuration, StorageConfiguration storageConfiguration, String appHome, String token)
             throws CatalogException {
         this.configuration = configuration;
@@ -104,7 +103,8 @@ public class MonitorService {
                 nonExpiringToken,
                 catalogManager,
                 storageConfiguration,
-                appHome);
+                appHome,
+                configuration.getAnalysis().getPackages());
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 

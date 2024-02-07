@@ -20,6 +20,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
@@ -151,12 +152,30 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) boolean skipCreateInterpretation,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-            ClinicalAnalysisCreateParams params) {
+                    ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/load")
+    @ApiOperation(value = ClinicalAnalysisLoadTask.DESCRIPTION, response = Job.class)
+    public Response load(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ClinicalAnalysisLoadParams.DESCRIPTION, required = true) ClinicalAnalysisLoadParams params) {
+        try {
+            // Execute load as a job
+            return submitJob(ClinicalAnalysisLoadTask.ID, study, params, jobId, jobDescription, dependsOn, jobTags);
+        } catch (Exception e) {
+            return createErrorResponse("Load clinical analyses from file", e.getMessage());
         }
     }
 
@@ -185,7 +204,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-            ClinicalAnalysisUpdateParams params) {
+                    ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -513,7 +532,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-            InterpretationCreateParams params) {
+                    InterpretationCreateParams params) {
         try {
             if (setAs == null) {
                 setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
@@ -555,7 +574,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-            InterpretationUpdateParams params) {
+                    InterpretationUpdateParams params) {
         try {
             if (primaryFindingsAction == null) {
                 primaryFindingsAction = ParamUtils.UpdateAction.ADD;

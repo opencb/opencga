@@ -47,11 +47,7 @@ public class Variable {
     private long rank;
     private String dependsOn;
     private String description;
-    /**
-     * Variables for validate internal fields. Only valid if type is OBJECT.
-     **/
-    @Deprecated
-    private Set<Variable> variableSet;
+
     private Set<Variable> variables;
     private Map<String, Object> attributes;
 
@@ -90,8 +86,6 @@ public class Variable {
         CATEGORICAL,
         INTEGER,
         DOUBLE,
-        @Deprecated
-        TEXT,
         STRING,
         OBJECT,
         MAP_BOOLEAN,
@@ -227,16 +221,6 @@ public class Variable {
     public Variable setDescription(String description) {
         this.description = description;
         return this;
-    }
-
-    @Deprecated
-    public Set<Variable> getVariableSet() {
-        return getVariables();
-    }
-
-    @Deprecated
-    public Variable setVariableSet(Set<Variable> variableSet) {
-        return setVariables(variableSet);
     }
 
     public Set<Variable> getVariables() {

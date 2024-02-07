@@ -1,6 +1,10 @@
 configuration:
+<<<<<<< HEAD
   organizationId: test
   version: 2.2.0
+=======
+  version: 3.0.0
+>>>>>>> develop
   index: false
   projectId: project
 study:

@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
@@ -215,6 +216,30 @@ public interface AuthorizationManager {
 
     void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
+
+    default List<Acl> getEffectivePermissions(String organizationId, long studyUid, String resourceId, Enums.Resource resource)
+            throws CatalogException {
+        return getEffectivePermissions(organizationId, studyUid, Collections.singletonList(resourceId), Collections.emptyList(), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(String organizationId, long studyUid, List<String> resourceIdList, Enums.Resource resource)
+            throws CatalogException {
+        return getEffectivePermissions(organizationId, studyUid, resourceIdList, Collections.emptyList(), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(String organizationId, long studyUid, String resourceId, String permission,
+                                              Enums.Resource resource) throws CatalogException {
+        return getEffectivePermissions(organizationId, studyUid, Collections.singletonList(resourceId),
+                Collections.singletonList(permission), resource);
+    }
+
+    default List<Acl> getEffectivePermissions(String organizationId, long studyUid, List<String> resourceIdList, String permission,
+                                              Enums.Resource resource) throws CatalogException {
+        return getEffectivePermissions(organizationId, studyUid, resourceIdList, Collections.singletonList(permission), resource);
+    }
+
+    List<Acl> getEffectivePermissions(String organizationId, long studyUid, List<String> resourceIdList, List<String> permission,
+                                      Enums.Resource resource) throws CatalogException;
 
     //------------------------- Study ACL -----------------------------
 

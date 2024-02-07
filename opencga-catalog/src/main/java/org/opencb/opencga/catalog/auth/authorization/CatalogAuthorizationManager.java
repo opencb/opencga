@@ -17,15 +17,18 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
@@ -382,6 +385,34 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
+    }
+
+    @Override
+    public List<Acl> getEffectivePermissions(String organizationId, long studyUid, List<String> resourceIdList, List<String> permissions,
+                                             Enums.Resource resource) throws CatalogException {
+        HashSet<String> resourcePermissions = new HashSet<>(resource.getFullPermissionList());
+        for (String permission : permissions) {
+            if (!resourcePermissions.contains(permission)) {
+                throw new CatalogParameterException("Permission '" + permission + "' does not correspond with any of the available"
+                        + " permissions. This is the full list of possible permissions: " + StringUtils.join(resourcePermissions, ", "));
+            }
+        }
+
+        List<Acl> acls = authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .effectivePermissions(studyUid, resourceIdList, resource);
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            // Filter out other permissions
+            for (Acl acl : acls) {
+                List<Acl.Permission> permissionList = new ArrayList<>(permissions.size());
+                for (Acl.Permission aclPermission : acl.getPermissions()) {
+                    if (permissions.contains(aclPermission.getId())) {
+                        permissionList.add(aclPermission);
+                    }
+                }
+                acl.setPermissions(permissionList);
+            }
+        }
+        return acls;
     }
 
     @Override

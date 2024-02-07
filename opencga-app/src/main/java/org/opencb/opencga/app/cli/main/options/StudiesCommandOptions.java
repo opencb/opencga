@@ -578,7 +578,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--category"}, description = "The body web service category parameter", required = false, arity = 1)
         public String category;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--required"}, description = "The body web service required parameter", required = false, help = true, arity = 0)

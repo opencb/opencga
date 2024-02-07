@@ -46,7 +46,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
         // Creating StorageManagerFactory
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, configuration);
     }
 
 }

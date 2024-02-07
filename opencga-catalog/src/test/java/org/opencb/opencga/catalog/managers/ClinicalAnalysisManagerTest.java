@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -37,6 +38,7 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -71,6 +73,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -97,7 +101,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         Individual mother = new Individual().setId("mother")
                 .setSex(SexOntologyTermAnnotation.initFemale())
                 .setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                null)));
+                        null)));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
@@ -3645,6 +3649,40 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(proband.getSamples().get(1).getId(), result.getResults().get(1).getProband().getSamples().get(0).getId());
     }
 
+    @Test
+    public void loadClinicalAnalysesTest() throws CatalogException, IOException {
+        String gzFile = getClass().getResource("/biofiles/clinical_analyses.json.gz").getFile();
+        File file = catalogManager.getFileManager().link(studyFqn, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
+                null), false, ownerToken).first();
+
+        Path filePath = Paths.get(file.getUri());
+
+        System.out.println("Loading clinical analyses file: " + filePath + " ....");
+        ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyFqn, filePath, ownerToken);
+        System.out.println(loadResult);
+
+        assertEquals(1, loadResult.getFailures().size());
+
+        String ca1Id = "SAP-45016-1";
+        String ca2Id = "OPA-6607-1";
+
+        Query query = new Query();
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(),
+                ownerToken);
+        assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca1Id));
+        assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca2Id));
+
+        query.put("id", ca1Id);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(),
+                ownerToken).first();
+        assertEquals(ca1Id, clinicalAnalysis.getId());
+
+        query.put("id", ca2Id);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(),
+                ownerToken).first();
+        assertEquals(ca2Id, clinicalAnalysis.getId());
+    }
+
     // Annotation sets
     @Test
     public void searchByInternalAnnotationSetTest() throws CatalogException {
@@ -3766,5 +3804,4 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         annotDataResult = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
         assertEquals(0, annotDataResult.getNumResults());
     }
-
 }

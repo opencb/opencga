@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -143,6 +144,24 @@ public class AdminWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @GET
+    @Path("/users/permissions")
+    @ApiOperation(value = "User permissions", notes = "Effective permissions assigned to the users for a given list of entries.",
+            response = Acl.class)
+    public Response effectivePermissions(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.ENTRY_ID_LIST_DESCRIPTION) @QueryParam(ParamConstants.ENTRY_ID_LIST) String entryIdList,
+            @ApiParam(value = ParamConstants.PERMISSION_LIST_DESCRIPTION) @QueryParam(ParamConstants.PERMISSION_LIST) String permissionList,
+            @ApiParam(value = ParamConstants.CATEGORY_DESCRIPTION) @QueryParam(ParamConstants.CATEGORY) String category) {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().getEffectivePermissions(studyStr, getIdList(entryIdList),
+                    getIdListOrEmpty(permissionList), category, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+
     }
 
     @POST

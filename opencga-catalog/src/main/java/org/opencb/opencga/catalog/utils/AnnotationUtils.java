@@ -79,10 +79,6 @@ public class AnnotationUtils {
             throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
-        if (variable.getType() == Variable.VariableType.TEXT) {
-            variable.setType(Variable.VariableType.STRING);
-        }
-
         //Check default values
         switch (variable.getType()) {
             case BOOLEAN:
@@ -436,7 +432,7 @@ public class AnnotationUtils {
                         Map objectMap = (Map) object;
                         checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
                                         variable.getDescription(), variable.getVariables(), null, 1, null),
-                                new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
+                                new AnnotationSet("", variable.getId(), objectMap), null, true);
                     }
                 }
                 break;

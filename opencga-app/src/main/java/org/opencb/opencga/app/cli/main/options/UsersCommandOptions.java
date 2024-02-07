@@ -73,7 +73,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
         public String organization; 
     
     }

@@ -39,6 +39,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
@@ -62,12 +63,15 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
@@ -1069,6 +1073,46 @@ public class VariantAnalysisTest {
 
         assertTrue(family.getPedigreeGraph() != null);
         assertEquals(base64, family.getPedigreeGraph().getBase64());
+    }
+
+    @Test
+    public void testClinicalAnalysisLoading() throws IOException, ToolException, CatalogException {
+        String fileStr = "clinical_analyses.json.gz";
+
+        String gzFile = getClass().getResource("/biofiles/" + fileStr).getFile();
+        File file = catalogManager.getFileManager().link(CANCER_STUDY, new FileLinkParams(gzFile, "ca", "", "", null, null, null, null,
+                null), true, token).first();
+        System.out.println("file ID = " + file.getId());
+        System.out.println("file name = " + file.getName());
+
+        // Run clinical analysis load task
+        Path loadingOutDir = Paths.get(opencga.createTmpOutdir("_clinical_analysis_outdir"));
+        System.out.println("Clinical analysis load task out dir = " + loadingOutDir);
+
+        ClinicalAnalysisLoadParams params = new ClinicalAnalysisLoadParams();
+        params.setFile(file.getId());
+
+        toolRunner.execute(ClinicalAnalysisLoadTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM,
+                CANCER_STUDY), loadingOutDir, null, token);
+
+        String ca1Id = "SAP-45016-1";
+        String ca2Id = "OPA-6607-1";
+
+        Query query = new Query();
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token);
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca1Id));
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca2Id));
+
+        query.put("id", ca1Id);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token).first();
+        Assert.assertEquals(ca1Id, clinicalAnalysis.getId());
+
+        query.put("id", ca2Id);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token).first();
+        Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
     }
 
     @Test

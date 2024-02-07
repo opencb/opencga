@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
@@ -65,6 +66,8 @@ public interface AuthorizationDBAdaptor {
     <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> get(List<Long> resourceIds, List<String> members,
                                                            Map<String, List<String>> userGroups, Enums.Resource entry, Class<T> clazz)
             throws CatalogException;
+
+    List<Acl> effectivePermissions(long studyUid, List<String> resourceIdList, Enums.Resource entry) throws CatalogDBException;
 
     /**
      * Remove all the Acls defined for the member in the resource for the study.

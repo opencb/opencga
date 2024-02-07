@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
@@ -75,6 +76,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "users-import":
                 queryResponse = importUsers();
+                break;
+            case "users-permissions":
+                queryResponse = permissionsUsers();
                 break;
             case "users-search":
                 queryResponse = searchUsers();
@@ -226,6 +230,23 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
         return openCGAClient.getAdminClient().importUsers(userImportParams, queryParams);
+    }
+
+    private RestResponse<Acl> permissionsUsers() throws Exception {
+        logger.debug("Executing permissionsUsers in Admin command line");
+
+        AdminCommandOptions.PermissionsUsersCommandOptions commandOptions = adminCommandOptions.permissionsUsersCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("entryIds", commandOptions.entryIds);
+        queryParams.putIfNotEmpty("permissions", commandOptions.permissions);
+        queryParams.putIfNotEmpty("category", commandOptions.category);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getAdminClient().permissionsUsers(queryParams);
     }
 
     private RestResponse<Sample> searchUsers() throws Exception {
