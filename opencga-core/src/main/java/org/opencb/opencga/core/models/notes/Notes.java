@@ -1,10 +1,10 @@
-package org.opencb.opencga.core.models.settings;
+package org.opencb.opencga.core.models.notes;
 
 import org.opencb.opencga.core.models.PrivateFields;
 
 import java.util.List;
 
-public class Settings extends PrivateFields {
+public class Notes extends PrivateFields {
 
     // TODO: Indexes - id, version  <---
     private String id;
@@ -25,11 +25,11 @@ public class Settings extends PrivateFields {
         DOUBLE
     }
 
-    public Settings() {
+    public Notes() {
     }
 
-    public Settings(String id, String uuid, int version, String userId, List<String> tags, String creationDate, String modificationDate,
-                    Type valueType, Object value) {
+    public Notes(String id, String uuid, int version, String userId, List<String> tags, String creationDate, String modificationDate,
+                 Type valueType, Object value) {
         this.id = id;
         this.uuid = uuid;
         this.version = version;
@@ -43,7 +43,7 @@ public class Settings extends PrivateFields {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Settings{");
+        final StringBuilder sb = new StringBuilder("Notes{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", version=").append(version);
@@ -61,7 +61,7 @@ public class Settings extends PrivateFields {
         return id;
     }
 
-    public Settings setId(String id) {
+    public Notes setId(String id) {
         this.id = id;
         return this;
     }
@@ -70,7 +70,7 @@ public class Settings extends PrivateFields {
         return uuid;
     }
 
-    public Settings setUuid(String uuid) {
+    public Notes setUuid(String uuid) {
         this.uuid = uuid;
         return this;
     }
@@ -79,7 +79,7 @@ public class Settings extends PrivateFields {
         return version;
     }
 
-    public Settings setVersion(int version) {
+    public Notes setVersion(int version) {
         this.version = version;
         return this;
     }
@@ -88,7 +88,7 @@ public class Settings extends PrivateFields {
         return userId;
     }
 
-    public Settings setUserId(String userId) {
+    public Notes setUserId(String userId) {
         this.userId = userId;
         return this;
     }
@@ -97,7 +97,7 @@ public class Settings extends PrivateFields {
         return tags;
     }
 
-    public Settings setTags(List<String> tags) {
+    public Notes setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
@@ -106,7 +106,7 @@ public class Settings extends PrivateFields {
         return creationDate;
     }
 
-    public Settings setCreationDate(String creationDate) {
+    public Notes setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -115,7 +115,7 @@ public class Settings extends PrivateFields {
         return modificationDate;
     }
 
-    public Settings setModificationDate(String modificationDate) {
+    public Notes setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -124,7 +124,7 @@ public class Settings extends PrivateFields {
         return valueType;
     }
 
-    public Settings setValueType(Type valueType) {
+    public Notes setValueType(Type valueType) {
         this.valueType = valueType;
         return this;
     }
@@ -133,7 +133,7 @@ public class Settings extends PrivateFields {
         return value;
     }
 
-    public Settings setValue(Object value) {
+    public Notes setValue(Object value) {
         this.value = value;
         return this;
     }

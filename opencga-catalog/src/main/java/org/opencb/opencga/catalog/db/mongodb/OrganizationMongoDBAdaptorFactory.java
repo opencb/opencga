@@ -27,7 +27,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 
 public class OrganizationMongoDBAdaptorFactory {
 
-    public static final String SETTINGS_COLLECTION = "settings";
+    public static final String NOTES_COLLECTION = "notes";
     public static final String ORGANIZATION_COLLECTION = "organization";
     public static final String USER_COLLECTION = "user";
     public static final String PROJECT_COLLECTION = "project";
@@ -42,14 +42,14 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
 
-    public static final String SETTINGS_ARCHIVE_COLLECTION = "settings_archive";
+    public static final String NOTES_ARCHIVE_COLLECTION = "notes_archive";
     public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
     public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
     public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
-    public static final String DELETED_SETTINGS_COLLECTION = "settings_deleted";
+    public static final String DELETED_NOTES_COLLECTION = "notes_deleted";
     public static final String DELETED_USER_COLLECTION = "user_deleted";
     public static final String DELETED_PROJECT_COLLECTION = "project_deleted";
     public static final String DELETED_STUDY_COLLECTION = "study_deleted";
@@ -68,7 +68,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String AUDIT_COLLECTION = "audit";
 
     public static final List<String> COLLECTIONS_LIST = Arrays.asList(
-            SETTINGS_COLLECTION,
+            NOTES_COLLECTION,
             ORGANIZATION_COLLECTION,
             USER_COLLECTION,
             PROJECT_COLLECTION,
@@ -83,14 +83,14 @@ public class OrganizationMongoDBAdaptorFactory {
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
 
-            SETTINGS_ARCHIVE_COLLECTION,
+            NOTES_ARCHIVE_COLLECTION,
             SAMPLE_ARCHIVE_COLLECTION,
             INDIVIDUAL_ARCHIVE_COLLECTION,
             FAMILY_ARCHIVE_COLLECTION,
             PANEL_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
-            DELETED_SETTINGS_COLLECTION,
+            DELETED_NOTES_COLLECTION,
             DELETED_USER_COLLECTION,
             DELETED_PROJECT_COLLECTION,
             DELETED_STUDY_COLLECTION,
@@ -116,7 +116,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final String organizationId;
     private final String database;
 
-    private final SettingsMongoDBAdaptor settingsDBAdaptor;
+    private final NotesMongoDBAdaptor notesDBAdaptor;
     private final OrganizationMongoDBAdaptor organizationDBAdaptor;
     private final UserMongoDBAdaptor userDBAdaptor;
     private final ProjectMongoDBAdaptor projectDBAdaptor;
@@ -155,7 +155,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
         organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
-        MongoDBCollection settingsCollection = mongoDataStore.getCollection(SETTINGS_COLLECTION);
+        MongoDBCollection notesCollection = mongoDataStore.getCollection(NOTES_COLLECTION);
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
         MongoDBCollection projectCollection = mongoDataStore.getCollection(PROJECT_COLLECTION);
         MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
@@ -169,14 +169,14 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
-        MongoDBCollection settingsArchivedCollection = mongoDataStore.getCollection(SETTINGS_ARCHIVE_COLLECTION);
+        MongoDBCollection notesArchivedCollection = mongoDataStore.getCollection(NOTES_ARCHIVE_COLLECTION);
         MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
         MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
         MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
-        MongoDBCollection deletedSettingsCollection = mongoDataStore.getCollection(DELETED_SETTINGS_COLLECTION);
+        MongoDBCollection deletedNotesCollection = mongoDataStore.getCollection(DELETED_NOTES_COLLECTION);
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedProjectCollection = mongoDataStore.getCollection(DELETED_PROJECT_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
@@ -192,7 +192,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
-        settingsDBAdaptor = new SettingsMongoDBAdaptor(settingsCollection, settingsArchivedCollection, deletedSettingsCollection,
+        notesDBAdaptor = new NotesMongoDBAdaptor(notesCollection, notesArchivedCollection, deletedNotesCollection,
                 configuration, this);
         organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, configuration, this);
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, configuration, this);
@@ -221,7 +221,7 @@ public class OrganizationMongoDBAdaptorFactory {
 //        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
         mongoDBCollectionMap.put(MIGRATION_COLLECTION, migrationCollection);
 
-        mongoDBCollectionMap.put(SETTINGS_COLLECTION, settingsCollection);
+        mongoDBCollectionMap.put(NOTES_COLLECTION, notesCollection);
         mongoDBCollectionMap.put(ORGANIZATION_COLLECTION, organizationCollection);
         mongoDBCollectionMap.put(USER_COLLECTION, userCollection);
         mongoDBCollectionMap.put(STUDY_COLLECTION, studyCollection);
@@ -235,14 +235,14 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         mongoDBCollectionMap.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
-        mongoDBCollectionMap.put(SETTINGS_ARCHIVE_COLLECTION, settingsArchivedCollection);
+        mongoDBCollectionMap.put(NOTES_ARCHIVE_COLLECTION, notesArchivedCollection);
         mongoDBCollectionMap.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
         mongoDBCollectionMap.put(INDIVIDUAL_ARCHIVE_COLLECTION, individualArchivedCollection);
         mongoDBCollectionMap.put(FAMILY_ARCHIVE_COLLECTION, familyArchivedCollection);
         mongoDBCollectionMap.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
         mongoDBCollectionMap.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
 
-        mongoDBCollectionMap.put(DELETED_SETTINGS_COLLECTION, deletedSettingsCollection);
+        mongoDBCollectionMap.put(DELETED_NOTES_COLLECTION, deletedNotesCollection);
         mongoDBCollectionMap.put(DELETED_USER_COLLECTION, deletedUserCollection);
         mongoDBCollectionMap.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         mongoDBCollectionMap.put(DELETED_FILE_COLLECTION, deletedFileCollection);
@@ -412,8 +412,8 @@ public class OrganizationMongoDBAdaptorFactory {
         return null;
     }
 
-    public SettingsMongoDBAdaptor getCatalogSettingsDBAdaptor() {
-        return settingsDBAdaptor;
+    public NotesMongoDBAdaptor getCatalogNotesDBAdaptor() {
+        return notesDBAdaptor;
     }
 
     public OrganizationMongoDBAdaptor getCatalogOrganizationDBAdaptor() {

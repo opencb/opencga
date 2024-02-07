@@ -75,7 +75,7 @@ public class CatalogManager implements AutoCloseable {
     private AuthenticationFactory authenticationFactory;
 
     private AdminManager adminManager;
-    private SettingsManager settingsManager;
+    private NotesManager notesManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -143,7 +143,7 @@ public class CatalogManager implements AutoCloseable {
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
-        settingsManager = new SettingsManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        notesManager = new NotesManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 authenticationFactory, configuration);
@@ -382,8 +382,8 @@ public class CatalogManager implements AutoCloseable {
         return adminManager;
     }
 
-    public SettingsManager getSettingsManager() {
-        return settingsManager;
+    public NotesManager getNotesManager() {
+        return notesManager;
     }
 
     public OrganizationManager getOrganizationManager() {

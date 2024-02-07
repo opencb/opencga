@@ -50,7 +50,7 @@ public class UuidUtils {
         PANEL(10),
         INTERPRETATION(11),
         ORGANIZATION(12),
-        SETTINGS(13);
+        NOTES(13);
 
         private final int mask;
 

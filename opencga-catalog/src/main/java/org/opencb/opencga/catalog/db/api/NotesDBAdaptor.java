@@ -5,16 +5,16 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.settings.Settings;
+import org.opencb.opencga.core.models.notes.Notes;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-public interface SettingsDBAdaptor extends DBAdaptor<Settings> {
+public interface NotesDBAdaptor extends DBAdaptor<Notes> {
 
-    OpenCGAResult<Settings> insert(Settings settings)  throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<Notes> insert(Notes notes)  throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
         UID("uid", LONG, ""),

@@ -1,21 +1,21 @@
-package org.opencb.opencga.core.models.settings;
+package org.opencb.opencga.core.models.notes;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
 import java.util.List;
 
-public class SettingsCreateParams {
+public class NotesCreateParams {
 
     private String id;
     private List<String> tags;
-    private Settings.Type type;
+    private Notes.Type type;
     private Object value;
 
-    public SettingsCreateParams() {
+    public NotesCreateParams() {
     }
 
-    public SettingsCreateParams(String id, List<String> tags, Settings.Type type, Object value) {
+    public NotesCreateParams(String id, List<String> tags, Notes.Type type, Object value) {
         this.id = id;
         this.tags = tags;
         this.type = type;
@@ -24,7 +24,7 @@ public class SettingsCreateParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SettingsCreateParams{");
+        final StringBuilder sb = new StringBuilder("NotesCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", tags=").append(tags);
         sb.append(", type=").append(type);
@@ -33,8 +33,8 @@ public class SettingsCreateParams {
         return sb.toString();
     }
 
-    public Settings toSettings(String userId) {
-        return new Settings(id, null, 1, userId, tags != null ? tags : Collections.emptyList(), TimeUtils.getTime(), TimeUtils.getTime(),
+    public Notes toSettings(String userId) {
+        return new Notes(id, null, 1, userId, tags != null ? tags : Collections.emptyList(), TimeUtils.getTime(), TimeUtils.getTime(),
                     type, value != null ? value : Collections.emptyMap());
     }
 
@@ -42,7 +42,7 @@ public class SettingsCreateParams {
         return id;
     }
 
-    public SettingsCreateParams setId(String id) {
+    public NotesCreateParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -51,16 +51,16 @@ public class SettingsCreateParams {
         return tags;
     }
 
-    public SettingsCreateParams setTags(List<String> tags) {
+    public NotesCreateParams setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
 
-    public Settings.Type getType() {
+    public Notes.Type getType() {
         return type;
     }
 
-    public SettingsCreateParams setType(Settings.Type type) {
+    public NotesCreateParams setType(Notes.Type type) {
         this.type = type;
         return this;
     }
@@ -69,7 +69,7 @@ public class SettingsCreateParams {
         return value;
     }
 
-    public SettingsCreateParams setValue(Object value) {
+    public NotesCreateParams setValue(Object value) {
         this.value = value;
         return this;
     }

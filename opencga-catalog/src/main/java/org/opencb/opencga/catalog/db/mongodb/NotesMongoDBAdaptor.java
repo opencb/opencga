@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.SettingsDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.SettingsConverter;
+import org.opencb.opencga.catalog.db.api.NotesDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.NotesConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.settings.Settings;
+import org.opencb.opencga.core.models.notes.Notes;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -31,70 +31,70 @@ import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryP
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterObjectParams;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
 
-public class SettingsMongoDBAdaptor extends MongoDBAdaptor implements SettingsDBAdaptor {
+public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdaptor {
 
-    private final MongoDBCollection settingsCollection;
-    private final MongoDBCollection archiveSettingsCollection;
-    private final MongoDBCollection deletedSettingsCollection;
-    private final SettingsConverter settingsConverter;
+    private final MongoDBCollection notesCollection;
+    private final MongoDBCollection archiveNotesCollection;
+    private final MongoDBCollection deletedNotesCollection;
+    private final NotesConverter notesConverter;
     private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
-    public SettingsMongoDBAdaptor(MongoDBCollection settingsCollection, MongoDBCollection archiveSettingsCollection,
-                                  MongoDBCollection deletedSettingsCollection, Configuration configuration,
-                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(SettingsMongoDBAdaptor.class));
+    public NotesMongoDBAdaptor(MongoDBCollection notesCollection, MongoDBCollection archiveNotesCollection,
+                               MongoDBCollection deletedNotesCollection, Configuration configuration,
+                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(NotesMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.settingsCollection = settingsCollection;
-        this.archiveSettingsCollection = archiveSettingsCollection;
-        this.deletedSettingsCollection = deletedSettingsCollection;
-        this.settingsConverter = new SettingsConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(settingsCollection, archiveSettingsCollection,
-                deletedSettingsCollection);
+        this.notesCollection = notesCollection;
+        this.archiveNotesCollection = archiveNotesCollection;
+        this.deletedNotesCollection = deletedNotesCollection;
+        this.notesConverter = new NotesConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(notesCollection, archiveNotesCollection,
+                deletedNotesCollection);
     }
 
     @Override
-    public OpenCGAResult<Settings> insert(Settings settings)
+    public OpenCGAResult<Notes> insert(Notes notes)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
-            logger.debug("Starting settings insert transaction for settings id '{}'", settings.getId());
+            logger.debug("Starting notes insert transaction for notes id '{}'", notes.getId());
 
-            insert(clientSession, settings);
+            insert(clientSession, notes);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create settings {}: {}", settings.getId(), e.getMessage()));
+        }, e -> logger.error("Could not create notes {}: {}", notes.getId(), e.getMessage()));
     }
 
-    Settings insert(ClientSession clientSession, Settings settings)
+    Notes insert(ClientSession clientSession, Notes notes)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (StringUtils.isEmpty(settings.getId())) {
-            throw new CatalogDBException("Missing settings id");
+        if (StringUtils.isEmpty(notes.getId())) {
+            throw new CatalogDBException("Missing notes id");
         }
 
-        // Check it doesn't already exist a settings with same id
-        Bson bson = Filters.eq(QueryParams.ID.key(), settings.getId());
-        DataResult<Long> count = settingsCollection.count(clientSession, bson);
+        // Check it doesn't already exist a notes with same id
+        Bson bson = Filters.eq(QueryParams.ID.key(), notes.getId());
+        DataResult<Long> count = notesCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Settings { id: '" + settings.getId() + "'} already exists.");
+            throw new CatalogDBException("Notes { id: '" + notes.getId() + "'} already exists.");
         }
-        long settingsUid = getNewUid(clientSession);
-        settings.setUid(settingsUid);
-        if (StringUtils.isEmpty(settings.getUuid())) {
-            settings.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SETTINGS));
+        long notesUid = getNewUid(clientSession);
+        notes.setUid(notesUid);
+        if (StringUtils.isEmpty(notes.getUuid())) {
+            notes.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTES));
         }
 
-        Document settingsObject = settingsConverter.convertToStorageType(settings);
+        Document notesObject = notesConverter.convertToStorageType(notes);
 
         // Private parameters
-        settingsObject.put(PRIVATE_CREATION_DATE,
-                StringUtils.isNotEmpty(settings.getCreationDate()) ? TimeUtils.toDate(settings.getCreationDate()) : TimeUtils.getDate());
-        settingsObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(settings.getModificationDate())
-                ? TimeUtils.toDate(settings.getModificationDate()) : TimeUtils.getDate());
+        notesObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(notes.getCreationDate()) ? TimeUtils.toDate(notes.getCreationDate()) : TimeUtils.getDate());
+        notesObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(notes.getModificationDate())
+                ? TimeUtils.toDate(notes.getModificationDate()) : TimeUtils.getDate());
 
-        logger.debug("Inserting settings '{}'...", settings.getId());
-        versionedMongoDBAdaptor.insert(clientSession, settingsObject);
-        logger.debug("Settings '{}' successfully inserted", settings.getId());
+        logger.debug("Inserting notes '{}'...", notes.getId());
+        versionedMongoDBAdaptor.insert(clientSession, notesObject);
+        logger.debug("Notes '{}' successfully inserted", notes.getId());
 
-        return settings;
+        return notes;
     }
 
     @Override
@@ -103,18 +103,18 @@ public class SettingsMongoDBAdaptor extends MongoDBAdaptor implements SettingsDB
     }
 
     @Override
-    public OpenCGAResult<Settings> stats(Query query) {
+    public OpenCGAResult<Notes> stats(Query query) {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Settings> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Notes> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    OpenCGAResult<Settings> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Notes> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        try (DBIterator<Settings> dbIterator = iterator(clientSession, query, options)) {
+        try (DBIterator<Notes> dbIterator = iterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -131,47 +131,47 @@ public class SettingsMongoDBAdaptor extends MongoDBAdaptor implements SettingsDB
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, uid, parameters, queryOptions));
         } catch (CatalogDBException e) {
-            logger.error("Could not update settings: {}", e.getMessage(), e);
-            throw new CatalogDBException("Could not update settings: " + e.getMessage(), e.getCause());
+            logger.error("Could not update notes: {}", e.getMessage(), e);
+            throw new CatalogDBException("Could not update notes: " + e.getMessage(), e.getCause());
         }
     }
 
     @Override
-    public OpenCGAResult<Settings> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Notes> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, long settingsUid, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, long notesUid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
-        Query tmpQuery = new Query(QueryParams.UID.key(), settingsUid);
+        Query tmpQuery = new Query(QueryParams.UID.key(), notesUid);
         Bson bsonQuery = parseQuery(tmpQuery);
         return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
-            Document settingsUpdate = updateParams.toFinalUpdateDocument();
+            Document notesUpdate = updateParams.toFinalUpdateDocument();
 
-            if (settingsUpdate.isEmpty()) {
+            if (notesUpdate.isEmpty()) {
                 if (!parameters.isEmpty()) {
                     logger.error("Non-processed update parameters: {}", parameters.keySet());
                 }
                 throw new CatalogDBException("Nothing to be updated");
             }
 
-            logger.debug("Settings update: query : {}, update: {}", bsonQuery.toBsonDocument(), settingsUpdate.toBsonDocument());
-            DataResult<?> result = settingsCollection.update(clientSession, bsonQuery, settingsUpdate, new QueryOptions("multi", true));
+            logger.debug("Notes update: query : {}, update: {}", bsonQuery.toBsonDocument(), notesUpdate.toBsonDocument());
+            DataResult<?> result = notesCollection.update(clientSession, bsonQuery, notesUpdate, new QueryOptions("multi", true));
 
             if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Settings '" + settingsUid + "' not found");
+                throw new CatalogDBException("Notes '" + notesUid + "' not found");
             }
 
             List<Event> events = new ArrayList<>();
             if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, "", "Settings was already updated"));
+                events.add(new Event(Event.Type.WARNING, "", "Notes was already updated"));
             }
 
-            logger.debug("Settings '{}' successfully updated", settingsUid);
+            logger.debug("Notes '{}' successfully updated", notesUid);
 
             return endWrite(tmpStartTime, 1, 1, events);
         });
@@ -235,53 +235,53 @@ public class SettingsMongoDBAdaptor extends MongoDBAdaptor implements SettingsDB
     }
 
     @Override
-    public OpenCGAResult<Settings> delete(Settings settings)
+    public OpenCGAResult<Notes> delete(Notes notes)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, settings));
+            return runTransaction(clientSession -> privateDelete(clientSession, notes));
         } catch (CatalogDBException e) {
-            throw new CatalogDBException("Could not delete settings " + settings.getId() + ": " + e.getMessage(), e);
+            throw new CatalogDBException("Could not delete notes " + notes.getId() + ": " + e.getMessage(), e);
         }
     }
 
-    private OpenCGAResult<Settings> privateDelete(ClientSession clientSession, Settings settings)
+    private OpenCGAResult<Notes> privateDelete(ClientSession clientSession, Notes notes)
             throws CatalogDBException {
         long tmpStartTime = startQuery();
 
-        logger.debug("Deleting settings {} ({})", settings.getId(), settings.getUid());
+        logger.debug("Deleting notes {} ({})", notes.getId(), notes.getUid());
 
-        // Delete settings
-        Query settingsQuery = new Query(QueryParams.UID.key(), settings.getUid());
-        Bson bsonQuery = parseQuery(settingsQuery);
+        // Delete notes
+        Query notesQuery = new Query(QueryParams.UID.key(), notes.getUid());
+        Bson bsonQuery = parseQuery(notesQuery);
         versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
-        logger.debug("Settings {}({}) deleted", settings.getId(), settings.getUid());
+        logger.debug("Notes {}({}) deleted", notes.getId(), notes.getUid());
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     @Override
-    public OpenCGAResult<Settings> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Notes> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Settings> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<Notes> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Settings> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<Notes> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public DBIterator<Settings> iterator(Query query, QueryOptions options)
+    public DBIterator<Notes> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
-    DBIterator<Settings> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    DBIterator<Notes> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new CatalogMongoDBIterator<>(mongoCursor, settingsConverter);
+        return new CatalogMongoDBIterator<>(mongoCursor, notesConverter);
     }
 
     @Override
@@ -302,26 +302,26 @@ public class SettingsMongoDBAdaptor extends MongoDBAdaptor implements SettingsDB
         }
 
         Bson bson = parseQuery(finalQuery);
-        MongoDBCollection collection = getQueryCollection(finalQuery, settingsCollection, archiveSettingsCollection,
-                deletedSettingsCollection);
-        logger.debug("Settings query: {}", bson.toBsonDocument());
+        MongoDBCollection collection = getQueryCollection(finalQuery, notesCollection, archiveNotesCollection,
+                deletedNotesCollection);
+        logger.debug("Notes query: {}", bson.toBsonDocument());
         return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     @Override
-    public OpenCGAResult<Settings> rank(Query query, String field, int numResults, boolean asc)
+    public OpenCGAResult<Notes> rank(Query query, String field, int numResults, boolean asc)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Settings> groupBy(Query query, String field, QueryOptions options)
+    public OpenCGAResult<Notes> groupBy(Query query, String field, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Settings> groupBy(Query query, List<String> fields, QueryOptions options)
+    public OpenCGAResult<Notes> groupBy(Query query, List<String> fields, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
