@@ -107,6 +107,8 @@ healthCheck:
 
 
 analysis:
+  packages: # List of packages where to find analysis tools
+    - "org.opencb.opencga"
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"

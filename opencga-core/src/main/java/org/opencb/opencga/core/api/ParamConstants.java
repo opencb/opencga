@@ -38,6 +38,10 @@ public class ParamConstants {
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    public static final String ENTRY_ID_LIST_DESCRIPTION = "Comma separated list of entry ids.";
+    public static final String ENTRY_ID_LIST = "entryIds";
+    public static final String PERMISSION_LIST_DESCRIPTION = "Comma separated list of permissions to be retrieved.";
+    public static final String PERMISSION_LIST = "permissions";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
@@ -86,6 +90,9 @@ public class ParamConstants {
     public static final String POP_FREQ_GNOMAD_GENOMES = "GNOMAD_GENOMES";
 
     public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
+
+    public static final String CATEGORY = "category";
+    public static final String CATEGORY_DESCRIPTION = "Category corresponding to the id's provided.";
 
     // ---------------------------------------------
     public static final String FORCE = "force";

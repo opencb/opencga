@@ -105,6 +105,82 @@ public final class Enums {
                     return Collections.emptyList();
             }
         }
+
+        public String toStudyPermission(String permission) {
+            switch (this) {
+                case SAMPLE:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.SAMPLE).name();
+                case FILE:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.FILE).name();
+                case COHORT:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.COHORT).name();
+                case INDIVIDUAL:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.INDIVIDUAL).name();
+                case FAMILY:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.FAMILY).name();
+                case JOB:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.JOB).name();
+                case DISEASE_PANEL:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.DISEASE_PANEL).name();
+                case CLINICAL_ANALYSIS:
+                    return StudyPermissions.Permissions.getStudyPermission(permission, StudyPermissions.CLINICAL_ANALYSIS).name();
+                case STUDY:
+                default:
+                    return permission;
+            }
+        }
+
+        public String fromStudyPermission(String permission) {
+            StudyPermissions.Permissions studyPermission = StudyPermissions.Permissions.valueOf(permission);
+            switch (this) {
+                case SAMPLE:
+                    if (studyPermission.getType() == StudyPermissions.SAMPLE) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case FILE:
+                    if (studyPermission.getType() == StudyPermissions.FILE) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case COHORT:
+                    if (studyPermission.getType() == StudyPermissions.COHORT) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case INDIVIDUAL:
+                    if (studyPermission.getType() == StudyPermissions.INDIVIDUAL) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case FAMILY:
+                    if (studyPermission.getType() == StudyPermissions.FAMILY) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case JOB:
+                    if (studyPermission.getType() == StudyPermissions.JOB) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case DISEASE_PANEL:
+                    if (studyPermission.getType() == StudyPermissions.DISEASE_PANEL) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case CLINICAL_ANALYSIS:
+                    if (studyPermission.getType() == StudyPermissions.CLINICAL_ANALYSIS) {
+                        return studyPermission.getPermission();
+                    }
+                    break;
+                case STUDY:
+                default:
+                    return permission;
+            }
+            throw new IllegalArgumentException("Study permission '" + permission + "' does not seem to have an equivalent valid permission"
+                    + " for the  entity '" + this + "'");
+        }
+
     }
 
     public enum Action {

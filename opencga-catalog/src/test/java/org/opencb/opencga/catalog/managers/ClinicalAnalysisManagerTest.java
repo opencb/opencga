@@ -18,10 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.*;
@@ -41,6 +38,7 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -75,6 +73,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -132,7 +132,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Individual mother = new Individual().setId("mother")
                 .setSex(SexOntologyTermAnnotation.initFemale())
                 .setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                null)));
+                        null)));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
@@ -3683,6 +3683,40 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(proband.getSamples().get(1).getId(), result.getResults().get(1).getProband().getSamples().get(0).getId());
     }
 
+    @Test
+    public void loadClinicalAnalysesTest() throws CatalogException, IOException {
+        String gzFile = getClass().getResource("/biofiles/clinical_analyses.json.gz").getFile();
+        File file = catalogManager.getFileManager().link(STUDY, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
+                null), false, sessionIdUser).first();
+
+        Path filePath = Paths.get(file.getUri());
+
+        System.out.println("Loading clinical analyses file: " + filePath + " ....");
+        ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(STUDY, filePath, sessionIdUser);
+        System.out.println(loadResult);
+
+        Assert.assertEquals(1, loadResult.getFailures().size());
+
+        String ca1Id = "SAP-45016-1";
+        String ca2Id = "OPA-6607-1";
+
+        Query query = new Query();
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser);
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca1Id));
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca2Id));
+
+        query.put("id", ca1Id);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser).first();
+        Assert.assertEquals(ca1Id, clinicalAnalysis.getId());
+
+        query.put("id", ca2Id);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(),
+                sessionIdUser).first();
+        Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
+    }
+
     // Annotation sets
     @Test
     public void searchByInternalAnnotationSetTest() throws CatalogException {
@@ -3804,5 +3838,4 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         annotDataResult = catalogManager.getClinicalAnalysisManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(0, annotDataResult.getNumResults());
     }
-
 }
