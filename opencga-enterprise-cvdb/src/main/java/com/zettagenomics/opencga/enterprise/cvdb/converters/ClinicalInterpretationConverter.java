@@ -159,7 +159,6 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             try {
                 String json = mapper.writeValueAsString(interpretation);
                 cis.setMaxJson(json);
-//                cis.setMaxJson(ConverterUtils.compressToBase64(json));
 
                 // Clinical analysis copy
                 Interpretation copy = interpretationReader.readValue(json);
@@ -172,18 +171,14 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
 
                 json = mapper.writeValueAsString(copy);
                 cis.setMediumJson(json);
-//                cis.setMediumJson(ConverterUtils.compressToBase64(json));
 
                 // Minimum JSON
-                //  - minimizing primary and secondary findings
+                //  - minimizing primary and secondary findings, i.e., remove variant annotation
                 minimizeClinicalVariants(copy.getPrimaryFindings());
                 minimizeClinicalVariants(copy.getSecondaryFindings());
-//                copy.setPrimaryFindings(null);
-//                copy.setSecondaryFindings(null);
 
                 json = mapper.writeValueAsString(copy);
                 cis.setMinJson(json);
-//                cis.setMinJson(ConverterUtils.compressToBase64(json));
             } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical interpretation JSON fields", e);
             }
@@ -200,7 +195,6 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             // Build clinical interpretation from the field 'maxJson'
             try {
                 ci = interpretationReader.readValue(cis.getMaxJson());
-//                ci = interpretationReader.readValue(ConverterUtils.decompressFromBase64(cis.getMaxJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical interpretation from the field maxJson", e);
             }
@@ -208,7 +202,6 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             // Build clinical interpretation from the field 'mediumJson'
             try {
                 ci = interpretationReader.readValue(cis.getMediumJson());
-//                ci = interpretationReader.readValue(ConverterUtils.decompressFromBase64(cis.getMediumJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical interpretation from the field mediumJson", e);
             }
@@ -216,7 +209,6 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             // Build clinical interpretation from the field 'minJson'
             try {
                 ci = interpretationReader.readValue(cis.getMinJson());
-//                ci = interpretationReader.readValue(ConverterUtils.decompressFromBase64(cis.getMinJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical interpretation from the field minJson", e);
             }
@@ -237,7 +229,7 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             }
 
             // Analyst
-            ClinicalAnalyst analyst = ci.getAnalyst()
+            ClinicalAnalyst analyst = new ClinicalAnalyst()
                     .setId(cis.getAnalystId())
                     .setName(cis.getAnalystName())
                     .setEmail(cis.getAnalystEmail())

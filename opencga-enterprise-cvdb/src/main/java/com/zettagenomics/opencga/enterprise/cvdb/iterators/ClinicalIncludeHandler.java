@@ -28,17 +28,24 @@ import java.util.*;
  */
 public class ClinicalIncludeHandler {
 
+    public static final String INTERNAL_INCLUDE_MINIMUM_JSON = "internal-min";
+    public static final String INTERNAL_INCLUDE_MEDIUM_JSON = "internal-medium";
+
     protected boolean exclude;
     protected List<String> inputFields;
 
     public ClinicalIncludeHandler(QueryOptions queryOptions) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             exclude = false;
-            inputFields = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            inputFields = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
         } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
             exclude = true;
-            inputFields = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+            inputFields = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        } else {
+             inputFields = new ArrayList<>();
         }
+        inputFields.remove(INTERNAL_INCLUDE_MINIMUM_JSON);
+        inputFields.remove(INTERNAL_INCLUDE_MEDIUM_JSON);
     }
 
     public <T> T applyInclude(T object) {

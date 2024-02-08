@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
@@ -104,9 +105,9 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
     }
 
     private Set<String> getCasIncludeFromInclude(List<String> caFields) {
-        if (caFields.contains("min")) {
+        if (caFields.contains(ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON)) {
             Collections.singleton("minJson");
-        } else if (caFields.contains("medium")) {
+        } else if (caFields.contains(ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON)) {
             return Collections.singleton("mediumJson");
         }
 
@@ -120,12 +121,12 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
             } else if (needsMaxJson(caField)) {
                 // This field is stored only the maxJson field
                 return Collections.singleton("maxJson");
-            } else if (containnedInMinJson(caField)) {
-                // This field can be retrieved from the minJson field
-                useMinJson = true;
-            } else {
-                // Otherwise, use the medium JSON field
+            } else if (needsMediumJson(caField)) {
+                // This field can be retrieved from the medium JSON field
                 useMediumJson = true;
+            } else {
+                // Otherwise, use the minimum JSON field
+                useMinJson = true;
             }
         }
         if (useMediumJson) {
@@ -140,7 +141,14 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
         if (caFields.contains("panels")
                 && caFields.contains("interpretation.panels")
                 && caFields.contains("secondaryInterpretations.panels")) {
-            return Collections.singleton("mediumJson");
+            if ((caFields.contains("interpretation") || caFields.contains("interpretation.primaryFindings")
+                    || caFields.contains("interpretation.primaryFindings.annotation"))
+                    && (caFields.contains("secondaryInterpretations") || caFields.contains("secondaryInterpretations.primaryFindings")
+                    || caFields.contains("secondaryInterpretations.primaryFindings.annotation"))) {
+                return Collections.singleton("minJson");
+            } else {
+                return Collections.singleton("mediumJson");
+            }
         }
         return Collections.singleton("maxJson");
     }
@@ -167,53 +175,21 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
                 || caField.startsWith("secondaryInterpretations.panels.regions"));
     }
 
-
-    private boolean containnedInMinJson(String caField) {
-        // Checking fields for using the minimum JSON
-        return (caField.equals("disorder.id")
-                || caField.equals("disorder.name")
-                || caField.equals("disorder.description")
-                || caField.equals("disorder.source")
-                || caField.equals("disorder.url")
-                || caField.equals("files.id")
-                || caField.equals("files.name")
-                || caField.equals("proband.id")
-                || caField.equals("proband.sex")
-                || caField.equals("proband.samples.id")
-                || caField.equals("family.id")
-                || caField.equals("family.name")
-                || caField.equals("family.members.id")
-                || caField.equals("family.members.sex")
-                || caField.equals("family.members.samples.id")
-                || caField.equals("family.panels.id")
-                || caField.equals("family.panels.name")
-                || caField.equals("family.panels.source")
-                || caField.equals("family.panels.stats")
-                || caField.equals("panels.id")
-                || caField.equals("panels.name")
-                || caField.equals("panels.source")
-                || caField.equals("panels.stats")
-                || caField.equals("interpretation.id")
-                || caField.equals("interpretation.method")
-                || caField.equals("interpretation.stats")
-                || caField.startsWith("consent")
-                || caField.startsWith("analyst")
-                || caField.startsWith("analysts")
-                || caField.startsWith("report")
-                || caField.startsWith("request")
-                || caField.startsWith("responsible")
-                || caField.startsWith("priority")
-                || caField.startsWith("flags")
-                || caField.equals("creationDate")
-                || caField.equals("modificationDate")
-                || caField.equals("dueDate")
-                || caField.equals("release")
-                || caField.startsWith("qualityControl")
-                || caField.startsWith("comments")
-                || caField.startsWith("audit")
-                || caField.startsWith("internal")
-                || caField.startsWith("attributes")
-                || caField.startsWith("status"));
+    private boolean needsMediumJson(String caField) {
+        // Checking fields for using the medium JSON:
+        //     interpretation.primaryFindings.annotation
+        //     interpretation.panels.variants | genes | strs | regions
+        //     secondaryInterpretations.panels.variants | genes | strs | regions
+        return (caField.equals("interpretation")
+                || caField.equals("interpretation.primaryFindings")
+                || caField.equals("interpretation.secondaryFindings")
+                || caField.startsWith("interpretation.primaryFindings.annotation")
+                || caField.startsWith("interpretation.secondaryFindings.annotation")
+                || caField.equals("secondaryInterpretations")
+                || caField.equals("secondaryInterpretations.primaryFindings")
+                || caField.equals("secondaryInterpretations.secondaryFindings")
+                || caField.startsWith("secondaryInterpretations.primaryFindings.annotation")
+                || caField.startsWith("secondaryInterpretations.secondaryFindings.annotation"));
     }
 
     static {

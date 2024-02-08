@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
 import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.clinical.interpretation.Software;
@@ -110,9 +111,9 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
     }
 
     private Set<String> getCisIncludeFromInclude(List<String> caFields) {
-        if (caFields.contains("min")) {
+        if (caFields.contains(ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON)) {
             Collections.singleton("minJson");
-        } else if (caFields.contains("medium")) {
+        } else if (caFields.contains(ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON)) {
             return Collections.singleton("mediumJson");
         }
 
@@ -124,14 +125,14 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
                 // This field is stored in a Solr indexed field
                 casFields.addAll(ciToCisFieldMap.get(caField));
             } else if (needsMaxJson(caField)) {
-                // This field is stored only the maxJson field
+                // This field is stored only the maximum JSON field
                 return Collections.singleton("maxJson");
-            } else if (containnedInMinJson(caField)) {
-                // This field can be retrieved from the minJson field
-                useMinJson = true;
-            } else {
-                // Otherwise, use the medium JSON field
+            } else if (needsMediumJson(caField)) {
+                // This field can be retrieved from the medium JSON field
                 useMediumJson = true;
+            } else {
+                // Otherwise, use the minimum JSON field
+                useMinJson = true;
             }
         }
         if (useMediumJson) {
@@ -159,53 +160,14 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
                 || ciField.startsWith("panels.regions"));
     }
 
-
-    private boolean containnedInMinJson(String ciField) {
-        // Checking fields for using the minimum JSON
-        return (ciField.equals("disorder.id")
-                || ciField.equals("disorder.name")
-                || ciField.equals("disorder.description")
-                || ciField.equals("disorder.source")
-                || ciField.equals("disorder.url")
-                || ciField.equals("files.id")
-                || ciField.equals("files.name")
-                || ciField.equals("proband.id")
-                || ciField.equals("proband.sex")
-                || ciField.equals("proband.samples.id")
-                || ciField.equals("family.id")
-                || ciField.equals("family.name")
-                || ciField.equals("family.members.id")
-                || ciField.equals("family.members.sex")
-                || ciField.equals("family.members.samples.id")
-                || ciField.equals("family.panels.id")
-                || ciField.equals("family.panels.name")
-                || ciField.equals("family.panels.source")
-                || ciField.equals("family.panels.stats")
-                || ciField.equals("panels.id")
-                || ciField.equals("panels.name")
-                || ciField.equals("panels.source")
-                || ciField.equals("panels.stats")
-                || ciField.equals("interpretation.id")
-                || ciField.equals("interpretation.method")
-                || ciField.equals("interpretation.stats")
-                || ciField.startsWith("consent")
-                || ciField.startsWith("analyst")
-                || ciField.startsWith("analysts")
-                || ciField.startsWith("report")
-                || ciField.startsWith("request")
-                || ciField.startsWith("responsible")
-                || ciField.startsWith("priority")
-                || ciField.startsWith("flags")
-                || ciField.equals("creationDate")
-                || ciField.equals("modificationDate")
-                || ciField.equals("dueDate")
-                || ciField.equals("release")
-                || ciField.startsWith("qualityControl")
-                || ciField.startsWith("comments")
-                || ciField.startsWith("audit")
-                || ciField.startsWith("internal")
-                || ciField.startsWith("attributes")
-                || ciField.startsWith("status"));
+    private boolean needsMediumJson(String caField) {
+        // Checking fields for using the medium JSON:
+        //    primaryFindings.annotation
+        //    secondaryFindings.annotation
+        return (caField.equals("primaryFindings")
+                || caField.equals("secondaryFindings")
+                || caField.startsWith("primaryFindings.annotation")
+                || caField.startsWith("secondaryFindings.annotation"));
     }
 
     static {

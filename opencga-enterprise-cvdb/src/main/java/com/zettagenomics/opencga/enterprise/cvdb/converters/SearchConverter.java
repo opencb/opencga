@@ -90,20 +90,6 @@ public class SearchConverter<M, N> {
         if (CollectionUtils.isNotEmpty(cvs)) {
             for (ClinicalVariant cv : cvs) {
                 cv.setAnnotation(null);
-                for (ClinicalVariantEvidence evidence : cv.getEvidences()) {
-                    evidence.setGenomicFeature(null);
-                    evidence.setAttributes(null);
-                    evidence.setModeOfInheritances(null);
-                    evidence.setReview(null);
-                    evidence.setCompoundHeterozygousVariantIds(null);
-                    evidence.setPhenotypes(null);
-                    evidence.setRolesInCancer(null);
-                    evidence.setClassification(null);
-                    evidence.setInterpretationMethodName(null);
-                    evidence.setPenetrance(null);
-                    evidence.setPanelId(null);
-                }
-//                cv.setEvidences(null);
             }
         }
     }

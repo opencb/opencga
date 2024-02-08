@@ -115,7 +115,6 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 // Maximum JSON
                 String json = mapper.writeValueAsString(ca);
                 cas.setMaxJson(json);
-//                cas.setMaxJson(ConverterUtils.compressToBase64(json));
 
                 // Clinical analysis copy
                 ClinicalAnalysis copy = clinicalAnalysisReader.readValue(json);
@@ -139,31 +138,24 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 }
                 json = mapper.writeValueAsString(copy);
                 cas.setMediumJson(json);
-//                cas.setMediumJson(ConverterUtils.compressToBase64(json));
 
                 // Minimum JSON
-                //  - from interpretation, remove primary and secondary findings
+                //  - from interpretation, minimize primary and secondary findings, i.e., remove variant annotation
                 if (copy.getInterpretation() != null) {
                     minimizeClinicalVariants(copy.getInterpretation().getPrimaryFindings());
                     minimizeClinicalVariants(copy.getInterpretation().getSecondaryFindings());
-//                    copy.getInterpretation().setPrimaryFindings(null);
-//                    copy.getInterpretation().setSecondaryFindings(null);
                 }
 
-                //  - from secondaryInterpretations, remove all
-                copy.setSecondaryInterpretations(null);
-//                if (CollectionUtils.isNotEmpty(copy.getSecondaryInterpretations())) {
-//                    for (Interpretation secondaryInterpretation : copy.getSecondaryInterpretations()) {
-//                        minimizeClinicalVariants(secondaryInterpretation.getPrimaryFindings());
-//                        minimizeClinicalVariants(secondaryInterpretation.getSecondaryFindings());
-////                        secondaryInterpretation.setPrimaryFindings(null);
-////                        secondaryInterpretation.setSecondaryFindings(null);
-//                    }
-//                }
+                //  - from secondaryInterpretations, minimize primary and secondary findings, i.e., remove variant annotation
+                if (CollectionUtils.isNotEmpty(copy.getSecondaryInterpretations())) {
+                    for (Interpretation secondaryInterpretation : copy.getSecondaryInterpretations()) {
+                        minimizeClinicalVariants(secondaryInterpretation.getPrimaryFindings());
+                        minimizeClinicalVariants(secondaryInterpretation.getSecondaryFindings());
+                    }
+                }
 
                 json = mapper.writeValueAsString(copy);
                 cas.setMinJson(json);
-//                cas.setMinJson(ConverterUtils.compressToBase64(json));
             } catch (IOException e) {
                 throw new CvdbException("Error when storing clinical analysis JSON fields", e);
             }
@@ -180,7 +172,6 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             // Build clinical analysis from the field 'maxJson'
             try {
                 ca = clinicalAnalysisReader.readValue(cas.getMaxJson());
-//                ca = clinicalAnalysisReader.readValue(ConverterUtils.decompressFromBase64(cas.getMaxJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical analysis from the field maxJson", e);
             }
@@ -188,7 +179,6 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             // Build clinical analysis from the field 'mediumJson'
             try {
                 ca = clinicalAnalysisReader.readValue(cas.getMediumJson());
-//                ca = clinicalAnalysisReader.readValue(ConverterUtils.decompressFromBase64(cas.getMediumJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical analysis from the field mediumJson", e);
             }
@@ -196,7 +186,6 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             // Build clinical analysis from the field 'minJson'
             try {
                 ca = clinicalAnalysisReader.readValue(cas.getMinJson());
-//                ca = clinicalAnalysisReader.readValue(ConverterUtils.decompressFromBase64(cas.getMinJson()));
             } catch (IOException e) {
                 throw new CvdbException("Error when converting to clinical analysis from the field minJson", e);
             }
