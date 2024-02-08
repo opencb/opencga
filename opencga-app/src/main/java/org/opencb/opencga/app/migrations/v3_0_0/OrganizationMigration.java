@@ -349,6 +349,7 @@ public class OrganizationMigration extends MigrationTool {
                 mongoCollection.updateMany(new Document(),
                         Updates.combine(
                                 Updates.set("projects", Collections.emptyList()),
+                                Updates.set("organization", organizationId),
                                 Updates.unset("sharedProjects"),
                                 Updates.unset("account.type")
                         )
