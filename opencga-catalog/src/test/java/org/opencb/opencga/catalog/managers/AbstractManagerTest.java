@@ -83,7 +83,7 @@ public class  AbstractManagerTest extends GenericTest {
     protected String orgAdminToken1;
     protected String orgAdminUserId2 = "orgAdminUser2";
     protected String orgAdminToken2;
-    protected String studyAdminUserId1 = "studyAdminUser2";
+    protected String studyAdminUserId1 = "studyAdminUser1";
     protected String studyAdminToken1;
     protected String normalUserId1 = "normalUser1";
     protected String normalToken1;

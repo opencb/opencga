@@ -1889,10 +1889,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     // Effective permissions testing
     @Test
     public void getEffectivePermissionsNoAdmins() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user2")), ownerToken);
         thrown.expect(CatalogAuthorizationException.class);
-        thrown.expectMessage("owners or administrative");
+        thrown.expectMessage("study administrators");
         catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_1Id, s_2Id), Enums.Resource.SAMPLE.name(),
                 normalToken1);
     }
@@ -1927,8 +1925,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(s_1Id, aclList.first().getId());
         assertEquals(1, aclList.first().getPermissions().size());
         assertEquals(SamplePermissions.VIEW.name(), aclList.first().getPermissions().get(0).getId());
-        assertEquals(1, aclList.first().getPermissions().get(0).getUserIds().size());
-        assertEquals("user", aclList.first().getPermissions().get(0).getUserIds().get(0));
+        assertEquals(7, aclList.first().getPermissions().get(0).getUserIds().size());
+        assertTrue(Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3)
+                .containsAll(aclList.first().getPermissions().get(0).getUserIds()));
 
         aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Collections.singletonList(s_1Id),
                 Enums.Resource.SAMPLE.name(), ownerToken);
@@ -1937,66 +1936,110 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(8, aclList.first().getPermissions().size());
         for (Acl.Permission permission : aclList.first().getPermissions()) {
             if ("NONE".equals(permission.getId())) {
-                assertTrue(permission.getUserIds().isEmpty());
-            } else {
                 assertEquals(1, permission.getUserIds().size());
-                assertEquals("user", permission.getUserIds().get(0));
+                assertEquals(ParamConstants.ANONYMOUS_USER_ID, permission.getUserIds().get(0));
+            } else {
+                if (permission.getId().startsWith("VIEW") || permission.getId().startsWith("WRITE")) {
+                    assertEquals(7, permission.getUserIds().size());
+                    assertTrue(Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3)
+                            .containsAll(permission.getUserIds()));
+                } else {
+                    // DELETE
+                    assertTrue(permission.getId().startsWith("DELETE"));
+                    assertEquals(6, permission.getUserIds().size());
+                    assertTrue(Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId2, normalUserId3)
+                            .containsAll(permission.getUserIds()));
+                }
             }
         }
 
         generatePermissionScenario();
-        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_1Id, s_2Id, s_3Id),
+        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_7Id, s_8Id, s_9Id),
                 Enums.Resource.SAMPLE.name(), ownerToken);
         assertEquals(3, aclList.getNumResults());
-        assertPermissions("s_1", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7"),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6"), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6"), Collections.emptyList(), aclList.getResults().get(0));
-        assertPermissions("s_2", Arrays.asList("user", "user2", "user4", "user5", "user6", "user7"),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6"), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6"), Collections.singletonList("user3"), aclList.getResults().get(1));
-        assertPermissions("s_3", Arrays.asList("user", "user2", "user3", "user5", "user6"),
-                Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user5", "user6"), Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user5", "user6"), Arrays.asList("user4", "user7"), aclList.getResults().get(2));
+        assertPermissions(s_7Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6"),
+                Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID), aclList.getResults().get(0));
+        assertPermissions(s_8Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user4", "user5", "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6"),
+                Arrays.asList(normalUserId3, ParamConstants.ANONYMOUS_USER_ID), aclList.getResults().get(1));
+        assertPermissions(s_9Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6"),
+                Arrays.asList(ParamConstants.ANONYMOUS_USER_ID, "user4", "user7"), aclList.getResults().get(2));
 
         // Now, we grant view_only access to anonymous user
         catalogManager.getStudyManager().updateAcl(studyFqn, ParamConstants.ANONYMOUS_USER_ID, new StudyAclParams(null, "view_only"),
                 ParamUtils.AclAction.SET, ownerToken);
 
-        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_1Id, s_2Id, s_3Id),
-                Enums.Resource.SAMPLE.name(), ownerToken);
+        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_7Id, s_8Id, s_9Id), Enums.Resource.SAMPLE.name(), ownerToken);
         assertEquals(3, aclList.getNumResults());
-        assertPermissions("s_1", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.emptyList(), aclList.getResults().get(0));
-        assertPermissions("s_2", Arrays.asList("user", "user2", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.singletonList("user3"), aclList.getResults().get(1));
-        assertPermissions("s_3", Arrays.asList("user", "user2", "user3", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user4", "user7"), aclList.getResults().get(2));
+        assertPermissions(s_7Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Collections.emptyList(), aclList.getResults().get(0));
+        assertPermissions(s_8Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Collections.singletonList(normalUserId3), aclList.getResults().get(1));
+        assertPermissions(s_9Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList("user4", "user7"), aclList.getResults().get(2));
 
         catalogManager.getConfiguration().getOptimizations().setSimplifyPermissions(true);
-        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_1Id, s_2Id, s_3Id),
-                Enums.Resource.SAMPLE.name(), ownerToken);
+        aclList = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, Arrays.asList(s_7Id, s_8Id, s_9Id), Enums.Resource.SAMPLE.name(), ownerToken);
         assertEquals(3, aclList.getNumResults());
-        assertPermissions("s_1", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.emptyList(), aclList.getResults().get(0));
-        assertPermissions("s_2", Arrays.asList("user", "user2", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user2", "user6", "user7"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user5", "user6", ParamConstants.ANONYMOUS_USER_ID), Collections.singletonList("user3"), aclList.getResults().get(1));
-        assertPermissions("s_3", Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
-                Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID), Arrays.asList("user", "user3", "user6"), Collections.singletonList("user"),
-                Arrays.asList("user", "user2", "user3", "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID), Collections.emptyList(), aclList.getResults().get(2));
+        assertPermissions(s_7Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Collections.emptyList(), aclList.getResults().get(0));
+        assertPermissions(s_8Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, "user6", "user7"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, "user5", "user6", ParamConstants.ANONYMOUS_USER_ID),
+                Collections.singletonList(normalUserId3), aclList.getResults().get(1));
+        assertPermissions(s_9Id, Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId3, "user6"),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1),
+                Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2, studyAdminUserId1, normalUserId1, normalUserId2, normalUserId3, "user4", "user5", "user6", "user7", ParamConstants.ANONYMOUS_USER_ID),
+                Collections.emptyList(), aclList.getResults().get(2));
 
     }
 
@@ -2008,36 +2051,36 @@ public class CatalogManagerTest extends AbstractManagerTest {
             SamplePermissions samplePermission = SamplePermissions.valueOf(permission.getId());
             switch (samplePermission) {
                 case NONE:
-                    assertEquals(none.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(none));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.NONE + " permission", none.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.NONE + " permission", permission.getUserIds().containsAll(none));
                     break;
                 case VIEW:
-                    assertEquals(view.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(view));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.VIEW + " permission", view.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.VIEW + " permission", permission.getUserIds().containsAll(view));
                     break;
                 case WRITE:
-                    assertEquals(write.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(write));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.WRITE + " permission", write.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.WRITE + " permission", permission.getUserIds().containsAll(write));
                     break;
                 case DELETE:
-                    assertEquals(delete.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(delete));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.DELETE + " permission", delete.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.DELETE + " permission", permission.getUserIds().containsAll(delete));
                     break;
                 case VIEW_ANNOTATIONS:
-                    assertEquals(viewAnnots.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(viewAnnots));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.VIEW_ANNOTATIONS + " permission", viewAnnots.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.VIEW_ANNOTATIONS + " permission", permission.getUserIds().containsAll(viewAnnots));
                     break;
                 case WRITE_ANNOTATIONS:
-                    assertEquals(writeAnnots.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(writeAnnots));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.WRITE_ANNOTATIONS + " permission", writeAnnots.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.WRITE_ANNOTATIONS + " permission", permission.getUserIds().containsAll(writeAnnots));
                     break;
                 case DELETE_ANNOTATIONS:
-                    assertEquals(deleteAnnots.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(deleteAnnots));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.DELETE_ANNOTATIONS + " permission", deleteAnnots.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.DELETE_ANNOTATIONS + " permission", permission.getUserIds().containsAll(deleteAnnots));
                     break;
                 case VIEW_VARIANTS:
-                    assertEquals(viewVariants.size(), permission.getUserIds().size());
-                    assertTrue(permission.getUserIds().containsAll(viewVariants));
+                    assertEquals("Sample " + id + ": " + SamplePermissions.VIEW_VARIANTS + " permission", viewVariants.size(), permission.getUserIds().size());
+                    assertTrue("Sample " + id + ": " + SamplePermissions.VIEW_VARIANTS + " permission", permission.getUserIds().containsAll(viewVariants));
                     break;
             }
         }
@@ -2055,7 +2098,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
            user6  - VIEW_WRITE (annots included)
            user7  - NONE
 
-        Sample s_1 permissions
+        Sample s_7 permissions
         ======================
         Group permissions
             @view - WRITE
@@ -2063,7 +2106,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         User permissions
             user3, user4 - VIEW
 
-        Sample s_2 permissions
+        Sample s_8 permissions
         ======================
         Group permissions
             @view - WRITE
@@ -2071,25 +2114,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
         User permissions
             user4 - VIEW
 
-        Sample s_3 permissions
+        Sample s_9 permissions
         ======================
         No permissions assigned
          */
-        catalogManager.getUserManager().create("user4", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, opencgaToken);
-        catalogManager.getUserManager().create("user5", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, opencgaToken);
-        catalogManager.getUserManager().create("user6", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
-        catalogManager.getUserManager().create("user7", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, opencgaToken);
+        catalogManager.getUserManager().create("user4", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create("user5", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create("user6", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
+        catalogManager.getUserManager().create("user7", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
 
-        catalogManager.getStudyManager().createGroup(studyFqn, "@view", Arrays.asList("user2", "user7"), ownerToken);
-        catalogManager.getStudyManager().createGroup(studyFqn, "@write", Collections.singletonList("user3"), ownerToken);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@view", Arrays.asList(normalUserId2, "user7"), ownerToken);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@write", Collections.singletonList(normalUserId3), ownerToken);
 
         catalogManager.getStudyManager().updateAcl(studyFqn, "@view,user5", new StudyAclParams(null, "view_only"), ParamUtils.AclAction.SET, ownerToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@write,user6", new StudyAclParams(null, "analyst"), ParamUtils.AclAction.SET, ownerToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "user4,user7", new StudyAclParams(null, null), ParamUtils.AclAction.SET, ownerToken);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_1Id, s_2Id), "@view", new SampleAclParams(null, null, null, null, "WRITE"), ParamUtils.AclAction.SET, ownerToken);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_1Id, s_2Id), "@write", new SampleAclParams(null, null, null, null, null), ParamUtils.AclAction.SET, ownerToken);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_1Id, s_2Id), "user4", new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(s_1Id), "user3", new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "@view", new SampleAclParams(null, null, null, null, "WRITE"), ParamUtils.AclAction.SET, ownerToken);
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "@write", new SampleAclParams(null, null, null, null, null), ParamUtils.AclAction.SET, ownerToken);
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "user4", new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
+        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(s_7Id), normalUserId3, new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
     }
 }
