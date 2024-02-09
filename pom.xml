@@ -14,7 +14,7 @@
         <module>opencga-enterprise-client</module>
         <module>opencga-enterprise-core</module>
         <module>opencga-enterprise-catalog</module>
-        <module>opencga-enterprise-cva</module>
+        <module>opencga-enterprise-cvdb</module>
         <module>opencga-enterprise-server</module>
     </modules>
 
@@ -74,7 +74,27 @@
         <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
         <!--See #1086-->
         <guava.version>19.0</guava.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <bson.version>4.8.2</bson.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/opencb</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -90,7 +110,7 @@
             </dependency>
             <dependency>
                 <groupId>com.zettagenomics.opencga-enterprise</groupId>
-                <artifactId>opencga-enterprise-cva</artifactId>
+                <artifactId>opencga-enterprise-cvdb</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>
@@ -543,6 +563,21 @@
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
             </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${bson.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -565,6 +600,15 @@
                 <ENTERPRISE.SSO.ATTRIBUTES.EMAIL>email</ENTERPRISE.SSO.ATTRIBUTES.EMAIL>
                 <ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>organization</ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION>
                 <ENTERPRISE.SSO.ATTRIBUTES.GROUPS>groups</ENTERPRISE.SSO.ATTRIBUTES.GROUPS>
+
+                <ENTERPRISE.CVDB.ACTIVE>true</ENTERPRISE.CVDB.ACTIVE>
+                <ENTERPRISE.CVDB.DATABASE.HOST>http://localhost:8983/solr/</ENTERPRISE.CVDB.DATABASE.HOST>
+                <ENTERPRISE.CVDB.DATABASE.MODE>cloud</ENTERPRISE.CVDB.DATABASE.MODE>
+                <ENTERPRISE.CVDB.DATABASE.TIMEOUT>30000</ENTERPRISE.CVDB.DATABASE.TIMEOUT>
+                <ENTERPRISE.CVDB.CA_CONFIG_SET>opencga-ca-configset-${project.parent.version}</ENTERPRISE.CVDB.CA_CONFIG_SET>
+                <ENTERPRISE.CVDB.CI_CONFIG_SET>opencga-ci-configset-${project.parent.version}</ENTERPRISE.CVDB.CI_CONFIG_SET>
+                <ENTERPRISE.CVDB.CV_CONFIG_SET>opencga-cv-configset-${project.parent.version}</ENTERPRISE.CVDB.CV_CONFIG_SET>
+                <ENTERPRISE.CVDB.CVE_CONFIG_SET>opencga-cve-configset-${project.parent.version}</ENTERPRISE.CVDB.CVE_CONFIG_SET>
 
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>

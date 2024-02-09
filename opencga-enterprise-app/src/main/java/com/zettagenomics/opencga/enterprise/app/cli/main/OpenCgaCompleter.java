@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-01-30 OpenCB
+* Copyright 2015-2024-02-09 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","cva","alignments","meta","organizations","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","organizations","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -60,7 +60,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> clinicalList = asList( "acl-update","annotation-sets-load","clinical-configuration-update","create","distinct","interpretation-distinct","interpretation-search","interpretation-info","interpreter-cancer-tiering-run","interpreter-exomiser-run","interpreter-team-run","interpreter-tiering-run","interpreter-zetta-run","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update")
+    private List<Candidate> clinicalList = asList( "acl-update","annotation-sets-load","clinical-configuration-update","create","cvdb-case-aggregation-stats","cvdb-case-query","cvdb-index-run","cvdb-interpretation-aggregation-stats","cvdb-interpretation-query","cvdb-variant-aggregation-stats","cvdb-variant-query","cvdb-variant-evidence-aggregation-stats","cvdb-variant-evidence-query","distinct","interpretation-distinct","interpretation-search","interpretation-info","interpreter-cancer-tiering-run","interpreter-exomiser-run","interpreter-team-run","interpreter-tiering-run","interpreter-zetta-run","load","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -70,7 +70,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -85,17 +85,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "create","login","password","info","configs","configs-update","filters","password-reset","update")
+    private List<Candidate> usersList = asList( "anonymous","create","login","password","info","configs","configs-update","filters","password-reset","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
     private List<Candidate> samplesList = asList( "acl-update","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    private List<Candidate> cvaList = asList( "info")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -153,7 +148,6 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "families", familiesList);
         mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
-        mapCandidates.put( "cva", cvaList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
         mapCandidates.put( "organizations", organizationsList);

@@ -66,6 +66,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "anonymous":
+                queryResponse = anonymous();
+                break;
             case "create":
                 queryResponse = create();
                 break;
@@ -108,6 +111,13 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
     }
 
+    private RestResponse<AuthenticationResponse> anonymous() throws Exception {
+        logger.debug("Executing anonymous in Users command line");
+
+        UsersCommandOptions.AnonymousCommandOptions commandOptions = usersCommandOptions.anonymousCommandOptions;
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().anonymous(commandOptions.organization);
+    }
+
     private RestResponse<User> create() throws Exception {
         logger.debug("Executing create in Users command line");
 
@@ -142,7 +152,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);

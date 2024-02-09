@@ -14,7 +14,7 @@ categories:
       - samples
       - cohorts
       - meta
-      - cva
+      - cvdb
   - name: Analysis
     description: "Analysis commands:"
     options:
