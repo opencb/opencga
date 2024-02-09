@@ -40,9 +40,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
             case "postlink":
                 postlink();
                 break;
-//            case "secondary-index":
-//                secondaryIndex();
-//                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -103,12 +100,6 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         toolRunner.execute(FetchAndRegisterTask.class, new FileFetch(options.url, options.path), outDir, null, options.commonOptions.token);
     }
-
-//    private void secondaryIndex() throws ToolException {
-//        FileCommandOptions.SecondaryIndex options = fileCommandOptions.secondaryIndex;
-//        Path outDir = Paths.get(options.outDir);
-//        toolRunner.execute(FileIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
-//    }
 
     private void tsvLoad() throws ToolException {
         FileCommandOptions.TsvLoad options = fileCommandOptions.tsvLoad;

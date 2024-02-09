@@ -24,9 +24,6 @@ public class CohortCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(cohortCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-//            case "secondary-index":
-//                secondaryIndex();
-//                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -51,11 +48,5 @@ public class CohortCommandExecutor extends InternalCommandExecutor {
         annotationLoader.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
         annotationLoader.start();
     }
-
-//    private void secondaryIndex() throws ToolException {
-//        CohortCommandOptions.SecondaryIndex options = cohortCommandOptions.secondaryIndex;
-//        Path outDir = Paths.get(options.outDir);
-//        toolRunner.execute(CohortIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
-//    }
 
 }

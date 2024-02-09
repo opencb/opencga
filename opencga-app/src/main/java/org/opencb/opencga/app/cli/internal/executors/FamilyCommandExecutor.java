@@ -24,9 +24,6 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(familyCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-//            case "secondary-index":
-//                secondaryIndex();
-//                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -36,12 +33,6 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
 
         }
     }
-
-//    private void secondaryIndex() throws ToolException {
-//        FamilyCommandOptions.SecondaryIndex options = familyCommandOptions.secondaryIndex;
-//        Path outDir = Paths.get(options.outDir);
-//        toolRunner.execute(FamilyIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
-//    }
 
     private void tsvLoad() throws ToolException {
         FamilyCommandOptions.TsvLoad options = familyCommandOptions.tsvLoad;

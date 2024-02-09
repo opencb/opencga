@@ -493,29 +493,6 @@ public class ProjectManager extends AbstractManager {
                 new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(), configuration), new QueryOptions(), true, token);
     }
 
-    public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,
-                                     String cohortFields, String familyFields, String jobFields, boolean defaultStats, String token)
-            throws CatalogException, IOException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
-        String organizationId = catalogFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-
-        Project project = resolveId(catalogFqn, null, tokenPayload).first();
-        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().searchInOrganization(organizationId, query,
-                new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), token);
-
-        Map<String, Object> result = new HashMap<>();
-        for (Study study : studyDataResult.getResults()) {
-            result.put(study.getId(), catalogManager.getStudyManager().facet(study.getFqn(), fileFields, sampleFields,
-                    individualFields, cohortFields, familyFields, jobFields, defaultStats, token));
-        }
-
-        return result;
-    }
-
     public OpenCGAResult<Integer> incrementRelease(String projectStr, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);

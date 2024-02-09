@@ -19,7 +19,6 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     public PostlinkCommandOptions postlinkCommandOptions;
-//    public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
 
     public final GeneralCliOptions.CommonCommandOptions fileCommonOptions;
@@ -35,7 +34,6 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.postlinkCommandOptions = new PostlinkCommandOptions();
-//        this.secondaryIndex = new SecondaryIndex();
         this.tsvLoad = new TsvLoad();
     }
 
@@ -131,23 +129,6 @@ public class FileCommandOptions {
                 arity = 1)
         public String outDir;
     }
-
-//    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for files using a search engine")
-//    public class SecondaryIndex {
-//        @ParametersDelegate
-//        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
-//
-//        @ParametersDelegate
-//        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
-//
-//        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[organization@]project:]study.", required = false,
-//                arity = 1)
-//        public String studyId;
-//
-//        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
-//                arity = 1)
-//        public String outDir;
-//    }
 
     @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")
     public class TsvLoad {

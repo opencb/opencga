@@ -10,8 +10,6 @@ public class JobCommandOptions {
 
     public final static String OUTDIR_PARAM_NAME = "outdir";
 
-//    public SecondaryIndex secondaryIndex;
-
     public GeneralCliOptions.CommonCommandOptions jobCommandOptions;
     public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public JCommander jCommander;
@@ -21,24 +19,6 @@ public class JobCommandOptions {
         this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
-//        this.secondaryIndex = new SecondaryIndex();
     }
-
-//    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for jobs using a search engine")
-//    public class SecondaryIndex {
-//        @ParametersDelegate
-//        public GeneralCliOptions.CommonCommandOptions commonOptions = jobCommandOptions;
-//
-//        @ParametersDelegate
-//        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
-//
-//        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[organization@]project:]study.", required = false,
-//                arity = 1)
-//        public String studyId;
-//
-//        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
-//                arity = 1)
-//        public String outDir;
-//    }
 
 }

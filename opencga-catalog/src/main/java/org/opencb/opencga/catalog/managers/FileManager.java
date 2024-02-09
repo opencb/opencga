@@ -24,7 +24,10 @@ import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -39,7 +42,6 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
@@ -3323,49 +3325,6 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
         throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getInternal().getStatus().getId());
-    }
-
-    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
-            throws CatalogException, IOException {
-        ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.defaultObject(options, QueryOptions::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())), userId,
-                organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("query", new Query(query))
-                .append("options", options)
-                .append("defaultStats", defaultStats)
-                .append("token", token);
-        try {
-            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
-                String facet = options.getString(QueryOptions.FACET);
-                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-            }
-
-            AnnotationUtils.fixQueryAnnotationSearch(organizationId, study, userId, query, authorizationManager);
-
-            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
-                DataResult<FacetField> result = catalogSolrManager.facetedQuery(organizationId, study,
-                        CatalogSolrManager.FILE_SOLR_COLLECTION, query, options, userId);
-                auditManager.auditFacet(organizationId, userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-                return result;
-            }
-        } catch (CatalogException e) {
-            auditManager.auditFacet(organizationId, userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
-            throw e;
-        }
     }
 
     /**
