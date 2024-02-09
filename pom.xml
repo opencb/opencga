@@ -60,7 +60,7 @@
         <grpc.version>1.28.1</grpc.version>
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
-        <solr.version>8.8.2</solr.version>
+        <solr.version>8.11.3</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <guava.version>19.0</guava.version>
