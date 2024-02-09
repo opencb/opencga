@@ -113,18 +113,6 @@ public interface AuthorizationManager {
 
     void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException;
 
-    /**
-     * Check if user is named "opencga".
-     *
-     * @param userId user id
-     * @return true if user is named "opencga"
-     * @deprecated use {@link #isOpencgaAdministrator(String, String)} instead
-     */
-    @Deprecated
-    default boolean isOpencga(String userId) {
-        return ParamConstants.OPENCGA_USER_ID.equals(userId) || ParamConstants.OPENCGA_USER_FQN.equals(userId);
-    }
-
     default boolean isOpencgaAdministrator(JwtPayload payload) throws CatalogException {
         return isOpencgaAdministrator(payload.getOrganization(), payload.getUserId());
     }

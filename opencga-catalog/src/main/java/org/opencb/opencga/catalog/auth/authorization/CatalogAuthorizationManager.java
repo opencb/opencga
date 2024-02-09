@@ -76,7 +76,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isOpencga(userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
         throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
@@ -84,7 +84,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isOpencga(userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
 
@@ -117,7 +117,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
             throws CatalogException {
-        if (isOpencga(userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         } else {
             if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyId, userId, permission)) {
@@ -129,14 +129,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditStudy(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencga(userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("modify a study");
         }
     }
 
     @Override
     public void checkCanViewStudy(String organizationId, long studyId, String userId) throws CatalogException {
-        if (isOpencga(userId)) {
+        if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         }
 
@@ -148,7 +148,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanUpdatePermissionRules(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencga(userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("update the permission rules");
         }
     }
@@ -160,7 +160,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");
         }
 
-        if (!isOpencga(userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("create or remove groups.");
         }
     }
@@ -196,14 +196,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanAssignOrSeePermissions(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencga(userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("assign or see all permissions");
         }
     }
 
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencga(userId) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!isOpencgaAdministrator(organizationId, userId) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("create, update or delete variable sets.");
         }
     }
@@ -277,7 +277,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private boolean checkUserPermission(String organizationId, String userId, Query query, CoreDBAdaptor dbAdaptor)
             throws CatalogException {
-        if (isOpencga(userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return true;
         } else {
             if (dbAdaptor.count(query, userId).getNumMatches() == 1) {

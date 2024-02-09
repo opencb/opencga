@@ -285,7 +285,8 @@ public class AuditManager {
         JwtPayload payload = catalogManager.getUserManager().validateToken(token);
         String organizationId = payload.getOrganization();
         String userId = payload.getUserId();
-        if (authorizationManager.isOpencga(userId) || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (authorizationManager.isOpencgaAdministrator(organizationId, userId)
+                || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return dbAdaptorFactory.getCatalogAuditDbAdaptor(organizationId).groupBy(query, fields, options);
         }
         throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");

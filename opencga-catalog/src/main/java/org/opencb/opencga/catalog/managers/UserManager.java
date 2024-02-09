@@ -150,7 +150,7 @@ public class UserManager extends AbstractManager {
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
             // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isOpencga(jwtPayload.getUserId(organizationId))
+            if (!authorizationManager.isOpencgaAdministrator(organizationId, jwtPayload.getUserId(organizationId))
                     && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
                 String errorMsg = "Please ask your administrator to create your account.";
                 auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
