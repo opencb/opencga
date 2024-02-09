@@ -138,7 +138,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getOrganization());
 
         thrown.expect(CatalogParameterException.class);
-        thrown.expectMessage("organizationId");
+        thrown.expectMessage("organization");
         catalogManager.getUserManager().login(null, orgOwnerUserId, TestParamConstants.PASSWORD);
     }
 
