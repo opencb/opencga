@@ -196,7 +196,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
 
                 final DataStore newDataStore;
                 logger.info("------");
-                logger.info("Project " + project.getFqn());
+                logger.info("Project '" + project.getFqn() + "'");
                 if (currentDataStore == null) {
                     newDataStore = defaultDataStore;
                     logger.info("Old DBName: null");
@@ -207,7 +207,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 }
                 logger.info("New DBName: " + newDataStore.getDbName());
 
-                catalogManager.getProjectManager().setDatastoreVariant(project.getUuid(), newDataStore, token);
+                catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
             }
         }
     }
