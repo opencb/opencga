@@ -108,12 +108,12 @@ public class UserWSServer extends OpenCGAWSServer {
                 if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
                 }
-                authenticationResponse = catalogManager.getUserManager().login(login.getOrganizationId(), login.getUser(), login.getPassword());
+                authenticationResponse = catalogManager.getUserManager().login(login.getOrganization(), login.getUser(), login.getPassword());
             } else if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                 if (StringUtils.isNotEmpty(login.getPassword()) || StringUtils.isNotEmpty(login.getUser())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
                 }
-                authenticationResponse = catalogManager.getUserManager().refreshToken(login.getOrganizationId(), login.getRefreshToken());
+                authenticationResponse = catalogManager.getUserManager().refreshToken(login.getOrganization(), login.getRefreshToken());
             } else {
                 throw new Exception("Neither 'user' and 'password' for login nor 'refreshToken' for refreshing token were provided.");
             }

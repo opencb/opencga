@@ -16,9 +16,12 @@
 
 package org.opencb.opencga.core.models.user;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public class LoginParams {
 
-    private String organizationId;
+    @JsonAlias({"organizationId"})
+    private String organization;
     private String user;
     private String password;
     private String refreshToken;
@@ -30,14 +33,14 @@ public class LoginParams {
         this.refreshToken = refreshToken;
     }
 
-    public LoginParams(String organizationId, String user, String password) {
-        this.organizationId = organizationId;
+    public LoginParams(String organization, String user, String password) {
+        this.organization = organization;
         this.user = user;
         this.password = password;
     }
 
-    public LoginParams(String organizationId, String user, String password, String refreshToken) {
-        this.organizationId = organizationId;
+    public LoginParams(String organization, String user, String password, String refreshToken) {
+        this.organization = organization;
         this.user = user;
         this.password = password;
         this.refreshToken = refreshToken;
@@ -46,7 +49,7 @@ public class LoginParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");
-        sb.append("organizationId='").append(organizationId).append('\'');
+        sb.append("organization='").append(organization).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", refreshToken='").append(refreshToken).append('\'');
@@ -54,12 +57,12 @@ public class LoginParams {
         return sb.toString();
     }
 
-    public String getOrganizationId() {
-        return organizationId;
+    public String getOrganization() {
+        return organization;
     }
 
-    public LoginParams setOrganizationId(String organizationId) {
-        this.organizationId = organizationId;
+    public LoginParams setOrganization(String organization) {
+        this.organization = organization;
         return this;
     }
 

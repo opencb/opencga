@@ -732,7 +732,7 @@ public class UserManager extends AbstractManager {
                 if (organizationIds.size() == 2) {
                     organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s)).findFirst().get();
                 } else {
-                    throw CatalogParameterException.isNull("organizationId");
+                    throw CatalogParameterException.isNull("organization");
                 }
             }
         }

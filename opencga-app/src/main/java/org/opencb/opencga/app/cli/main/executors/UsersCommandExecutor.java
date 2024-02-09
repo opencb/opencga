@@ -151,7 +151,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organizationId", commandOptions.organizationId);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
