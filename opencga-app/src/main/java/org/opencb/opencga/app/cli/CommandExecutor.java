@@ -338,6 +338,7 @@ public abstract class CommandExecutor {
                 res += tab + "\"" +parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
             }
         }
+        res = res.substring(0,res.length()-1);
         res += tabs + "}";
         return res;
 
