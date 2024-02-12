@@ -45,7 +45,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 19/04/16.
@@ -309,7 +311,9 @@ public abstract class CommandExecutor {
                                 //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
                                 if (parameter.getData() != null) {
                                     enc = true;
-                                    jsonInString.append(printBody(parameter.getData(), ""));
+                                    ObjectMapper mapper= new ObjectMapper();
+                                    Map map=printBody(parameter.getData());
+                                    jsonInString.append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map));
                                 }
                             }
                             if (!enc) {
@@ -327,20 +331,17 @@ public abstract class CommandExecutor {
         return jsonInString.toString();
     }
 
-    private String printBody(List<RestParameter> data, String tabs) {
-        String res = "";
-        res += "{\n";
-        String tab = "    " + tabs;
+    private Map printBody(List<RestParameter> data) {
+        Map<String, Object> result=new HashMap();
         for (RestParameter parameter : data) {
+            Item item= new Item();
             if (parameter.getData() == null) {
-                res += printParameter(parameter, tab);
+                result.put(parameter.getName(), printParameterValue(parameter));
             } else {
-                res += tab + "\"" +parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+                result.put(parameter.getName(), printBody(parameter.getData()));
             }
         }
-        res = res.substring(0,res.length()-1);
-        res += tabs + "}";
-        return res;
+       return result;
 
     }
 
@@ -354,6 +355,7 @@ public abstract class CommandExecutor {
         if(!StringUtils.isEmpty(parameter.getAllowedValues())){
             return parameter.getAllowedValues().replace(" ", "|");
         }
+
         switch (parameter.getType()) {
             case "Boolean":
             case "java.lang.Boolean":
@@ -368,21 +370,48 @@ public abstract class CommandExecutor {
             case "long":
                 return "0";
             case "List":
-                return "[\"\"]";
+                return "[]";
             case "Date":
-                return "\"dd/mm/yyyy\"";
+                return "dd/mm/yyyy";
             case "Map":
-                return "{\"key\": \"value\"}";
+                return "{key: value}";
             case "String":
-                return "\"\"";
+                return "";
             default:
-                return "\"-\"";
+                return "-";
         }
     }
 
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public class Item {
+
+        private String key;
+        private Object value;
+
+        public Item() {
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public Item setKey(String key) {
+            this.key = key;
+            return this;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public Item setValue(Object value) {
+            this.value = value;
+            return this;
+        }
     }
 
 }
