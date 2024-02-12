@@ -234,9 +234,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         ObjectMap params = new CoverageIndexParams(
-                cliOptions.file,
-                cliOptions.windowSize,
-                cliOptions.overwrite
+                cliOptions.bamFileId,
+                cliOptions.baiFileId,
+                cliOptions.windowSize
         ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
