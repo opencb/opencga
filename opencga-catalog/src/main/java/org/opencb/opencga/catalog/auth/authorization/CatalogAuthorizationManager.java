@@ -210,13 +210,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException {
-        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organization)) {
-            return false;
+        if (ParamConstants.ADMIN_ORGANIZATION.equals(organization) || userId.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
+            // Check user exists in ADMIN ORGANIZATION
+            String user = userId.replace(ParamConstants.ADMIN_ORGANIZATION + ":", "");
+            dbAdaptorFactory.getCatalogUserDBAdaptor(ParamConstants.ADMIN_ORGANIZATION).checkId(user);
+            return true;
         }
-
-        // Check user exists in ADMIN ORGANIZATION
-        dbAdaptorFactory.getCatalogUserDBAdaptor(organization).checkId(userId);
-        return true;
+        return false;
     }
 
     @Override

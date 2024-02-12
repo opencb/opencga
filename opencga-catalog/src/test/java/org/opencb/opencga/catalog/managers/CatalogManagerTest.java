@@ -24,7 +24,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -47,6 +50,7 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -530,6 +534,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("found");
         catalogManager.getProjectManager().update(project1, options, null, ownerToken);
+    }
+
+    @Test
+    public void updatePrivateParamsFromProjectTest() throws CatalogException {
+        catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), opencgaToken);
+        catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), ownerToken);
+        catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), orgAdminToken1);
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("administrators");
+        catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), normalToken1);
     }
 
     @Test

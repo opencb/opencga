@@ -97,8 +97,11 @@ public class  AbstractManagerTest extends GenericTest {
     protected String restrictedGroup = "@restrictedGroup"; // normalUserId2, normalUserId3
 
     protected final String project1 = "1000G";
+    protected final String projectFqn1 = organizationId + "@1000G";
     protected final String project2 = "pmp";
+    protected final String projectFqn2 = organizationId + "@pmp";
     protected final String project3 = "p1";
+    protected final String projectFqn3 = organizationId + "@p1";
 
     protected final String studyId = "phase1";
     protected long studyUid;
