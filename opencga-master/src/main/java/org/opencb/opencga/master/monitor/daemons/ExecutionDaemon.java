@@ -170,25 +170,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
-//            put(FileIndexTask.ID, "files secondary-index");
             put(FileTsvAnnotationLoader.ID, "files tsv-load");
             put(PostLinkSampleAssociation.ID, "files postlink");
 
-//            put(SampleIndexTask.ID, "samples secondary-index");
             put(SampleTsvAnnotationLoader.ID, "samples tsv-load");
 
-//            put(IndividualIndexTask.ID, "individuals secondary-index");
             put(IndividualTsvAnnotationLoader.ID, "individuals tsv-load");
 
-//            put(CohortIndexTask.ID, "cohorts secondary-index");
             put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
 
-//            put(FamilyIndexTask.ID, "families secondary-index");
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
 
             put(PanelImportTask.ID, "panels import");
-
-//            put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index-run", "alignment index-run");
             put("coverage-index-run", "alignment coverage-index-run");
