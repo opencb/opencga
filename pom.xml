@@ -154,6 +154,7 @@
          -->
         <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
         <kryo.version>2.23.0</kryo.version>
+
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
     </properties>

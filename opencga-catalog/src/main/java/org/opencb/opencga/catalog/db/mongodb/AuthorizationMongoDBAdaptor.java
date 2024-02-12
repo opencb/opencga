@@ -20,6 +20,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -29,7 +30,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
@@ -39,7 +39,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.common.Enums;
@@ -261,6 +264,229 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         return entryPermission;
+    }
+
+    /**
+     * Fetch the effective permissions of every user.
+     *
+     * @param studyUid        Study where the resources belong.
+     * @param resourceIdList  List of resource ids.
+     * @param entry           Entity where the query will be performed.
+     * @return A list of ACL object.
+     * @throws CatalogDBException CatalogDBException if the study or the resourcers cannot be found.
+     */
+    public List<Acl> effectivePermissions(long studyUid, List<String> resourceIdList, Enums.Resource entry) throws CatalogDBException {
+        // Get groups and array of ACLs from the study document
+        MongoDBCollection studyCollection = dbCollectionMap.get(Enums.Resource.STUDY).get(0);
+        Bson studyQuery = Filters.eq(PRIVATE_UID, studyUid);
+        Bson studyProjection = Projections.include(StudyDBAdaptor.QueryParams.GROUPS.key(), QueryParams.ACL.key(),
+                StudyDBAdaptor.QueryParams.OWNER.key());
+        DataResult<Document> studyResult = studyCollection.find(studyQuery, studyProjection, null);
+        if (studyResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Study uid '" + studyUid + "' not found");
+        }
+        Document studyDocument = studyResult.first();
+
+        Map<String, Set<String>> groupsMap = getGroupUsersMap(studyDocument);
+        Map<String, Set<String>> studyUserPermissionsMap = extractUserPermissionsMap(groupsMap, studyDocument);
+
+        // Retrieve ACL list for the resources requested
+        MongoDBCollection collection = dbCollectionMap.get(entry).get(0);
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_STUDY_UID, studyUid),
+                Filters.in(ID, resourceIdList)
+        );
+        Bson projection = Projections.include(QueryParams.ID.key(), QueryParams.ACL.key());
+
+        logger.debug("Get Acl: {}", query.toBsonDocument());
+        DataResult<Document> dataResult = collection.find(query, projection, null);
+        Map<String, Document> dataResultMap = new HashMap<>();
+        for (Document result : dataResult.getResults()) {
+            dataResultMap.put(result.getString(ID), result);
+        }
+
+        // Process resourceIdList in order
+        List<Acl> aclList = new ArrayList<>(resourceIdList.size());
+        for (String resourceId : resourceIdList) {
+            if (!dataResultMap.containsKey(resourceId)) {
+                throw new CatalogDBException("Resource id '" + resourceId + "' not found.");
+            }
+            Document resourceDocument = dataResultMap.get(resourceId);
+            Map<String, Set<String>> resourceUserPermissionsMap = extractUserPermissionsMap(groupsMap, resourceDocument);
+            Acl acl = convertPermissionsToAcl(groupsMap, studyUserPermissionsMap, resourceUserPermissionsMap, resourceId, entry);
+            aclList.add(acl);
+        }
+
+        return aclList;
+    }
+
+    private Acl convertPermissionsToAcl(Map<String, Set<String>> groupsMap, Map<String, Set<String>> studyUserPermissionsMap,
+                                        Map<String, Set<String>> resourceUserPermissionsMap, String id, Enums.Resource resource) {
+        Set<String> adminUsers = groupsMap.get(ParamConstants.ADMINS_GROUP);
+
+        // Init permission map
+        Map<String, Set<String>> permissionMap = new HashMap<>();
+        List<String> resourcePermissions = resource.getFullPermissionList();
+        for (String permission : resource.getFullPermissionList()) {
+            permissionMap.put(permission, new HashSet<>());
+        }
+
+        // Store permissions at the resource level
+        for (Map.Entry<String, Set<String>> entry : resourceUserPermissionsMap.entrySet()) {
+            for (String permission : entry.getValue()) {
+                permissionMap.get(permission).add(entry.getKey());
+            }
+        }
+
+        // List of correspondence of study permissions
+        Map<String, String> studyPermissionsToResourcePermissionsMap = new HashMap<>();
+        for (String resourcePermission : resourcePermissions) {
+            String studyPermission;
+            if (!"NONE".equals(resourcePermission)) {
+                studyPermission = resource.toStudyPermission(resourcePermission);
+            } else {
+                studyPermission = "NONE";
+            }
+            studyPermissionsToResourcePermissionsMap.put(studyPermission, resourcePermission);
+        }
+
+        // Iterate and only store permissions at the study level if no permissions were given at the resource level
+        for (Map.Entry<String, Set<String>> entry : studyUserPermissionsMap.entrySet()) {
+            String userId = entry.getKey();
+            Set<String> studyPermissions = entry.getValue();
+            if (resourceUserPermissionsMap.get(userId).isEmpty()) {
+                // Loop over all study permissions given to the user
+                for (String studyPermission : studyPermissions) {
+                    if (studyPermissionsToResourcePermissionsMap.containsKey(studyPermission)) {
+                        String resourcePermission = studyPermissionsToResourcePermissionsMap.get(studyPermission);
+                        permissionMap.get(resourcePermission).add(userId);
+                    }
+                }
+            }
+        }
+
+        Set<String> usersWithNoAccess = new HashSet<>(studyUserPermissionsMap.keySet());
+        usersWithNoAccess.removeAll(adminUsers);
+        // Generate ACL object
+        List<Acl.Permission> permissionList = new ArrayList<>(resourcePermissions.size());
+        for (String resourcePermission : resourcePermissions) {
+            Set<String> userIdSet = permissionMap.get(resourcePermission);
+            if (!"NONE".equals(resourcePermission)) {
+                // Remove users with access from usersWithNoAccess set
+                usersWithNoAccess.removeAll(userIdSet);
+                // Add admin users to users with this permission
+                userIdSet.addAll(adminUsers);
+
+                permissionList.add(new Acl.Permission(resourcePermission, new ArrayList<>(userIdSet)));
+            }
+        }
+        permissionList.add(new Acl.Permission("NONE", new ArrayList<>(usersWithNoAccess)));
+
+        return new Acl(id, resource.name(), permissionList, TimeUtils.getDate().getTime());
+    }
+
+    private Map<String, Set<String>> extractUserPermissionsMap(Map<String, Set<String>> groupsMap, Document document) {
+        Set<String> allUsers = groupsMap.get(ParamConstants.MEMBERS_GROUP);
+
+        // Map of userId - List of permissions
+        Map<String, Set<String>> userPermissionsMap = new HashMap<>();
+        for (String userId : allUsers) {
+            userPermissionsMap.put(userId, new HashSet<>());
+        }
+
+        // Group ACLs
+        List<String> aclList = document.getList(QueryParams.ACL.key(), String.class);
+        if (CollectionUtils.isNotEmpty(aclList)) {
+            List<String> personalAcls = new ArrayList<>(aclList.size());
+            List<String> groupAcls = new ArrayList<>(aclList.size());
+            List<String> anonymousAcls = new ArrayList<>(aclList.size());
+
+            for (String acl : aclList) {
+                if (acl.startsWith("@")) {
+                    groupAcls.add(acl);
+                } else if (acl.startsWith(ParamConstants.ANONYMOUS_USER_ID + INTERNAL_DELIMITER)) {
+                    anonymousAcls.add(acl);
+                } else {
+                    personalAcls.add(acl);
+                }
+            }
+
+            boolean simplifyPermissions = configuration.getOptimizations() != null
+                    && configuration.getOptimizations().isSimplifyPermissions();
+            Set<String> userIdsWithPermissions = new HashSet<>();
+
+            // Personal ACLs
+            for (String acl : personalAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String userId = split[0];
+                String permission = split[1];
+                if (!userPermissionsMap.containsKey(userId)) {
+                    throw new IllegalStateException("User id '" + userId + "' with permissions was not found in the '"
+                            + ParamConstants.MEMBERS_GROUP + "' group.");
+                }
+                userIdsWithPermissions.add(userId);
+                userPermissionsMap.get(userId).add(permission);
+            }
+
+            // Anonymous ACLs
+            List<String> anonymousPermissions = new ArrayList<>(anonymousAcls.size());
+            for (String acl : anonymousAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String permission = split[1];
+                anonymousPermissions.add(permission);
+            }
+            // Assign anonymous permissions
+            if (!anonymousPermissions.isEmpty()) {
+                for (Map.Entry<String, Set<String>> tmpEntry : userPermissionsMap.entrySet()) {
+                    // Only add permissions if "simplifyPermissions" or if the user hasn't been given any acls personally
+                    if (simplifyPermissions || tmpEntry.getValue().isEmpty()) {
+                        tmpEntry.getValue().addAll(anonymousPermissions);
+                    }
+                }
+            }
+
+            // Group ACLs
+            Map<String, List<String>> groupPermissions = new HashMap<>();
+            for (String acl : groupAcls) {
+                String[] split = acl.split(INTERNAL_DELIMITER, 2);
+                String groupId = split[0];
+                String permission = split[1];
+
+                if (!groupPermissions.containsKey(groupId)) {
+                    groupPermissions.put(groupId, new LinkedList<>());
+                }
+                groupPermissions.get(groupId).add(permission);
+            }
+            // Assign group permissions
+            for (Map.Entry<String, List<String>> tmpEntry : groupPermissions.entrySet()) {
+                String groupId = tmpEntry.getKey();
+                List<String> tmpPermissionList = tmpEntry.getValue();
+
+                for (String userId : groupsMap.get(groupId)) {
+                    if (simplifyPermissions || !userIdsWithPermissions.contains(userId)) {
+                        userPermissionsMap.get(userId).addAll(tmpPermissionList);
+                    }
+                }
+            }
+        }
+        return userPermissionsMap;
+    }
+
+    private static Map<String, Set<String>> getGroupUsersMap(Document studyDocument) {
+        // Generate a map of group - set of userIds
+        Map<String, Set<String>> groupsMap = new HashMap<>();
+        List<Document> groups = studyDocument.getList(StudyDBAdaptor.QueryParams.GROUPS.key(), Document.class);
+        for (Document group : groups) {
+            String groupId = group.getString(ID);
+            List<String> userIds = group.getList("userIds", String.class);
+            groupsMap.put(groupId, new HashSet<>(userIds));
+        }
+
+        // Add owner to @admins group
+        String ownerId = studyDocument.getString(StudyDBAdaptor.QueryParams.OWNER.key());
+        groupsMap.get(ParamConstants.ADMINS_GROUP).add(ownerId);
+
+        return groupsMap;
     }
 
     static class EntryPermission {

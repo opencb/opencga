@@ -30,6 +30,10 @@ public class OpenCGAResult<T> extends DataResult<T> {
     public OpenCGAResult() {
     }
 
+    public OpenCGAResult(int time, List<T> results) {
+        super(time, Collections.emptyList(), results.size(), results, results.size());
+    }
+
     public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches) {
         super(time, events, numResults, results, numMatches);
     }

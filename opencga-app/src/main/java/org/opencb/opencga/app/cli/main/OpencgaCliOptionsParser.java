@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2023-12-15 OpenCB
+* Copyright 2015-2024-01-19 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -140,6 +140,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpreter-team-run", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-tiering-run", analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
+        analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-query", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-summary", analysisClinicalCommandOptions.summaryRgaGeneCommandOptions);
@@ -188,6 +189,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
+        adminSubCommands.addCommand("users-permissions", adminCommandOptions.permissionsUsersCommandOptions);
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
         adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
