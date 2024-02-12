@@ -79,7 +79,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
-        throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
+        throw new CatalogAuthorizationException("Permission denied: Only the organization owner or administrators can update the project.");
     }
 
     @Override
@@ -237,10 +237,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public boolean isOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogDBException {
         OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
         Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
-        if (organization.getOwner().equals(userId) || organization.getAdmins().contains(userId)) {
-            return true;
-        }
-        return false;
+        return organization.getOwner().equals(userId) || organization.getAdmins().contains(userId);
     }
 
     @Override
