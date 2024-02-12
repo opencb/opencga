@@ -30,6 +30,10 @@
     <artifactId>opencga-storage-hadoop-core</artifactId>
     <packaging>jar</packaging>
 
+    <!--
+         Special jetty dependencies for storage-hadoop tests to work.
+         This can't be moved to the main pom, as it would affect all the modules, and the final build would be incorrect.
+    -->
     <dependencyManagement>
         <dependencies>
             <dependency>
