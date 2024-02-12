@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
@@ -81,10 +82,10 @@ public abstract class AuthenticationManager {
      */
     public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
         JwtPayload payload = getPayload(refreshToken);
-        if (!"*".equals(payload.getUserId())) {
+        if (!ParamConstants.ANONYMOUS_USER_ID.equals(payload.getUserId())) {
             return new AuthenticationResponse(createToken(payload.getOrganization(), payload.getUserId()));
         } else {
-            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
+            throw new CatalogAuthenticationException("Cannot refresh token for '" + ParamConstants.ANONYMOUS_USER_ID + "'.");
         }
     }
 
