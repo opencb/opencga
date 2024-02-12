@@ -24,6 +24,7 @@ public class Analysis {
     private List<String> packages;
 
     private String scratchDir;
+    private String resourceUrl;
 
     private Execution execution;
 
@@ -50,6 +51,15 @@ public class Analysis {
 
     public Analysis setScratchDir(String scratchDir) {
         this.scratchDir = scratchDir;
+        return this;
+    }
+
+    public String getResourceUrl() {
+        return resourceUrl;
+    }
+
+    public Analysis setResourceUrl(String resourceUrl) {
+        this.resourceUrl = resourceUrl;
         return this;
     }
 

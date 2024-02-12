@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
         source = ToolExecutor.Source.STORAGE)
 public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor implements StorageToolExecutor {
 
+    private String resourceUrl;
     private CatalogManager catalogManager;
 
     @Override
@@ -49,6 +50,9 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
         }
 
         catalogManager = getVariantStorageManager().getCatalogManager();
+
+        // Get analysis resource URL
+        resourceUrl = getAnalysisResourceUrl();
 
         switch (qcType) {
             case RELATEDNESS: {
@@ -111,9 +115,10 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
             return;
         }
 
+
         // Run IBD/IBS computation using PLINK in docker
         RelatednessReport report = IBDComputation.compute(getStudyId(), getFamily(), sampleIds, getRelatednessMaf(),
-                getRelatednessThresholds(), getRelatednesResourcePath(), getOutDir(), getVariantStorageManager(), getToken());
+                getRelatednessThresholds(), resourceUrl, getOutDir(), getVariantStorageManager(), getToken());
 
         // Sanity check
         if (report == null) {

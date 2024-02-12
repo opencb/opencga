@@ -19,6 +19,8 @@ package org.opencb.opencga.core.tools.variant;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -32,6 +34,8 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
     private String minorAlleleFreq;
     private Map<String, Map<String, Float>> thresholds;
     private Path resourcePath;
+
+    protected static Logger logger = LoggerFactory.getLogger(IBDRelatednessAnalysisExecutor.class);
 
     public IBDRelatednessAnalysisExecutor() {
     }
