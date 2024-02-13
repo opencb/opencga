@@ -16,18 +16,25 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
@@ -60,11 +67,12 @@ public class AlignmentIndexOperation extends OpenCgaTool {
         String filename = inputPath.getFileName().toString();
 
         // Check if the input file is .bam or .cram
-        if (!filename.endsWith(".bam") && !filename.endsWith(".cram")) {
+        if (!filename.endsWith(AlignmentConstants.BAM_EXTENSION) && !filename.endsWith(AlignmentConstants.CRAM_EXTENSION)) {
             throw new ToolException("Invalid input alignment file '" + inputFile + "': it must be in BAM or CRAM format");
         }
 
-        outputPath = getOutDir().resolve(filename + (filename.endsWith(".bam") ? ".bai" : ".crai"));
+        outputPath = getOutDir().resolve(filename + (filename.endsWith(AlignmentConstants.BAM_EXTENSION)
+                ? AlignmentConstants.BAI_EXTENSION : AlignmentConstants.CRAI_EXTENSION));
     }
 
     @Override
@@ -81,6 +89,23 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             }
             logger.info("Alignment index at {}", outputPath);
+
+            // Link BAI file and updating sample info
+            FileLinkParams fileLinkParams = new FileLinkParams().setUri(outputPath.toString());
+            if (Paths.get(inputCatalogFile.getPath()).getParent() != null) {
+                fileLinkParams.setPath(Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName()).toString());
+            }
+            OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, false, token);
+            if (fileResult.getNumResults() != 1) {
+                throw new ToolException("It could not link OpenCGA BAI file catalog file for '" + inputFile + "'");
+            }
+            FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(inputCatalogFile.getSampleIds());
+            catalogManager.getFileManager().update(study, fileResult.first().getId(), updateParams, null, token);
+            fileResult = catalogManager.getFileManager().get(study, fileResult.first().getId(), QueryOptions.empty(), token);
+            if (!fileResult.first().getSampleIds().equals(inputCatalogFile.getSampleIds())) {
+                throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + fileResult.first().getId()
+                        + ") with the samples info from '" + inputFile + "'");
+            }
         });
     }
 
