@@ -21,8 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -32,6 +34,7 @@ import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
@@ -80,19 +83,10 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
-        // Check permissions
-        try {
-            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
-            String userId = catalogManager.getUserManager().getUserId(token);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
+        // Main check (this function is shared with the endpoint individual/qc/run)
+        checkParameters(individualId, sampleId, studyId, catalogManager, token);
 
         // Get individual
-        if (StringUtils.isEmpty(individualId)) {
-            throw new ToolException("Missing individual ID.");
-        }
         individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
 
         // Get samples of that individual, but only germline samples
@@ -103,22 +97,18 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Germline sample not found for individual '" + individualId + "'");
         }
 
-        if (childGermlineSamples.size() > 1) {
-            if (StringUtils.isNotEmpty(sampleId)) {
-                for (Sample germlineSample : childGermlineSamples) {
-                    if (sampleId.equals(germlineSample.getId())) {
-                        sample = germlineSample;
-                        break;
-                    }
+        if (StringUtils.isNotEmpty(sampleId)) {
+            for (Sample germlineSample : childGermlineSamples) {
+                if (sampleId.equals(germlineSample.getId())) {
+                    sample = germlineSample;
+                    break;
                 }
-                if (sample == null) {
-                    throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
-                }
-            } else {
-                // If multiple germline samples, we take the first one
-                sample = childGermlineSamples.get(0);
+            }
+            if (sample == null) {
+                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
             }
         } else {
+            // If multiple germline samples, we take the first one
             sample = childGermlineSamples.get(0);
         }
 
@@ -253,6 +243,91 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         }
 
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.MENDELIAN_ERRORS).execute();
+    }
+
+    public static void checkParameters(String individualId, String sampleId, String studyId, CatalogManager catalogManager, String token) throws ToolException, CatalogException {
+        // Check permissions
+        try {
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        if (StringUtils.isEmpty(individualId)) {
+            throw new ToolException("Missing individual ID");
+        }
+        Individual individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
+
+        // Get samples of that individual, but only germline samples
+        List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
+                token);
+        if (CollectionUtils.isEmpty(childGermlineSamples)) {
+            throw new ToolException("Germline sample not found for individual '" + individualId + "'");
+        }
+
+        Sample sample = null;
+        if (StringUtils.isNotEmpty(sampleId)) {
+            for (Sample germlineSample : childGermlineSamples) {
+                if (sampleId.equals(germlineSample.getId())) {
+                    sample = germlineSample;
+                    break;
+                }
+            }
+            if (sample == null) {
+                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
+            }
+        } else {
+            // Taking the first sample
+            sample = childGermlineSamples.get(0);
+        }
+
+        // Checking sample files: BAM, BAI, BIGWIG
+//        String bamFileId = null;
+//        String baiFileId = null;
+        String bwFileId = null;
+        for (String fileId : sample.getFileIds()) {
+//            if (fileId.endsWith(AlignmentConstants.BAM_EXTENSION)) {
+//                if (bamFileId != null) {
+//                    throw new ToolException("Multiple BAM files found for sample '" + sample.getId() + "' of the individual '"
+//                            + individual.getId() + "'");
+//                }
+//                bamFileId = fileId;
+//            }
+//            if (fileId.endsWith(AlignmentConstants.BAI_EXTENSION)) {
+//                if (baiFileId != null) {
+//                    throw new ToolException("Multiple BAI files found for sample '" + sample.getId() + "' of the individual '"
+//                            + individual.getId() + "'");
+//                }
+//                baiFileId = fileId;
+//            }
+            if (fileId.endsWith(AlignmentConstants.BIGWIG_EXTENSION)) {
+                if (bwFileId != null) {
+                    throw new ToolException("Multiple BIGWIG files found for sample '" + sample.getId() + "' of the individual '"
+                            + individual.getId() + "'");
+                }
+                bwFileId = fileId;
+            }
+        }
+//        checkSampleFile(bamFileId, "BAM", sample, individual, studyId, catalogManager, token);
+//        checkSampleFile(baiFileId, "BAI", sample, individual, studyId, catalogManager, token);
+        checkSampleFile(bwFileId, "BIGWIG", sample, individual, studyId, catalogManager, token);
+    }
+
+    private static void checkSampleFile(String fileId, String label, Sample sample, Individual individual, String studyId,
+                                        CatalogManager catalogManager, String token)
+            throws ToolException, CatalogException {
+        if (StringUtils.isEmpty(fileId)) {
+            throw new ToolException("None " + label + " file registered in sample '" + sample.getId() + "' of the individual '"
+                    + individual.getId() + "'");
+        } else {
+            OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token);
+            if (fileResult.getNumResults() == 0) {
+                throw new ToolException(label + " file ID '" + fileId + "' not found in OpenCGA catalog (sample '" + sample.getId()
+                        + "' of the individual '" + individual.getId() + "')");
+            }
+        }
     }
 
     public String getStudyId() {

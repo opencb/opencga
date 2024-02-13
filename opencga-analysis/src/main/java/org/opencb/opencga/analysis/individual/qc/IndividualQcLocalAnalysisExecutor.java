@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
@@ -63,17 +61,17 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runInferredSex() throws ToolException {
-        File inferredSexBamFile;
+        File bwFile;
         try {
-            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sampleId, studyId,
-                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
+            bwFile = AnalysisUtils.getBwFileBySampleId(sampleId, studyId, getVariantStorageManager().getCatalogManager().getFileManager(),
+                    getToken());
         } catch (ToolException e) {
             addWarning("Skipping inferred sex: " + e.getMessage());
             return;
         }
 
-        if (inferredSexBamFile == null) {
-            addWarning("Skipping inferred sex: BAM file not found for sample '" + sampleId + "' of individual '" +
+        if (bwFile == null) {
+            addWarning("Skipping inferred sex: BIGWIG file not found for sample '" + sampleId + "' of individual '" +
                     individual.getId() + "'");
             return;
         }
@@ -91,7 +89,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
 
         // Infer the sex for that sample
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(studyId, inferredSexBamFile, assembly, alignmentStorageManager, getToken());
+        double[] ratios = InferredSexComputation.computeRatios(studyId, bwFile, assembly, alignmentStorageManager, getToken());
 
         // Infer sex from ratios
         double xAuto = ratios[0];

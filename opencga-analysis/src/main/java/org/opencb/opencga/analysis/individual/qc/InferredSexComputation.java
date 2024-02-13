@@ -39,7 +39,7 @@ import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.
 
 public class InferredSexComputation {
 
-    public static double[] computeRatios(String study, File bamFile, String assembly, AlignmentStorageManager alignmentStorageManager,
+    public static double[] computeRatios(String study, File bwFile, String assembly, AlignmentStorageManager alignmentStorageManager,
                                          String token)
             throws ToolException {
 
@@ -57,7 +57,7 @@ public class InferredSexComputation {
             int chromSize = chromosomes.get(chrom);
             Region region = new Region(chrom, 1, chromSize);
             try {
-                List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bamFile.getUuid(), region, 0,
+                List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bwFile.getId(), region, 0,
                         Integer.MAX_VALUE, chromSize, token).getResults();
 
                 double meanCoverage = 0d;

@@ -31,6 +31,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
@@ -1119,88 +1120,12 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
-
         return run(() -> {
-            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+            // Check before submitting the job
+            IndividualQcAnalysis.checkParameters(params.getIndividual(), params.getSample(), study, catalogManager, token);
 
-            Individual individual = IndividualQcUtils.getIndividualById(study, params.getIndividual(), catalogManager, token);
-
-            // Get samples of that individual, but only germline samples
-            List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(study, individual.getId(),
-                    catalogManager, token);
-            if (CollectionUtils.isEmpty(childGermlineSamples)) {
-                throw new ToolException("Germline sample not found for individual '" + params.getIndividual() + "'");
-            }
-
-            Sample sample = null;
-            if (StringUtils.isNotEmpty(params.getSample())) {
-                for (Sample germlineSample : childGermlineSamples) {
-                    if (params.getSample().equals(germlineSample.getId())) {
-                        sample = germlineSample;
-                        break;
-                    }
-                }
-                if (sample == null) {
-                    throw new ToolException("The provided sample '" + params.getSample() + "' not found in the individual '"
-                            + params.getIndividual() + "'");
-                }
-            } else {
-                // If multiple germline samples, we take the first one
-                sample = childGermlineSamples.get(0);
-            }
-
-            org.opencb.opencga.core.models.file.File catalogBamFile;
-            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
-
-            if (catalogBamFile != null) {
-                // Check if .bw (coverage file) exists
-                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
-
-                Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
-                fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
-                Job deeptoolsJob = null;
-                if (fileResult.getNumResults() == 0) {
-                    // Coverage file does not exit, a job must be submitted to create the .bw file
-                    // but first, check if .bai (bam index file) exist
-
-                    query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
-                    fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
-
-                    Job samtoolsJob = null;
-                    if (fileResult.getNumResults() == 0) {
-                        // BAM index file does not exit, a job must be submitted to create the .bai file
-                        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams()
-                                .setCommand("index")
-                                .setInputFile(catalogBamFile.getId())
-                                .setSamtoolsParams(new HashMap<>());
-
-                        DataResult<Job> jobResult = submitJobRaw(SamtoolsWrapperAnalysis.ID, null, study, samtoolsParams, null, null, null,
-                                null);
-                        samtoolsJob = jobResult.first();
-                    }
-
-                    // Coverage file does not exit, a job must be submitted to create the .bw file
-                    DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams()
-                            .setCommand("bamCoverage");
-
-                    Map<String, String> bamCoverageParams = new HashMap<>();
-                    bamCoverageParams.put("b", catalogBamFile.getId());
-                    bamCoverageParams.put("o", Paths.get(catalogBamFile.getUri()).getFileName() + ".bw");
-                    bamCoverageParams.put("binSize", "1");
-                    bamCoverageParams.put("outFileFormat", "bigwig");
-                    bamCoverageParams.put("minMappingQuality", "20");
-                    deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
-
-                    DataResult<Job> jobResult = submitJobRaw(DeeptoolsWrapperAnalysis.ID, null, study, deeptoolsParams, null, null,
-                            samtoolsJob == null ? null : samtoolsJob.getId(), null);
-                    deeptoolsJob = jobResult.first();
-                    dependsOnList.add(deeptoolsJob.getId());
-                }
-            }
-
-            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","),
-                    jobTags);
-
+            // Submit the individual QC analysis
+            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags);
         });
     }
 
