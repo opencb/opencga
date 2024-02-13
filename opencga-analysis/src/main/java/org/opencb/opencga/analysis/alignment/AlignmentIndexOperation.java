@@ -90,7 +90,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             }
             logger.info("Alignment index at {}", outputPath);
 
-            // Link BAI file and updating sample info
+            // Link BAI file and update sample info
             FileLinkParams fileLinkParams = new FileLinkParams().setUri(outputPath.toString());
             if (Paths.get(inputCatalogFile.getPath()).getParent() != null) {
                 fileLinkParams.setPath(Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName()).toString());

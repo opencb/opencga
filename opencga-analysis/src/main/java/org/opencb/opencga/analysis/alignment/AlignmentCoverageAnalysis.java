@@ -32,6 +32,8 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -145,6 +147,23 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             if (!bwPath.toFile().exists()) {
                 new ToolException("Something wrong happened running a coverage: BigWig file (" + bwPath.toFile().getName()
                         + ") was not create, please, check log files.");
+            }
+
+            // Link BW file and update sample info
+            FileLinkParams fileLinkParams = new FileLinkParams().setUri(bwPath.toString());
+            if (Paths.get(bamCatalogFile.getPath()).getParent() != null) {
+                fileLinkParams.setPath(Paths.get(bamCatalogFile.getPath()).getParent().resolve(bwPath.getFileName()).toString());
+            }
+            OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, false, token);
+            if (fileResult.getNumResults() != 1) {
+                throw new ToolException("It could not link OpenCGA BAI file catalog file for '" + coverageParams.getBamFileId() + "'");
+            }
+            FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(bamCatalogFile.getSampleIds());
+            catalogManager.getFileManager().update(study, fileResult.first().getId(), updateParams, null, token);
+            fileResult = catalogManager.getFileManager().get(study, fileResult.first().getId(), QueryOptions.empty(), token);
+            if (!fileResult.first().getSampleIds().equals(bamCatalogFile.getSampleIds())) {
+                throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + fileResult.first().getId()
+                        + ") with the samples info from '" + coverageParams.getBamFileId() + "'");
             }
 
             // Remove symbolic links if necessary
