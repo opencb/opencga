@@ -1215,13 +1215,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--individual"}, description = "The body web service individual parameter", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
