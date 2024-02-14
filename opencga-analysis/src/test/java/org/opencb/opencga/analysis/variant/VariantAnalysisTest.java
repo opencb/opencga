@@ -71,7 +71,6 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
@@ -98,10 +97,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1070,10 +1066,11 @@ public class VariantAnalysisTest {
     @Test
     public void testClinicalAnalysisLoading() throws IOException, ToolException, CatalogException {
         String fileStr = "clinical_analyses.json.gz";
+        File file;
+        try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
+            file = catalogManager.getFileManager().upload(CANCER_STUDY, stream, new File().setPath("biofiles/" + fileStr), false, true, false, token).first();
+        }
 
-        String gzFile = getClass().getResource("/biofiles/" + fileStr).getFile();
-        File file = catalogManager.getFileManager().link(CANCER_STUDY, new FileLinkParams(gzFile, "ca", "", "", null, null, null, null,
-                null), true, token).first();
         System.out.println("file ID = " + file.getId());
         System.out.println("file name = " + file.getName());
 
