@@ -13,8 +13,6 @@
     <artifactId>opencga-enterprise-server</artifactId>
     <packaging>war</packaging>
 
-    <name>opencga-enterprise-server Maven Webapp</name>
-    <url>http://maven.apache.org</url>
     <dependencies>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
@@ -112,8 +110,8 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
+            <artifactId>${opencga-storage-hadoop-lib.artifactId}</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
