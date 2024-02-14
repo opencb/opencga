@@ -39,8 +39,8 @@ import java.util.Arrays;
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
 
-    public final static String ID = "alignment-index-run";
-    public final static String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
+    public static final String ID = "alignment-index-run";
+    public static final String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
 
     private String study;
     private String inputFile;
@@ -49,6 +49,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
     private Path inputPath;
     private Path outputPath;
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
@@ -90,22 +91,8 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             }
             logger.info("Alignment index at {}", outputPath);
 
-            // Link BAI file and update sample info
-            FileLinkParams fileLinkParams = new FileLinkParams().setUri(outputPath.toString());
-            if (Paths.get(inputCatalogFile.getPath()).getParent() != null) {
-                fileLinkParams.setPath(Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName()).toString());
-            }
-            OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, false, token);
-            if (fileResult.getNumResults() != 1) {
-                throw new ToolException("It could not link OpenCGA BAI file catalog file for '" + inputFile + "'");
-            }
-            FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(inputCatalogFile.getSampleIds());
-            catalogManager.getFileManager().update(study, fileResult.first().getId(), updateParams, null, token);
-            fileResult = catalogManager.getFileManager().get(study, fileResult.first().getId(), QueryOptions.empty(), token);
-            if (!fileResult.first().getSampleIds().equals(inputCatalogFile.getSampleIds())) {
-                throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + fileResult.first().getId()
-                        + ") with the samples info from '" + inputFile + "'");
-            }
+            // Link generated BAI file and update samples info
+            AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, study, catalogManager, token);
         });
     }
 

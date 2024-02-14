@@ -50,8 +50,8 @@ import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 @Tool(id = AlignmentCoverageAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = "Alignment coverage analysis.")
 public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "coverage-index-run";
-    public final static String DESCRIPTION = "Compute the coverage from a given alignment file, e.g., create a "
+    public static final String ID = "coverage-index-run";
+    public static final String DESCRIPTION = "Compute the coverage from a given alignment file, e.g., create a "
             + AlignmentConstants.BIGWIG_EXTENSION + " file from a " + AlignmentConstants.BAM_EXTENSION + " file";
 
     @ToolParams
@@ -60,6 +60,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
     private File bamCatalogFile;
     private File baiCatalogFile;
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
@@ -81,9 +82,16 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isEmpty(coverageParams.getBaiFileId())) {
             // BAI file ID was not provided, looking for it
             baiCatalogFile = getBaiFile(bamCatalogFile.getName() + AlignmentConstants.BAI_EXTENSION);
+            if (baiCatalogFile == null) {
+                throw new ToolException("Could not find BAI file from name '"
+                        + (bamCatalogFile.getName() + AlignmentConstants.BAI_EXTENSION) + "'");
+            }
         } else {
             // Getting the BAI file provided
             baiCatalogFile = getFile(coverageParams.getBaiFileId(), "BAI");
+            if (baiCatalogFile == null) {
+                throw new ToolException("Could not find BAI file from ID '" + coverageParams.getBaiFileId() + "'");
+            }
         }
         logger.info("BAI file ID = {}; path = {}", baiCatalogFile.getId(), Paths.get(baiCatalogFile.getUri()));
 
@@ -143,29 +151,6 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
                     .setCommand("bamCoverage")
                     .execute();
 
-            // Check execution result
-            if (!bwPath.toFile().exists()) {
-                new ToolException("Something wrong happened running a coverage: BigWig file (" + bwPath.toFile().getName()
-                        + ") was not create, please, check log files.");
-            }
-
-            // Link BW file and update sample info
-            FileLinkParams fileLinkParams = new FileLinkParams().setUri(bwPath.toString());
-            if (Paths.get(bamCatalogFile.getPath()).getParent() != null) {
-                fileLinkParams.setPath(Paths.get(bamCatalogFile.getPath()).getParent().resolve(bwPath.getFileName()).toString());
-            }
-            OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, false, token);
-            if (fileResult.getNumResults() != 1) {
-                throw new ToolException("It could not link OpenCGA BAI file catalog file for '" + coverageParams.getBamFileId() + "'");
-            }
-            FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(bamCatalogFile.getSampleIds());
-            catalogManager.getFileManager().update(study, fileResult.first().getId(), updateParams, null, token);
-            fileResult = catalogManager.getFileManager().get(study, fileResult.first().getId(), QueryOptions.empty(), token);
-            if (!fileResult.first().getSampleIds().equals(bamCatalogFile.getSampleIds())) {
-                throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + fileResult.first().getId()
-                        + ") with the samples info from '" + coverageParams.getBamFileId() + "'");
-            }
-
             // Remove symbolic links if necessary
             if (getOutDir().resolve(bamCatalogFile.getName()).toFile().exists()) {
                 Files.delete(getOutDir().resolve(bamCatalogFile.getName()));
@@ -173,6 +158,16 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             if (getOutDir().resolve(baiCatalogFile.getName()).toFile().exists()) {
                 Files.delete(getOutDir().resolve(baiCatalogFile.getName()));
             }
+
+            // Check execution result
+            if (!bwPath.toFile().exists()) {
+                throw new ToolException("Something wrong happened running a coverage: BigWig file (" + bwPath.toFile().getName()
+                        + ") was not create, please, check log files.");
+            }
+            logger.info("Coverage index at {}", bwPath);
+
+            // Link generated BIGWIG file and update samples info
+            AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
         });
     }
 
