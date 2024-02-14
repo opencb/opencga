@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
@@ -52,10 +53,12 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
                 runInferredSex();
                 break;
             }
-
             case MENDELIAN_ERRORS: {
                 runMendelianErrors();
                 break;
+            }
+            default: {
+                throw new ToolException("Unknown individual QC: '" + qcType + "'");
             }
         }
     }
@@ -107,8 +110,8 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         values.put("ratioY", yAuto);
 
         // Set inferred sex report (individual fields will be set later)
-        qualityControl.getInferredSexReports().add(new InferredSexReport(sampleId, "CoverageRatio", inferredKaryotypicSex, values,
-                Collections.emptyList()));
+        qualityControl.getInferredSexReports().add(new InferredSexReport(sampleId, COVERAGE_RATIO_INFERRED_SEX_METHOD,
+                inferredKaryotypicSex, values, Collections.singletonList(bwFile.getId())));
     }
 
     private void runMendelianErrors() throws ToolException {
@@ -127,7 +130,6 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
             qualityControl.setMendelianErrorReports(Collections.singletonList(mendelianErrorReport));
         } catch (ToolException | IOException e) {
             addWarning("Skipping mendelian errors: " + e.getMessage());
-            return;
         }
     }
 }

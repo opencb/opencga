@@ -67,11 +67,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     private Sample sample;
     private String motherSampleId;
     private String fatherSampleId;
-    private Map<String, Double> karyotypicSexThresholds;
     private IndividualQualityControl qualityControl;
     private IndividualQcAnalysisExecutor executor;
 
     public IndividualQcAnalysis() {
+        super();
     }
 
     @Override
@@ -83,8 +83,13 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
+        // Set default inferred sex method, if empty
+        if (StringUtils.isEmpty(inferredSexMethod)) {
+            inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
+        }
+
         // Main check (this function is shared with the endpoint individual/qc/run)
-        checkParameters(individualId, sampleId, studyId, catalogManager, token);
+        checkParameters(individualId, sampleId, inferredSexMethod, studyId, catalogManager, token);
 
         // Get individual
         individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
@@ -127,10 +132,6 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                 fatherSampleId = fatherGermlineSamples.get(0).getId();
             }
         }
-
-        if (StringUtils.isEmpty(inferredSexMethod)) {
-            inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
-        }
     }
 
     @Override
@@ -165,8 +166,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                 .setInferredSexMethod(inferredSexMethod)
                 .setQualityControl(qualityControl);
 
-        step(INFERRED_SEX_STEP, () -> runInferredSex());
-        step(MENDELIAN_ERRORS_STEP, () -> runMendelianError());
+        step(INFERRED_SEX_STEP, this::runInferredSex);
+        step(MENDELIAN_ERRORS_STEP, this::runMendelianError);
 
         // Finally, update individual quality control
         try {
@@ -191,32 +192,13 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             }
         }
 
-        if (!COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
-            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'. Please, use '"
-                    + COVERAGE_RATIO_INFERRED_SEX_METHOD + "'");
-            return;
-        }
-
-        File inferredSexBamFile;
+        Map<String, Double> karyotypicSexThresholds;
+        Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
         try {
-            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId,
-                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
-        } catch (ToolException e) {
-            throw new ToolException(e);
-        }
-
-        if (inferredSexBamFile == null) {
-            addWarning("Skipping inferred sex: BAM file not found for sample '" + sample.getId() + "' of individual '" +
-                    individual.getId() + "'");
-            return;
-        }
-
-        try {
-            Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
             karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
         } catch (IOException e) {
-            addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file"
-                    + " (karyotypic_sex_thresholds.json)");
+            addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file: "
+                    + thresholdsPath.toAbsolutePath());
             return;
         }
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX)
@@ -245,7 +227,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.MENDELIAN_ERRORS).execute();
     }
 
-    public static void checkParameters(String individualId, String sampleId, String studyId, CatalogManager catalogManager, String token) throws ToolException, CatalogException {
+    public static void checkParameters(String individualId, String sampleId, String inferredSexMethod, String studyId,
+                                       CatalogManager catalogManager, String token) throws ToolException, CatalogException {
         // Check permissions
         try {
             Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
@@ -253,6 +236,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
         } catch (CatalogException e) {
             throw new ToolException(e);
+        }
+
+        if (StringUtils.isNotEmpty(inferredSexMethod) && !inferredSexMethod.equals(COVERAGE_RATIO_INFERRED_SEX_METHOD)) {
+            throw new ToolException("Unknown inferred sex method: '" + inferredSexMethod + "'. Valid values: "
+                    + COVERAGE_RATIO_INFERRED_SEX_METHOD);
         }
 
         if (StringUtils.isEmpty(individualId)) {
@@ -283,35 +271,17 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             sample = childGermlineSamples.get(0);
         }
 
-        // Checking sample files: BAM, BAI, BIGWIG
-//        String bamFileId = null;
-//        String baiFileId = null;
+        // Checking sample file BIGWIG required to compute inferred-sex
         String bwFileId = null;
         for (String fileId : sample.getFileIds()) {
-//            if (fileId.endsWith(AlignmentConstants.BAM_EXTENSION)) {
-//                if (bamFileId != null) {
-//                    throw new ToolException("Multiple BAM files found for sample '" + sample.getId() + "' of the individual '"
-//                            + individual.getId() + "'");
-//                }
-//                bamFileId = fileId;
-//            }
-//            if (fileId.endsWith(AlignmentConstants.BAI_EXTENSION)) {
-//                if (baiFileId != null) {
-//                    throw new ToolException("Multiple BAI files found for sample '" + sample.getId() + "' of the individual '"
-//                            + individual.getId() + "'");
-//                }
-//                baiFileId = fileId;
-//            }
             if (fileId.endsWith(AlignmentConstants.BIGWIG_EXTENSION)) {
                 if (bwFileId != null) {
-                    throw new ToolException("Multiple BIGWIG files found for sample '" + sample.getId() + "' of the individual '"
-                            + individual.getId() + "'");
+                    throw new ToolException("Multiple BIGWIG files found for individual/sample (" + individual.getId() + "/"
+                            + sample.getId() + ")");
                 }
                 bwFileId = fileId;
             }
         }
-//        checkSampleFile(bamFileId, "BAM", sample, individual, studyId, catalogManager, token);
-//        checkSampleFile(baiFileId, "BAI", sample, individual, studyId, catalogManager, token);
         checkSampleFile(bwFileId, "BIGWIG", sample, individual, studyId, catalogManager, token);
     }
 
@@ -319,13 +289,13 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                                         CatalogManager catalogManager, String token)
             throws ToolException, CatalogException {
         if (StringUtils.isEmpty(fileId)) {
-            throw new ToolException("None " + label + " file registered in sample '" + sample.getId() + "' of the individual '"
-                    + individual.getId() + "'");
+            throw new ToolException("None " + label + " file registered for individual/sample (" + individual.getId() + "/"
+                    + sample.getId() + ")");
         } else {
             OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token);
             if (fileResult.getNumResults() == 0) {
-                throw new ToolException(label + " file ID '" + fileId + "' not found in OpenCGA catalog (sample '" + sample.getId()
-                        + "' of the individual '" + individual.getId() + "')");
+                throw new ToolException(label + " file ID '" + fileId + "' not found in OpenCGA catalog for individual/sample ("
+                        + individual.getId() + "/" + sample.getId() + ")");
             }
         }
     }

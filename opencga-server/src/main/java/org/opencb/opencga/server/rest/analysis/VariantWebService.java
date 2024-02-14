@@ -1122,7 +1122,8 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
         return run(() -> {
             // Check before submitting the job
-            IndividualQcAnalysis.checkParameters(params.getIndividual(), params.getSample(), study, catalogManager, token);
+            IndividualQcAnalysis.checkParameters(params.getIndividual(), params.getSample(), params.getInferredSexMethod(), study,
+                    catalogManager, token);
 
             // Submit the individual QC analysis
             return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags);
