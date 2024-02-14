@@ -16,14 +16,25 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
+    
+    @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION)
     private String individual;
+
+    @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION)
     private String sample;
+
+    @DataField(id = "inferredSexMethod", description = FieldConstants.INFERRED_SEX_METHOD_DESCRIPTION,
+            defaultValue = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
     private String inferredSexMethod;
 
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public IndividualQcAnalysisParams() {
