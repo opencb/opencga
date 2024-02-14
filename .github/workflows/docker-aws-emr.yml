@@ -10,7 +10,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
+      maven_opts: -Pemr6.1 -Dopencga.war.name=opencga
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

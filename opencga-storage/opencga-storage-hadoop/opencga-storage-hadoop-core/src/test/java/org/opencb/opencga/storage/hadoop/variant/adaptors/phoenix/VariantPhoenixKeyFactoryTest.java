@@ -12,6 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.PhoenixCompat;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -81,12 +82,12 @@ public class VariantPhoenixKeyFactoryTest {
 
     public byte[] generateVariantRowKeyPhoenix(Variant variant) {
 
-        Set<VariantPhoenixSchema.VariantColumn> nullableColumn = new HashSet<>(Arrays.asList(
+        Set<PhoenixHelper.Column> nullableColumn = new HashSet<>(Arrays.asList(
                 VariantPhoenixSchema.VariantColumn.REFERENCE,
                 VariantPhoenixSchema.VariantColumn.ALTERNATE
         ));
 
-        PTableImpl table;
+        PTable table;
         try {
             List<PColumn> columns = new ArrayList<>();
             for (PhoenixHelper.Column column : VariantPhoenixSchema.PRIMARY_KEY) {
@@ -97,8 +98,7 @@ public class VariantPhoenixKeyFactoryTest {
                         .setNullable(nullableColumn.contains(column))
                         .setSortOrder(SortOrder.ASC.getSystemValue()).build()));
             }
-
-            table = PTableImpl.makePTable(new PTableImpl(), columns);
+            table = PhoenixCompat.makePTable(columns);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
