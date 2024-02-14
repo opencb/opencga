@@ -30,6 +30,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
 import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.monitoring.GlobalClientMetrics;
+import org.apache.phoenix.monitoring.GlobalMetric;
 import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
@@ -292,8 +293,9 @@ public class PhoenixHelper {
 //        logger.info("Opening connection to PhoenixDriver");
         Connection connection = QueryUtil.getConnection(conf);
         List<StackTraceElement> stackTrace = ExceptionUtils.getOpencbStackTrace();
+        GlobalMetric metric = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric();
         logger.info("Open Phoenix DB connection #{} {} called from {}",
-                GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum(),
+                metric.getValue(),
                 connection, stackTrace);
         return connection;
     }
@@ -303,7 +305,7 @@ public class PhoenixHelper {
             logger.info("Close Phoenix connection {} called from {}", connection, ExceptionUtils.getOpencbStackTrace());
             connection.close();
             logger.info("Global Phoenix Connections opened: #{}",
-                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getValue());
         }
     }
 

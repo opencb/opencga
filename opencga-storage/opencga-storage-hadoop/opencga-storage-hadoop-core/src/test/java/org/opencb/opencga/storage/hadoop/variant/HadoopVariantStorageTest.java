@@ -42,6 +42,9 @@ import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
+import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
+import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
@@ -250,6 +253,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 // Do not put up web UI
                 conf.setInt("hbase.regionserver.info.port", -1);
                 conf.setInt("hbase.master.info.port", -1);
+
+                if (VersionInfo.getVersion().startsWith("2.4") && org.apache.hadoop.util.VersionInfo.getVersion().startsWith("3.3")) {
+                    // Disable async wal provider, not supported in HBase 2.4 and HDFS 3.3
+                    System.out.println("Disabling async wal provider");
+                    conf.set(WALFactory.WAL_PROVIDER, FSHLogProvider.class.getName());
+                    conf.set(WALFactory.META_WAL_PROVIDER, FSHLogProvider.class.getName());
+//                    conf.setBoolean(WALFactory.WAL_ENABLED, false);
+                }
+
                 //org.apache.commons.configuration2.Configuration
                 utility.get().startMiniCluster(1);
 

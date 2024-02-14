@@ -106,7 +106,7 @@ public class ToolFactory {
         Collection<URL> urls = new LinkedList<>();
         for (URL url : ClasspathHelper.forPackage("org.opencb.opencga")) {
             String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
-            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-hadoop-shaded"))) {
                 urls.add(url);
             }
         }

@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.utils;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.experimental.categories.Category;

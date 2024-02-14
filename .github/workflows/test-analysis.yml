@@ -41,7 +41,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: mvn -T 2 clean install -P hdp3.1,${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 
   test:
     name: Execute JUnit and Jacoco tests
@@ -72,7 +72,7 @@ jobs:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -P hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         env:

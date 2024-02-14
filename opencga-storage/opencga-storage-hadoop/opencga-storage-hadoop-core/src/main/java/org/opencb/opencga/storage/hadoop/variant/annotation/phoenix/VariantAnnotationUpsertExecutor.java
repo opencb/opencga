@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation.phoenix;
 
-import com.google.common.base.Function;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
-import org.apache.phoenix.util.UpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.slf4j.Logger;
@@ -29,7 +27,11 @@ import java.io.IOException;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.phoenix.monitoring.GlobalClientMetrics.GLOBAL_MUTATION_SQL_COUNTER;
@@ -39,7 +41,7 @@ import static org.apache.phoenix.monitoring.GlobalClientMetrics.GLOBAL_MUTATION_
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, ?>, Object> {
+public class VariantAnnotationUpsertExecutor extends OpenCGAUpsertExecutor<Map<Column, ?>, Object> {
 
     private static final Logger LOG = LoggerFactory.getLogger(VariantAnnotationUpsertExecutor.class);
     private final List<Column> columnList;
@@ -122,7 +124,7 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
 
 
     @Override
-    protected Function<Object, Object> createConversionFunction(PDataType dataType) {
+    protected Function<Object, Object> createJavaConversionFunction(PDataType dataType) {
 //        return input -> dataType.toObject(input, dataType);
         return input -> input;
     }
@@ -135,7 +137,7 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
         } catch (SQLException e) {
             throw new IOException(e);
         }
-        LOG.debug("GLOBAL_MUTATION_SQL_COUNTER = " + GLOBAL_MUTATION_SQL_COUNTER.getMetric().getTotalSum());
+        LOG.debug("GLOBAL_MUTATION_SQL_COUNTER = " + GLOBAL_MUTATION_SQL_COUNTER.getMetric().getValue());
     }
 
 //    void putDynamicColumns(Map<Column, ?> map) {
