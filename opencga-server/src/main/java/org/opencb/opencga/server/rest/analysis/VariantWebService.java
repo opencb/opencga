@@ -1081,7 +1081,13 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = InferredSexAnalysisParams.DESCRIPTION, required = true) InferredSexAnalysisParams params) {
-        return submitJob(InferredSexAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return run(() -> {
+            // Check before submitting the job
+            InferredSexAnalysis.checkParameters(params.getIndividual(), params.getSample(), study, catalogManager, token);
+
+            // Submit the inferred sex analysis
+            return submitJobRaw(InferredSexAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags);
+        });
     }
 
     @POST

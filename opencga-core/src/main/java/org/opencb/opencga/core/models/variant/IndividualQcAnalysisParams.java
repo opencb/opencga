@@ -23,7 +23,7 @@ import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
-    
+
     @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION)
     private String individual;
 

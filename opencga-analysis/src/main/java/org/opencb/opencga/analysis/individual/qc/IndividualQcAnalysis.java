@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -243,61 +244,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                     + COVERAGE_RATIO_INFERRED_SEX_METHOD);
         }
 
-        if (StringUtils.isEmpty(individualId)) {
-            throw new ToolException("Missing individual ID");
-        }
-        Individual individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
-
-        // Get samples of that individual, but only germline samples
-        List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
-                token);
-        if (CollectionUtils.isEmpty(childGermlineSamples)) {
-            throw new ToolException("Germline sample not found for individual '" + individualId + "'");
-        }
-
-        Sample sample = null;
-        if (StringUtils.isNotEmpty(sampleId)) {
-            for (Sample germlineSample : childGermlineSamples) {
-                if (sampleId.equals(germlineSample.getId())) {
-                    sample = germlineSample;
-                    break;
-                }
-            }
-            if (sample == null) {
-                throw new ToolException("The provided sample '" + sampleId + "' not found in the individual '" + individualId + "'");
-            }
-        } else {
-            // Taking the first sample
-            sample = childGermlineSamples.get(0);
-        }
-
-        // Checking sample file BIGWIG required to compute inferred-sex
-        String bwFileId = null;
-        for (String fileId : sample.getFileIds()) {
-            if (fileId.endsWith(AlignmentConstants.BIGWIG_EXTENSION)) {
-                if (bwFileId != null) {
-                    throw new ToolException("Multiple BIGWIG files found for individual/sample (" + individual.getId() + "/"
-                            + sample.getId() + ")");
-                }
-                bwFileId = fileId;
-            }
-        }
-        checkSampleFile(bwFileId, "BIGWIG", sample, individual, studyId, catalogManager, token);
-    }
-
-    private static void checkSampleFile(String fileId, String label, Sample sample, Individual individual, String studyId,
-                                        CatalogManager catalogManager, String token)
-            throws ToolException, CatalogException {
-        if (StringUtils.isEmpty(fileId)) {
-            throw new ToolException("None " + label + " file registered for individual/sample (" + individual.getId() + "/"
-                    + sample.getId() + ")");
-        } else {
-            OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token);
-            if (fileResult.getNumResults() == 0) {
-                throw new ToolException(label + " file ID '" + fileId + "' not found in OpenCGA catalog for individual/sample ("
-                        + individual.getId() + "/" + sample.getId() + ")");
-            }
-        }
+        // Check inferred sex analysis parameters
+        InferredSexAnalysis.checkParameters(individualId, sampleId, studyId, catalogManager, token);
     }
 
     public String getStudyId() {
