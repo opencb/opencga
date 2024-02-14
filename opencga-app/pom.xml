@@ -256,14 +256,6 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <targetPath>${project.basedir}/target/clients/R</targetPath>
-                <includes>
-                    <include>compileR.sh</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
                 <includes>
                     <include>cli-usage.yml</include>
                 </includes>
@@ -343,7 +335,7 @@
                         <configuration>
                             <target>
                                 <echo>Preparing ${build.dir} folder</echo>
-                                <exec executable="rm">
+                                <exec executable="rm" failonerror="true">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
@@ -359,12 +351,12 @@
                         <configuration>
                             <target>
                                 <echo>Preparing ${build.dir} folder</echo>
-                                <exec executable="rm">
+                                <exec executable="rm" failonerror="true">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <exec executable="mkdir">
+                                <exec executable="mkdir" failonerror="true">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/bin/utils"/>
                                     <arg value="${build.dir}/clients"/>
@@ -376,7 +368,7 @@
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
@@ -391,18 +383,25 @@
                                 </exec>
 
                                 <echo>Copying docker-compose files</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>
                                     <arg value="${build.dir}/cloud/docker/compose"/>
                                 </exec>
-                                <exec executable="cp">
+                                <exec executable="mkdir" failonerror="true">
+                                    <arg value="-p"/>
+                                    <arg value="${build.dir}/cloud/docker/compose/conf"/>
+                                </exec>
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.xml"/>
                                     <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.internal.xml"/>
                                     <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.service.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/cloud/docker/compose/conf"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
                                     <arg value="${build.dir}/analysis"/>
@@ -410,51 +409,52 @@
 
                                 <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion
                                 </echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
 
-                                <exec executable="mkdir">
+                                <exec executable="mkdir" failonerror="true">
+                                    <arg value="-p"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
-                                <exec executable="sed">
+                                <exec executable="sed" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
                                     <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
                                 <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-client/target/classes/DESCRIPTION"/>
                                     <arg value="${build.dir}/clients/R/"/>
                                 </exec>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
                                 <echo>Copying configuration files</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.xml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.service.xml"/>
@@ -498,7 +498,7 @@
                                 </chmod>
 
                                 <echo>Create clicompletion</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
                                     <arg value="${build.dir}/bin/utils"/>
                                 </exec>
@@ -523,7 +523,8 @@
                         <configuration>
                             <target>
                                 <echo>Preparing 'opencga-client' folder</echo>
-                                <exec executable="mkdir">
+                                <exec executable="mkdir" failonerror="true">
+                                    <arg value="-p"/>
                                     <arg value="${build.dir}/opencga-client-${project.parent.version}"/>
                                     <arg value="${build.dir}/opencga-client-${project.parent.version}/bin"/>
                                     <arg value="${build.dir}/opencga-client-${project.parent.version}/conf"/>
@@ -531,7 +532,7 @@
                                 </exec>
 
                                 <echo>Copying files to 'opencga-client' folder</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
@@ -542,29 +543,29 @@
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/bin/opencga.sh"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/bin"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/conf/client-configuration.yml"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/conf"/>
                                 </exec>
 
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${build.dir}/misc/completion/opencga"/>
                                     <arg value="${build.dir}/misc/completion/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/completion"/>
                                 </exec>
 
                                 <echo>Creating 'opencga-client' tar.gz file</echo>
-                                <exec executable="tar">
+                                <exec executable="tar" failonerror="true">
                                     <arg value="-C"/>
                                     <arg value="${build.dir}"/>
                                     <arg value="-czf"/>
@@ -573,7 +574,7 @@
                                 </exec>
 
                                 <echo>Deleting 'opencga-client' folder</echo>
-                                <exec executable="rm">
+                                <exec executable="rm" failonerror="true">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
@@ -638,7 +639,7 @@
                                 <configuration>
                                     <target>
                                         <echo>Copying storage to ${build.dir}</echo>
-                                        <exec executable="cp">
+                                        <exec executable="cp" failonerror="true">
                                             <arg value="-r"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/bin"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
@@ -789,7 +790,7 @@
                                 <configuration>
                                     <target>
                                         <echo>Copying Acceptance testing files</echo>
-                                        <exec executable="cp">
+                                        <exec executable="cp" failonerror="true">
                                             <arg value="${project.basedir}/target/appassembler/bin/opencga-test.sh"/>
                                             <arg value="${build.dir}/bin"/>
                                         </exec>
@@ -830,12 +831,12 @@
                                 <configuration>
                                     <target>
                                         <echo>Compiling R client</echo>
-                                        <exec executable="${build.dir}/clients/R/build.sh" failonerror="true">
+                                        <!-- FIXME : This is not working -->
+                                        <exec executable="${build.dir}/clients/R/build.sh" failonerror="false">
                                             <arg value="${build.dir}/clients/R"/>
                                         </exec>
-                                        <echo>Copying docker-compose files</echo>
                                         <echo>Moving R client to ${build.dir}/clients/R/</echo>
-                                        <exec executable="cp">
+                                        <exec executable="cp" failonerror="false">
                                             <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
                                             <arg value="${build.dir}/clients/R/opencgaR_${project.parent.version}.tar.gz"/>
                                         </exec>
