@@ -18,21 +18,17 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.GRCH37_CHROMOSOMES;
 import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.GRCH38_CHROMOSOMES;
@@ -44,17 +40,17 @@ public class InferredSexComputation {
             throws ToolException {
 
         // Compute coverage for each chromosome for each BAM file
-        // TODO get chromosomes from cellbase
         Map<String, Integer> chromosomes;
-        if (assembly.toLowerCase().equals("grch37")) {
+        if (assembly.equalsIgnoreCase("grch37")) {
             chromosomes = GRCH37_CHROMOSOMES;
         } else {
             chromosomes = GRCH38_CHROMOSOMES;
         }
 
         double[] means = new double[]{0d, 0d, 0d};
-        for (String chrom : chromosomes.keySet()) {
-            int chromSize = chromosomes.get(chrom);
+        for (Map.Entry<String, Integer> entry : chromosomes.entrySet()) {
+            String chrom = entry.getKey();
+            int chromSize = entry.getValue();
             Region region = new Region(chrom, 1, chromSize);
             try {
                 List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bwFile.getId(), region, 0,
@@ -98,8 +94,7 @@ public class InferredSexComputation {
                 "/data/output");
         String rParams = "R CMD Rscript --vanilla /data/input/" + inputFile.getName();
         try {
-            String cmdline = DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, null, outputBinding, rParams, null);
-            System.out.println("Docker command line: " + cmdline);
+            DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, null, outputBinding, rParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

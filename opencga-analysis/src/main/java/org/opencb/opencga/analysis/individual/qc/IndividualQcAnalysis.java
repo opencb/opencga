@@ -20,8 +20,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -29,13 +27,11 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
@@ -187,7 +183,9 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
             for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
                 if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
-                    addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
+                    String msg = "Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'";
+                    logger.warn(msg);
+                    addWarning(msg);
                     return;
                 }
             }
@@ -198,8 +196,10 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         try {
             karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
         } catch (IOException e) {
-            addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file: "
-                    + thresholdsPath.toAbsolutePath());
+            String msg = "Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file: "
+                    + thresholdsPath.toAbsolutePath();
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
         executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX)
@@ -209,19 +209,25 @@ public class IndividualQcAnalysis extends OpenCgaTool {
 
     private void runMendelianError() throws ToolException {
         if (CollectionUtils.isNotEmpty(qualityControl.getMendelianErrorReports())) {
-            addWarning("Skipping mendelian error: it was already computed");
+            String msg = "Skipping mendelian error: it was already computed";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 
         // Sanity check
         if (sample == null || StringUtils.isEmpty(sample.getId())) {
-            addWarning("Skipping mendelian error: missing child sample ID.");
+            String msg = "Skipping mendelian error: missing child sample ID";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 
         if (StringUtils.isEmpty(motherSampleId) && StringUtils.isEmpty(fatherSampleId)) {
-            addWarning("Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
-                    + " errors at least one of them has to be not empty.");
+            String msg = "Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
+                    + " errors at least one of them has to be not empty";
+            logger.warn(msg);
+            addWarning(msg);
             return;
         }
 

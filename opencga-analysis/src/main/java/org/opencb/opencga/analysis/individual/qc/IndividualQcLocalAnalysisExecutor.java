@@ -21,7 +21,6 @@ import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;

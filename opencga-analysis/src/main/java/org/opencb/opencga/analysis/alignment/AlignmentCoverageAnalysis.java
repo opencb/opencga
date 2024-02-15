@@ -16,27 +16,14 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.FileUtil;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisExecutor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileInternalAlignmentIndex;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -72,7 +59,15 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         }
 
         //  Checking BAM file ID
-        bamCatalogFile = getFile(coverageParams.getBamFileId(), "BAM");
+        try {
+            bamCatalogFile = catalogManager.getFileManager().get(getStudy(), coverageParams.getBamFileId(), QueryOptions.empty(),
+                    getToken()).first();
+            if (bamCatalogFile == null) {
+                throw new ToolException("Could not find BAM file from ID '" + coverageParams.getBamFileId() + "'");
+            }
+        } catch (Exception e) {
+            throw new ToolException("Could not get BAM file from ID " + coverageParams.getBamFileId());
+        }
 
         // Check if the input file is .bam
         if (!bamCatalogFile.getName().endsWith(AlignmentConstants.BAM_EXTENSION)) {
@@ -81,20 +76,26 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Getting BAI file
-        if (StringUtils.isEmpty(coverageParams.getBaiFileId())) {
+        String baiFileId = coverageParams.getBaiFileId();
+        if (StringUtils.isEmpty(baiFileId)) {
             // BAI file ID was not provided, looking for it
-            baiCatalogFile = getBaiFile(bamCatalogFile.getName() + AlignmentConstants.BAI_EXTENSION);
-            if (baiCatalogFile == null) {
-                throw new ToolException("Could not find BAI file from name '"
-                        + (bamCatalogFile.getName() + AlignmentConstants.BAI_EXTENSION) + "'");
+            logger.info("BAI file ID was not provided, getting it from the internal alignment index of the BAM file ID {}",
+                    bamCatalogFile.getId());
+            try {
+                baiFileId = bamCatalogFile.getInternal().getAlignment().getIndex().getFileId();
+            } catch (Exception e) {
+                throw new ToolException("Could not get internal alignment index file Id from BAM file ID '" + bamCatalogFile.getId());
             }
-        } else {
-            // Getting the BAI file provided
-            baiCatalogFile = getFile(coverageParams.getBaiFileId(), "BAI");
+        }
+        try {
+            baiCatalogFile = catalogManager.getFileManager().get(getStudy(), baiFileId, QueryOptions.empty(), getToken()).first();
             if (baiCatalogFile == null) {
                 throw new ToolException("Could not find BAI file from ID '" + coverageParams.getBaiFileId() + "'");
             }
+        } catch (Exception e) {
+            throw new ToolException("Could not get BAI file from file ID " + baiFileId);
         }
+
         logger.info("BAI file ID = {}; path = {}", baiCatalogFile.getId(), Paths.get(baiCatalogFile.getUri()));
 
         // Checking filenames
@@ -128,7 +129,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             // in the job dir to compute the BW file; then BAM and BAI symbolic links will be deleted from the job dir
             Path bamPath = Paths.get(bamCatalogFile.getUri()).toAbsolutePath();
             Path baiPath = Paths.get(baiCatalogFile.getUri()).toAbsolutePath();
-            if (bamPath.getParent() != baiPath.getParent()) {
+            if (!bamPath.getParent().toString().equals(baiPath.getParent().toString())) {
                 logger.info("BAM and BAI files must be symbolic-linked in the job dir since they are in different directories: {} and {}",
                         bamPath, baiPath);
                 bamPath = getOutDir().resolve(bamCatalogFile.getName()).toAbsolutePath();
@@ -187,47 +188,5 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             // Link generated BIGWIG file and update samples info
             AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
         });
-    }
-
-    private File getFile(String fileId, String msg) throws ToolException {
-        OpenCGAResult<File> fileResult;
-        try {
-            logger.info("Checking {} file ID '{}'", msg, fileId);
-            fileResult = catalogManager.getFileManager().get(getStudy(), fileId, QueryOptions.empty(), getToken());
-        } catch (CatalogException e) {
-            throw new ToolException("Error accessing " + msg + " file '" + fileId + "' of the study " + getStudy() + "'", e);
-        }
-        if (fileResult.getNumResults() <= 0) {
-            throw new ToolException(msg + " file ID '" + fileId + "' not found in study '" + getStudy() + "'");
-        }
-        return  fileResult.first();
-    }
-
-    private File getBaiFile(String filename) throws ToolException {
-        OpenCGAResult<File> fileResult;
-        try {
-            logger.info("Looking for BAI file ID from name '{}'", filename);
-            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), filename);
-            fileResult = catalogManager.getFileManager().search(getStudy(), query, QueryOptions.empty(), getToken());
-        } catch (CatalogException e) {
-            throw new ToolException("Error accessing BAI file name '" + filename + "' of the study " + getStudy() + "'", e);
-        }
-        if (fileResult.getNumResults() <= 0) {
-            throw new ToolException("Filename '" + filename + "' not found in study '" + getStudy() + "'");
-        } else {
-            File selectedFile = null;
-            for (File file : fileResult.getResults()) {
-                if (selectedFile == null) {
-                    selectedFile = file;
-                } else {
-                    // Get the most recent according to the creation date
-                    // Creation date keeps the format: 20240212151427
-                    if (file.getCreationDate().compareTo(selectedFile.getCreationDate()) > 0) {
-                        selectedFile = file;
-                    }
-                }
-            }
-            return selectedFile;
-        }
     }
 }

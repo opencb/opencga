@@ -102,14 +102,13 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                         outputPath);
             }
 
-            // Link generated BAI file and update samples info
+            // Link generated BAI file and update samples info, related file
             File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, study, catalogManager, token);
 
-            // TODO: Update BAM file internal in order to set the alignment index (BAI)
-//            FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
-//                    baiCatalogFile.getId(), "HTSJDK library");
-//            FileUpdateParams updateParams = new FileUpdateParams();
-//            catalogManager.getFileManager().update(study, inputCatalogFile.getId(), updateParams, null, token);
+            // Update BAM file internal in order to set the alignment index (BAI)
+            FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
+                    baiCatalogFile.getId(), "HTSJDK library");
+            catalogManager.getFileManager().updateFileInternalAlignmentIndex(inputCatalogFile, fileAlignmentIndex, token);
         });
     }
 
