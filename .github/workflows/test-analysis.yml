@@ -1,4 +1,5 @@
 name: Build and test the project
+run-name: "Build and test the project. Hadoop flavour: ${{ inputs.hadoop }}. Test profile: ${{ inputs.test_profile }}"
 
 on:
   workflow_call:
@@ -8,15 +9,10 @@ on:
         type: string
         required: true
       hadoop:
-        type: choice
-        description: 'Hadoop flavour.'
+        type: string
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
         default: "hdp3.1"
-        options:
-          - "hdp3.1"
-          - "hdi5.1"
-          - "emr6.1"
-          - "emr6.13"
       mvn_opts:
         type: string
         required: false
