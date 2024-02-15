@@ -3,6 +3,16 @@ name: Check junits
 on:
   workflow_dispatch:
     inputs:
+      hadoop:
+        type: choice
+        description: 'Hadoop flavour.'
+        required: false
+        default: "hdp3.1"
+        options:
+          - "hdp3.1"
+          - "hdi5.1"
+          - "emr6.1"
+          - "emr6.13"
       short_tests:
         type: boolean
         required: false
@@ -52,4 +62,5 @@ jobs:
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
       mvn_opts: ${{ inputs.mvn_opts }}
+      hadoop: ${{ inputs.hadoop }}
     secrets: inherit
