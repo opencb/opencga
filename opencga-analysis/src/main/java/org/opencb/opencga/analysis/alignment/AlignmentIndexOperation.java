@@ -16,25 +16,20 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
@@ -89,10 +84,32 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             if (!outputPath.toFile().exists()) {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             }
-            logger.info("Alignment index at {}", outputPath);
+
+            // Try to copy the BAI file into the BAM file directory
+            Path targetPath = inputPath.getParent().resolve(outputPath.getFileName());
+            try {
+                Files.move(outputPath, targetPath);
+            } catch (Exception e) {
+                // Do nothing
+                logger.info("Moving from {} to {}: {}", outputPath, targetPath, e.getMessage());
+            }
+
+            if (targetPath.toFile().exists()) {
+                outputPath = targetPath;
+                logger.info("Alignment index file was copied into the BAM folder: {}", outputPath);
+            } else {
+                logger.info("Couldn't copy the alignment index file into the BAM folder. The index file is in the job folder instead: {}",
+                        outputPath);
+            }
 
             // Link generated BAI file and update samples info
-            AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, study, catalogManager, token);
+            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, study, catalogManager, token);
+
+            // TODO: Update BAM file internal in order to set the alignment index (BAI)
+//            FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
+//                    baiCatalogFile.getId(), "HTSJDK library");
+//            FileUpdateParams updateParams = new FileUpdateParams();
+//            catalogManager.getFileManager().update(study, inputCatalogFile.getId(), updateParams, null, token);
         });
     }
 

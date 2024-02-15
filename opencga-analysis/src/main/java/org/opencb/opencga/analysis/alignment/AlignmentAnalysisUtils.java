@@ -20,17 +20,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 public class AlignmentAnalysisUtils {
 
-    public static void linkAndUpdate(File bamCatalogFile, Path outPath, String study, CatalogManager catalogManager, String token)
+    public static File linkAndUpdate(File bamCatalogFile, Path outPath, String study, CatalogManager catalogManager, String token)
             throws CatalogException, ToolException {
         // Link BW file and update sample info
         FileLinkParams fileLinkParams = new FileLinkParams().setUri(outPath.toString());
@@ -41,13 +40,25 @@ public class AlignmentAnalysisUtils {
         if (fileResult.getNumResults() != 1) {
             throw new ToolException("It could not link OpenCGA file catalog file for '" + outPath + "'");
         }
-        FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(bamCatalogFile.getSampleIds());
-        catalogManager.getFileManager().update(study, fileResult.first().getId(), updateParams, null, token);
-        fileResult = catalogManager.getFileManager().get(study, fileResult.first().getId(), QueryOptions.empty(), token);
+        File outCatalogFile = fileResult.first();
+        FileUpdateParams updateParams = new FileUpdateParams()
+                .setSampleIds(bamCatalogFile.getSampleIds())
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams()
+                        .setFile(bamCatalogFile.getId())
+                        .setRelation(FileRelatedFile.Relation.ALIGNMENT)));
+        try {
+            catalogManager.getFileManager().update(study, outCatalogFile.getId(), updateParams, null, token);
+        } catch (CatalogException e) {
+            catalogManager.getFileManager().unlink(study, outCatalogFile.getId(), token);
+            throw e;
+        }
+        // Checking update
+        fileResult = catalogManager.getFileManager().get(study, outCatalogFile.getId(), QueryOptions.empty(), token);
         if (!fileResult.first().getSampleIds().equals(bamCatalogFile.getSampleIds())) {
-            throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + fileResult.first().getId()
+            catalogManager.getFileManager().unlink(study, outCatalogFile.getId(), token);
+            throw new ToolException("It could not update sample IDS within the OpenCGA BAI file catalog (" + outCatalogFile.getId()
                     + ") with the samples info from '" + bamCatalogFile.getId() + "'");
         }
+        return outCatalogFile;
     }
-
 }
