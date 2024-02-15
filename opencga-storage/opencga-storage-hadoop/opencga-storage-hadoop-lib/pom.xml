@@ -72,26 +72,27 @@
 
     <profiles>
         <profile>
-            <id>hdp3.1</id>
+            <id>thisHadoopLib</id>
+            <activation>
+                <property>
+                    <name>!allHadoopLibs</name>
+                </property>
+            </activation>
+            <modules>
+                <module>${opencga-hadoop-lib.artifactId}</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>allHadoopLibs</id>
+            <activation>
+                <property>
+                    <name>allHadoopLibs</name>
+                </property>
+            </activation>
             <modules>
                 <module>opencga-storage-hadoop-lib-hdp3.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>hdi5.1</id>
-            <modules>
                 <module>opencga-storage-hadoop-lib-hdi5.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>emr6.1</id>
-            <modules>
                 <module>opencga-storage-hadoop-lib-emr6.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>emr6.13</id>
-            <modules>
                 <module>opencga-storage-hadoop-lib-emr6.13</module>
             </modules>
         </profile>

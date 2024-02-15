@@ -7,15 +7,7 @@ import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.PhoenixCompa
 
 import java.io.IOException;
 
-public class HBaseCompat implements HBaseCompatApi {
-    // singleton
-    private static HBaseCompat instance;
-    public static HBaseCompat getInstance() {
-        if (instance == null) {
-            instance = new HBaseCompat();
-        }
-        return instance;
-    }
+public class HBaseCompat extends HBaseCompatApi {
 
     @Override
     public void available(Configuration configuration) throws IOException {
