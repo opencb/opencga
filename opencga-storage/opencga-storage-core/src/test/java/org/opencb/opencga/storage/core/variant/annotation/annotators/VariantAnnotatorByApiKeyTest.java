@@ -35,11 +35,11 @@ public class VariantAnnotatorByApiKeyTest {
         String url = "https://uk.ws.zettagenomics.com/cellbase/";
         storageConfiguration.getCellbase().setUrl(url);
         storageConfiguration.getCellbase().setDataRelease("3");
-        storageConfiguration.getCellbase().setVersion("v5.4");
+        storageConfiguration.getCellbase().setVersion("v5.8");
         storageConfiguration.getCellbase().setApiKey(null);
 
         CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.4"));
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.8"));
 
         projectMetadata = new ProjectMetadata("hsapiens", "grch38", "3", 1, null, null, null);
     }

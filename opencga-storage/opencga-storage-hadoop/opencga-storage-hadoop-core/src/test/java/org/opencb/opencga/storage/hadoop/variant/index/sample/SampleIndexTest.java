@@ -222,13 +222,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // ---------------- Annotate
-//        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-//        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
-//        variantStorageEngine.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-//            projectMetadata.setAssembly("grch38");
-//        });
-//        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-//        this.variantStorageEngine.reloadCellbaseConfiguration();
         this.variantStorageEngine.annotate(outputUri, new QueryOptions());
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 

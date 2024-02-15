@@ -92,8 +92,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     public void testChangeDataRelease() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(null);
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.reloadCellbaseConfiguration();
         variantStorageEngine.getCellBaseUtils().validate();
@@ -103,10 +103,10 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // First annotation. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap());
-        assertNull(variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease());
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
 
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("1");
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.8");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
         variantStorageEngine.reloadCellbaseConfiguration();
 
         // New annotator. Do not overwrite. Should fail.
@@ -119,10 +119,10 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // New annotator. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals("1", String.valueOf(variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease()));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
 
 
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
         variantStorageEngine.reloadCellbaseConfiguration();
 
         // Same annotator, new datarelease. Do not overwrite. Should fail.
@@ -131,16 +131,16 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             fail("Should fail");
         } catch (Exception e) {
             e.printStackTrace();
-            assertEquals("DataRelease has changed. Existing annotation calculated with dataRelease 1, attempting to annotate with 2", e.getMessage());
+            assertEquals("DataRelease has changed. Existing annotation calculated with dataRelease 2, attempting to annotate with 3", e.getMessage());
         }
 
         // Same annotator, new datarelease. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals("2", String.valueOf(variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease()));
+        assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
 
-        // Revert annotator to 5.0. Do not overwrite. Should fail.
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease(null);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.0");
+        // Revert annotator to 5.2. Do not overwrite. Should fail.
+        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
+        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
         variantStorageEngine.reloadCellbaseConfiguration();
         try {
             variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
@@ -149,9 +149,9 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             e.printStackTrace();
         }
 
-        // Revert annotator to 5.0. Do not overwrite. Should run ok.
+        // Revert annotator to 5.2 Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertNull(variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease());
+        assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
     }
 
     @Test
