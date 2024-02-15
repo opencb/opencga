@@ -31,7 +31,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalAlignmentIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -164,7 +166,23 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Something wrong happened running a coverage: BigWig file (" + bwPath.toFile().getName()
                         + ") was not create, please, check log files.");
             }
-            logger.info("Coverage index at {}", bwPath);
+
+            // Try to copy the BW file into the BAM file directory
+            Path targetPath = Paths.get(bamCatalogFile.getUri()).getParent().resolve(bwPath.getFileName());
+            try {
+                Files.move(bwPath, targetPath);
+            } catch (Exception e) {
+                // Do nothing
+                logger.info("Moving from {} to {}: {}", bwPath, targetPath, e.getMessage());
+            }
+
+            if (targetPath.toFile().exists()) {
+                bwPath = targetPath;
+                logger.info("Coverage file was copied into the BAM folder: {}", bwPath);
+            } else {
+                logger.info("Couldn't copy the coverage file into the BAM folder. The coverage file is in the job folder instead: {}",
+                        bwPath);
+            }
 
             // Link generated BIGWIG file and update samples info
             AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
