@@ -156,6 +156,11 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</artifactId>
             <version>${project.parent.version}</version>
             <optional>true</optional>
@@ -416,6 +421,9 @@
                                 </ignoredNonTestScopedDependency>
                                 <ignoredNonTestScopedDependency>
                                     org.apache.logging.log4j:log4j-api
+                                </ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>
+                                    org.opencb.opencga:opencga-storage-hadoop-compat-api
                                 </ignoredNonTestScopedDependency>
                             </ignoredNonTestScopedDependencies>
                             <ignoredUsedUndeclaredDependencies>
