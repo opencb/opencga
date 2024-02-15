@@ -527,7 +527,7 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response create(
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "[[organization@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY", defaultValue = "SECONDARY")
             @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
@@ -555,7 +555,7 @@ public class ClinicalWebService extends AnalysisWebService {
                     dataType = "string", paramType = "query")
     })
     public Response updateInterpretation(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "[[organization@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
                     allowableValues = "ADD,SET,REMOVE,REPLACE", defaultValue = "ADD")
             @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
@@ -611,7 +611,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Revert to a previous interpretation version", response = Interpretation.class)
     public Response revertInterpretation(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "[[organization@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = "Version to revert to", required = true) @QueryParam("version") int version) {
@@ -627,7 +627,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Delete interpretation", response = Interpretation.class)
     public Response deleteInterpretation(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "[[organization@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
             @ApiParam(value = "Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one")
@@ -644,7 +644,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Clear the fields of the main interpretation of the Clinical Analysis", response = Interpretation.class)
     public Response clearInterpretation(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "[[organization@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId) {
         try {
@@ -660,7 +660,7 @@ public class ClinicalWebService extends AnalysisWebService {
 //    @ApiOperation(value = "Update comments of an Interpretation",
 //            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
 //    public Response commentsUpdate(
-//            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "[[organization@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
 //            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
 //            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,

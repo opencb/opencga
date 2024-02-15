@@ -40,20 +40,16 @@ public class User {
             description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
-    @DataField(id = "name", indexed = true,
-            description = FieldConstants.USER_NAME)
+    @DataField(id = "name", indexed = true, description = FieldConstants.USER_NAME)
     private String name;
 
-    @DataField(id = "email", indexed = true,
-            description = FieldConstants.USER_EMAIL)
+    @DataField(id = "email", indexed = true, description = FieldConstants.USER_EMAIL)
     private String email;
 
-    @DataField(id = "organization", indexed = true,
-            description = FieldConstants.USER_ORGANIZATION)
+    @DataField(id = "organization", indexed = true, description = FieldConstants.USER_ORGANIZATION)
     private String organization;
 
-    @DataField(id = "account", indexed = true,
-            description = FieldConstants.USER_ACCOUNT)
+    @DataField(id = "account", indexed = true, description = FieldConstants.USER_ACCOUNT)
     private Account account;
 
     /**
@@ -62,12 +58,10 @@ public class User {
      * @apiNote Internal
      */
 
-    @DataField(id = "internal", indexed = true,
-            description = FieldConstants.GENERIC_INTERNAL)
+    @DataField(id = "internal", indexed = true, description = FieldConstants.GENERIC_INTERNAL)
     private UserInternal internal;
 
-    @DataField(id = "quota", indexed = true,
-            description = FieldConstants.USER_QUOTA)
+    @DataField(id = "quota", indexed = true, description = FieldConstants.USER_QUOTA)
     private UserQuota quota;
 
     /**
@@ -75,21 +69,13 @@ public class User {
      *
      * @apiNote
      */
-    @DataField(id = "projects", indexed = true,
-            description = FieldConstants.USER_PROJECTS)
+    @DataField(id = "projects", indexed = true, description = FieldConstants.USER_PROJECTS)
     private List<Project> projects;
 
-    @DataField(id = "sharedProjects", indexed = true,
-            description = FieldConstants.USER_SHARED_PROJECTS)
-    private List<Project> sharedProjects;
-
-
-    @DataField(id = "configs", indexed = true,
-            description = FieldConstants.USER_CONFIGS)
+    @DataField(id = "configs", indexed = true, description = FieldConstants.USER_CONFIGS)
     private Map<String, ObjectMap> configs;
 
-    @DataField(id = "filters", indexed = true,
-            description = FieldConstants.USER_FILTERS)
+    @DataField(id = "filters", indexed = true, description = FieldConstants.USER_FILTERS)
     private List<UserFilter> filters;
 
     /**
@@ -97,26 +83,23 @@ public class User {
      *
      * @apiNote
      */
-    @DataField(id = "attributes", indexed = true,
-            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
+    @DataField(id = "attributes", indexed = true, description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public User() {
     }
 
     public User(String id, Account account) {
-        this(id, id, null, null, account, new UserInternal(new UserStatus()), null, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyMap(), new LinkedList<>(), Collections.emptyMap());
+        this(id, id, null, null, account, new UserInternal(new UserStatus()), null, Collections.emptyList(), Collections.emptyMap(),
+                new LinkedList<>(), Collections.emptyMap());
     }
 
     public User(String id, String name, String email, String organization, UserInternal internal) {
-        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new LinkedList<>(),
-                new HashMap<>());
+        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String organization, Account account, UserInternal internal, UserQuota quota,
-                List<Project> projects, List<Project> sharedProjects, Map<String, ObjectMap> configs, List<UserFilter> filters,
-                Map<String, Object> attributes) {
+                List<Project> projects, Map<String, ObjectMap> configs, List<UserFilter> filters, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -125,7 +108,6 @@ public class User {
         this.internal = internal;
         this.quota = quota;
         this.projects = projects;
-        this.sharedProjects = sharedProjects;
         this.configs = configs;
         this.filters = filters;
         this.attributes = attributes;
@@ -142,7 +124,6 @@ public class User {
         sb.append(", internal=").append(internal);
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
-        sb.append(", sharedProjects=").append(sharedProjects);
         sb.append(", configs=").append(configs);
         sb.append(", filters=").append(filters);
         sb.append(", attributes=").append(attributes);
@@ -219,15 +200,6 @@ public class User {
 
     public User setProjects(List<Project> projects) {
         this.projects = projects;
-        return this;
-    }
-
-    public List<Project> getSharedProjects() {
-        return sharedProjects;
-    }
-
-    public User setSharedProjects(List<Project> sharedProjects) {
-        this.sharedProjects = sharedProjects;
         return this;
     }
 

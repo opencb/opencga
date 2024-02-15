@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PasswordChangeParams {
 
     @JsonProperty(required = true)
+    private String organizationId;
+    @JsonProperty(required = true)
     private String user;
     @JsonProperty(required = false)
     private String password;
@@ -32,20 +34,39 @@ public class PasswordChangeParams {
     public PasswordChangeParams() {
     }
 
+    @Deprecated
     public PasswordChangeParams(String user, String oldPassword, String newPassword) {
         this.user = user;
         this.password = oldPassword;
         this.newPassword = newPassword;
     }
 
+    public PasswordChangeParams(String organizationId, String user, String password, String newPassword) {
+        this.organizationId = organizationId;
+        this.user = user;
+        this.password = password;
+        this.newPassword = newPassword;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PasswordChangeParams{");
-        sb.append("user='").append(user).append('\'');
-        sb.append(", password='").append("********").append('\'');
-        sb.append(", newPassword='").append("********").append('\'');
+        sb.append("organizationId='").append(organizationId).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", newPassword='").append(newPassword).append('\'');
+        sb.append(", reset='").append(reset).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getOrganizationId() {
+        return organizationId;
+    }
+
+    public PasswordChangeParams setOrganizationId(String organizationId) {
+        this.organizationId = organizationId;
+        return this;
     }
 
     public String getUser() {

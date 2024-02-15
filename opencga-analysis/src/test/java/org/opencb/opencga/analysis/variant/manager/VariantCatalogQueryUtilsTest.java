@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -52,10 +53,11 @@ import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -88,7 +90,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 @Category(MediumTests.class)
 public class VariantCatalogQueryUtilsTest {
 
-    @ClassRule
+    @ClassRule(order = -1)
     public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private static String assembly;
 
@@ -96,6 +98,7 @@ public class VariantCatalogQueryUtilsTest {
     public ExpectedException thrown = ExpectedException.none();
 
     private static CatalogManager catalog;
+    private static final String ORGANIZATION = "test";
     private static String sessionId;
     private static VariantCatalogQueryUtils queryUtils;
     private static List<Sample> samples = new ArrayList<>();
@@ -109,18 +112,26 @@ public class VariantCatalogQueryUtilsTest {
     private static Panel myPanelWithRegions;
     private static CellBaseUtils cellBaseUtils;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @BeforeClass
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, "ACME", 1000L, Account.AccountType.FULL, catalogManagerExternalResource.getAdminToken()).first();
+        catalog.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
+                catalogManagerExternalResource.getAdminToken());
+        catalog.getUserManager().create("user", "user", "my@email.org", TestParamConstants.PASSWORD, ORGANIZATION, 1000L,
+                catalogManagerExternalResource.getAdminToken()).first();
+        catalog.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
+                null,
+                catalogManagerExternalResource.getAdminToken());
 
-        sessionId = catalog.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionId = catalog.getUserManager().login(ORGANIZATION, "user", TestParamConstants.PASSWORD).getToken();
         assembly = "GRCh38";
-        catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
+        Project project = catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, INCLUDE_RESULT, sessionId).first();
+        catalog.getStudyManager().create(project.getFqn(), "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(project.getFqn(), "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create(project.getFqn(), "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -238,7 +249,7 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
+            catalog.getFileManager().updateFileInternalVariantIndex("s1", file, new FileInternalVariantIndex()
                     .setStatus(new VariantIndexStatus(InternalStatus.READY))
                     .setRelease(release), sessionId);
         }
@@ -352,10 +363,10 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void parseQuery() throws Exception {
-        assertEquals("user@p1:s1", parseValue(STUDY, "s1"));
-        assertEquals("user@p1:s1,user@p1:s2", parseValue(STUDY, "s1,s2"));
-        assertEquals("!user@p1:s1,user@p1:s2", parseValue(STUDY, "!s1,s2"));
-        assertEquals("user@p1:s2;!user@p1:s1;user@p1:s3", parseValue(STUDY, "user@p1:s2;!s1;p1:s3"));
+        assertEquals("test@p1:s1", parseValue(STUDY, "s1"));
+        assertEquals("test@p1:s1,test@p1:s2", parseValue(STUDY, "s1,s2"));
+        assertEquals("!test@p1:s1,test@p1:s2", parseValue(STUDY, "!s1,s2"));
+        assertEquals("test@p1:s2;!test@p1:s1;test@p1:s3", parseValue(STUDY, "test@p1:s2;!s1;p1:s3"));
 
         assertEquals(file1.getName(), parseValue("s1", FILE, file1.getName()));
         assertEquals(file1.getName(), parseValue("s1", FILE, file1.getId()));
@@ -375,24 +386,24 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("c1", parseValue("s1", COHORT, "s1:c1"));
         assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "s1:c1>0.1"));
 
-        assertEquals("c1", parseValue("s1", COHORT, "user@p1:s1:c1"));
-        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "user@p1:s1:c1>0.1"));
+        assertEquals("c1", parseValue("s1", COHORT, "test@p1:s1:c1"));
+        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "test@p1:s1:c1>0.1"));
 
-        assertEquals("user@p1:s1:ALL;user@p1:s2:ALL", parseValue("s1,s2", COHORT, "s1:ALL;s2:ALL"));
-        assertEquals("user@p1:s1:ALL>0.1;user@p1:s2:ALL>0.1", parseValue("s1,s2", STATS_MAF, "s1:ALL>0.1;s2:ALL>0.1"));
+        assertEquals("test@p1:s1:ALL;test@p1:s2:ALL", parseValue("s1,s2", COHORT, "s1:ALL;s2:ALL"));
+        assertEquals("test@p1:s1:ALL>0.1;test@p1:s2:ALL>0.1", parseValue("s1,s2", STATS_MAF, "s1:ALL>0.1;s2:ALL>0.1"));
     }
 
     @Test
     public void queryBySavedFilter() throws Exception {
-        String userId = catalog.getUserManager().getUserId(sessionId);
+        String userId = new JwtPayload(sessionId).getUserId();
         catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
                 new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
 
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), null, sessionId);
-        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "value1").append("key2", "value2"), query);
+        assertEquals(new Query().append(STUDY.key(), "test@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "value1").append("key2", "value2"), query);
 
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue"), null, sessionId);
-        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue").append("key2", "value2"), query);
+        assertEquals(new Query().append(STUDY.key(), "test@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue").append("key2", "value2"), query);
     }
 
     @Test
@@ -841,11 +852,11 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void getAnyStudy() throws Exception {
-        assertEquals("user@p1:s1", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p1"), sessionId));
-        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p2"), sessionId));
-        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2"), sessionId));
-        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(INCLUDE_STUDY.key(), "p2s2"), sessionId));
-        assertEquals("user@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2").append(INCLUDE_STUDY.key(), "all"), sessionId));
+        assertEquals("test@p1:s1", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p1"), sessionId));
+        assertEquals("test@p2:p2s2", queryUtils.getAnyStudy(new Query(PROJECT.key(), "p2"), sessionId));
+        assertEquals("test@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2"), sessionId));
+        assertEquals("test@p2:p2s2", queryUtils.getAnyStudy(new Query(INCLUDE_STUDY.key(), "p2s2"), sessionId));
+        assertEquals("test@p2:p2s2", queryUtils.getAnyStudy(new Query(STUDY.key(), "p2s2").append(INCLUDE_STUDY.key(), "all"), sessionId));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Multiple projects");
         queryUtils.getAnyStudy(new Query(), sessionId);

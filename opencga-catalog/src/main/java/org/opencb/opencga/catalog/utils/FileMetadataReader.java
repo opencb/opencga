@@ -96,7 +96,8 @@ public class FileMetadataReader {
                             });
                     if (!missingSamples.isEmpty()) {
                         for (String missingSample : missingSamples) {
-                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
+                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample),
+                                    new QueryOptions(), token);
                         }
                     }
                 }
@@ -123,7 +124,8 @@ public class FileMetadataReader {
                         progressLogger.increment(samplesBatch.size());
                     }
 
-                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(),
+                            token);
                 } else {
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
                             new QueryOptions(Constants.ACTIONS,
