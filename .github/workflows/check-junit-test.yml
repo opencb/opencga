@@ -1,5 +1,5 @@
 name: Check junits
-run-name: 'Check Junit tests. Hadoop flavour: ${{ inputs.hadoop }}. Short : ${{ inputs.short_tests }}, medium : ${{ inputs.medium_tests }}, long : ${{ inputs.long_tests }}.'
+run-name: 'Check Junit tests. Hadoop flavour: ${{ inputs.hadoop }}. {{ if inputs.short_tests }}Short {{ endif }}{{ if inputs.medium_tests }}Medium {{ endif }}{{ if inputs.long_tests }}Long {{ endif }}{{if ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) }}All {{ endif }} tests.'
 
 on:
   workflow_dispatch:
