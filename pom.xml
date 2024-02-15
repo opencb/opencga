@@ -581,7 +581,7 @@
             <properties>
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>
 
-                <ENTERPRISE.SSO.ACTIVE>true</ENTERPRISE.SSO.ACTIVE>
+                <ENTERPRISE.SSO.ACTIVE>false</ENTERPRISE.SSO.ACTIVE>
                 <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
                 <ENTERPRISE.SSO.SERVER.NAME>http://localhost:9090</ENTERPRISE.SSO.SERVER.NAME>
                 <ENTERPRISE.SSO.PYTHON.BIN>python3</ENTERPRISE.SSO.PYTHON.BIN>

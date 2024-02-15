@@ -17,8 +17,11 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -32,8 +35,12 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
+
 public class CvdbTaskTest {
 
+    protected String organizationId = "test";
     protected String projectId = "project1";
     protected Study study;
 
@@ -73,15 +80,19 @@ public class CvdbTaskTest {
         toolRunner = new ToolRunner(catalogManagerResource.getOpencgaHome().toString(), catalogManager, storageEngineFactory);
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(CatalogManagerExternalResource.ADMIN_PASSWORD).getToken();
+    public void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", CatalogManagerExternalResource.PASSWORD, "", null,
-                Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", CatalogManagerExternalResource.PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user").setName("User Name").setOrganization(organizationId), PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User Name2").setOrganization(organizationId), PASSWORD, opencgaToken);
 
-        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", CatalogManagerExternalResource.PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams()
+                        .setOwner("user"),
+                null, opencgaToken);
+
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();

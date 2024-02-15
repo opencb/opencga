@@ -53,9 +53,11 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.Acl;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -158,6 +160,12 @@ public class CvdbSolrEngine {
             throws CatalogException {
         logger.info("Loading all clinical analyses from project: '{}'", projectId);
 
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionIdUser);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectId, jwtPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = jwtPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+
         CvdbIndexResult result = new CvdbIndexResult();
 
         // Start time
@@ -185,6 +193,11 @@ public class CvdbSolrEngine {
         logger.info("Loading all clinical analyses from study: '{}'", studyId);
 
         CvdbIndexResult result = new CvdbIndexResult();
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionIdUser);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = jwtPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
 
         // Start time
         StopWatch stopWatch = StopWatch.createStarted();
@@ -195,8 +208,7 @@ public class CvdbSolrEngine {
 
         Query projectQuery = new Query();
         projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
-        OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), sessionIdUser);
-        String projectId = projectResult.first().getId();
+        OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(organizationId, projectQuery, QueryOptions.empty(), sessionIdUser);
 
         // Get all clinical analyses for that study
         QueryOptions queryOptions = new QueryOptions(INCLUDE, "id");
@@ -235,6 +247,12 @@ public class CvdbSolrEngine {
                                                  boolean overwrite, String sessionIdUser) throws CatalogException {
         logger.info("Loading {} clinical analyses from the input list", clinicalAnalysisIds.size());
 
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(sessionIdUser);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = jwtPayload.getUserId(organizationId);
+        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+
         // Build caId-userId map, i.e., Map<Clinical Analysis ID, List<User ID>>
         Map<String, List<String>> caIdUserIdsMap = new HashMap<>();
         OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(studyId, clinicalAnalysisIds,
@@ -254,7 +272,7 @@ public class CvdbSolrEngine {
         // Get project for that study
         Query projectQuery = new Query();
         projectQuery.put(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
-        OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(projectQuery, QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().search(organizationId, projectQuery, QueryOptions.empty(), sessionIdUser);
         String projectId = projectResult.first().getId();
 
         // Get the input clinical analyses
@@ -960,7 +978,8 @@ public class CvdbSolrEngine {
 
     private void setViewerInQuery(Query query, String token) throws CvdbException {
         try {
-            String userId = catalogManager.getUserManager().getUserId(token);
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            String userId = jwtPayload.getUserId();
             if (StringUtils.isEmpty(userId)) {
                 throw new CvdbException("No user found for the input token");
             }

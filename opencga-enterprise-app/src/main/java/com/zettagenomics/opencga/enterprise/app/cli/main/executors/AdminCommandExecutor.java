@@ -18,14 +18,13 @@ import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.GroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
-import org.opencb.opencga.core.models.admin.UserCreateParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -45,6 +44,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "admin";
     public AdminCommandOptions adminCommandOptions;
 
     public AdminCommandExecutor(AdminCommandOptions adminCommandOptions) throws CatalogAuthenticationException {
@@ -64,9 +64,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         switch (subCommandString) {
             case "audit-group-by":
                 queryResponse = groupByAudit();
-                break;
-            case "catalog-index-stats":
-                queryResponse = indexStatsCatalog();
                 break;
             case "catalog-install":
                 queryResponse = installCatalog();
@@ -117,17 +114,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         return enterpriseOpenCGAClient.getEnterpriseAdminClient().groupByAudit(commandOptions.fields, commandOptions.entity, queryParams);
     }
 
-    private RestResponse<Boolean> indexStatsCatalog() throws Exception {
-        logger.debug("Executing indexStatsCatalog in Admin command line");
-
-        AdminCommandOptions.IndexStatsCatalogCommandOptions commandOptions = adminCommandOptions.indexStatsCatalogCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("collection", commandOptions.collection);
-
-        return enterpriseOpenCGAClient.getEnterpriseAdminClient().indexStatsCatalog(queryParams);
-    }
-
     private RestResponse<ObjectMap> installCatalog() throws Exception {
         logger.debug("Executing installCatalog in Admin command line");
 
@@ -135,10 +121,9 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         InstallationParams installationParams = null;
         if (commandOptions.jsonDataModel) {
-            installationParams = new InstallationParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(installationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/install"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             installationParams = JacksonUtils.getDefaultObjectMapper()
@@ -148,7 +133,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             putNestedIfNotEmpty(beanParams, "secretKey",commandOptions.secretKey, true);
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
-            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
 
             installationParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -162,12 +146,15 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
 
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+
         JWTParams jWTParams = null;
         if (commandOptions.jsonDataModel) {
-            jWTParams = new JWTParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jWTParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jWTParams = JacksonUtils.getDefaultObjectMapper()
@@ -180,7 +167,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAdminClient().jwtCatalog(jWTParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().jwtCatalog(jWTParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {
@@ -190,10 +177,9 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         UserCreateParams userCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            userCreateParams = new UserCreateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -205,7 +191,6 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
 
             userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -219,12 +204,15 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         AdminCommandOptions.ImportUsersCommandOptions commandOptions = adminCommandOptions.importUsersCommandOptions;
 
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+
         UserImportParams userImportParams = null;
         if (commandOptions.jsonDataModel) {
-            userImportParams = new UserImportParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userImportParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/import"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userImportParams = JacksonUtils.getDefaultObjectMapper()
@@ -241,7 +229,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), UserImportParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAdminClient().importUsers(userImportParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().importUsers(userImportParams, queryParams);
     }
 
     private RestResponse<Acl> permissionsUsers() throws Exception {
@@ -272,6 +260,7 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("account", commandOptions.account);
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
@@ -284,12 +273,15 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         AdminCommandOptions.SyncUsersCommandOptions commandOptions = adminCommandOptions.syncUsersCommandOptions;
 
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+
         GroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
-            groupSyncParams = new GroupSyncParams();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(groupSyncParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupSyncParams = JacksonUtils.getDefaultObjectMapper()
@@ -301,14 +293,13 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             putNestedIfNotEmpty(beanParams, "to",commandOptions.to, true);
             putNestedIfNotEmpty(beanParams, "study",commandOptions.study, true);
             putNestedIfNotNull(beanParams, "syncAll",commandOptions.syncAll, true);
-            putNestedIfNotNull(beanParams, "type",commandOptions.type, true);
             putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
 
             groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), GroupSyncParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseAdminClient().syncUsers(groupSyncParams);
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().syncUsers(groupSyncParams, queryParams);
     }
 
     private RestResponse<Group> usersUpdateGroups() throws Exception {
@@ -317,15 +308,15 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         AdminCommandOptions.UsersUpdateGroupsCommandOptions commandOptions = adminCommandOptions.usersUpdateGroupsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
         UserUpdateGroup userUpdateGroup = null;
         if (commandOptions.jsonDataModel) {
-            userUpdateGroup = new UserUpdateGroup();
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userUpdateGroup));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/{user}/groups/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userUpdateGroup = JacksonUtils.getDefaultObjectMapper()
