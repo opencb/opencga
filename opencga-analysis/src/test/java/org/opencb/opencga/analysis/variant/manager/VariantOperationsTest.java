@@ -50,10 +50,11 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -78,22 +79,22 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
 public class VariantOperationsTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
+    public static final String STUDY_FQN = ORGANIZATION + '@' + PROJECT + ':' + STUDY;
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
-    public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private static String father = "NA19661";
     private static String mother = "NA19660";
     private static String son = "NA19685";
@@ -148,7 +149,7 @@ public class VariantOperationsTest {
 //        catalogManager = opencga.getCatalogManager();
 //        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 //        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @After
@@ -275,8 +276,13 @@ public class VariantOperationsTest {
     }
 
     public void setUpCatalogManager() throws Exception {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
+                opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
+                null,
+                opencga.getAdminToken());
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -371,7 +377,7 @@ public class VariantOperationsTest {
 
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
-                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY),
+                new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
                 Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
@@ -390,7 +396,8 @@ public class VariantOperationsTest {
 
         // Everything should look the same, but with newer version
         for (String sample : samples) {
-            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
+            SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager()
+                    .get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
             assertEquals(IndexStatus.READY, sampleIndex.getStatus().getId());
             if (sample.equals(daughter) || sample.equals(son)) {
                 assertEquals(sample, IndexStatus.READY, sampleIndex.getFamilyStatus().getId());
@@ -502,7 +509,7 @@ public class VariantOperationsTest {
         assertEquals("GRCh38", cellBaseUtils.getAssembly());
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
-        String newCellbaseVersion = "v5.2";
+        String newCellbaseVersion = "v5.8";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());

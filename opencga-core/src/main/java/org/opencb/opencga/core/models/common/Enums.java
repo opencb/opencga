@@ -60,6 +60,7 @@ public final class Enums {
 
     public enum Resource {
         AUDIT,
+        ORGANIZATION,
         USER,
         PROJECT,
         STUDY,
@@ -250,6 +251,7 @@ public final class Enums {
 
         IMPORT,
 
+        FETCH_ORGANIZATION_IDS,
         IMPORT_EXTERNAL_USERS,
         IMPORT_EXTERNAL_GROUP_OF_USERS,
         SYNC_EXTERNAL_GROUP_OF_USERS,

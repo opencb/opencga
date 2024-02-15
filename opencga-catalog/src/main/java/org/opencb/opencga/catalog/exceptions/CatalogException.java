@@ -39,7 +39,7 @@ public class CatalogException extends Exception {
     }
 
     public static CatalogException notFound(String entity, List<String> entries) {
-        return new CatalogException("Missing " + entity + ": " + StringUtils.join(entries, ", ") + " not found.");
+        return new CatalogException("Missing " + entity + ": '" + StringUtils.join(entries, "', '") + "' not found.");
     }
 
     public static CatalogException appendMessage(CatalogException e, String message) {

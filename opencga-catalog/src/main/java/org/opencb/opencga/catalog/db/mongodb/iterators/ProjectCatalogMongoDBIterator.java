@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.StudyMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -38,7 +38,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
     private static final String UID = ProjectDBAdaptor.QueryParams.UID.key();
 
     public ProjectCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                         GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
+                                         GenericDocumentComplexConverter<E> converter, OrganizationMongoDBAdaptorFactory dbAdaptorFactory,
                                          QueryOptions options, String user) {
         super(mongoCursor, clientSession, converter, null);
 
@@ -87,7 +87,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document projectDocument = mongoCursor.next().get("projects", Document.class);
+            Document projectDocument = mongoCursor.next();
 
             projectListBuffer.add(projectDocument);
             counter++;

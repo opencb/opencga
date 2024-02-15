@@ -18,9 +18,7 @@ package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
-import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -32,8 +30,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;

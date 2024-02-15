@@ -33,7 +33,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
@@ -65,6 +64,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     public CatalogManager catalogManager;
+    protected String organizationId;
     public String token;
     public String studyFqn;
     public Family family;
@@ -81,9 +81,9 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, catalogManagerResource.getAdminToken());
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, organizationId, null, catalogManagerResource.getAdminToken());
 
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 new QueryOptions(), token);

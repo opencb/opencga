@@ -8,7 +8,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.PrintUtils;
@@ -96,9 +95,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "acl":
                 queryResponse = acl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "info":
                 queryResponse = info();
@@ -256,23 +252,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
         return openCGAClient.getStudyClient().acl(commandOptions.studies, queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Studies command line");
-
-        StudiesCommandOptions.AggregationStatsCommandOptions commandOptions = studiesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("fileFields", commandOptions.fileFields);
-        queryParams.putIfNotEmpty("individualFields", commandOptions.individualFields);
-        queryParams.putIfNotEmpty("familyFields", commandOptions.familyFields);
-        queryParams.putIfNotEmpty("sampleFields", commandOptions.sampleFields);
-        queryParams.putIfNotEmpty("cohortFields", commandOptions.cohortFields);
-        queryParams.putIfNotEmpty("jobFields", commandOptions.jobFields);
-
-        return openCGAClient.getStudyClient().aggregationStats(commandOptions.studies, queryParams);
     }
 
     private RestResponse<Study> info() throws Exception {

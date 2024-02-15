@@ -80,7 +80,7 @@ public class ParamConstants {
 
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
-    public static final String CELLBASE_VERSION = "v5.1";
+    public static final String CELLBASE_VERSION = "v5.2";
     public static final String CELLBASE_DATA_RELEASE = "2";
     public static final String CELLBASE_APIKEY = "";
 
@@ -121,14 +121,16 @@ public class ParamConstants {
      */
     public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
     public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
-    public static final String USER_PROJECT_SEPARATOR = "@";
+    public static final String ORGANIZATION_PROJECT_SEPARATOR = "@";
     // ---------------------------------------------
     public static final String PROJECT_STUDY_SEPARATOR = ":";
     public static final String OPENCGA_USER_ID = "opencga";
+    public static final String ADMIN_ORGANIZATION = "opencga";
+    public static final String OPENCGA_USER_FQN = ADMIN_ORGANIZATION + ":" + OPENCGA_USER_ID;
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN =
-            OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
+            OPENCGA_USER_ID + ORGANIZATION_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
     public static final String ANONYMOUS_USER_ID = "*";         // Any user, authenticated or not
     public static final String REGISTERED_USERS = "REGISTERED"; // Any authenticated user
     public static final String MEMBERS_GROUP = "@members";
@@ -150,6 +152,9 @@ public class ParamConstants {
     public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String USER = "user";
     // ---------------------------------------------
+    public static final String ORGANIZATION_DESCRIPTION = "Organization id";
+    public static final String ORGANIZATION = "organization";
+    // ---------------------------------------------
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
     public static final String USER_ACCOUNT_TYPE = "account";
@@ -160,9 +165,9 @@ public class ParamConstants {
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String PROJECT_PARAM = "project";
     // ---------------------------------------------
-    public static final String PROJECT_DESCRIPTION = "Project [user@]project where project can be either the ID or the alias";
+    public static final String PROJECT_DESCRIPTION = "Project [organization@]project where project can be either the ID or the alias";
     public static final String STUDY_PARAM = "study";
-    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
+    public static final String STUDY_DESCRIPTION = "Study [[organization@]project:]study where study and project can be either the ID or UUID";
     // ---------------------------------------------
     public static final String OTHER_STUDIES_FLAG = "otherStudies";
     public static final String OTHER_STUDIES_FLAG_DESCRIPTION = "Flag indicating the entries being queried can belong to any related " +
@@ -1514,9 +1519,9 @@ public class ParamConstants {
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
     // ---------------------------------------------
-    public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
+    public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [organization@]project" + UP_TO_100;
     // ---------------------------------------------
-    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can " +
-            "be either the ID or UUID" + UP_TO_100;
+    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[organization@]project:]study where study "
+            + "and project can be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
 }

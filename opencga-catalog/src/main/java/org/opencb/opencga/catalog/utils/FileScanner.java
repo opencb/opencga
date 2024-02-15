@@ -73,18 +73,21 @@ public class FileScanner {
      * Set file status {@link FileStatus#MISSING} if the file (fileUri) is unreachable
      * Set file status to {@link FileStatus#READY} if was {@link FileStatus#MISSING} and file (fileUri) is reachable
      *
+     * @param organizationId    Organization id.
      * @param study             The study to check
-     * @param sessionId         User sessionId
      * @param calculateChecksum Calculate checksum for "found files"
+     * @param sessionId         User sessionId
      * @return found and lost files
      * @throws CatalogException if a Catalog error occurs
      */
-    public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
+    public List<File> checkStudyFiles(String organizationId, Study study, boolean calculateChecksum, String sessionId)
+            throws CatalogException {
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Arrays.asList(
                 FileStatus.READY, FileStatus.MISSING, FileStatus.TRASHED));
 
-        DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(), sessionId);
+        DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(),
+                sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         while (iterator.hasNext()) {
@@ -101,6 +104,7 @@ public class FileScanner {
     /**
      * Scan the study folder, add all untracked files and check tracking.
      *
+     * @param organizationId    Organization id.
      * @param study             Study to resync
      * @param calculateChecksum Calculates checksum of all the files in the directory to scan
      * @param sessionId         User sessionId
@@ -108,19 +112,20 @@ public class FileScanner {
      * @throws CatalogException if a Catalog error occurs
      * @throws IOException      if an I/O error occurs
      */
-    public List<File> reSync(Study study, boolean calculateChecksum, String sessionId) throws CatalogException, IOException {
+    public List<File> reSync(String organizationId, Study study, boolean calculateChecksum, String sessionId)
+            throws CatalogException, IOException {
         Query query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
         DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, null, sessionId);
 
         List<File> scan = new LinkedList<>();
         while (iterator.hasNext()) {
             File folder = iterator.next();
-            scan.addAll(scan(folder, catalogManager.getFileManager().getUri(folder), FileScannerPolicy.REPLACE, calculateChecksum,
-                    false, sessionId));
+            scan.addAll(scan(organizationId, folder, catalogManager.getFileManager().getUri(organizationId, folder),
+                    FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId));
         }
 
         // TODO: Scan per file
-        scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
+        scan.addAll(checkStudyFiles(organizationId, study, calculateChecksum, sessionId));
 
         return scan;
     }
@@ -128,12 +133,13 @@ public class FileScanner {
     /**
      * Return all untracked files in a study folder.
      *
-     * @param study     Study to scan
-     * @param sessionId User sessionId
+     * @param organizationId Organization id.
+     * @param study          Study to scan
+     * @param sessionId      User sessionId
      * @return Untracked files
      * @throws CatalogException if a Catalog error occurs
      */
-    public Map<String, URI> untrackedFiles(Study study, String sessionId) throws CatalogException {
+    public Map<String, URI> untrackedFiles(String organizationId, Study study, String sessionId) throws CatalogException {
         long studyId = study.getUid();
         URI studyUri = study.getUri();
 
@@ -181,6 +187,7 @@ public class FileScanner {
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
+     * @param organizationId    Organization id.
      * @param directory         Directory where add found files
      * @param directoryToScan   Directory to scan
      * @param policy            What to do when there is a file in the target path. See {@link FileScannerPolicy}
@@ -191,15 +198,15 @@ public class FileScanner {
      * @throws IOException      if an I/O error occurs
      * @throws CatalogException if a Catalog error occurs
      */
-    public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
-                           boolean calculateChecksum, boolean deleteSource, String sessionId)
-            throws IOException, CatalogException {
-        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, uri -> true, sessionId);
+    public List<File> scan(String organizationId, File directory, URI directoryToScan, FileScannerPolicy policy,
+                           boolean calculateChecksum, boolean deleteSource, String sessionId) throws IOException, CatalogException {
+        return scan(organizationId, directory, directoryToScan, policy, calculateChecksum, deleteSource, uri -> true, sessionId);
     }
 
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
+     * @param organizationId    Organization id.
      * @param directory         Directory where add found files
      * @param directoryToScan   Directory to scan
      * @param policy            What to do when there is a file in the target path. See {@link FileScannerPolicy}
@@ -211,13 +218,13 @@ public class FileScanner {
      * @throws IOException      if an I/O error occurs
      * @throws CatalogException if a Catalog error occurs
      */
-    public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy, boolean calculateChecksum, boolean deleteSource,
-                           Predicate<URI> filter, String sessionId) throws CatalogException, IOException {
+    public List<File> scan(String organizationId, File directory, URI directoryToScan, FileScannerPolicy policy, boolean calculateChecksum,
+                           boolean deleteSource, Predicate<URI> filter, String sessionId) throws CatalogException, IOException {
         if (filter == null) {
             filter = uri -> true;
         }
         if (directoryToScan == null) {
-            directoryToScan = catalogManager.getFileManager().getUri(directory);
+            directoryToScan = catalogManager.getFileManager().getUri(organizationId, directory);
         }
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
@@ -225,7 +232,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Provided folder " + directory.getPath() + " is actually a file.");
         }
-        Study study = catalogManager.getFileManager().getStudy(directory, sessionId);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, directory, sessionId);
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         IOManager ioManager = catalogManager.getIoManagerFactory().get(directoryToScan);
@@ -248,7 +255,8 @@ public class FileScanner {
                     }
 
                     Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-                    DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
+                    DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null,
+                            sessionId);
                     File file = null;
                     boolean overwrite = true;
                     boolean returnFile = false;
@@ -263,12 +271,12 @@ public class FileScanner {
                                 // Set the status of the file to PENDING DELETE
                                 FileUpdateParams updateParams = new FileUpdateParams()
                                         .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
-                                catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(),
-                                        sessionId);
+                                catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams,
+                                        QueryOptions.empty(), sessionId);
 
                                 // Delete completely the file/folder !
-                                catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new QueryOptions(Constants.SKIP_TRASH,
-                                                true), sessionId);
+                                catalogManager.getFileManager().delete(study.getFqn(), tmpQuery,
+                                        new QueryOptions(Constants.SKIP_TRASH, true), sessionId);
                                 overwrite = false;
                                 break;
                             case REPLACE:
@@ -287,14 +295,14 @@ public class FileScanner {
                     if (file == null) {
                         long start, end;
                         if (uri.getPath().endsWith("/")) {
-                            file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), true,
-                                    null, QueryOptions.empty(), sessionId).first();
+                            file = catalogManager.getFileManager().createFolder(study.getFqn(),
+                                    Paths.get(filePath).toString(), true, null, QueryOptions.empty(), sessionId).first();
                         } else {
                             start = System.currentTimeMillis();
 
                             InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
-                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, new File().setPath(filePath),
-                                    overwrite, true, calculateChecksum, sessionId).first();
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                                    new File().setPath(filePath), overwrite, true, calculateChecksum, sessionId).first();
                             if (deleteSource) {
                                 ioManager.deleteFile(uri);
                             }
@@ -317,8 +325,8 @@ public class FileScanner {
                             long start = System.currentTimeMillis();
 
                             InputStream inputStream = new FileInputStream(new java.io.File(uri));
-                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite, true,
-                                    calculateChecksum, sessionId).first();
+                            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite,
+                                    true, calculateChecksum, sessionId).first();
 
                             long end = System.currentTimeMillis();
                             uploadFilesTime += end - start;

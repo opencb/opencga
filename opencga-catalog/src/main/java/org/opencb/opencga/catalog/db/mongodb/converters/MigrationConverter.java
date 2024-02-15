@@ -1,7 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 
 public class MigrationConverter extends OpenCgaMongoConverter<MigrationRun> {
 

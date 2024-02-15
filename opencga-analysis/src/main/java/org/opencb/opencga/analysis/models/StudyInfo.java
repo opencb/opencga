@@ -51,15 +51,6 @@ public class StudyInfo {
         this.fileInfos = new ArrayList<>();
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public StudyInfo setUserId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
     public long getProjectUid() {
         return projectUid;
     }
