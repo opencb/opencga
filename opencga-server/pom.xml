@@ -205,7 +205,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
