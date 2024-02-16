@@ -87,7 +87,7 @@ jobs:
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
         with:
-          check_name: "Surefire tests report"
+          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.test_profile }}"
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
