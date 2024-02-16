@@ -145,10 +145,6 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
             Integer minFileId = variant.getStudies().stream()
                     .flatMap(s -> s.getFiles().stream())
                     .map(FileEntry::getFileId)
-                    .map(s->{
-                        System.out.println("s = " + s);
-                        return s;
-                    })
                     .map(s -> StringUtils.removeStart(s, "1K.end.platinum-genomes-vcf-NA"))
                     .map(s -> StringUtils.removeEnd(s, "_S1.genome.vcf.gz"))
                     .map(Integer::valueOf)
