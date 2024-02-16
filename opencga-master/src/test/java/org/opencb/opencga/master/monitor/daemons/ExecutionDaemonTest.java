@@ -85,7 +85,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, expiringToken, catalogManager,
-                new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE), "/tmp");
+                new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE), catalogManagerResource.getOpencgaHome().toString());
+
         executor = new DummyBatchExecutor();
         daemon.batchExecutor = executor;
 
