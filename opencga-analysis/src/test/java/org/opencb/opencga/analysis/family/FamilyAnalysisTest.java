@@ -47,7 +47,6 @@ import static org.junit.Assert.assertTrue;
 
 public class FamilyAnalysisTest extends GenericTest {
 
-    public final static String STUDY = "user@1000G:phase1";
     public static final String USER = "user";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -61,6 +60,7 @@ public class FamilyAnalysisTest extends GenericTest {
     protected static String sessionIdUser;
 
     private static String ORGANIZATION = "test";
+    public final static String STUDY = ORGANIZATION + "@1000G:phase1";
 
     protected static Family family;
     protected static Family family2;
