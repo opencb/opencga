@@ -7,18 +7,25 @@ import org.apache.phoenix.iterate.MapReduceParallelScanGrouper;
 import org.apache.phoenix.iterate.ParallelScanGrouper;
 import org.apache.phoenix.mapreduce.PhoenixRecordReader;
 import org.apache.phoenix.schema.PColumn;
+import org.apache.phoenix.schema.PName;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableImpl;
 
 import java.lang.reflect.Constructor;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 public class PhoenixCompat implements PhoenixCompatApi {
 
     @Override
     public PTable makePTable(List<PColumn> columns) throws SQLException {
-        return new PTableImpl.Builder().setColumns(columns).build();
+        return new PTableImpl.Builder()
+                .setName(PName.EMPTY_NAME)
+                .setColumns(columns)
+                .setIndexes(Collections.emptyList())
+                .setPhysicalNames(Collections.emptyList())
+                .build();
     }
 
     @Override
