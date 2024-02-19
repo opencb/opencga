@@ -460,6 +460,11 @@ public class FileManager extends AnnotationSetManager<File> {
         return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), token);
     }
 
+    public OpenCGAResult<?> updateFileInternalCoverageIndex(File file, FileInternalCoverageIndex index, String token)
+            throws CatalogException {
+        return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_COVERAGE_INDEX.key(), token);
+    }
+
     private OpenCGAResult<?> updateFileInternalField(File file, Object value, String fieldKey, String token) throws CatalogException {
         return updateFileInternalField(file, value, Collections.singletonList(fieldKey), token);
     }

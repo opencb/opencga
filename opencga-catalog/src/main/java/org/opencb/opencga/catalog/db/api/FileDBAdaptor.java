@@ -97,6 +97,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
+        INTERNAL_COVERAGE_INDEX("internal.alignment.coverage", TEXT_ARRAY, ""),
+        INTERNAL_COVERAGE_INDEX_STATUS_ID("internal.alignment.coverage.status.id", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES("internal.missingSamples", OBJECT, ""),
         INTERNAL_MISSING_SAMPLES_EXISTING("internal.missingSamples.existing", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),

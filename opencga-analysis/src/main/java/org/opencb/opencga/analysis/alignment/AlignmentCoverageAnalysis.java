@@ -23,7 +23,10 @@ import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisEx
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalCoverageIndex;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -181,12 +184,22 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
                 bwPath = targetPath;
                 logger.info("Coverage file was copied into the BAM folder: {}", bwPath);
             } else {
-                logger.info("Couldn't copy the coverage file into the BAM folder. The coverage file is in the job folder instead: {}",
+                logger.info("It could not copy the coverage file into the BAM folder. The coverage file is in the job folder instead: {}",
                         bwPath);
             }
 
             // Link generated BIGWIG file and update samples info
-            AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
+            File bwCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
+
+            // Update BAM file internal in order to set the coverage index (BIGWIG)
+            FileInternalCoverageIndex fileCoverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.READY),
+                    bwCatalogFile.getId(), "deeptools bamCoverage", coverageParams.getWindowSize());
+            OpenCGAResult<?> openCGAResult = catalogManager.getFileManager().updateFileInternalCoverageIndex(bamCatalogFile,
+                    fileCoverageIndex, token);
+            if (openCGAResult.getNumUpdated() != 1) {
+                throw new ToolException("It could not update OpenCGA file catalog (alignment index " + bamCatalogFile.getId() + ") with"
+                        + " the coverage index (BIGWIG) file '" + bwCatalogFile.getId() + "'");
+            }
         });
     }
 }
