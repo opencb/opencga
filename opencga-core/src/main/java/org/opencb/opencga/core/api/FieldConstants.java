@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
@@ -485,7 +487,12 @@ public class FieldConstants {
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment index and coverage
+    public static final String ALIGNMENT_BAM_FILE_ID_DESCRIPTION = "Alignment file ID (in format BAM or CRAM)";
+    public static final String ALIGNMENT_WINDOW_SIZE_DESCRIPTION = "Size of the bins, in bases, for the output of the BIGWIG file";
+    public static final String ALIGNMENT_OVERWRITE_DESCRIPTION = "Overwrite file";
+
+    // Alignment QC analysis (alignment-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "

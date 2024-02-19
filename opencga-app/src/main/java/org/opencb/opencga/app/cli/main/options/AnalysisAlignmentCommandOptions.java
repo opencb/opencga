@@ -115,7 +115,7 @@ public class AnalysisAlignmentCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute coverage for a list of alignment files")
+    @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file")
     public class RunCoverageIndexCommandOptions {
     
         @ParametersDelegate
@@ -142,14 +142,14 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--bam-file-id"}, description = "The body web service bamFileId parameter", required = false, arity = 1)
-        public String bamFileId;
+        @Parameter(names = {"--file-id"}, description = "Alignment file ID (in format BAM or CRAM)", required = false, arity = 1)
+        public String fileId;
     
-        @Parameter(names = {"--bai-file-id"}, description = "The body web service baiFileId parameter", required = false, arity = 1)
-        public String baiFileId;
+        @Parameter(names = {"--window-size"}, description = "Size of the bins, in bases, for the output of the BIGWIG file", required = false, arity = 1)
+        public Integer windowSize = 50;
     
-        @Parameter(names = {"--window-size"}, description = "The body web service windowSize parameter", required = false, arity = 1)
-        public Integer windowSize;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite file", required = false, help = true, arity = 0)
+        public boolean overwrite = false;
     
     }
 
@@ -360,7 +360,7 @@ public class AnalysisAlignmentCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"index-run"}, commandDescription ="Index alignment file")
+    @Parameters(commandNames = {"index-run"}, commandDescription ="Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file")
     public class RunIndexCommandOptions {
     
         @ParametersDelegate
@@ -387,10 +387,10 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
-        public String file;
+        @Parameter(names = {"--file-id"}, description = "Alignment file ID (in format BAM or CRAM)", required = false, arity = 1)
+        public String fileId;
     
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite"}, description = "Overwrite file", required = false, help = true, arity = 0)
         public boolean overwrite = false;
     
     }
@@ -580,7 +580,5 @@ public class AnalysisAlignmentCommandOptions {
     
         @DynamicParameter(names = {"--samtools-params"}, description = "The body web service samtoolsParams parameter. Use: --samtools-params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> samtoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
     }
-
 }

@@ -91,7 +91,7 @@ public class AlignmentStorageManager extends StorageManager {
     // INDEX
     //-------------------------------------------------------------------------
 
-    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
+    public void index(String study, String inputFile, boolean overwrite, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
 
         AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
@@ -99,6 +99,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         indexOperation.setStudy(study);
         indexOperation.setInputFile(inputFile);
+        indexOperation.setOverwrite(overwrite);
 
         indexOperation.start();
     }

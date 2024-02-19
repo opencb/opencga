@@ -50,7 +50,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private AlignmentCommandOptions alignmentCommandOptions;
     private String jobId;
-//    private AlignmentStorageEngine alignmentStorageManager;
 
     public AlignmentCommandExecutor(AlignmentCommandOptions options) {
         super(options.analysisCommonOptions);
@@ -76,18 +75,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
             case "gene-coveratge-stats-run":
                 geneCoverageStatsRun();
                 break;
-//            case "stats-run":
-//                statsRun();
-//                break;
-//            case "flagstats-run":
-//                flagStatsRun();
-//                break;
-//            case "fastqcmetrics-run":
-//                fastQcMetricsRun();
-//                break;
-//            case "hsmetrics-run":
-//                hsMetricsRun();
-//                break;
             case "coverage-index-run":
                 coverageRun();
                 break;
@@ -119,37 +106,11 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory,
+                alignmentCommandOptions.internalJobOptions.jobId);
 
-        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
     }
-
-
-//    private void query() throws InterruptedException, CatalogException, IOException {
-//        ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.token);
-//        objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
-//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
-//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
-//                alignmentCommandOptions.queryAlignmentCommandOptions.minMappingQuality);
-//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(),
-//                alignmentCommandOptions.queryAlignmentCommandOptions.contained);
-//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(),
-//                alignmentCommandOptions.queryAlignmentCommandOptions.mdField);
-//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),
-//                alignmentCommandOptions.queryAlignmentCommandOptions.binQualities);
-//        objectMap.putIfNotNull(QueryOptions.LIMIT, alignmentCommandOptions.queryAlignmentCommandOptions.limit);
-//        objectMap.putIfNotNull(QueryOptions.SKIP, alignmentCommandOptions.queryAlignmentCommandOptions.skip);
-//        objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
-//
-//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-//        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
-//                .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
-//
-//        for (ReadAlignment readAlignment : alignments.allResults()) {
-//            System.out.println(readAlignment);
-//        }
-//    }
 
     private void qcRun() throws ToolException {
         AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
@@ -179,64 +140,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
-//    private void statsRun() throws ToolException {
-//        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
-//
-//        ObjectMap params = new AlignmentStatsParams(
-//                cliOptions.file,
-//                cliOptions.outdir
-//        ).toObjectMap(cliOptions.commonOptions.params)
-//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
-//
-//        toolRunner.execute(AlignmentStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
-//    }
-//
-//    private void flagStatsRun() throws ToolException {
-//        AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
-//
-//        ObjectMap params = new AlignmentFlagStatsParams(
-//                cliOptions.file,
-//                cliOptions.outdir
-//        ).toObjectMap(cliOptions.commonOptions.params)
-//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
-//
-//        toolRunner.execute(AlignmentFlagStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
-//    }
-//
-//    private void fastQcMetricsRun() throws ToolException {
-//        AlignmentCommandOptions.FastQcMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
-//                .fastQcMetricsAlignmentCommandOptions;
-//
-//        ObjectMap params = new AlignmentFastQcMetricsParams(
-//                cliOptions.file,
-//                cliOptions.outdir
-//        ).toObjectMap(cliOptions.commonOptions.params)
-//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
-//
-//        toolRunner.execute(AlignmentFastQcMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
-//    }
-//
-//    private void hsMetricsRun() throws ToolException {
-//        AlignmentCommandOptions.HsMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions.hsMetricsAlignmentCommandOptions;
-//
-//        ObjectMap params = new AlignmentHsMetricsParams(
-//                cliOptions.bamFile,
-//                cliOptions.bedFile,
-//                cliOptions.dictFile,
-//                cliOptions.outdir
-//        ).toObjectMap(cliOptions.commonOptions.params)
-//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
-//
-//        toolRunner.execute(AlignmentHsMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
-//    }
-
     private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         ObjectMap params = new CoverageIndexParams(
                 cliOptions.bamFileId,
-                cliOptions.baiFileId,
-                cliOptions.windowSize
+                cliOptions.windowSize,
+                cliOptions.overwrite
         ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
@@ -323,27 +233,4 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         toolRunner.execute(PicardWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
-
-    //-------------------------------------------------------------------------
-    // M I S C E L A N E O U S     M E T H O D S
-    //-------------------------------------------------------------------------
-
-    private void addParam(Map<String, String> map, String key, Object value) {
-        if (value == null) {
-            return;
-        }
-
-        if (value instanceof String) {
-            if (!((String) value).isEmpty()) {
-                map.put(key, (String) value);
-            }
-        } else if (value instanceof Integer) {
-            map.put(key, Integer.toString((int) value));
-        } else if (value instanceof Boolean) {
-            map.put(key, Boolean.toString((boolean) value));
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
 }
