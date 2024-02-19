@@ -28,14 +28,13 @@ import java.util.Collections;
 
 public class AlignmentAnalysisUtils {
 
-    public static File linkAndUpdate(File bamCatalogFile, Path outPath, String study, CatalogManager catalogManager, String token)
+    public static File linkAndUpdate(File bamCatalogFile, Path outPath, String jobId, String study, CatalogManager catalogManager, String token)
             throws CatalogException, ToolException {
         // Link BW file and update sample info
-        FileLinkParams fileLinkParams = new FileLinkParams().setUri(outPath.toString());
-        if (Paths.get(bamCatalogFile.getPath()).getParent() != null) {
-            fileLinkParams.setPath(Paths.get(bamCatalogFile.getPath()).getParent().resolve(outPath.getFileName()).toString());
-        }
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, false, token);
+        FileLinkParams fileLinkParams = new FileLinkParams()
+                .setUri(outPath.toString())
+                .setPath(Paths.get(jobId).resolve(outPath.getFileName()).toString());
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, true, token);
         if (fileResult.getNumResults() != 1) {
             throw new ToolException("It could not link OpenCGA file catalog file for '" + outPath + "'");
         }

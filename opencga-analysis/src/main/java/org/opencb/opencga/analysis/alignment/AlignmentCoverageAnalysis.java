@@ -186,7 +186,7 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             }
 
             // Link generated BIGWIG file and update samples info
-            AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, study, catalogManager, token);
+            AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, getJobId(), study, catalogManager, token);
         });
     }
 }

@@ -103,7 +103,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             }
 
             // Link generated BAI file and update samples info, related file
-            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, study, catalogManager, token);
+            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, getJobId(), study, catalogManager, token);
 
             // Update BAM file internal in order to set the alignment index (BAI)
             FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
