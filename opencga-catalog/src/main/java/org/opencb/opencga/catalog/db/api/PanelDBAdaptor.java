@@ -64,8 +64,6 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         STATS("stats", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         TAGS("tags", TEXT_ARRAY, ""),
         CATEGORIES("categories", TEXT_ARRAY, ""),
