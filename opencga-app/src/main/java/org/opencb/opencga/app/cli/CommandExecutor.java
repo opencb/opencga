@@ -45,6 +45,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -293,7 +294,6 @@ public abstract class CommandExecutor {
         return this;
     }
 
-
     public String getObjectAsJSON(String objectCategory, String objectPath, OpenCGAClient openCGAClient) throws Exception {
         StringBuilder jsonInString = new StringBuilder("\n");
         try {
@@ -301,28 +301,25 @@ public abstract class CommandExecutor {
             queryParams.putIfNotEmpty("category", objectCategory);
             RestResponse<List> response = openCGAClient.getMetaClient().api(queryParams);
             ObjectMapper jsonObjectMapper = new ObjectMapper();
+            boolean found = false;
             for (List list : response.getResponses().get(0).getResults()) {
                 List<RestCategory> categories = jsonObjectMapper.convertValue(list, new TypeReference<List<RestCategory>>() {});
                 for (RestCategory category : categories) {
                     for (RestEndpoint endpoint : category.getEndpoints()) {
                         if (objectPath.equals(endpoint.getPath())) {
-                            boolean enc = false;
                             for (RestParameter parameter : endpoint.getParameters()) {
-                                //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
                                 if (parameter.getData() != null) {
-                                    enc = true;
-                                    ObjectMapper mapper= new ObjectMapper();
-                                    Map map=printBody(parameter.getData());
-                                    jsonInString.append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map));
+                                    found = true;
+                                    Map<String, Object> map = getExampleBody(parameter.getData());
+                                    jsonInString.append(jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(map));
                                 }
                             }
-                            if (!enc) {
-                                jsonInString.append("No model available");
-                            }
-                            //
                         }
                     }
                 }
+            }
+            if (!found) {
+                jsonInString.append("No model available");
             }
         } catch (Exception e) {
             jsonInString = new StringBuilder("Data model not found.");
@@ -331,27 +328,19 @@ public abstract class CommandExecutor {
         return jsonInString.toString();
     }
 
-    private Map printBody(List<RestParameter> data) {
-        Map<String, Object> result=new HashMap();
+    private Map<String, Object> getExampleBody(List<RestParameter> data) {
+        Map<String, Object> result = new HashMap<>();
         for (RestParameter parameter : data) {
-            Item item= new Item();
             if (parameter.getData() == null) {
-                result.put(parameter.getName(), printParameterValue(parameter));
+                result.put(parameter.getName(), getParameterExampleValue(parameter));
             } else {
-                result.put(parameter.getName(), printBody(parameter.getData()));
+                result.put(parameter.getName(), getExampleBody(parameter.getData()));
             }
         }
        return result;
-
     }
 
-    private String printParameter(RestParameter parameter, String tab) {
-
-        return tab + "\"" + parameter.getName() + "\"" + ":" + printParameterValue(parameter) + ",\n";
-    }
-
-    private String printParameterValue(RestParameter parameter) {
-
+    private Object getParameterExampleValue(RestParameter parameter) {
         if(!StringUtils.isEmpty(parameter.getAllowedValues())){
             return parameter.getAllowedValues().replace(" ", "|");
         }
@@ -359,7 +348,7 @@ public abstract class CommandExecutor {
         switch (parameter.getType()) {
             case "Boolean":
             case "java.lang.Boolean":
-                return "false";
+                return false;
             case "Long":
             case "Float":
             case "Double":
@@ -368,50 +357,23 @@ public abstract class CommandExecutor {
             case "double":
             case "float":
             case "long":
-                return "0";
+                return 0;
             case "List":
-                return "[]";
+                return Collections.singletonList("");
             case "Date":
                 return "dd/mm/yyyy";
             case "Map":
-                return "{key: value}";
+                return Collections.singletonMap("key", "value");
             case "String":
                 return "";
             default:
+                logger.debug("Unknown type: " + parameter.getType() + " for parameter: " + parameter.getName());
                 return "-";
         }
     }
 
-
     public Logger getLogger() {
         return logger;
-    }
-
-    public class Item {
-
-        private String key;
-        private Object value;
-
-        public Item() {
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public Item setKey(String key) {
-            this.key = key;
-            return this;
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public Item setValue(Object value) {
-            this.value = value;
-            return this;
-        }
     }
 
 }
