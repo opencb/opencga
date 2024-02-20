@@ -82,11 +82,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         super.setUp();
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID, Collections.emptyMap(), expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
-        daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager,
+        daemon = new ExecutionDaemon(1000, expiringToken, catalogManager,
                 new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE), catalogManagerResource.getOpencgaHome().toString());
+
         executor = new DummyBatchExecutor();
         daemon.batchExecutor = executor;
 
@@ -216,22 +216,24 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testProjectScopeTask() throws Exception {
         // User 2 to admins group in study1 but not in study2
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user2")), ownerToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId2)), ownerToken);
+//        catalogManager.getStudyManager().updateAcl(studyFqn2, normalUserId2, new StudyAclParams().setTemplate(AuthorizationManager.ROLE_VIEW_ONLY),
+//                ParamUtils.AclAction.SET, ownerToken);
 
         // User 3 to admins group in both study1 and study2
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user3")), ownerToken);
-        catalogManager.getStudyManager().updateGroup(studyFqn2, "@admins", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user3")), ownerToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId3)), ownerToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn2, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId3)), ownerToken);
 
         HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
                 params, "job1", "", null, null, ownerToken).first().getId();
         String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job2", "", null, null, orgAdminToken1).first().getId();
+                params, "job2", "", null, null, normalToken2).first().getId();
         String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
-                params, "job3", "", null, null, orgAdminToken2).first().getId();
+                params, "job3", "", null, null, normalToken3).first().getId();
 
         daemon.checkPendingJobs(organizationIds);
 
@@ -392,7 +394,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, ownerToken).first();
         String jobId = job.getId();
 
-        catalogManager.getJobManager().updateAcl(studyFqn, Collections.singletonList(jobId), "user2",
+        catalogManager.getJobManager().updateAcl(studyFqn, Collections.singletonList(jobId), normalUserId2,
                 new AclParams(JobPermissions.VIEW.name()), ParamUtils.AclAction.ADD, ownerToken);
 
         daemon.checkJobs();
@@ -415,7 +417,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
 
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, orgAdminToken1);
+        catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, normalToken2);
     }
 
     @Test
@@ -493,9 +495,9 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         }
 
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), ownerToken);
-        assertEquals(10, files.getNumMatches());
+        assertEquals(16, files.getNumMatches());
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), ownerToken);
-        assertEquals(10, files.getNumMatches());
+        assertEquals(16, files.getNumMatches());
     }
 
     @Test
