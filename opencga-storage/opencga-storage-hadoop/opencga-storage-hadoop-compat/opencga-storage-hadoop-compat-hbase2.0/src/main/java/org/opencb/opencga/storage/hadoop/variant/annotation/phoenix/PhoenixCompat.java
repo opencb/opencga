@@ -32,4 +32,9 @@ public class PhoenixCompat implements PhoenixCompatApi {
             throw new IllegalStateException(e);
         }
     }
+
+    @Override
+    public boolean isDropColumnFromViewSupported() {
+        return true;
+    }
 }

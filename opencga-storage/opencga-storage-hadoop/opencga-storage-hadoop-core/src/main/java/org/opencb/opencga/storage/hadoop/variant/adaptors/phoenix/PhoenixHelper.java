@@ -43,6 +43,7 @@ import org.apache.phoenix.util.*;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
@@ -254,6 +255,12 @@ public class PhoenixHelper {
 
     public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
+
+        if (!HBaseCompat.getInstance().getPhoenixCompat().isDropColumnFromViewSupported()) {
+            logger.info("Dropping columns is not supported for Phoenix version {}.{} . Skipping drop columns.",
+                    PhoenixDriver.INSTANCE.getMajorVersion(), PhoenixDriver.INSTANCE.getMinorVersion());
+            return;
+        }
 
         Set<String> existingColumns = getColumns(con, tableName, tableType)
                 .stream()

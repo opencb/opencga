@@ -16,4 +16,6 @@ public interface PhoenixCompatApi {
 
     <T extends DBWritable> PhoenixRecordReader<T> newPhoenixRecordReader(
             Class<T> inputClass, Configuration configuration, QueryPlan queryPlan);
+
+    boolean isDropColumnFromViewSupported();
 }

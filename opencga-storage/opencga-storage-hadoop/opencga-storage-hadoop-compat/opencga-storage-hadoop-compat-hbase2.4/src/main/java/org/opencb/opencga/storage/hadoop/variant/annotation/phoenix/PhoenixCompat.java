@@ -41,4 +41,11 @@ public class PhoenixCompat implements PhoenixCompatApi {
         }
     }
 
+    @Override
+    public boolean isDropColumnFromViewSupported() {
+        // Phoenix 5.1.x does not support drop column from view.
+        // Might be related with https://issues.apache.org/jira/browse/PHOENIX-6025
+        return false;
+    }
+
 }

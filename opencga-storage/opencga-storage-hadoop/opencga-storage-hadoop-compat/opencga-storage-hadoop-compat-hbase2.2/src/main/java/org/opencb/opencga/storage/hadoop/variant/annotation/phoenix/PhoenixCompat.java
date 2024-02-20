@@ -23,4 +23,8 @@ public class PhoenixCompat implements PhoenixCompatApi {
         return new PhoenixRecordReader<>(inputClass, configuration, queryPlan);
     }
 
+    @Override
+    public boolean isDropColumnFromViewSupported() {
+        return true;
+    }
 }
