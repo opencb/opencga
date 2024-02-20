@@ -2032,7 +2032,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -2157,7 +2157,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -2517,7 +2517,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 .append("token", token);
 
         try {
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
             ParamUtils.checkObj(clinicalConfiguration, "ClinicalConfiguration");
             ParamUtils.checkObj(clinicalConfiguration.getFlags(), "flags");
             ParamUtils.checkObj(clinicalConfiguration.getPriorities(), "priorities");

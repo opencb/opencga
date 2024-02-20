@@ -150,8 +150,7 @@ public class UserManager extends AbstractManager {
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
             // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isOpencgaAdministrator(organizationId, jwtPayload.getUserId(organizationId))
-                    && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
                 String errorMsg = "Please ask your administrator to create your account.";
                 auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
@@ -541,9 +540,10 @@ public class UserManager extends AbstractManager {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationUuid);
         try {
-            // 1. If the user is an opencga administrator or the organization owner or admin - return info
-            if (authorizationManager.isOpencgaAdministrator(jwtPayload)
-                    || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)
+            // 1. If the user is an opencga administrator or the organization owner or admin
+            // 2. Or the user is requesting its own data
+            //    - return info
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)
                     || (userIdList.size() == 1 && userId.equals(userIdList.get(0)))) {
                 Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIdList);
                 OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
