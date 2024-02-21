@@ -327,7 +327,14 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
             try {
                 phoenixHelper.execute(con, sql);
             } catch (Exception e) {
-                if (!phoenixHelper.tableExists(con, variantsTableName)) {
+                boolean tableExists;
+                try {
+                    tableExists = phoenixHelper.tableExists(con, variantsTableName);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                    tableExists = false;
+                }
+                if (!tableExists) {
                     throw e;
                 } else {
                     logger.info(DEFAULT_TABLE_TYPE + " {} already exists", variantsTableName);

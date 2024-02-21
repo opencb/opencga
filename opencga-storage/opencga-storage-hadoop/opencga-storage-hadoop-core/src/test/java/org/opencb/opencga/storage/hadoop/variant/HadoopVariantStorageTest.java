@@ -482,6 +482,17 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         try (java.sql.Connection con = phoenixHelper.openJdbcConnection()) {
             if (phoenixHelper.tableExists(con, tableName)) {
                 phoenixHelper.dropTable(con, tableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, true, true);
+                // Flush the SYSTEM.CATALOG table to avoid "unexpected errors" when creating a new table with the same name
+                TableName systemCatalog = TableName.valueOf("SYSTEM:CATALOG");
+                if (!utility.get().getConnection().getAdmin().tableExists(systemCatalog)) {
+                    systemCatalog = TableName.valueOf("SYSTEM.CATALOG");
+                }
+                if (utility.get().getConnection().getAdmin().tableExists(systemCatalog)) {
+                    try (Admin admin = utility.get().getConnection().getAdmin();
+                    ) {
+                        admin.flush(systemCatalog);
+                    }
+                }
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));

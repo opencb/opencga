@@ -126,8 +126,15 @@ public class PhoenixHelper {
                 Thread.sleep(millis);
             } catch (InterruptedException interruption) {
                 Thread.currentThread().interrupt();
+                // Sleep interrupted. Stop retrying
+                throw e;
             }
-            return execute(con, sql, retry - 1);
+            try {
+                return execute(con, sql, retry - 1);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+                throw e;
+            }
         } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
@@ -204,7 +211,10 @@ public class PhoenixHelper {
     }
 
     public void dropTable(Connection con, String tableName, PTableType tableType, boolean ifExists, boolean cascade) throws SQLException {
-        execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
+        String sql = buildDropTable(tableName, tableType, ifExists, cascade);
+        logger.info("Dropping phoenix {}: {}", tableType, tableName);
+        logger.info(sql);
+        execute(con, sql);
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
