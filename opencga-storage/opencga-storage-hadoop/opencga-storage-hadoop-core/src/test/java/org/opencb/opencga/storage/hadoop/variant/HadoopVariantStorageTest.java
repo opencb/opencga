@@ -72,6 +72,8 @@ import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -85,6 +87,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -114,6 +117,18 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
 //    Set<HadoopVariantStorageEngine> managers = new ConcurrentHashSet<>();
     AtomicReference<HadoopVariantStorageEngine> manager = new AtomicReference<>();
+
+    class HadoopSolrSupport extends ExternalResource {
+        @Override
+        protected void before() throws Throwable {
+            super.before();
+            Assume.assumeTrue(isSolrTestingAvailable());
+        }
+
+        public static boolean isSolrTestingAvailable() {
+            return HBaseCompat.getInstance().isSolrTestingAvailable();
+        }
+    }
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 

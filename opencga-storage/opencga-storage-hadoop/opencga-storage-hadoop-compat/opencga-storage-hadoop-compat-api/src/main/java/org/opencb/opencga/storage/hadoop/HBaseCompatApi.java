@@ -23,8 +23,9 @@ public abstract class HBaseCompatApi {
         return instance;
     }
 
-    public abstract void available(Configuration configuration) throws IOException;
-
     public abstract PhoenixCompatApi getPhoenixCompat();
 
+    public abstract void available(Configuration configuration) throws IOException;
+
+    public abstract boolean isSolrTestingAvailable();
 }

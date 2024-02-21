@@ -15,6 +15,11 @@ public class HBaseCompat extends HBaseCompatApi {
     }
 
     @Override
+    public boolean isSolrTestingAvailable() {
+        return true;
+    }
+
+    @Override
     public PhoenixCompatApi getPhoenixCompat() {
         return new PhoenixCompat();
     }
