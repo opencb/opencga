@@ -1,5 +1,5 @@
 name: Check junits
-run-name: "Check Junit tests. Hadoop ${{ inputs.hadoop }}. ${{ inputs.module == 'all' && '' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
+run-name: "Check Junit. Hadoop ${{ inputs.hadoop }} ${{ inputs.module == 'all' && ' ' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
         required: false
         default: "hdp3.1"
         options:
+          - "all"
           - "hdp3.1"
           - "hdi5.1"
           - "emr6.1"
@@ -21,11 +22,15 @@ on:
         default: "all"
         options:
           - "all"
-          - "opencga-core"
-          - "opencga-catalog"
-          - "opencga-storage"
           - "opencga-analysis"
+          - "opencga-app"
+          - "opencga-catalog"
+          - "opencga-client"
+          - "opencga-core"
           - "opencga-master"
+          - "opencga-server"
+          - "opencga-storage"
+          - "opencga-test"
       short_tests:
         type: boolean
         required: false
@@ -48,7 +53,9 @@ jobs:
     name: Test JUnit
     runs-on: ubuntu-22.04
     outputs:
-      profiles: ${{ steps.getter.outputs.profiles }}
+      profiles: ${{ steps.validate.outputs.profiles }}
+      modules: ${{ steps.validate.outputs.modules }}
+      hadoop: ${{ steps.validate.outputs.hadoop }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,15 +66,34 @@ jobs:
           if [ -f "./.github/workflows/scripts/get_profiles.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_profiles.sh
             profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})
+            modules='["${{ inputs.module }}"]'
+            hadoop='["${{ inputs.hadoop }}"]'
+          
+            if [ "${{ inputs.hadoop }}" == "all" ]; then
+              hadoop='["hdp3.1", "hdi5.1", "emr6.1", "emr6.13"]'
+            elif [ "${{ inputs.module }}" == "all" ]; then
+              # Only execute modules with matrix strategy if we are testing one single hadoop profile
+              modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
+            fi
             echo "profiles=$profiles" >> $GITHUB_OUTPUT
+            echo "modules=$modules" >> $GITHUB_OUTPUT
+            echo "hadoop=$hadoop" >> $GITHUB_OUTPUT
             echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
+            echo "Modules -> $modules" >> $GITHUB_STEP_SUMMARY
+            echo "Hadoop -> $hadoop" >> $GITHUB_STEP_SUMMARY
+            #echo "matrix={\"hadoop\": $hadoop, \"modules\": $modules}" >> $GITHUB_OUTPUT
           fi
   test:
+    strategy:
+      matrix:
+        hadoop: ${{ fromJson(needs.get_profiles.outputs.hadoop) }}
+        module: ${{ fromJson(needs.get_profiles.outputs.modules) }}
     needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
       mvn_opts: ${{ inputs.mvn_opts }}
-      hadoop: ${{ inputs.hadoop }}
-      module: ${{ inputs.module }}
+      hadoop: ${{ matrix.hadoop }}
+      module: ${{ matrix.module }}
+      sonar: false
     secrets: inherit

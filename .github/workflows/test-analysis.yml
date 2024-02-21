@@ -1,5 +1,5 @@
 name: Build and test the project
-run-name: "Build and test the project. Hadoop flavour: ${{ inputs.hadoop }}. Test profile: ${{ inputs.test_profile }}"
+run-name: "Build and test the project. Hadoop flavour: ${{ inputs.hadoop }}. Test profile: ${{ inputs.test_profile }}. Test module: ${{ inputs.module }}"
 
 on:
   workflow_call:
@@ -17,6 +17,10 @@ on:
         type: string
         required: false
         default: ""
+      sonar:
+        type: boolean
+        required: false
+        default: true
       module:
         type: string
         description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
@@ -30,6 +34,7 @@ jobs:
   analysis:
     name: Execute Sonar Analysis
     runs-on: ubuntu-22.04
+    if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,7 +90,7 @@ jobs:
       - name: Maven build
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -f ${{ (inputs.module == '' || inputs.model == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         env:
@@ -94,7 +99,7 @@ jobs:
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
         with:
-          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.test_profile }}"
+          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.module }} ${{ inputs.test_profile }}"
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
