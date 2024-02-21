@@ -75,7 +75,7 @@ jobs:
               # Only execute modules with matrix strategy if we are testing one single hadoop profile
               modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
             fi
-            echo "profiles=$profiles" >> $GITHUB_OUTPUT
+            echo "profiles=[\"$profiles\"]" >> $GITHUB_OUTPUT
             echo "modules=$modules" >> $GITHUB_OUTPUT
             echo "hadoop=$hadoop" >> $GITHUB_OUTPUT
             echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
@@ -85,15 +85,17 @@ jobs:
           fi
   test:
     strategy:
+      fail-fast: false
       matrix:
         hadoop: ${{ fromJson(needs.get_profiles.outputs.hadoop) }}
         module: ${{ fromJson(needs.get_profiles.outputs.modules) }}
+        profile: ${{ fromJson(needs.get_profiles.outputs.profiles) }}
     needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
-      test_profile: ${{ needs.get_profiles.outputs.profiles }}
-      mvn_opts: ${{ inputs.mvn_opts }}
+      test_profile: ${{ matrix.profiles }}
       hadoop: ${{ matrix.hadoop }}
       module: ${{ matrix.module }}
+      mvn_opts: ${{ inputs.mvn_opts }}
       sonar: false
     secrets: inherit
