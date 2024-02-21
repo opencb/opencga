@@ -1,5 +1,5 @@
 name: Check junits
-run-name: "Check Junit tests. Hadoop flavour: ${{ inputs.hadoop }}. ${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
+run-name: "Check Junit tests. Hadoop ${{ inputs.hadoop }}. ${{ inputs.module == 'all' && '' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
 
 on:
   workflow_dispatch:
@@ -14,6 +14,18 @@ on:
           - "hdi5.1"
           - "emr6.1"
           - "emr6.13"
+      module:
+        type: choice
+        description: 'OpenCGA module to test.'
+        required: false
+        default: "all"
+        options:
+          - "all"
+          - "opencga-core"
+          - "opencga-catalog"
+          - "opencga-storage"
+          - "opencga-analysis"
+          - "opencga-master"
       short_tests:
         type: boolean
         required: false
@@ -42,26 +54,20 @@ jobs:
         with:
           fetch-depth: '10'
       - name: Building string profiles to run
-        id: getter
+        id: validate
         run: |
           if [ -f "./.github/workflows/scripts/get_profiles.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_profiles.sh
-            echo "profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})" >> $GITHUB_OUTPUT
+            profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})
+            echo "profiles=$profiles" >> $GITHUB_OUTPUT
+            echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
           fi
-
-  echo_log:
-    needs: get_profiles
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Echo profiles
-        id: log
-        run: echo "Executing testing profiles -> ${{ needs.get_profiles.outputs.profiles }}"
-
   test:
-    needs: [ get_profiles, echo_log ]
+    needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ needs.get_profiles.outputs.profiles }}
       mvn_opts: ${{ inputs.mvn_opts }}
       hadoop: ${{ inputs.hadoop }}
+      module: ${{ inputs.module }}
     secrets: inherit

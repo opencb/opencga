@@ -17,6 +17,11 @@ on:
         type: string
         required: false
         default: ""
+      module:
+        type: string
+        description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
+        required: false
+        default: ""
     secrets:
       SONAR_TOKEN:
         required: true
@@ -77,8 +82,10 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
+      - name: Maven build
+        run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -f ${{ (inputs.module == '' || inputs.model == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         env:
