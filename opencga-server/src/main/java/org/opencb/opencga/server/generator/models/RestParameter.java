@@ -99,104 +99,117 @@ public class RestParameter {
         return name;
     }
 
-    public void setName(String name) {
+    public RestParameter setName(String name) {
         this.name = name;
+        return this;
     }
 
     public RestParamType getParam() {
         return param;
     }
 
-    public void setParam(RestParamType param) {
+    public RestParameter setParam(RestParamType param) {
         this.param = param;
+        return this;
     }
 
     public String getParentName() {
         return parentName;
     }
 
-    public void setParentName(String parentName) {
+    public RestParameter setParentName(String parentName) {
         this.parentName = parentName;
+        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public RestParameter setType(String type) {
         this.type = type;
+        return this;
     }
 
     public String getTypeClass() {
         return typeClass;
     }
 
-    public void setTypeClass(String typeClass) {
+    public RestParameter setTypeClass(String typeClass) {
         this.typeClass = typeClass;
+        return this;
     }
 
     public boolean isRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
+    public RestParameter setRequired(boolean required) {
         this.required = required;
+        return this;
     }
 
     public String getDefaultValue() {
         return defaultValue;
     }
 
-    public void setDefaultValue(String defaultValue) {
+    public RestParameter setDefaultValue(String defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public RestParameter setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public List<RestParameter> getData() {
         return data;
     }
 
-    public void setData(List<RestParameter> data) {
+    public RestParameter setData(List<RestParameter> data) {
         this.data = data;
+        return this;
     }
 
     public String getAllowedValues() {
         return allowedValues;
     }
 
-    public void setAllowedValues(String allowedValues) {
+    public RestParameter setAllowedValues(String allowedValues) {
         this.allowedValues = allowedValues;
+        return this;
     }
 
     public boolean isComplex() {
         return complex;
     }
 
-    public void setComplex(boolean complex) {
+    public RestParameter setComplex(boolean complex) {
         this.complex = complex;
+        return this;
     }
 
     public String getGenericType() {
         return genericType;
     }
 
-    public void setGenericType(String genericType) {
+    public RestParameter setGenericType(String genericType) {
         this.genericType = genericType;
+        return this;
     }
 
     public boolean isInnerParam() {
         return innerParam;
     }
 
-    public void setInnerParam(boolean innerParam) {
+    public RestParameter setInnerParam(boolean innerParam) {
         this.innerParam = innerParam;
+        return this;
     }
 
     public boolean isEnum() {
