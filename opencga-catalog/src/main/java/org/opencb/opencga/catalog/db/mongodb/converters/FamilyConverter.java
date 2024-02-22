@@ -63,10 +63,10 @@ public class FamilyConverter extends AnnotableConverter<Family> {
                 if (uid <= 0) {
                     throw new IllegalArgumentException("Missing uid value for member '" + individual.getString("id") + "'.");
                 }
-                if (individualSet.contains(uid)) {
+                boolean unique = individualSet.add(uid);
+                if (!unique) {
                     throw new IllegalArgumentException("Duplicated member '" + individual.getString("id") + " (" + uid + ")' found.");
                 }
-                individualSet.add(uid);
             }
 
             document.put("members",
