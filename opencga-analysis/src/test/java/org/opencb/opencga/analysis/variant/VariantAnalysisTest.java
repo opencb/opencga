@@ -168,8 +168,6 @@ public class VariantAnalysisTest {
 //        System.setProperty("opencga.log.level", "INFO");
 //        Configurator.reconfigure();
         if (!indexed) {
-            indexed = true;
-
             opencga.after();
             opencga.before(storageEngine);
 
@@ -251,6 +249,7 @@ public class VariantAnalysisTest {
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
             }
+            indexed = true;
         }
         // Reset engines
         opencga.getStorageEngineFactory().close();
@@ -279,7 +278,8 @@ public class VariantAnalysisTest {
 
         String projectId = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId(PROJECT)
-                        .setDescription("Project about some genomes").setOrganism(new ProjectOrganism("hsapiens", "grch38")),
+                        .setDescription("Project about some genomes")
+                        .setOrganism(new ProjectOrganism("hsapiens", "GRCh38")),
                 new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
@@ -1013,6 +1013,7 @@ public class VariantAnalysisTest {
         toolRunner.execute(HRDetectAnalysis.class, hrdParams, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY), hrdetectOutDir, null, token);
 
         java.io.File hrDetectFile = hrdetectOutDir.resolve(HRDetectAnalysis.HRDETECT_SCORES_FILENAME_DEFAULT).toFile();
+        assertTrue("File missing : " + hrDetectFile, hrDetectFile.exists());
         byte[] bytes = Files.readAllBytes(hrDetectFile.toPath());
         System.out.println(new String(bytes));
         assertTrue(hrDetectFile.exists());

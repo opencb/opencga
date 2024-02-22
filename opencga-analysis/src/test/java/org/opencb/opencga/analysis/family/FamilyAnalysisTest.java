@@ -1,6 +1,8 @@
 package org.opencb.opencga.analysis.family;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -184,8 +186,8 @@ public class FamilyAnalysisTest extends GenericTest {
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("5UIf81hI8AAAAASUVORK5CYII="));
+        MatcherAssert.assertThat(pedigreeGraph.getBase64(), CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg="));
+        MatcherAssert.assertThat(pedigreeGraph.getBase64(), CoreMatchers.endsWith("5UIf81hI8AAAAASUVORK5CYII="));
     }
 
     @Test
@@ -207,8 +209,8 @@ public class FamilyAnalysisTest extends GenericTest {
                 sessionIdUser);
 
         String b64Image = PedigreeGraphUtils.getB64Image(outDir);
-        assertTrue(b64Image.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
-        assertTrue(b64Image.endsWith("s3Rj5UIf81hI8AAAAASUVORK5CYII="));
+        MatcherAssert.assertThat(b64Image, CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
+        MatcherAssert.assertThat(b64Image, CoreMatchers.endsWith("s3Rj5UIf81hI8AAAAASUVORK5CYII="));
 
         assertEquals(family.getPedigreeGraph().getBase64(), b64Image);
     }
