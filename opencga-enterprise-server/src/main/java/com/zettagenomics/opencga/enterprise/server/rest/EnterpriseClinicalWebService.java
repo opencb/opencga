@@ -6,8 +6,10 @@ import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetada
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantSummary;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -23,6 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -79,8 +84,8 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
-             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "interpretation,panels",
-                     dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "interpretation,panels",
+                    dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer",
                     paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
@@ -540,8 +545,8 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
                     example = "genomicFeature,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer",
                     paramType = "query"),
-             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer",
-                     paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer",
+                    paramType = "query"),
             // @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean",
             // paramType = "query"),
             // @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
@@ -1266,6 +1271,22 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             queryOptions.put(QueryOptions.FACET, field);
 
             return cvdbEngine.facetClinicalVariantEvidences(query, queryOptions, token);
+        });
+    }
+
+    //-------------------------------------------------------------------------
+    // G E T    C L I N I C A L     V A R I A N T     S U M M A R Y
+    //-------------------------------------------------------------------------
+
+    @GET
+    @Path("/cvdb/variant/summary")
+    @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummary.class)
+    public Response getClinicalVariantSummary(
+            @ApiParam(value = PROJECT_PARAM_DESCRIPTION, required = true) @QueryParam(PROJECT_PARAM_NAME) String projectId,
+            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM_NAME) String studyId,
+            @ApiParam(value = CV_ID_DESCR, required = true) @QueryParam(CV_ID_NAME) String variantIds) {
+        return run(() -> {
+            return cvdbEngine.getClinicalVariantSummary(variantIds, projectId, studyId, token);
         });
     }
 }

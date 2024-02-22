@@ -614,11 +614,23 @@ public class CvdbSolrEngine {
     // CLINICAL VARIANT SUMMARY
     //----------------------------------------------------------------------
 
-    public DataResult<ClinicalVariantSummary> getClinicalVariantSummary(List<String> variantIds, String projectId, String token)
-            throws CatalogException, IOException, CvdbException {
+    public DataResult<ClinicalVariantSummary> getClinicalVariantSummary(List<String> variantIds, String projectId, String studyId,
+                                                                        String token) throws CatalogException, IOException, CvdbException {
+        if (CollectionUtils.isEmpty(variantIds)) {
+            throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
+        }
+
+        if (StringUtils.isEmpty(projectId)) {
+            throw new CvdbException("Missing project ID when running clinical variant summary");
+        }
+
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        if (StringUtils.isEmpty(studyId)) {
+            query.put(STUDY_PARAM_NAME, studyId);
+        } else {
+            query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        }
         QueryOptions queryOptions = new QueryOptions();
 
         StopWatch stopWatch = StopWatch.createStarted();
@@ -697,9 +709,15 @@ public class CvdbSolrEngine {
         return new DataResult<>(dbTime, null, summaryList.size(), summaryList, summaryList.size());
     }
 
-    public DataResult<ClinicalVariantSummary> getClinicalVariantSummary(String variantId, String projectId, String token)
+    public DataResult<ClinicalVariantSummary> getClinicalVariantSummary(String variantId, String projectId, String studyId, String token)
             throws CatalogException, IOException, CvdbException {
-        return getClinicalVariantSummary(Collections.singletonList(variantId), projectId, token);
+        // Checking parameter
+        if (StringUtils.isEmpty(variantId)) {
+            throw new CvdbException("Missing variant ID(s) when running clinical variant summary");
+        }
+        List<String> ids = new ArrayList<>();
+        ids.addAll(Arrays.asList(variantId.split(",")));
+        return getClinicalVariantSummary(ids, projectId, studyId, token);
     }
 
     //----------------------------------------------------------------------

@@ -24,6 +24,8 @@ public class ParamConstants {
     public static final String CLINICAL_VARIANT_QUERY_DESCRIPTION = "Filter and fetch clinical variants from CVDB";
     public static final String CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION = "Filter and fetch clinical variant evidences from CVDB";
 
+    public static final String CLINICAL_VARIANT_SUMMARY_DESCRIPTION = "Get clinical variant summary from CVDB";
+
     public static final String INDEX_OVERWRITE_PARAM_NAME = "overwrite";
     public static final String INDEX_OVERWRITE_PARAM_DESCRIPTION = "Overwrite clinical analysis when CVDB indexing";
 

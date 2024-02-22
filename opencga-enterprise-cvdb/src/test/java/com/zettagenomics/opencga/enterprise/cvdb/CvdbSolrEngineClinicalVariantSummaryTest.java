@@ -149,7 +149,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         String variantId = "X:54751204:C:T";
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, sessionIdUser);
+        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, null, sessionIdUser);
 
         Assert.assertEquals(1, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
@@ -166,7 +166,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, sessionIdUser);
+        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, null, sessionIdUser);
 
         Assert.assertEquals(2, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
