@@ -83,6 +83,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     private final IndividualMongoDBAdaptor individualDBAdaptor;
     private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
+    final QueryOptions SAMPLE_FETCH_FOR_UPDATE_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                    PRIVATE_INDIVIDUAL_UID));
+
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
                                 MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -91,7 +95,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.sampleCollection = sampleCollection;
         this.archiveSampleCollection = archiveSampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
-        sampleConverter = new SampleConverter();
+        this.sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
     }
@@ -103,6 +107,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     public MongoDBCollection getArchiveSampleCollection() {
         return archiveSampleCollection;
+    }
+
+    public SampleConverter getSampleConverter() {
+        return sampleConverter;
     }
 
     /*
@@ -245,10 +253,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     public OpenCGAResult update(long uid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
-                        PRIVATE_INDIVIDUAL_UID));
-        OpenCGAResult<Document> documentResult = nativeGet(query, options);
+        OpenCGAResult<Document> documentResult = nativeGet(query, SAMPLE_FETCH_FOR_UPDATE_OPTIONS);
         if (documentResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update sample. Sample uid '" + uid + "' not found.");
         }
@@ -310,7 +315,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long sampleUid = sampleDocument.getLong(QueryParams.UID.key());
         int version = sampleDocument.getInteger(QueryParams.VERSION.key());
         long studyUid = sampleDocument.getLong(QueryParams.STUDY_UID.key());
-        long individualUid = sampleDocument.getLong(PRIVATE_INDIVIDUAL_UID);
 
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
@@ -335,9 +339,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 Bson finalQuery = parseQuery(tmpQuery);
 
                 logger.debug("Sample update: query : {}, update: {}", finalQuery.toBsonDocument(), sampleUpdate.toBsonDocument());
-                result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
+                result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions(MongoDBCollection.MULTI, true));
 
                 if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
+                    long individualUid = sampleDocument.getLong(PRIVATE_INDIVIDUAL_UID);
                     long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
 
                     // If the sample has been associated a different individual
@@ -612,6 +617,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.FILE_IDS.key())) {
+            List<String> fileIdList = parameters.getAsStringList(QueryParams.FILE_IDS.key());
+
+            if (!fileIdList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                ParamUtils.BasicUpdateAction operation =
+                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown update action " + operation);
+                }
+            }
+        }
+
         if (parameters.containsKey(QueryParams.INTERNAL_RGA.key())) {
             RgaIndex rgaIndex = parameters.get(QueryParams.INTERNAL_RGA.key(), RgaIndex.class);
             rgaIndex.setDate(TimeUtils.getTime());
@@ -696,36 +725,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
         }
         parameters.put(QueryParams.PHENOTYPES.key(), phenotypeParamList);
-    }
-
-    UpdateDocument updateFileReferences(ObjectMap parameters, QueryOptions queryOptions) {
-        UpdateDocument document = new UpdateDocument();
-
-        // Check if the tags exist.
-        if (parameters.containsKey(QueryParams.FILE_IDS.key())) {
-            List<String> fileIdList = parameters.getAsStringList(QueryParams.FILE_IDS.key());
-
-            if (!fileIdList.isEmpty()) {
-                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                ParamUtils.BasicUpdateAction operation =
-                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
-                switch (operation) {
-                    case SET:
-                        document.getSet().put(QueryParams.FILE_IDS.key(), fileIdList);
-                        break;
-                    case REMOVE:
-                        document.getPullAll().put(QueryParams.FILE_IDS.key(), fileIdList);
-                        break;
-                    case ADD:
-                        document.getAddToSet().put(QueryParams.FILE_IDS.key(), fileIdList);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown update action " + operation);
-                }
-            }
-        }
-
-        return document;
     }
 
     @Override

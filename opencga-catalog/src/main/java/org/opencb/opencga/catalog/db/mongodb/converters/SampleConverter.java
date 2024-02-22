@@ -38,6 +38,11 @@ public class SampleConverter extends AnnotableConverter<Sample> {
     }
 
     @Override
+    public Document convertToStorageType(Sample object) {
+        return convertToStorageType(object, null);
+    }
+
+    @Override
     public Document convertToStorageType(Sample object, List<VariableSet> variableSetList) {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
