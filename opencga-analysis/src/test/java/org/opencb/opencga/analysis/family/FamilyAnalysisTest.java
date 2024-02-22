@@ -96,18 +96,9 @@ public class FamilyAnalysisTest extends GenericTest {
         studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
                 sessionIdUser).first().getId();
 
-        try {
-            family = createDummyFamily("Martinez-Martinez").first();
-        } catch (CatalogException e) {
-        }
-        try {
-            family2 = createDummyFamily("Lopez-Lopez", Arrays.asList("father11-sample", "mother11-sample"), 1).first();
-        } catch (CatalogException e) {
-        }
-        try {
-            family3 = createDummyFamily("Perez-Perez", Arrays.asList("father22-sample", "mother22-sample", "child222-sample"), 0).first();
-        } catch (CatalogException e) {
-        }
+        family = createDummyFamily("Martinez-Martinez").first();
+        family2 = createDummyFamily("Lopez-Lopez", Arrays.asList("father11-sample", "mother11-sample"), 1).first();
+        family3 = createDummyFamily("Perez-Perez", Arrays.asList("father22-sample", "mother22-sample", "child222-sample"), 0).first();
     }
 
     @After

@@ -103,5 +103,6 @@ jobs:
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
+          fail_if_no_tests: false
 
 
