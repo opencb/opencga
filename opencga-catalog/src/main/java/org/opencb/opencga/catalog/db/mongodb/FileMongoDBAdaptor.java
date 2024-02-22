@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -209,19 +210,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
-                UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                        .updateFileReferences(params, sampleUpdateOptions);
                 for (List<Sample> sampleList : sampleListList) {
                     logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
-                    // Update list of fileIds from sample
-                    Query query = new Query()
-                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                            .append(SampleDBAdaptor.QueryParams.UID.key(),
-                                    sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
-                    dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
-                            dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
-                            sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+                    for (Sample sample : sampleList) {
+                        SampleConverter sampleConverter = dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleConverter();
+                        Document sampleDocument = sampleConverter.convertToStorageType(sample);
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
+                                sampleUpdateOptions);
+                    }
 
                     // Add sample to sampleList
                     samples.addAll(sampleList);
@@ -438,8 +435,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
             }
 
-            Bson sampleBsonQuery = null;
-            UpdateDocument sampleUpdate = null;
+            Bson sampleBsonQuery;
+            UpdateDocument sampleUpdate;
             ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
 
             if (!setSamples.isEmpty()) {
@@ -466,29 +463,31 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
                         .append(SampleDBAdaptor.QueryParams.UID.key(), addedSamples.getAsLongList(file.getId()));
-                sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
+                List<Document> sampleList = dbAdaptorFactory.getCatalogSampleDBAdaptor().nativeGet(clientSession, query,
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().SAMPLE_FETCH_FOR_UPDATE_OPTIONS).getResults();
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
-
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                for (Document sampleDocument : sampleList) {
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
+                            sampleUpdateOptions);
+                }
             }
             if (removedSamples != null && !removedSamples.isEmpty()) {
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
                         .append(SampleDBAdaptor.QueryParams.UID.key(), removedSamples.getAsLongList(file.getId()));
-                sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
+                List<Document> sampleList = dbAdaptorFactory.getCatalogSampleDBAdaptor().nativeGet(clientSession, query,
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().SAMPLE_FETCH_FOR_UPDATE_OPTIONS).getResults();
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.REMOVE.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
-
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                for (Document sampleDocument : sampleList) {
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
+                            sampleUpdateOptions);
+                }
             }
         }
     }
