@@ -179,15 +179,17 @@ public class FamilyAnalysisTest extends GenericTest {
     public void updateTest() throws CatalogException {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
+        Family prevFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
+        assertEquals(prevFamily.getPedigreeGraph().getBase64(), family.getPedigreeGraph().getBase64());
+
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
         Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
-        PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
-        MatcherAssert.assertThat(pedigreeGraph.getBase64(), CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg="));
-        MatcherAssert.assertThat(pedigreeGraph.getBase64(), CoreMatchers.endsWith("5UIf81hI8AAAAASUVORK5CYII="));
+        assertEquals(prevFamily.getPedigreeGraph().getBase64(), updatedFamily.getPedigreeGraph().getBase64());
+        assertEquals(prevFamily.getVersion() + 1, updatedFamily.getVersion());
     }
 
     @Test
