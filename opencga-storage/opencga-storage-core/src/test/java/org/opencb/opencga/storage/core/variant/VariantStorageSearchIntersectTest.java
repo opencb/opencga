@@ -65,7 +65,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 @Ignore
 public abstract class VariantStorageSearchIntersectTest extends VariantStorageBaseTest {
 
-    @ClassRule
+    @ClassRule(order = 10)
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
