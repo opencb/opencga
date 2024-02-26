@@ -1411,7 +1411,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     // FIXME This method must be deleted once deprecated params are not supported any more
-    static Query getVariantQuery(QueryOptions queryOptions) {
+    public static Query getVariantQuery(QueryOptions queryOptions) {
         Query query = VariantStorageManager.getVariantQuery(queryOptions);
         queryOptions.forEach((key, value) -> {
             org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
