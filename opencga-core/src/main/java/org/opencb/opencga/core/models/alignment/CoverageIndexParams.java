@@ -7,37 +7,46 @@ import org.opencb.opencga.core.tools.ToolParams;
 public class CoverageIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Coverage computation parameters";
 
-    private String file;
+    private String bamFileId;
+    private String baiFileId;
 
     @JsonProperty(defaultValue = "1")
     private int windowSize;
-    private boolean overwrite;
 
     public CoverageIndexParams() {
     }
 
-    public CoverageIndexParams(String file, int windowSize, boolean overwrite) {
-        this.file = file;
+    public CoverageIndexParams(String bamFileId, String baiFileId, int windowSize) {
+        this.bamFileId = bamFileId;
+        this.baiFileId = baiFileId;
         this.windowSize = windowSize;
-        this.overwrite = overwrite;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CoverageIndexParams{");
-        sb.append("file='").append(file).append('\'');
+        sb.append("bamFileId='").append(bamFileId).append('\'');
+        sb.append(", baiFileId='").append(baiFileId).append('\'');
         sb.append(", windowSize=").append(windowSize);
-        sb.append(", overwrite=").append(overwrite);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getFile() {
-        return file;
+    public String getBamFileId() {
+        return bamFileId;
     }
 
-    public CoverageIndexParams setFile(String file) {
-        this.file = file;
+    public CoverageIndexParams setBamFileId(String bamFileId) {
+        this.bamFileId = bamFileId;
+        return this;
+    }
+
+    public String getBaiFileId() {
+        return baiFileId;
+    }
+
+    public CoverageIndexParams setBaiFileId(String baiFileId) {
+        this.baiFileId = baiFileId;
         return this;
     }
 
@@ -47,15 +56,6 @@ public class CoverageIndexParams extends ToolParams {
 
     public CoverageIndexParams setWindowSize(int windowSize) {
         this.windowSize = windowSize;
-        return this;
-    }
-
-    public boolean isOverwrite() {
-        return overwrite;
-    }
-
-    public CoverageIndexParams setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
         return this;
     }
 }
