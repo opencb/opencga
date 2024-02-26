@@ -627,9 +627,9 @@ public class CvdbSolrEngine {
         Query query = new Query();
         query.put(PROJECT_PARAM_NAME, projectId);
         if (StringUtils.isEmpty(studyId)) {
-            query.put(STUDY_PARAM_NAME, studyId);
-        } else {
             query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        } else {
+            query.put(STUDY_PARAM_NAME, studyId);
         }
         QueryOptions queryOptions = new QueryOptions();
 
@@ -798,7 +798,7 @@ public class CvdbSolrEngine {
                             throw new CvdbException("Invalid study ID '" + study.getId() + "' not found in project '" + project.getId()
                                     + "'");
                         }
-                        studyIds.add(study.getId());
+                        studyIds.add(study.getFqn());
                     }
                 } else {
                     throw new CvdbException("Invalid use of '" + ALL_STUDIES_VALUE + "' (to indicate all studies) because no project has"
@@ -826,7 +826,7 @@ public class CvdbSolrEngine {
                         }
                     }
                 }
-                studyIds.add(study.getId());
+                studyIds.add(study.getFqn());
             }
         }
 

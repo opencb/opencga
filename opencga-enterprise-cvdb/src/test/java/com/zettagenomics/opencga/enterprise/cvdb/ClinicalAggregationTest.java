@@ -3,8 +3,6 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,34 +14,23 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
-import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
-import javax.validation.constraints.AssertTrue;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_DISORDER_ID_NAME;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_TYPE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR;
@@ -57,11 +44,11 @@ public class ClinicalAggregationTest {
 
     public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
-    public static CatalogManagerExternalResource catalogManagerResource;
+    public static OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource;
 
     protected static CatalogManager catalogManager;
     private static String opencgaToken;
-    protected static String sessionIdUser;
+    protected static String userToken;
     private static FamilyManager familyManager;
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
@@ -71,7 +58,7 @@ public class ClinicalAggregationTest {
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
         cvdbSolrExternalResource.before();
 
-        catalogManagerResource = new CatalogManagerExternalResource();
+        catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
 
         // Catalog
@@ -89,10 +76,11 @@ public class ClinicalAggregationTest {
         }
 
         // Load and index
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study, userToken, opencgaToken,
+                catalogManager);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
@@ -110,12 +98,12 @@ public class ClinicalAggregationTest {
                         .setOwner("user"),
                 null, opencgaToken);
 
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
+        userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+                null, "GRCh38", INCLUDE_RESULT, userToken).first();
         study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+                userToken).first();
     }
 
     //-----------------------------------------------------------------------
@@ -178,24 +166,6 @@ public class ClinicalAggregationTest {
         assertEquals(CA_DISORDER_ID_NAME, facetResult.first().getBuckets().get(0).getFacetFields().get(0).getName());
         for (FacetField result : facetResult.getResults()) {
             System.out.println(result);
-        }
-    }
-
-    //-----------------------------------------------------------------------
-    //-----------------------------------------------------------------------
-
-    private static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
-        for (String caFilename : caFilenames) {
-            URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
-            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
-                    sessionIdUser);
-            System.out.println(loadResult);
-        }
-        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
-                QueryOptions.empty(), opencgaToken);
-        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
-            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
-                    "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, opencgaToken);
         }
     }
 }

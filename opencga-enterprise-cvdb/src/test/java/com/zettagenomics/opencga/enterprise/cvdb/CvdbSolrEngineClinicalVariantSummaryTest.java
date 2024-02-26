@@ -3,51 +3,36 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantSummary;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.text.ParseException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static org.junit.Assert.*;
-import static org.opencb.commons.datastore.core.QueryOptions.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
+import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CvdbSolrEngineClinicalVariantSummaryTest {
 
@@ -58,11 +43,11 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 
     public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
-    public static CatalogManagerExternalResource catalogManagerResource;
+    public static OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource;
 
     protected static CatalogManager catalogManager;
     private static String opencgaToken;
-    protected static String sessionIdUser;
+    protected static String userToken;
     private static FamilyManager familyManager;
 
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
@@ -72,7 +57,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, projectId);
         cvdbSolrExternalResource.before();
 
-        catalogManagerResource = new CatalogManagerExternalResource();
+        catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
 
         // Catalog
@@ -90,10 +75,10 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         }
 
         // Load and index
-        loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study.getId());
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, sessionIdUser);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
@@ -111,12 +96,12 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
                         .setOwner("user"),
                 null, opencgaToken);
 
-        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
+        userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+                null, "GRCh38", INCLUDE_RESULT, userToken).first();
         study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+                userToken).first();
     }
 
     //-----------------------------------------------------------------------
@@ -130,16 +115,16 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         QueryOptions queryOptions = new QueryOptions();
 
-        DataResult<ClinicalAnalysis> caResult = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        DataResult<ClinicalAnalysis> caResult = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         System.out.println("num. ca = " + caResult.getNumResults());
         assertTrue(caResult.getNumResults() > 0);
-        DataResult<Interpretation> ciResult = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
+        DataResult<Interpretation> ciResult = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
         System.out.println("num. ci = " + ciResult.getNumResults());
         assertTrue(ciResult.getNumResults() > 0);
-        DataResult<ClinicalVariant> cvResult = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
+        DataResult<ClinicalVariant> cvResult = cvdbEngine.searchClinicalVariants(query, queryOptions, userToken);
         System.out.println("num. cv = " + cvResult.getNumResults());
         assertTrue(cvResult.getNumResults() > 0);
-        DataResult<ClinicalVariantEvidence> cveResult = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
+        DataResult<ClinicalVariantEvidence> cveResult = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
         System.out.println("num. cve = " + cveResult.getNumResults());
         assertTrue(cveResult.getNumResults() > 0);
     }
@@ -149,7 +134,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         String variantId = "X:54751204:C:T";
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, null, sessionIdUser);
+        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, null, userToken);
 
         Assert.assertEquals(1, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
@@ -166,7 +151,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, null, sessionIdUser);
+        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, null, userToken);
 
         Assert.assertEquals(2, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
@@ -183,85 +168,6 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         Assert.assertEquals(2, (int) result.getResults().get(1).getEvidencePhenotypeCounts().get("Ultra-rare undescribed monogenic disorders"));
         Assert.assertEquals(1, result.getResults().get(1).getEvidenceTierCounts().size());
         Assert.assertEquals(2, (int) result.getResults().get(1).getEvidenceTierCounts().get("TIER3"));
-    }
-
-    //-----------------------------------------------------------------------
-    //-----------------------------------------------------------------------
-
-    private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CA_ID_NAME, caId);
-        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, result.getNumResults());
-        assertEquals(caId, result.first().getId());
-        return result.first();
-    }
-
-    private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_ID_NAME, ciId);
-        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, result.getNumResults());
-        assertEquals(ciId, result.first().getId());
-        return result.first();
-    }
-
-    private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CV_ID_NAME, cvId);
-        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, result.getNumResults());
-        assertEquals(cvId, result.first().getId());
-        return result.first();
-    }
-
-    private boolean existsVariantId(String variantId, ClinicalAnalysis clinicalAnalysis) {
-        if (existsVariantId(variantId, clinicalAnalysis.getInterpretation())) {
-            return true;
-        }
-        for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-            if (existsVariantId(variantId, interpretation)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean existsVariantId(String variantId, Interpretation interpretation) {
-        if (existsVariantId(variantId, interpretation.getPrimaryFindings())) {
-            return true;
-        }
-        if (existsVariantId(variantId, interpretation.getSecondaryFindings())) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean existsVariantId(String variantId, List<ClinicalVariant> clinicalVariants) {
-        for (ClinicalVariant clinicaVariant : clinicalVariants) {
-            if (clinicaVariant.toString().equals(variantId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId) throws IOException, CatalogException {
-        for (String caFilename : caFilenames) {
-            URL resource = ClinicalInterpretationConverterTest.class.getClassLoader().getResource(caFilename);
-            ClinicalAnalysisLoadResult loadResult = catalogManager.getClinicalAnalysisManager().load(studyId, Paths.get(resource.getPath()),
-                    sessionIdUser);
-            System.out.println(loadResult);
-        }
-        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
-                QueryOptions.empty(), opencgaToken);
-        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
-            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
-                    "user", new ClinicalAnalysisAclUpdateParams(null, "VIEW"), ParamUtils.AclAction.SET, false, opencgaToken);
-        }
     }
 }
 
