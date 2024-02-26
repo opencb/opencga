@@ -42,7 +42,7 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected IndividualQualityControl qualityControl;
 
-    public IndividualQcAnalysisExecutor() {
+    protected IndividualQcAnalysisExecutor() {
     }
 
     public String getStudyId() {

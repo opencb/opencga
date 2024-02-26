@@ -16,35 +16,35 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.apache.commons.io.FileUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
 
-    public final static String ID = "alignment-index-run";
-    public final static String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
+    public static final String ID = "alignment-index-run";
+    public static final String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
 
     private String study;
     private String inputFile;
-    private boolean overwrite;
 
     private File inputCatalogFile;
     private Path inputPath;
     private Path outputPath;
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
@@ -63,50 +63,52 @@ public class AlignmentIndexOperation extends OpenCgaTool {
         String filename = inputPath.getFileName().toString();
 
         // Check if the input file is .bam or .cram
-        if (!filename.endsWith(".bam") && !filename.endsWith(".cram")) {
+        if (!filename.endsWith(AlignmentConstants.BAM_EXTENSION) && !filename.endsWith(AlignmentConstants.CRAM_EXTENSION)) {
             throw new ToolException("Invalid input alignment file '" + inputFile + "': it must be in BAM or CRAM format");
         }
 
-        outputPath = getOutDir().resolve(filename + (filename.endsWith(".bam") ? ".bai" : ".crai"));
+        outputPath = getOutDir().resolve(filename + (filename.endsWith(AlignmentConstants.BAM_EXTENSION)
+                ? AlignmentConstants.BAI_EXTENSION : AlignmentConstants.CRAI_EXTENSION));
     }
 
     @Override
     protected void run() throws Exception {
 
         step(ID, () -> {
+            // Compute index if necessary
+            logger.info("Computing alignment index for {}", inputPath);
+            BamManager bamManager = new BamManager(inputPath);
+            bamManager.createIndex(outputPath);
+            bamManager.close();
 
-            Path indexPath = Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName());
-            if (overwrite || !indexPath.toFile().exists()) {
-                // Compute index if necessary
-                BamManager bamManager = new BamManager(inputPath);
-                bamManager.createIndex(outputPath);
-                bamManager.close();
-
-                if (!outputPath.toFile().exists()) {
-                    throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
-                }
-
-                if (indexPath.toFile().exists()) {
-                    indexPath.toFile().delete();
-                }
-                FileUtils.moveFile(outputPath.toFile(), indexPath.toFile());
+            if (!outputPath.toFile().exists()) {
+                throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             }
 
-            boolean isLinked = true;
-            Path outputCatalogPath = Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
-            OpenCGAResult<File> fileResult;
+            // Try to copy the BAI file into the BAM file directory
+            Path targetPath = inputPath.getParent().resolve(outputPath.getFileName());
             try {
-                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
-                if (fileResult.getNumResults() <= 0) {
-                    isLinked = false;
-                }
-            } catch (CatalogException e) {
-                isLinked = false;
+                Files.move(outputPath, targetPath);
+            } catch (Exception e) {
+                // Do nothing
+                logger.info("Moving from {} to {}: {}", outputPath, targetPath, e.getMessage());
             }
-            if (!isLinked) {
-                catalogManager.getFileManager().link(getStudy(), indexPath.toUri(), outputCatalogPath.getParent().toString(),
-                        new ObjectMap("parents", true), token);
+
+            if (targetPath.toFile().exists()) {
+                outputPath = targetPath;
+                logger.info("Alignment index file was copied into the BAM folder: {}", outputPath);
+            } else {
+                logger.info("Couldn't copy the alignment index file into the BAM folder. The index file is in the job folder instead: {}",
+                        outputPath);
             }
+
+            // Link generated BAI file and update samples info, related file
+            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, getJobId(), study, catalogManager, token);
+
+            // Update BAM file internal in order to set the alignment index (BAI)
+            FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
+                    baiCatalogFile.getId(), "HTSJDK library");
+            catalogManager.getFileManager().updateFileInternalAlignmentIndex(inputCatalogFile, fileAlignmentIndex, token);
         });
     }
 
@@ -125,15 +127,6 @@ public class AlignmentIndexOperation extends OpenCgaTool {
 
     public AlignmentIndexOperation setInputFile(String inputFile) {
         this.inputFile = inputFile;
-        return this;
-    }
-
-    public boolean isOverwrite() {
-        return overwrite;
-    }
-
-    public AlignmentIndexOperation setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
         return this;
     }
 }
