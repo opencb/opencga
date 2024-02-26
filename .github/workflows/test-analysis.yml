@@ -49,7 +49,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
@@ -76,7 +76,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
