@@ -93,7 +93,7 @@ jobs:
     needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
-      test_profile: ${{ matrix.profiles }}
+      test_profile: ${{ matrix.profile }}
       hadoop: ${{ matrix.hadoop }}
       module: ${{ matrix.module }}
       mvn_opts: ${{ inputs.mvn_opts }}
