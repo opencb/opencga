@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -34,6 +35,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
@@ -47,6 +49,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Category(MediumTests.class)
 public class FamilyAnalysisTest extends GenericTest {
 
     public static final String USER = "user";
