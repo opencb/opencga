@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -210,11 +211,31 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public void dropTable(Connection con, String tableName, PTableType tableType, boolean ifExists, boolean cascade) throws SQLException {
+    public void dropTable(org.apache.hadoop.hbase.client.Connection hbaseCon, Connection con, String tableName, PTableType tableType,
+                          boolean ifExists, boolean cascade) throws SQLException, IOException {
         String sql = buildDropTable(tableName, tableType, ifExists, cascade);
         logger.info("Dropping phoenix {}: {}", tableType, tableName);
         logger.info(sql);
         execute(con, sql);
+
+        try (Admin admin = hbaseCon.getAdmin()) {
+            // Flush the SYSTEM.CATALOG table to avoid "unexpected errors" when creating a new table with the same name
+            // This was first observed when running tests in with Phoenix 5.1
+            TableName systemCatalog;
+            if (PhoenixHelper.isNamespaceMappingEnabled(PTableType.SYSTEM, conf)) {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME,
+                        PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            } else {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME
+                        + "." + PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            }
+            if (admin.tableExists(systemCatalog)) {
+                logger.info("Flushing phoenix system catalog table '" + systemCatalog + "'");
+                admin.flush(systemCatalog);
+            } else {
+                logger.info("System catalog table '" + systemCatalog + "' does not exist, unable to flush it.");
+            }
+        }
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)

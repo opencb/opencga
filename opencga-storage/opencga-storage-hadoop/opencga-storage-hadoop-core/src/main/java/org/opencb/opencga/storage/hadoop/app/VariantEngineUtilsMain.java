@@ -171,7 +171,7 @@ public class VariantEngineUtilsMain extends AbstractMain {
                             LOGGER.info("[DRY-RUN] drop phoenix view '{}'", table);
                         } else {
                             LOGGER.info("Drop phoenix view '{}'", table);
-                            VariantPhoenixSchemaManager.dropTable(hBaseManager, table, true);
+                            VariantPhoenixSchemaManager.dropView(hBaseManager, table, true);
                         }
                     }
                 }
