@@ -259,6 +259,7 @@ public class SampleIndexEntryFilterTest {
     private SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op, RangeIndexFieldFilter... frequencyQuery) {
         SampleAnnotationIndexQuery annotationIndexQuery = new SampleAnnotationIndexQuery(
                 new byte[2],
+                null,
                 schema.getCtIndex().getField().noOpFilter(),
                 schema.getBiotypeIndex().getField().noOpFilter(),
                 schema.getTranscriptFlagIndexSchema().getField().noOpFilter(),

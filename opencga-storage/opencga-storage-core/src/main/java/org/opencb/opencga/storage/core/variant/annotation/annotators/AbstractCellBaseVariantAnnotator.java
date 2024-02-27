@@ -213,6 +213,9 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                                 variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
                             }
                         }
+                        if (variantAnnotation.getConsequenceTypes() == null || variantAnnotation.getConsequenceTypes().isEmpty()) {
+                            logger.warn("No consequence type found for variant " + variant);
+                        }
                         variantAnnotationList.add(variantAnnotation);
                     }
                 }

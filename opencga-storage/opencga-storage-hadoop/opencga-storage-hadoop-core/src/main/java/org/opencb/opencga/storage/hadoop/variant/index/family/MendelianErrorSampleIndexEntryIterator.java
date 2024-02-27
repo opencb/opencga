@@ -123,6 +123,12 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
+    public Variant nextVariant() {
+        fetchNextIfNeeded();
+        return next;
+    }
+
+    @Override
     public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
         List<BitBuffer> filesIndex = new ArrayList<>();
