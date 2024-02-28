@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
-import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -153,14 +152,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
                                 new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART)
                         ));
-                        privateUpdate(clientSession, virtualFile, params, null, qOptions);
+                        transactionalUpdate(clientSession, virtualFile, params, null, qOptions);
                     }
 
                     // Add multipart file in physical file
                     ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
                             new FileRelatedFile(virtualFile, FileRelatedFile.Relation.MULTIPART)
                     ));
-                    privateUpdate(clientSession, file, params, null, qOptions);
+                    transactionalUpdate(clientSession, file, params, null, qOptions);
 
                     return endWrite(tmpStartTime, 1, 1, 0, 0, null);
                 },
@@ -214,9 +213,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
                     for (Sample sample : sampleList) {
-                        SampleConverter sampleConverter = dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleConverter();
-                        Document sampleDocument = sampleConverter.convertToStorageType(sample);
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, sample, params, null,
                                 sampleUpdateOptions);
                     }
 
@@ -336,7 +333,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, fileDataResult.first(), parameters,
+            return runTransaction(clientSession -> transactionalUpdate(clientSession, fileDataResult.first(), parameters,
                     variableSetList, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update file {}: {}", fileDataResult.first().getPath(), e.getMessage(), e);
@@ -362,7 +359,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         while (iterator.hasNext()) {
             File file = iterator.next();
             try {
-                result.append(runTransaction(clientSession -> privateUpdate(clientSession, file, parameters, variableSetList,
+                result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, file, parameters, variableSetList,
                         queryOptions)));
             } catch (CatalogDBException e) {
                 logger.error("Could not update file {}: {}", file.getPath(), e.getMessage(), e);
@@ -373,20 +370,24 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         return result;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, File file, ObjectMap parameters, List<VariableSet> variableSetList,
-                                        QueryOptions queryOptions)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    @Override
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
+                                            List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
+        long studyUid = file.getStudyUid();
+        long fileUid = file.getUid();
 
         Query tmpQuery = new Query()
-                .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
-                .append(QueryParams.UID.key(), file.getUid());
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), fileUid);
 
         // We perform the update.
         Bson queryBson = parseQuery(tmpQuery);
-        DataResult result = updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
+        DataResult result = updateAnnotationSets(clientSession, studyUid, fileUid, parameters, variableSetList,
+                queryOptions, false);
 
-        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, file.getStudyUid(), parameters, tmpQuery, queryOptions);
+        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, studyUid, parameters, tmpQuery, queryOptions);
         Document fileUpdate = updateDocument.toFinalUpdateDocument();
 
         if (fileUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -406,7 +407,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             if (parameters.containsKey(QueryParams.SIZE.key())) {
                 long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
                 long difDiskUsage = newDiskUsage - file.getSize();
-                dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyUid, difDiskUsage);
             }
 
             updateSampleReferences(clientSession, file, updateDocument);
@@ -421,6 +422,26 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    @Override
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+            throws CatalogDBException {
+        long tmpStartTime = startQuery();
+
+        Document fileUpdate = updateDocument.toFinalUpdateDocument();
+
+        if (fileUpdate.isEmpty()) {
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
+            logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(), fileUpdate.toBsonDocument());
+
+        DataResult<?> result = fileCollection.update(clientSession, query, fileUpdate, null);
+        logger.debug("{} file(s) successfully updated", result.getNumUpdated());
+
+        return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
     }
 
     private void updateSampleReferences(ClientSession clientSession, File file, UpdateDocument updateDocument)
@@ -456,38 +477,36 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 sampleUpdate = new UpdateDocument();
                 sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
 
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        sampleUpdate);
             }
             if (addedSamples != null && !addedSamples.isEmpty()) {
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
                         .append(SampleDBAdaptor.QueryParams.UID.key(), addedSamples.getAsLongList(file.getId()));
-                List<Document> sampleList = dbAdaptorFactory.getCatalogSampleDBAdaptor().nativeGet(clientSession, query,
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().SAMPLE_FETCH_FOR_UPDATE_OPTIONS).getResults();
+                sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                updateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseAndValidateUpdateParams(clientSession,
+                        file.getStudyUid(), params, query, sampleUpdateOptions);
 
-                for (Document sampleDocument : sampleList) {
-                    dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
-                            sampleUpdateOptions);
-                }
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        updateDocument);
             }
             if (removedSamples != null && !removedSamples.isEmpty()) {
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
                         .append(SampleDBAdaptor.QueryParams.UID.key(), removedSamples.getAsLongList(file.getId()));
-                List<Document> sampleList = dbAdaptorFactory.getCatalogSampleDBAdaptor().nativeGet(clientSession, query,
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().SAMPLE_FETCH_FOR_UPDATE_OPTIONS).getResults();
+                sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.REMOVE.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                updateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseAndValidateUpdateParams(clientSession,
+                        file.getStudyUid(), params, query, sampleUpdateOptions);
 
-                for (Document sampleDocument : sampleList) {
-                    dbAdaptorFactory.getCatalogSampleDBAdaptor().privateUpdate(clientSession, sampleDocument, params, null,
-                            sampleUpdateOptions);
-                }
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        updateDocument);
             }
         }
     }
@@ -717,6 +736,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            FileStatus fileStatus = new FileStatus(parameters.getString(QueryParams.INTERNAL_STATUS_ID.key()));
+            Document fileStatusDoc = getMongoDBDocument(fileStatus, QueryParams.INTERNAL_STATUS.key());
+            document.getSet().put(QueryParams.INTERNAL_STATUS.key(), fileStatusDoc);
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {

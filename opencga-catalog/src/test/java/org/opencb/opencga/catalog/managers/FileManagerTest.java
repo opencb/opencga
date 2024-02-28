@@ -653,11 +653,11 @@ public class FileManagerTest extends AbstractManagerTest {
     public void changeNameTest() throws CatalogException {
         // Link VCF file. This VCF file will automatically create sample NA19600
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "data/", "", "", null, null, null, null, null), true, token);
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "data/", "", "", null, null, null, null, null), true, ownerToken);
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), "variant-test-file.vcf.gz");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key());
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, ownerToken);
         assertEquals(4, sampleResult.getNumResults());
         for (Sample sample : sampleResult.getResults()) {
             assertEquals(1, sample.getFileIds().size());
@@ -667,19 +667,19 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Rename file
         FileUpdateParams updateParams = new FileUpdateParams().setName("variant_test.vcf.gz");
-        catalogManager.getFileManager().update(studyFqn, "variant-test-file.vcf.gz", updateParams, null, token);
+        catalogManager.getFileManager().update(studyFqn, "variant-test-file.vcf.gz", updateParams, null, ownerToken);
 
-        assertThrows("not found", CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "variant-test-file.vcf.gz", null, token));
-        File file = catalogManager.getFileManager().get(studyFqn, updateParams.getName(), FileManager.INCLUDE_FILE_URI_PATH, token).first();
+        assertThrows("not found", CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "variant-test-file.vcf.gz", null, ownerToken));
+        File file = catalogManager.getFileManager().get(studyFqn, updateParams.getName(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
         assertEquals("data:" + updateParams.getName(), file.getId());
         assertEquals("data/" + updateParams.getName(), file.getPath());
         assertEquals(updateParams.getName(), file.getName());
 
-        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, ownerToken);
         assertEquals(0, sampleResult.getNumResults());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), updateParams.getName());
-        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, ownerToken);
         assertEquals(4, sampleResult.getNumResults());
         for (Sample sample : sampleResult.getResults()) {
             assertEquals(1, sample.getFileIds().size());

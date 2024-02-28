@@ -1603,7 +1603,7 @@ public class FileManager extends AnnotationSetManager<File> {
         boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
         auditManager.initAuditBatch(operationUuid);
-        OpenCGAResult<File> result = OpenCGAResult.empty();
+        OpenCGAResult<File> result = OpenCGAResult.empty(File.class);
         for (String id : fileIds) {
             String fileId = id;
             String fileUuid = "";
