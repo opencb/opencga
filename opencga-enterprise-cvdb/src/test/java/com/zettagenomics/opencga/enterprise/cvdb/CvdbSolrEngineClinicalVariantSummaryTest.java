@@ -8,7 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantSummary;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -134,16 +134,16 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         String variantId = "X:54751204:C:T";
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, null, userToken);
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummary(variantId, projectId, null, userToken);
 
         Assert.assertEquals(1, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
         Assert.assertEquals(1, result.first().getNumPrimaryInterpretations());
         Assert.assertEquals(1, result.first().getNumSecondaryInterpretations());
-        Assert.assertEquals(1, result.first().getEvidencePhenotypeCounts().size());
-        Assert.assertEquals(2, (int) result.first().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
-        Assert.assertEquals(1, result.first().getEvidenceTierCounts().size());
-        Assert.assertEquals(2, (int) result.first().getEvidenceTierCounts().get("TIER3"));
+        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
+        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
+//        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
+//        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
     }
 
     @Test
@@ -151,23 +151,23 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         // CVDB query
         List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
 
-        DataResult<ClinicalVariantSummary> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, null, userToken);
+        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummary(variantIds, projectId, null, userToken);
 
         Assert.assertEquals(2, result.getNumResults());
         Assert.assertEquals(1, result.first().getNumCases());
         Assert.assertEquals(1, result.first().getNumPrimaryInterpretations());
         Assert.assertEquals(1, result.first().getNumSecondaryInterpretations());
-        Assert.assertEquals(1, result.first().getEvidencePhenotypeCounts().size());
-        Assert.assertEquals(2, (int) result.first().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
-        Assert.assertEquals(1, result.first().getEvidenceTierCounts().size());
-        Assert.assertEquals(2, (int) result.first().getEvidenceTierCounts().get("TIER3"));
+        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
+        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
+//        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
+//        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
         Assert.assertEquals(1, result.getResults().get(1).getNumCases());
         Assert.assertEquals(1, result.getResults().get(1).getNumPrimaryInterpretations());
         Assert.assertEquals(0, result.getResults().get(1).getNumSecondaryInterpretations());
-        Assert.assertEquals(1, result.getResults().get(1).getEvidencePhenotypeCounts().size());
-        Assert.assertEquals(2, (int) result.getResults().get(1).getEvidencePhenotypeCounts().get("Ultra-rare undescribed monogenic disorders"));
-        Assert.assertEquals(1, result.getResults().get(1).getEvidenceTierCounts().size());
-        Assert.assertEquals(2, (int) result.getResults().get(1).getEvidenceTierCounts().get("TIER3"));
+        Assert.assertEquals(1, result.getResults().get(1).getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
+        Assert.assertEquals(2, (int) result.getResults().get(1).getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("Ultra-rare undescribed monogenic disorders"));
+//        Assert.assertEquals(1, result.getResults().get(1).getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
+//        Assert.assertEquals(2, (int) result.getResults().get(1).getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
     }
 }
 

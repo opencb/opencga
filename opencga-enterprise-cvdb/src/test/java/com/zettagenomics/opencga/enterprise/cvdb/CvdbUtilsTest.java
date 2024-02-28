@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantSummary;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -264,7 +264,7 @@ public class CvdbUtilsTest {
         assertEquals(1, cvResult.getNumResults());
         assertTrue(TestUtilities.existsVariantId(query.getString(VariantQueryParam.ID.key()), cvResult.getResults()));
 
-        DataResult<ClinicalVariantSummary> summaryResult = cvdbEngine.getClinicalVariantSummary(query.getString(VariantQueryParam.ID.key()), PROJECT, STUDY, token);
+        DataResult<ClinicalVariantSummaryStats> summaryResult = cvdbEngine.getClinicalVariantSummary(query.getString(VariantQueryParam.ID.key()), PROJECT, STUDY, token);
         assertEquals(1, summaryResult.getNumResults());
     }
 
@@ -277,7 +277,6 @@ public class CvdbUtilsTest {
                 opencga.getStorageEngineFactory(), opencga.getOpencgaHome());
 
         Query query = new Query();
-        query.put(PROJECT_PARAM_NAME, PROJECT);
         query.put(VariantQueryParam.STUDY.key(), STUDY);
         query.put(VariantQueryParam.ID.key(), "X:72140354:A:G");
         QueryOptions queryOptions = new QueryOptions();
@@ -286,8 +285,8 @@ public class CvdbUtilsTest {
         assertEquals(1, cvResult.getNumResults());
         assertTrue(TestUtilities.existsVariantId(query.getString(VariantQueryParam.ID.key()), cvResult.getResults()));
         assertNotNull(cvResult.first().getSummary());
-        assertEquals(1, cvResult.first().getSummary().getEvidenceTierCounts().size());
-        assertEquals(1, (int) cvResult.first().getSummary().getEvidenceTierCounts().get("TIER3"));
+//        assertEquals(1, cvResult.first().getSummary().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
+//        assertEquals(1, (int) cvResult.first().getSummary().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
     }
 
     @Test

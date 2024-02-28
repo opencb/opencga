@@ -131,7 +131,6 @@ public class ClinicalSolrterator<T> implements Iterator<T>, AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        // nothing to do
     }
 
     public long getNumFound() {

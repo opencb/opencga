@@ -17,14 +17,19 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantSummary;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -43,16 +48,28 @@ public class CvdbUtils {
                                                                  ClinicalInterpretationManager clinicalInterpretationManager,
                                                                  CvdbSolrEngine cvdbEngine, String token)
             throws StorageEngineException, CatalogException, IOException, CvdbException {
-        String projectId = query.getString(ParamConstants.PROJECT_PARAM);
         String studyId = query.getString(ParamConstants.STUDY_PARAM);
+        if (StringUtils.isEmpty(studyId)) {
+            throw new CvdbException("Missing study");
+        }
+
+        // Get project from study
+        JwtPayload jwtPayload = cvdbEngine.getCatalogManager().getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
+
+        Project project = cvdbEngine.getCatalogManager().getProjectManager().search(organizationId,
+                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+                new QueryOptions(QueryOptions.INCLUDE,ProjectDBAdaptor.QueryParams.ID.key()), token).first();
 
         // First, get clinical variants
         OpenCGAResult<ClinicalVariant> result = clinicalInterpretationManager.get(query, queryOptions, token);
 
         // Then, set summary for those clinical variants
         for (ClinicalVariant cv : result.getResults()) {
-            DataResult<ClinicalVariantSummary> summaryResult = cvdbEngine.getClinicalVariantSummary(cv.getId(), projectId, studyId, token);
-            cv.setSummary(summaryResult.first());
+            DataResult<ClinicalVariantSummaryStats> summaryStatsResult = cvdbEngine.getClinicalVariantSummary(cv.getId(), project.getFqn(),
+                    studyId, token);
+            cv.setSummary(summaryStatsResult.first());
         }
         return result;
     }
