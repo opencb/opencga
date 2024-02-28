@@ -19,7 +19,6 @@ package org.opencb.opencga.server.rest;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
@@ -439,45 +438,45 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog individual stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
-            @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
-            @ApiParam(value = "Sex") @QueryParam("sex") String sex,
-            @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex") String karyotypicSex,
-            @ApiParam(value = "Ethnicity") @QueryParam("ethnicity") String ethnicity,
-            @ApiParam(value = "Population") @QueryParam("population") String population,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Life status") @QueryParam("lifeStatus") String lifeStatus,
-            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "Version") @QueryParam("version") String version,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
-                    token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog individual stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
+//            @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
+//            @ApiParam(value = "Sex") @QueryParam("sex") String sex,
+//            @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex") String karyotypicSex,
+//            @ApiParam(value = "Ethnicity") @QueryParam("ethnicity") String ethnicity,
+//            @ApiParam(value = "Population") @QueryParam("population") String population,
+//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+//            @ApiParam(value = "Status") @QueryParam("status") String status,
+//            @ApiParam(value = "Life status") @QueryParam("lifeStatus") String lifeStatus,
+//            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
+//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
+//            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//            @ApiParam(value = "Version") @QueryParam("version") String version,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//
+//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+//
+//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            query.remove("field");
+//
+//            queryOptions.put(QueryOptions.FACET, facet);
+//
+//            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
+//                    token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 }

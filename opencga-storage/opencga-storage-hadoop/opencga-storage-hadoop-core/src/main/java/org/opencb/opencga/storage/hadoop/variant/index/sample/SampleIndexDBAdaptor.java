@@ -634,6 +634,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         logger.info("---------");
         logger.info("Sample = \"" + query.getSample() + "\" , schema version = " + query.getSchema().getVersion());
+        logger.info("Table = " + getSampleIndexTableName(query));
         printScan(scan);
         printQuery(locusQuery);
         printQuery(query);

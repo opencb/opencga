@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;

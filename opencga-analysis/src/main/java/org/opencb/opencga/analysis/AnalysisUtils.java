@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis;
 
-import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -16,8 +15,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
-
-import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 
 public class AnalysisUtils {
 

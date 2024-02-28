@@ -56,7 +56,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + ID;
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
-    static final String PRIVATE_OWNER_ID = "_ownerId";
     public static final String PRIVATE_STUDY_UID = "studyUid";
     public static final String VERSION = "version";
 
@@ -81,7 +80,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     // TEST PURPOSES ONLY
     public static final boolean MOCK_TRANSIENT_TRANSACTION_ERRORS = false;
 
-    protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected OrganizationMongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
     protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, PRIVATE_MONGO_ID);
@@ -176,13 +175,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected long getNewUid() {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
+        return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId();
     }
 
     protected long getNewUid(ClientSession clientSession) {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
+        return dbAdaptorFactory.getCatalogOrganizationDBAdaptor().getNewAutoIncrementId(clientSession);
     }
 
     @Deprecated

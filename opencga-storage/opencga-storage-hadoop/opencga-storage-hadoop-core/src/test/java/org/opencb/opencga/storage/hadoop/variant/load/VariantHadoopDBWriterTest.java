@@ -4,11 +4,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(ShortTests.class)
 public class VariantHadoopDBWriterTest {
@@ -24,7 +24,7 @@ public class VariantHadoopDBWriterTest {
 
         Map<Long, List<Variant>> slices = new TreeMap<>();
         for (Variant variant : variants) {
-            for (long l : VariantHbaseTransformTask.getCoveredSlicePositions(variant.getStart(), variant.getEnd(), chunkSize)) {
+            for (long l : VariantSliceReader.getCoveredSlicePositions(variant.getStart(), variant.getEnd(), chunkSize)) {
                 slices.computeIfAbsent(l, k -> new LinkedList<>()).add(variant);
             }
         }

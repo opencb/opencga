@@ -88,7 +88,7 @@ def build():
 
 
 def tag_latest(image):
-    if "hdp" in tag or "dev" in tag:
+    if "hdi" in tag or "emr" in tag or "dev" in tag or "SNAPSHOT" in tag or "TASK" in tag:
         print("Don't use tag " + tag + " as latest")
         return
     if server:
@@ -160,7 +160,7 @@ else:
     build_folder = str(Path(__file__).resolve().parents[2])
 
 # 2. Set docker tag to default value if not set
-if args.tag is not None:
+if args.tag is not None and not args.tag == "":
     tag = args.tag
 else:
     # Read OpenCGA version from git.properties

@@ -35,11 +35,17 @@ public class StorageCommandOptions extends GeneralCliOptions {
         public AdminCliOptionsParser.IgnorePasswordCommonCommandOptions commonOptions =
                 new AdminCliOptionsParser.IgnorePasswordCommonCommandOptions(getCommonOptions().commonOptions);
 
+        @Parameter(names = {"--organization"}, description = "Organization id. If empty, will run for all organizations.", arity = 1)
+        public String organizationId;
+
     }
 
     @Parameters(commandNames = {"update-database-prefix"}, commandDescription = "Update database prefix of the variant storage stored in "
             + "catalog. Does not modify the actual database names, just the database names stored in catalog.")
     public class UpdateDatabasePrefix extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @Parameter(names = {"--organization"}, description = "Organization id. If empty, will run for all organizations.", arity = 1)
+        public String organizationId;
 
         @Parameter(names = {"--projects"}, description = "List of projects")
         public String projects;

@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.MigrationConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     private final MigrationConverter migrationConverter;
 
     public MigrationMongoDBAdaptor(MongoDBCollection migrationCollection, Configuration configuration,
-                                   MongoDBAdaptorFactory dbAdaptorFactory) {
+                                   OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(MigrationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.migrationCollection = migrationCollection;
@@ -50,6 +50,10 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     public OpenCGAResult<MigrationRun> get(Query query) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return new OpenCGAResult<>(migrationCollection.find(bsonQuery, migrationConverter, QueryOptions.empty()));
+    }
+
+    public OpenCGAResult<Document> nativeGet() {
+        return new OpenCGAResult<>(migrationCollection.find(new Document(), QueryOptions.empty()));
     }
 
     @Override

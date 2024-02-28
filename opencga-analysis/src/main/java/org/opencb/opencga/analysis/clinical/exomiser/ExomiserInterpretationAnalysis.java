@@ -145,7 +145,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
 
         // Analyst
-        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
+        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
 
         List<ClinicalVariant> primaryFindings = getPrimaryFindings();
 
