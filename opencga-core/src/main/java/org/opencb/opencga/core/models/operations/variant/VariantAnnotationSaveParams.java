@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantAnnotationSaveParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant annotation save params";
+    @DataField(description = "New Variant Annotation identifier")
     private String annotationId;
 
     public VariantAnnotationSaveParams() {

@@ -87,6 +87,8 @@ public class ParamConstants {
 
     public static final String OPENCGA_TOKEN_CLI_PARAM = "--opencga-token";
 
+    public static final String RESUME_DESCRIPTION = "Resume a previously failed index operation";
+
     // ---------------------------------------------
     public static final String FORCE = "force";
     public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
