@@ -34,11 +34,11 @@ public class AdminCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public GroupByAuditCommandOptions groupByAuditCommandOptions;
-        public IndexStatsCatalogCommandOptions indexStatsCatalogCommandOptions;
         public InstallCatalogCommandOptions installCatalogCommandOptions;
         public JwtCatalogCommandOptions jwtCatalogCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
         public ImportUsersCommandOptions importUsersCommandOptions;
+        public PermissionsUsersCommandOptions permissionsUsersCommandOptions;
         public SearchUsersCommandOptions searchUsersCommandOptions;
         public SyncUsersCommandOptions syncUsersCommandOptions;
         public UsersUpdateGroupsCommandOptions usersUpdateGroupsCommandOptions;
@@ -49,11 +49,11 @@ public class AdminCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.groupByAuditCommandOptions = new GroupByAuditCommandOptions();
-        this.indexStatsCatalogCommandOptions = new IndexStatsCatalogCommandOptions();
         this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
         this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
+        this.permissionsUsersCommandOptions = new PermissionsUsersCommandOptions();
         this.searchUsersCommandOptions = new SearchUsersCommandOptions();
         this.syncUsersCommandOptions = new SyncUsersCommandOptions();
         this.usersUpdateGroupsCommandOptions = new UsersUpdateGroupsCommandOptions();
@@ -92,23 +92,6 @@ public class AdminCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"catalog-index-stats"}, commandDescription ="Sync Catalog into the Solr")
-    public class IndexStatsCatalogCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--collection"}, description = "Collection to be indexed (file, sample, individual, family, cohort and/or job). If not provided, all of them will be indexed.", required = false, arity = 1)
-        public String collection; 
-    
-    }
-
     @Parameters(commandNames = {"catalog-install"}, commandDescription ="Install OpenCGA database")
     public class InstallCatalogCommandOptions {
     
@@ -130,9 +113,6 @@ public class AdminCommandOptions {
         @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
         public String email;
     
-        @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
-        public String organization;
-    
     }
 
     @Parameters(commandNames = {"catalog-jwt"}, commandDescription ="Change JWT secret key")
@@ -146,6 +126,9 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
     
         @Parameter(names = {"--secret-key"}, description = "The body web service secretKey parameter", required = false, arity = 1)
         public String secretKey;
@@ -179,9 +162,6 @@ public class AdminCommandOptions {
         @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
         public String organization;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: GUEST, FULL, ADMINISTRATOR", required = false, arity = 1)
-        public String type;
-    
     }
 
     @Parameters(commandNames = {"users-import"}, commandDescription ="Import users or a group of users from LDAP or AAD")
@@ -195,6 +175,9 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
     
         @Parameter(names = {"--authentication-origin-id"}, description = "The body web service authenticationOriginId parameter", required = false, arity = 1)
         public String authenticationOriginId;
@@ -210,6 +193,26 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--study-group"}, description = "The body web service studyGroup parameter", required = false, arity = 1)
         public String studyGroup;
+    
+    }
+
+    @Parameters(commandNames = {"users-permissions"}, commandDescription ="User permissions")
+    public class PermissionsUsersCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--entry-ids"}, description = "Comma separated list of entry ids.", required = false, arity = 1)
+        public String entryIds; 
+    
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of permissions to be retrieved.", required = false, arity = 1)
+        public String permissions; 
+    
+        @Parameter(names = {"--category"}, description = "Category corresponding to the id's provided.", required = false, arity = 1)
+        public String category; 
     
     }
 
@@ -234,6 +237,9 @@ public class AdminCommandOptions {
         @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
         public boolean count = false; 
     
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = false, arity = 1)
         public String user; 
     
@@ -257,6 +263,9 @@ public class AdminCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
         @Parameter(names = {"--authentication-origin-id"}, description = "The body web service authenticationOriginId parameter", required = false, arity = 1)
         public String authenticationOriginId;
     
@@ -271,9 +280,6 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--sync-all"}, description = "The body web service syncAll parameter", required = false, help = true, arity = 0)
         public boolean syncAll = false;
-    
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: GUEST, FULL, ADMINISTRATOR", required = false, arity = 1)
-        public String type;
     
         @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, help = true, arity = 0)
         public boolean force = false;
@@ -291,6 +297,9 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
     
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
         public String user; 

@@ -34,7 +34,6 @@ public class IndividualsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -52,7 +51,6 @@ public class IndividualsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -78,7 +76,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--members"}, description = "Comma separated list of user or group ids", required = true, arity = 1)
@@ -101,77 +99,6 @@ public class IndividualsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog individual stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--has-father"}, description = "Has father", required = false, arity = 1)
-        public Boolean hasFather; 
-    
-        @Parameter(names = {"--has-mother"}, description = "Has mother", required = false, arity = 1)
-        public Boolean hasMother; 
-    
-        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
-        public String sex; 
-    
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
-        public String karyotypicSex; 
-    
-        @Parameter(names = {"--ethnicity"}, description = "Ethnicity", required = false, arity = 1)
-        public String ethnicity; 
-    
-        @Parameter(names = {"--population"}, description = "Population", required = false, arity = 1)
-        public String population; 
-    
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
-    
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
-    
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
-    
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
-    
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
-        public String status; 
-    
-        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
-        public String lifeStatus; 
-    
-        @Parameter(names = {"--phenotypes"}, description = "Phenotypes", required = false, arity = 1)
-        public String phenotypes; 
-    
-        @Parameter(names = {"--num-samples"}, description = "Number of samples", required = false, arity = 1)
-        public String numSamples; 
-    
-        @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", required = false, arity = 1)
-        public Boolean parentalConsanguinity; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
-        public String release; 
-    
-        @Parameter(names = {"--version"}, description = "Version", required = false, arity = 1)
-        public String version; 
-    
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
-        public String annotation; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
-        public boolean default_values = false; 
-    
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
-    
-    }
-
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -184,7 +111,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ID or name", required = true, arity = 1)
@@ -222,7 +149,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids to be associated to the created individual", required = false, arity = 1)
@@ -347,7 +274,7 @@ public class IndividualsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -454,7 +381,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
         public boolean flattenAnnotations = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list individual IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -543,7 +470,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual IDs, names or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String individuals; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
@@ -563,7 +490,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--force"}, description = "Force the deletion of individuals that already belong to families", required = false, help = true, arity = 0)
         public boolean force = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual ids", required = true, arity = 1)
@@ -589,7 +516,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual IDs, names or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String individuals; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--version"}, description = "Comma separated list of individual versions. 'all' to get all the individual versions. Not supported if multiple individual ids are provided", required = false, arity = 1)
@@ -621,7 +548,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual ids", required = true, arity = 1)
         public String individuals; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -755,7 +682,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individual"}, description = "Individual ID, name or UUID", required = true, arity = 1)
         public String individual; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--annotation-set"}, description = "AnnotationSet ID to be updated.", required = true, arity = 1)
@@ -784,7 +711,7 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individual"}, description = "Individual ID, name or UUID", required = true, arity = 1)
         public String individual; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--degree"}, description = "Pedigree degree", required = false, arity = 1)
