@@ -12,7 +12,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.PhoenixCompat;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -98,7 +98,7 @@ public class VariantPhoenixKeyFactoryTest {
                         .setNullable(nullableColumn.contains(column))
                         .setSortOrder(SortOrder.ASC.getSystemValue()).build()));
             }
-            table = PhoenixCompat.makePTable(columns);
+            table = HBaseCompat.getInstance().getPhoenixCompat().makePTable(columns);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

@@ -72,6 +72,7 @@ import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -85,12 +86,13 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +116,18 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
 //    Set<HadoopVariantStorageEngine> managers = new ConcurrentHashSet<>();
     AtomicReference<HadoopVariantStorageEngine> manager = new AtomicReference<>();
+
+    class HadoopSolrSupport extends ExternalResource {
+        @Override
+        protected void before() throws Throwable {
+            super.before();
+            Assume.assumeTrue(isSolrTestingAvailable());
+        }
+
+        public static boolean isSolrTestingAvailable() {
+            return HBaseCompat.getInstance().isSolrTestingAvailable();
+        }
+    }
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 
@@ -478,10 +492,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     default void deleteTable(String tableName) throws Exception {
         LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
-        PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
-        try (java.sql.Connection con = phoenixHelper.openJdbcConnection()) {
-            if (phoenixHelper.tableExists(con, tableName)) {
-                phoenixHelper.dropTable(con, tableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, true, true);
+        if (HBaseVariantTableNameGenerator.isValidVariantsTable(tableName)) {
+            try (HBaseManager hbaseManager = new HBaseManager(configuration.get(), utility.get().getConnection())) {
+                VariantPhoenixSchemaManager.dropView(hbaseManager, tableName, true);
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));

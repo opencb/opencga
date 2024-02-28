@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -73,6 +72,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -3651,9 +3651,11 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
     @Test
     public void loadClinicalAnalysesTest() throws CatalogException, IOException {
-        String gzFile = getClass().getResource("/biofiles/clinical_analyses.json.gz").getFile();
-        File file = catalogManager.getFileManager().link(studyFqn, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first();
+        String fileStr = "clinical_analyses.json.gz";
+        File file;
+        try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
+            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, false, ownerToken).first();
+        }
 
         Path filePath = Paths.get(file.getUri());
 

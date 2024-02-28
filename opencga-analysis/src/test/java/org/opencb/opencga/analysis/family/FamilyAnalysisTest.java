@@ -1,7 +1,10 @@
 package org.opencb.opencga.analysis.family;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -32,6 +35,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
@@ -45,9 +49,9 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Category(MediumTests.class)
 public class FamilyAnalysisTest extends GenericTest {
 
-    public final static String STUDY = "user@1000G:phase1";
     public static final String USER = "user";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -61,6 +65,7 @@ public class FamilyAnalysisTest extends GenericTest {
     protected static String sessionIdUser;
 
     private static String ORGANIZATION = "test";
+    public final static String STUDY = ORGANIZATION + "@1000G:phase1";
 
     protected static Family family;
     protected static Family family2;
@@ -94,18 +99,9 @@ public class FamilyAnalysisTest extends GenericTest {
         studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
                 sessionIdUser).first().getId();
 
-        try {
-            family = createDummyFamily("Martinez-Martinez").first();
-        } catch (CatalogException e) {
-        }
-        try {
-            family2 = createDummyFamily("Lopez-Lopez", Arrays.asList("father11-sample", "mother11-sample"), 1).first();
-        } catch (CatalogException e) {
-        }
-        try {
-            family3 = createDummyFamily("Perez-Perez", Arrays.asList("father22-sample", "mother22-sample", "child222-sample"), 0).first();
-        } catch (CatalogException e) {
-        }
+        family = createDummyFamily("Martinez-Martinez").first();
+        family2 = createDummyFamily("Lopez-Lopez", Arrays.asList("father11-sample", "mother11-sample"), 1).first();
+        family3 = createDummyFamily("Perez-Perez", Arrays.asList("father22-sample", "mother22-sample", "child222-sample"), 0).first();
     }
 
     @After
@@ -177,15 +173,17 @@ public class FamilyAnalysisTest extends GenericTest {
     public void updateTest() throws CatalogException {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
+        Family prevFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
+        assertEquals(prevFamily.getPedigreeGraph().getBase64(), family.getPedigreeGraph().getBase64());
+
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
         Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
                 .first();
 
-        PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
-        assertTrue(pedigreeGraph.getBase64().startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
-        assertTrue(pedigreeGraph.getBase64().endsWith("5UIf81hI8AAAAASUVORK5CYII="));
+        assertEquals(prevFamily.getPedigreeGraph().getBase64(), updatedFamily.getPedigreeGraph().getBase64());
+        assertEquals(prevFamily.getVersion() + 1, updatedFamily.getVersion());
     }
 
     @Test
@@ -207,8 +205,8 @@ public class FamilyAnalysisTest extends GenericTest {
                 sessionIdUser);
 
         String b64Image = PedigreeGraphUtils.getB64Image(outDir);
-        assertTrue(b64Image.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
-        assertTrue(b64Image.endsWith("s3Rj5UIf81hI8AAAAASUVORK5CYII="));
+        MatcherAssert.assertThat(b64Image, CoreMatchers.startsWith("iVBORw0KGgoAAAANSUhEUgAAAeAAAAHg"));
+        MatcherAssert.assertThat(b64Image, CoreMatchers.endsWith("s3Rj5UIf81hI8AAAAASUVORK5CYII="));
 
         assertEquals(family.getPedigreeGraph().getBase64(), b64Image);
     }

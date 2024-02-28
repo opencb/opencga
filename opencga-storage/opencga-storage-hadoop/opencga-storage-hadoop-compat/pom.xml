@@ -31,6 +31,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>opencga-storage-hadoop-compat-api</module>
         <module>opencga-storage-hadoop-compat-hbase2.0</module>
         <module>opencga-storage-hadoop-compat-hbase2.2</module>
         <module>opencga-storage-hadoop-compat-hbase2.4</module>

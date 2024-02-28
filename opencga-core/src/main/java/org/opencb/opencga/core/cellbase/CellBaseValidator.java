@@ -308,7 +308,7 @@ public class CellBaseValidator {
     public String getVersionFromServer() throws IOException {
         if (serverVersion == null) {
             synchronized (this) {
-                ObjectMap result = cellBaseClient.getMetaClient().about().firstResult();
+                ObjectMap result = retryMetaAbout(3);
                 if (result == null) {
                     throw new IOException("Unable to get version from server for cellbase " + toString());
                 }
@@ -320,6 +320,16 @@ public class CellBaseValidator {
             }
         }
         return serverVersion;
+    }
+
+    private ObjectMap retryMetaAbout(int retries) throws IOException {
+        ObjectMap result = cellBaseClient.getMetaClient().about().firstResult();
+        if (result == null && retries > 0) {
+            // Retry
+            logger.warn("Unable to get version from server for cellbase " + toString() + ". Retrying...");
+            result = retryMetaAbout(retries - 1);
+        }
+        return result;
     }
 
     public boolean isMinVersion(String minVersion) throws IOException {

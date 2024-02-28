@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -43,6 +44,7 @@ import org.apache.phoenix.util.*;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
@@ -125,8 +127,15 @@ public class PhoenixHelper {
                 Thread.sleep(millis);
             } catch (InterruptedException interruption) {
                 Thread.currentThread().interrupt();
+                // Sleep interrupted. Stop retrying
+                throw e;
             }
-            return execute(con, sql, retry - 1);
+            try {
+                return execute(con, sql, retry - 1);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+                throw e;
+            }
         } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
@@ -202,8 +211,31 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public void dropTable(Connection con, String tableName, PTableType tableType, boolean ifExists, boolean cascade) throws SQLException {
-        execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
+    public void dropTable(org.apache.hadoop.hbase.client.Connection hbaseCon, Connection con, String tableName, PTableType tableType,
+                          boolean ifExists, boolean cascade) throws SQLException, IOException {
+        String sql = buildDropTable(tableName, tableType, ifExists, cascade);
+        logger.info("Dropping phoenix {}: {}", tableType, tableName);
+        logger.info(sql);
+        execute(con, sql);
+
+        try (Admin admin = hbaseCon.getAdmin()) {
+            // Flush the SYSTEM.CATALOG table to avoid "unexpected errors" when creating a new table with the same name
+            // This was first observed when running tests in with Phoenix 5.1
+            TableName systemCatalog;
+            if (PhoenixHelper.isNamespaceMappingEnabled(PTableType.SYSTEM, conf)) {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME,
+                        PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            } else {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME
+                        + "." + PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            }
+            if (admin.tableExists(systemCatalog)) {
+                logger.info("Flushing phoenix system catalog table '" + systemCatalog + "'");
+                admin.flush(systemCatalog);
+            } else {
+                logger.info("System catalog table '" + systemCatalog + "' does not exist, unable to flush it.");
+            }
+        }
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
@@ -254,6 +286,12 @@ public class PhoenixHelper {
 
     public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
+
+        if (!HBaseCompat.getInstance().getPhoenixCompat().isDropColumnFromViewSupported()) {
+            logger.info("Dropping columns is not supported for Phoenix version {}.{} . Skipping drop columns.",
+                    PhoenixDriver.INSTANCE.getMajorVersion(), PhoenixDriver.INSTANCE.getMinorVersion());
+            return;
+        }
 
         Set<String> existingColumns = getColumns(con, tableName, tableType)
                 .stream()

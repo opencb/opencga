@@ -126,7 +126,6 @@ public class VariantOperationsTest {
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
-    @ClassRule
     public static VariantSolrExternalResource solrExternalResource = new VariantSolrExternalResource();
 
     private static String storageEngine;
@@ -170,12 +169,22 @@ public class VariantOperationsTest {
         }
     }
 
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource.before();
+        }
+    }
+
     @AfterClass
     public static void afterClass() {
         opencga.after();
         if (hadoopExternalResource != null) {
             hadoopExternalResource.after();
             hadoopExternalResource = null;
+        }
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource.after();
         }
     }
 
@@ -194,7 +203,11 @@ public class VariantOperationsTest {
         }
 
         catalogManager = opencga.getCatalogManager();
-        variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
+        } else {
+            variantStorageManager = opencga.getVariantStorageManager();
+        }
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager);
 
         opencga.clearStorageDB(DB_NAME);
@@ -210,9 +223,10 @@ public class VariantOperationsTest {
         }
 
         setUpCatalogManager();
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
         solrExternalResource.configure(variantStorageManager.getVariantStorageEngine(STUDY, token));
-        solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
-
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
+        }
 
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
@@ -323,7 +337,7 @@ public class VariantOperationsTest {
 
     @Test
     public void testVariantSecondaryAnnotationIndex() throws Exception {
-
+        Assume.assumeTrue(HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable());
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
             assertEquals(IndexStatus.NONE, index.getStatus().getId());
