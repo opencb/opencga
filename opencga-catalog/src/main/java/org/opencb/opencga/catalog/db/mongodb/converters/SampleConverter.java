@@ -49,7 +49,6 @@ public class SampleConverter extends AnnotableConverter<Sample> {
 
         document.put("uid", object.getUid());
         document.put("studyUid", object.getStudyUid());
-        document.put("individual", new Document());
         return document;
     }
 
