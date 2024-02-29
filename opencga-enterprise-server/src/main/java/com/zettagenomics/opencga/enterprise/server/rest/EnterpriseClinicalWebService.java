@@ -43,6 +43,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
         // Get enterprise configuration to set the CVDB engine
         if (!eClinicalInitialized.get()) {
+            logger.info("Initializating CVDB Solr Engine");
             EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
             cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
                     new DummyVariantStorageMetadataDBAdaptorFactory()));
