@@ -34,7 +34,7 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Interpretations")
 public class EnterpriseClinicalWebService extends ClinicalWebService {
 
-    protected CvdbSolrEngine cvdbEngine;
+    protected static CvdbSolrEngine cvdbEngine;
 
     private static AtomicBoolean eClinicalInitialized = new AtomicBoolean(false);
 
@@ -43,7 +43,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
 
         // Get enterprise configuration to set the CVDB engine
         if (!eClinicalInitialized.get()) {
-            logger.info("Initializating CVDB Solr Engine");
+            logger.info("Initializing CVDB Solr Engine");
             EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
             cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
                     new DummyVariantStorageMetadataDBAdaptorFactory()));

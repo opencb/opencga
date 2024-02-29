@@ -2457,6 +2457,23 @@ public class CvdbSolrEngineQueryTest {
         }
     }
 
+    @Test
+    public void test() throws CatalogException, IOException, CvdbException {
+        // https://test.app.zettagenomics.com/task-5516/opencga/webservices/rest/v2/analysis/clinical
+        // /cvdb/case/query?studyId=eglh&ciPanelId=Congenital_neutropaenia-PanelAppId-28&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTcwOTEzMTMzNywiZXhwIjoxNzA5MTM0OTM3fQ.jR3Fh7-5aRitqmKl64IJAKXG2Z5_omRbHmxTt5fB8es&limit=1
+        String panelId = "VACTERL-like_phenotypes-PanelAppId-101";
+        Query query;
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        query.put(CI_PANEL_ID_NAME, panelId);
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        for (ClinicalAnalysis ca : results.getResults()) {
+            assertTrue(StringUtils.isNotEmpty(ca.getId()));
+        }
+    }
 
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
