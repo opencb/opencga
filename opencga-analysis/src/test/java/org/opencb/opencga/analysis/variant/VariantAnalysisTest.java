@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -37,6 +36,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -63,6 +63,8 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -72,13 +74,14 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -95,10 +98,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -114,6 +114,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 @Category(LongTests.class)
 public class VariantAnalysisTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -121,7 +122,7 @@ public class VariantAnalysisTest {
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
-    public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private ToolRunner toolRunner;
     private static String father = "NA19661";
     private static String mother = "NA19660";
@@ -167,8 +168,6 @@ public class VariantAnalysisTest {
 //        System.setProperty("opencga.log.level", "INFO");
 //        Configurator.reconfigure();
         if (!indexed) {
-            indexed = true;
-
             opencga.after();
             opencga.before(storageEngine);
 
@@ -250,6 +249,7 @@ public class VariantAnalysisTest {
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
             }
+            indexed = true;
         }
         // Reset engines
         opencga.getStorageEngineFactory().close();
@@ -257,7 +257,7 @@ public class VariantAnalysisTest {
         variantStorageManager = opencga.getVariantStorageManager();
         variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY);
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @AfterClass
@@ -269,11 +269,18 @@ public class VariantAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(), opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
+                null,
+                opencga.getAdminToken());
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
-        String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
+        String projectId = catalogManager.getProjectManager().create(new ProjectCreateParams()
+                        .setId(PROJECT)
+                        .setDescription("Project about some genomes")
+                        .setOrganism(new ProjectOrganism("hsapiens", "GRCh38")),
+                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
@@ -1006,6 +1013,7 @@ public class VariantAnalysisTest {
         toolRunner.execute(HRDetectAnalysis.class, hrdParams, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY), hrdetectOutDir, null, token);
 
         java.io.File hrDetectFile = hrdetectOutDir.resolve(HRDetectAnalysis.HRDETECT_SCORES_FILENAME_DEFAULT).toFile();
+        assertTrue("File missing : " + hrDetectFile, hrDetectFile.exists());
         byte[] bytes = Files.readAllBytes(hrDetectFile.toPath());
         System.out.println(new String(bytes));
         assertTrue(hrDetectFile.exists());
@@ -1055,12 +1063,12 @@ public class VariantAnalysisTest {
 
     @Test
     public void testPedigreeGraph() throws CatalogException {
-        String base64 = "iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAMAAABKCk6nAAAC6FBMVEUAAAABAQECAgIEBAQGBgYHBwcICAgJCQkKCgoLCwsMDAwNDQ0ODg4PDw8QEBARERESEhITExMUFBQVFRUWFhYXFxcYGBgZGRkaGhobGxsdHR0eHh4fHx8gICAhISEiIiIjIyMkJCQlJSUmJiYnJycoKCgpKSkqKiorKyssLCwtLS0uLi4vLy8wMDAxMTEyMjIzMzM0NDQ1NTU2NjY3Nzc4ODg5OTk6Ojo7Ozs8PDw9PT0+Pj4/Pz9AQEBBQUFCQkJDQ0NERERFRUVGRkZHR0dISEhJSUlKSkpLS0tMTExNTU1OTk5PT09QUFBRUVFSUlJTU1NUVFRVVVVWVlZXV1dYWFhZWVlaWlpbW1tcXFxdXV1eXl5fX19gYGBhYWFiYmJjY2NkZGRlZWVmZmZnZ2doaGhpaWlqampra2tsbGxtbW1ubm5vb29wcHBxcXFycnJzc3N0dHR1dXV2dnZ3d3d4eHh5eXl6enp7e3t9fX1+fn5/f3+AgICBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWWlpaXl5eYmJiZmZmampqbm5ucnJydnZ2fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2NjZ2dna2trb29vc3Nzd3d3e3t7f39/g4ODh4eHi4uLj4+Pk5OTl5eXm5ubn5+fo6Ojp6enq6urr6+vs7Ozu7u7v7+/w8PDx8fHy8vLz8/P09PT19fX29vb39/f4+Pj5+fn6+vr7+/v8/Pz9/f3+/v7////lDE73AAARGklEQVR4nO3dfVwUdQLH8T2tDpXQ8ta0uB4OKq87PTpleRAhwMTKhxDsOLWEyDTS4MzrLDMf8PLSUznTyisVNbvOh9My6y6VUCyP81mUTE4BxUpFediF3783M7uzu7LKMTuLs/vt+3m9YoYZ2Pn99s0CvwXMJBh0JqMHwNo3AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8HcA176u9s9S5e9p3QwuQmsu3zfv4iM3oYVwrHcBrf7PUUeKv1b3sAt8NLSA6PDFyzKwfz8mKGrvH6KFcPT3ATszJ6Z7HfhBdem5okbQJkf7bN/o354weztUisI7ODlinbEOUl/+MPG7kYK4Rgb2vbsBu+44dWByLrDFuMNeKwN6Xt8qx4wAWn6df602Ni8BeV5mo7qnAImOvMUNpJQJ73fxCdc8JXDTZmKG0EoG9bvgZdc8JbIszZiit5GPgxUPnGtD4GUZcNcx5TziBBTzwX3O2GdCwZUZctW+zOusfELAxn6Jz9hlx1dHl6p4T+HLi1d/UwAjsde8uVPecwOtnGjGQViOw19VaGhx7TuDECiMG0moE9r6l0xw7IS0P+FEE1tHot+xbB/DmwY3GjKO1CKwj67jJtfJWAW6c81itMcNoNQLrqrD/vFMKcM2blkVNRo2itXQA/+1XIx2F3aHuRS713dDannHAomHl49EpNz0a/cjSi4aNodV0ANvK1crKnLtW3w2t7RkILHex8nw73Or3aybEm0x39BqYsPo7HTcD8Ut3BgO3R6UZJqW+64pSX7/1iU+9viEC+2NnRpscdbcNK1v45oafZnj72yIE9sM+NTmLO5xms1x+snj6T7d6d1sE9r/ecfmanhq7a0X+qYdFXMX9+V7dmAbg3l3OCbE6Qt6NC6mXXi7o0/EZ+bUjCZ3uWivvvBt2Q1iJa6ueb/euC7Dm6V9ID+q1xIsLvefma0obLAZ8l7t1y+++j8mY482wtQB3m+KY4YkOXd+XNh9szJBnaA2feulfnaX7eJN545k9J1xbx/n27/oAa51+VvzZ7Z23a75Okbuv6f5PNr/4bUxzUsWswuLbtd+YNuCZXarsM5wR9cIQ5dBEeYYHOlwWIjVXiL7L7W+obh3n27/rA6xx+o2dPhciM1PrZS5YrgA2NyednrmmJLPOYk0teqBa+7C1AK8bk2Of4d0FX3ZUrqXMcF+HOmmGiaL+R/k9e+TUObcCDFjj9MtM0up4UaTWy/zuCl/ToN1P10VZRxwsKDg6whb+nPZhawIu71whz3BHxxoR/oZ8SJlh493TGnYGRYlyU0x1xS9ecW4FGrC26e81NUtfT3trvMrpK31NTw0/tHjJkVRb1OWsojWvJR7TPGxNwCI7S55hVor0aeqX8iE74IGEblGZaaLStF6Itx90bgUasLbpe/cIntYCePhIyXbcF6tnVQ0SsefSRmketjbgik6zIsTl4E5mc4ipVLgDJswT4tYNdlh1CwesafqNQTukDwaNX4ObLS2A7yleNfuUbDtly9bc87GW5v9/G1emDVjkdIsQhV1PVlVVxeYKa934rDqrEMWVla/dVivElNia031edW3V8+3e9QLWNv3MpG+LgzV+41vawtfUS8R9l/fxx3nnY5sHncxfMe4zrcPWCFwVFCEG5cqvrTVblU8nU4V4OeSmxEPSofqsYPOketdWPd/uXTdgTdO/kBZ0m9Z1cEFL4MekFXBsc/LJOatKnqzv1xj9ktZh85ksv2pCS+Cn5BVwybh6i3XkgTcXlic+rfUWCeyT8qRHcui1/gQ8z/OzmONtPc481hL4EWUFfHDJ4uMjbJEXn9mWovWCBPZJ8l367tlWTrbI8bbqGfVZz+bwlsCh0gr4iGRb+3TR+zOqk8QdTRovSGCfdBVDOetVTrp/16mecTzr2fx0mAewtErKlFbA1cliQM3vN30aMq5J2wUJrLuD/YKHZNo/Y07vcXPYbnEsMeTetUKY5/a913myemT30Dccx4TytuoZe/KKq3nCnFEtgVML7SvgFzdvm3ze0pSYMv+pJk0XJLDebGH5tq03Kvf3l6Fnxdf/td33csP2znuFOaW+WT3ZbMmr+ybsH8ox+Z1C9zjfzZ4MfPZt8QePb7KUFfAL0irp4W/++F7p4Cli+SlNFySw3nbfYhMiRbm/S7tvaxCipKv0iTIzT5i3uk6WBkvbhWOVY3Khe5zvZs/xnMm6lsDJjhXwyn+Pre/XMOql1VovSGC9/b2v9OI5+2fMdx4Mzji7/ufSgZmjhHmf6+SGG8PDw+8crhyTC93jfDd7DuCalsA9T85etUdeAaftX/bn8qFDq7VekMB6291LejFSXbXUPPK88wG133Vyr9n+HKN8TE56BKvvZk991vPhFsA/U1fAw5siL47fnKz5ggTWm+2ev4myIOX+PlBkbRiVZ7v31cadXb5S7m/1ZFPklIu2g7uVY299pHwNVt9NftX1pO6aFsBP2FfAtdk7100/M3DuSs0XJLDu9kdGp45V7u9dfbrcmvqtOJpwc3ih49GqnqzOMIf036ocGzRNefCpZ+RXXU/q2qKuBB4rr4DXyivghJqX1lgaNV+QwH7WxiuB4+wr4KmbPn3+giXnQ+23R2B/a/QVwGZpBfyJvAJO+eb1vCe8uDkC+1sXY92Beysr4LnvlY6pfyDam7+QIbDfdcr9h/5jpBWwvEoatf+VUK/++QAC+1+n49yA5RXw0j+XD1t3/1GvbozAftjliU7gqIXlI6QV8Oik8Ze8uy0C+2VfJDqAu8sr4GcnhO7w9pYI7Kd9MU4BvrfwvvE9n9jp/e0Q2G9r2r9qdua4aa/v0/VPQxAYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcGDAB6i488r0YMA5iP42hEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBg8CeHCR0SPw3yCA+Qi+dgQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDJ5PgOvLyg1tzBZjr3/KF3diO+UT4AWx2YaWPMbY69/pizuxnfIJ8NoCX9xK4DbQ6AG0EoF9EIHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8LCBazfnJ/SfteF7HwwmsPqT8y8buj6UHZM1dMST8dljjR6UR3qBD42Jn/mP9MSP85PS9vpkQIFTjMnZX9Oz/xKx4VdLsnoYPSiP9AE3zRj8b2kzOV16cXhEbqNPhhQoDXQBT3xtS+Lx6M+mvTjA6EF5pAvYOmpes7xVgIV4+5E6H4woYHIDXrAp+VjMF5OmfnKL0YPySBdw7mL71gEsVvvfl6B2zA14zaNH++3KlB7GMUYPyiM9wLvSHDsqsHh2s87hBFJuwCOOWkqfnL8x+WhPowflkR7gYV87dpzANQn6RhNQuQEf+PV/Ri5a/ejRqAeNHpRHOoAvJKl7TmAxskLfcAIpN2DL4ceXrxx2xFIabvSgPNIBvP0P6p4L+I0PdY0moHIDPpqy4s1RBywH06CAP1yg7rmAVy7TN5xAyg148IeLM/bLD+N+Rg/KIx3An8xU91zASwr1DSeQcgP+aG72l1FlKSsKoJ7oOJ2q7rmAx/9H33ACKTfguc+WRB+THsa/jTN6UB7p+S56wAXHjhO4sX+zzvEEUG7AU7cPOB6/cW52CdYTHSumO3acwIvm6xxOIOUG/M+44/Hbpk8oibYYPSiP9AA3Ddpl31GBD8U26B5Q4OQGnHg8dmfui9LD+HajB+WRrqcqq6NKlK0D+GDk17rHE0C5AZfHFD8/VX4Y/9LoQXmk76dJVcl/lB+zCrCtIO6ET4YUKLkBR+0dN3Oz/DD+udGD8kjnz4Ntf4l8ZXfd5PSGr2ZbXv8hfX4WVwDvGzt/Y/LxmOJn/e8fNdT9Gx3WLZOS7r/noYnr630xnEAqPVHtJw/cN7BHQmj/vmHxRg/KI4h/TphdOwKDR2DwCAwegcHTANy7yzkhVkfIu3Eh8vfMC/p0fEZ+7UhCp7vWyjvvht0QViLEhfSgXkuEa4tRm6d/ML5zj7wmIYZI66ebDRywPS3A3aY4ZniiQ9f3pc0HGzPkGVrDp176V+d9Qmwybzyz54QQWfFnt3fe7tpi1Obp9828VBa6TAJeVldn/NpRC/DMLlX2Gc6IemGIcmiiPMMDHS4LkZorzWy5crCx0+dCZGY6tyC1dfoiRJp21iQJeLlhY3VLC/C6MTn2Gd5d8GXHavmQMsN9HeqkGSaK+h/l9+yRUyfKTOeFWBTp3ILU1umLGVmXjt35kQR8++0PfWbokOU0AZd3rpBnuKNjjQh/Qz6kzLDx7mkNO4OiRLkpprriF6+IvaZmId7r7dyC1Nbpiz3hJtNz0onNXx3Ov9Hw/6OTJmCRnSXPMCtF+jBVfm6izFAcSOgWlZkmKk3rhXj7QdxHcNumf+mW2XUVFsevM6W8atyA7WkDrug0K0JcDu5kNoeYSoU6Q7mEeULcukGZYWPQDuleyHRuQWrr9I+ZLkof19H248NeNmi0zrQBi5xuEaKw68mqqqrYXGGtG59VZxWiuLLytdtqhZgSW3O6j/Qhm5n0bXHwdtcWo7ZO3/qTuY2V0RNE7arT5966YbfRw9YIXBUUIQblyq+tNVunKb+OJMTLITclHpIO1WcFmydJC4MLaUG3KetgxxajNk9/V1SX7hnfiYuxNwf1Nf7XxPlMFngEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAze/wCMbFD0pB/BRAAAAABJRU5ErkJggg==";
+        String base64 = "iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAMAAABKCk6nAAAC7lBMVEUAAAABAQECAgIEBAQGBgYHBwcICAgJCQkKCgoLCwsMDAwNDQ0ODg4PDw8QEBARERESEhITExMUFBQVFRUWFhYXFxcYGBgZGRkaGhobGxsdHR0eHh4fHx8gICAhISEiIiIjIyMkJCQlJSUmJiYnJycoKCgpKSkqKiorKyssLCwtLS0uLi4vLy8wMDAxMTEyMjIzMzM0NDQ1NTU2NjY3Nzc4ODg5OTk6Ojo7Ozs8PDw9PT0+Pj4/Pz9AQEBBQUFCQkJDQ0NERERFRUVGRkZHR0dISEhJSUlKSkpLS0tMTExNTU1OTk5PT09QUFBRUVFSUlJTU1NUVFRVVVVWVlZXV1dYWFhZWVlaWlpbW1tcXFxdXV1eXl5fX19gYGBhYWFiYmJjY2NkZGRlZWVmZmZnZ2doaGhpaWlqampra2tsbGxtbW1ubm5vb29wcHBxcXFycnJzc3N0dHR1dXV2dnZ3d3d4eHh5eXl6enp7e3t8fHx9fX1+fn5/f3+AgICBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWXl5eYmJiZmZmampqbm5ucnJydnZ2fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy9vb2+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2NjZ2dna2trb29vc3Nzd3d3e3t7f39/g4ODh4eHi4uLj4+Pk5OTl5eXm5ubn5+fo6Ojp6enq6urr6+vs7Ozu7u7v7+/w8PDx8fHy8vLz8/P09PT19fX29vb39/f4+Pj5+fn6+vr7+/v8/Pz9/f3+/v7///8t19oUAAARGElEQVR4nO3dfVxUdaLH8VmtLiKi6Y5psW270Grb6tK2DI9CoAYuPiyixgqroHJVSiVzXa+laeqW65qmadlaiaJtW5qV2e7mA6FSyuJDiHJLUkCxVkGeBvj9d885M2dQhLmcmYNn+Pr9vF5xDufAnN9v3s7Ab0AzCQadyegBsI6NwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAbPDeCK7WqbNjh2L+g3tE5SU/HelR8XNhg9jLZyAzj7iQ32on+l7k1dp9/QOkVfzQhKXvpfy9KCU/KMHkrruQPswJw17uZjt0XXZo7MkTa+0n8FE5+4bPRwWovAbnQpfIey9VXe/ivorJGDaSMCu15N+GHbjg1YnAmqMG4wbUVg18vcYt+xA4t949r6UOMisMuVRqt7KrBIOmrMUJxEYJf7S5a65wDOmWXMUJxEYJcbfVHdcwA3RBgzFCfpDPzKyBUGlL7YiKv6O+4JB7CAB/5rxl4DGrXRiKsOblJnfRsBG/MUnVFgxFUnFqt7DuDq6NY/1MAI7HKb16h7DuD3lhgxEKcR2OWqLHX2PQdwdIkRA3EagV1vwwL7jm/LAx4Ugd1o4mu2rR149+P1xozDWQR2I+vkWVXyVgGuXxZfZcwwnEZgt8r69crzCnDFq5a1jUaNwlluAP/tl2Pt+d+n7gVt0G9o7c84YFH39m9DYu/6TciIDZWGjcFpbgA3FKsVFTl2rfoNrf0ZCCxXWXqlA271P9umR5pM9/UfErX1ezduBuKX7gwG7ojyk0xKg3fkJLzYe8KnLt8QgT2xixNN9vo0jCpa8+r7P0py9bdFCOyBfWpyFPFVYoOl+ve5z/1oj2u3RWDPa1Ozr2lSyqG3lp8fLiJKBix36cY0AA/sflmIrYHyboRvrfR29aCu0+T3CqO6/Thb3tnsf4f/keater7DuyXAmqd/dZxX//UuXOjN63xNiY+L8O/n7Pnw6f+EJi1zZdhagHvNtc/w6y49t0ubd3YmyTO0Bsy79pm3dB/vMu+8mPd189Z+vuO7NcBap58WeWm/937N18m53tc04JPdz3wX2hRTsjQr917tN6YNeEn3MtsMFwfPjlMOzZBneKJLtRAJc4QY/IbtA9Wt/XzHd2uANU6/vts+IVJTtV7mquUGYHNTzIUl246k1lisCTk/L9c+bC3AO5IzbDN8YN0XXZVrKTMs6FIjzTBa1P5geb++GTWOrQAD1jj9IpO0Ol4bpPUyT9/gaxp2eEpNsHXMyXXrTo9pCJipfdiagIu9S+QZHuhaIQJWyYeUGdY/sKDuoFewKDaFlpc8/KxjK9CAtU3/qKlJ+no6UONVLtzoa5o0+tQr6wsTGoKr03K2PR99RvOwNQGLqWnyDNNipaepX8iHbIAnonoFpyaKUtN7Qrz+iGMr0IC1Td+1R/CCFsCjx0q2kz/furRsmAi7nDhe87C1AZd0Wxooqn26mc2+pnxxPWDUSiF6v2+DVbdwwJqmX+91QPrDoPFrcJOlBfBPcre8cF62nfvhnjlXwixN//9t3Jg2YJHRK1Bk9TxXVlYWNkdYa9LTaqxC5JaWPn9PlRBzwyouDFrUvFXPd3i3Cljb9FNjvsv10fiNb34LX1N/EfF95scfZ14Jaxp2bvlbk/+pddgagcu8AsWwOfJ72War8nQyT4iFvndFn5IO1ab5mJ+qbd6q5zu8WwasafpXE73u0boOXtcSOF5aAYc1DT23bMuR39c+Wh8yX+uw+UqWRzW9JfAkeQV8ZHKtxTr2xKtriqOnaL1FAutSpvRI9mvrr4Bn3vwsZv/Ym87EtwQeoayAT65/5eyYhqDKaXtjtV6QwLok36WbLzk52SL7x6pn1Fc9mwJaAvtJK+BCybZqSs72xeUx4r5GjRcksC61YihnbeXk9d91qmfsr3o2TfG/CVhaJaVKK+DyoSK84g+7PvWd3KjtggR2u5OP+sSl2p4xn+vbw/+wOBPt+2C2EOYVgx90nCwf28dvlf2YUD5WPWNLXnE1TV82viVwQpZtBfzM7r2zrlgao2P/MqlR0wUJ7G4N/ssb9typ3N9f+F0S//ttw88W1u33PirMsbVN6skmS2bNN/4fKMfkT/LLc3yaLRn40uvijzd9k6WsgGdLq6Th3/zpzfzH54o3zmu6IIHd7fDdDULEKvd3fp+9dUIc6Sk9UaZmCvOe5pP5PtJ2TYpyTM4vz/FptuyvmexoCTzUvgJ++1hK7aN14+dv1XpBArvb3wdLb2banjE3PeKTdOm9h6QDS8YLc0HzyffvDAgIuH+0ckzOL8/xabbswBUtgfude2FLnrwCTjy+8eXikSPLtV6QwO52uL/0Zqy6aqkY8aTjAXW8+eRRs+01RvmYnPQIVj/Nlvqq5/AWwD9VV8CjG4Mq03cP1XxBArtbw0/+Joq8lPv7RI61bnxmw4OL6g92/1K5v9WTjUFzKxtOHlaOvfaR8jVY/TT53eYXdbe1AJ5gWwFXTT2447mLQ1a8rfmCBHa740EhCSnK/X1oUPfeCd+J01E9ArLsj1b1ZHmS2ffXe5RjwxYoDz71jPxu84u6DcE3AqfIK+BseQUcVTF/m6Ve8wUJ7GHtvBE4wrYCnrfr0yevWjLe1X57BPa0Jt4AbJZWwJ/IK+DYb17MnODCzRHY06oMux54oLICXvFmfnLtz0Nc+RsyBPa4zl//Q/9kaQUsr5LGH3/Wz6V/PoDAnteFiOuA5RXwhpeLR+0YcNqlGyOwB1Y9wwEcvKZ4jLQCnhiTfs212yKwR/Z5tB24j7wC/u/pfgdcvSUCe2ifT1aAH8z6WXq/CQddvx0Ce2yNx7e8kDp5wYsFbv3TEAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAggOPc+OuV6EEA8xHcdgQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwSMweAQGj8DgERg8AoNHYPAIDB6BwYMAfjzH6BF4bhDAfAS3HYHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg0dg8AgMHoHBIzB4BAaPwOARGDwCg6cLcG1RsaElf2js9c/rcSd2ULoArw6bamhDk429/v163IkdlC7A2ev0uJXO2xCjB+AkAusQgcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwQIFPOX6zP3jw8PFJQ6eETh2R+KV+Q+skFW76Y+8/vHqsyehxtJEbwNkmRwPD3304K37WqqBnVug3tM6QdWNoyqYc79y30i0rq40eTKvpA3zvacu/U17eHlPo/z+6jawzVBj+UpW08ZX+q3vdkmv0cFpLH+BYy6mxm7LiT1teuq2+Gh8KOatsfZW3F6N3GTmYNtIH+O6iMX99bWSh5d+hT+k3NI/v26BLth0bsLgWmW/cYNpKH+DfxO1YP+GE9DBOv50ewaPV7yjtwOJceKNRY2kzfYDNO1/6XYHlqzGb02frNzRPryBJ3VOBxfwPjBmKk/QBjlwxLS/4TOw760PX6jc0T2/hJ+qeA/h0sjFDcZJOy6QZh0PODv/7i2kvLdRvaJ7e8Cp1zwEswgwZibP0AX5oX/jZqD0rph3yX6bf0Dy9CMeebyvHPCV9gCPCiof849mnDwSt+bN+Q/P0Iq3qXjNwuCEjcZY+wH3PhuXMnrcv4syAefoNzdObcVTdcwBXxBszFCfpAxwfemjmoo/Ci4csvI2WSR/PV/ccwOs3GDMUJ+n0Qkf+pD9/ECM9jOOe1G9onl5DiP11DgdwTVClUYNpM32A45Jfzo45Iz2Mx95Gj2Dx2Uj76xoqcHqWYWNpM51+2KC8EH1s0qpnMvUbmue3NqVO2dqAm+Z74jcg+gCHbBx1/FcFE9dk/3K1fkPrBG0eckzeKMBnR3jkj0r1AQ584oTlVMKmLfGrn9dvaJ2hs+Pit3wrAV98d0LcMaMH02puAP/r0Wh7P+3xWL/QAQ+F93us7+30NVjp3JpxkT+M/O2fCo0eSBtB/HPCrO0IDB6BwSMweAQGTwPwwO6XhdgaKO9G+NZKb1cP6jpNfq8wqtuPs+Wdzf53+B8R4mSkd9/MRiHipAVUjw4YszG1e/pXx3n1Xy+at8amBbjXXPsMv+7Sc7u0eWdnkjxDa8C8a595Fwixy7zzYt7XQgxOvVbkt1EC3lhTU9tB4771tXv6aZGX9nvvb94amxbgJd3LbDNcHDw7Tjk0Q57hiS7VQiTMkWDfsH2g7z5pdk9JwG/oPlwDa+/067tJ009NdWwNTgvwjuQM2wwfWPdF13L5kDLDgi410gyjRe0PlvfrmyHtL067dub+jyTge+997J8dMmojau/0i0xXhFgb5NganCbgYu8SeYYHulaIgFXyIWWG9Q8sqDvoFSyKTaHlJQ8/K0RegMk0Uzqx+8uvlt8J8780au/0j5qahHhzoGNrcJqAxdQ0eYZpsdKj9BfyIWWG4kRUr+DURFFqek+I1x8R1+5+oabEssT2SbGL9B+zMbV3+p35ESxKui0NFNU+3cxmX5P8W/y2GcpFrRSi9/vKDM+YKqWZhdiOj4L5Ncv2Tr/e64D0hyDVsTU4bcAio1egyOp5rqysLGyOsNakp9VYhcgtLX3+nioh5oZVXBi0SFh/uKK+NGS6qNpy4fJrdxzuuLHf2to7fZEa812uz/7mrbFpBC7zChTD5sjvZZutC+SfFM4TYqHvXdGnpEO1aT7mp6R10aHg7n2SvheVYT28Br/bQeO+9bV7+lcTve5R1sH2rbHxlSzwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYPAKDR2DwCAwegcEjMHgEBo/A4BEYvP8D3o1BCHWO4+EAAAAASUVORK5CYII=";
 
-        OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(STUDY, new Query("id", "f1"), QueryOptions.empty(), token);
+        OpenCGAResult<Family> results = catalogManager.getFamilyManager().get(STUDY, "f1", QueryOptions.empty(), token);
         Family family = results.first();
 
-        assertTrue(family.getPedigreeGraph() != null);
+        assertNotNull(family.getPedigreeGraph());
         assertEquals(base64, family.getPedigreeGraph().getBase64());
     }
 
@@ -1105,6 +1113,46 @@ public class VariantAnalysisTest {
         RelatednessReport relatednessReport = JacksonUtils.getDefaultObjectMapper().readValue(outDir.resolve("relatedness.report.json").toFile(), RelatednessReport.class);
         assertEquals(params.getMinorAlleleFreq(), relatednessReport.getMaf());
         assertEquals(params.getHaploidCallMode(), relatednessReport.getHaploidCallMode());
+    }
+
+    public void testClinicalAnalysisLoading() throws IOException, ToolException, CatalogException {
+        String fileStr = "clinical_analyses.json.gz";
+        File file;
+        try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
+            file = catalogManager.getFileManager().upload(CANCER_STUDY, stream, new File().setPath("biofiles/" + fileStr), false, true, false, token).first();
+        }
+
+        System.out.println("file ID = " + file.getId());
+        System.out.println("file name = " + file.getName());
+
+        // Run clinical analysis load task
+        Path loadingOutDir = Paths.get(opencga.createTmpOutdir("_clinical_analysis_outdir"));
+        System.out.println("Clinical analysis load task out dir = " + loadingOutDir);
+
+        ClinicalAnalysisLoadParams params = new ClinicalAnalysisLoadParams();
+        params.setFile(file.getId());
+
+        toolRunner.execute(ClinicalAnalysisLoadTask.class, params, new ObjectMap(ParamConstants.STUDY_PARAM,
+                CANCER_STUDY), loadingOutDir, null, token);
+
+        String ca1Id = "SAP-45016-1";
+        String ca2Id = "OPA-6607-1";
+
+        Query query = new Query();
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token);
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca1Id));
+        Assert.assertTrue(result.getResults().stream().map(ca -> ca.getId()).collect(Collectors.toList()).contains(ca2Id));
+
+        query.put("id", ca1Id);
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token).first();
+        Assert.assertEquals(ca1Id, clinicalAnalysis.getId());
+
+        query.put("id", ca2Id);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
+                token).first();
+        Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
     }
 
     @Test

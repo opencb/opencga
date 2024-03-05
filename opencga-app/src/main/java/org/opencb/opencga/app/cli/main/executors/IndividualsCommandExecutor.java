@@ -9,7 +9,6 @@ import org.opencb.biodata.models.clinical.qc.SampleRelatednessReport;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -52,6 +51,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "individuals";
     public IndividualsCommandOptions individualsCommandOptions;
 
     public IndividualsCommandExecutor(IndividualsCommandOptions individualsCommandOptions) throws CatalogAuthenticationException {
@@ -71,9 +71,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -129,10 +126,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualAclUpdateParams individualAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualAclUpdateParams = new IndividualAclUpdateParams();
             RestResponse<IndividualAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -148,40 +144,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), IndividualAclUpdateParams.class);
         }
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Individuals command line");
-
-        IndividualsCommandOptions.AggregationStatsCommandOptions commandOptions = individualsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("hasFather", commandOptions.hasFather);
-        queryParams.putIfNotNull("hasMother", commandOptions.hasMother);
-        queryParams.putIfNotEmpty("sex", commandOptions.sex);
-        queryParams.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
-        queryParams.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
-        queryParams.putIfNotEmpty("population", commandOptions.population);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
-        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        queryParams.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getIndividualClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -200,10 +162,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -237,10 +198,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualCreateParams individualCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualCreateParams = new IndividualCreateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -442,10 +402,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualUpdateParams individualUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            individualUpdateParams = new IndividualUpdateParams();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(individualUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individuals}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             individualUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -512,10 +471,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Individual> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()

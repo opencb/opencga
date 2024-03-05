@@ -88,22 +88,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
             throw new RuntimeException(e);
         }
 
-     /*   //   if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
-        if (queryResponse.getEvents() != null) {
-            for (Event event : ((RestResponse<Object>)queryResponse.getResponses().get(0)).getEvents()) {
-                if (StringUtils.isNotEmpty(event.getMessage())) {
-                    if (event.getType().equals(Event.Type.ERROR)) {
-                        PrintUtils.printError(event.getMessage());
-                    } else {
-                        PrintUtils.printInfo(event.getMessage());
-                    }
-                } else {
-                    PrintUtils.printError(event.getMessage());
-                }
+        if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+            if (queryResponse.getResponses() != null && queryResponse.getResponses().size() > 0) {
+                manageEvents(((RestResponse<Object>) queryResponse.getResponses().get(0)).getEvents());
+            } else if (queryResponse.getEvents() != null && queryResponse.getEvents().size() > 0) {
+                manageEvents(queryResponse.getEvents());
             }
+            return;
         }
-        // return;
-        //  }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
@@ -112,11 +104,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
             return;
         }
 
-
         ps.print(printMetadata(queryResponse));
-*/
-        List<DataResult> queryResultList = queryResponse.getResponses();
 
+        List<DataResult> queryResultList = queryResponse.getResponses();
 
         if (CollectionUtils.isNotEmpty(queryResultList) && ((OpenCGAResult) queryResultList.get(0)) != null
                 && ((OpenCGAResult) queryResultList.get(0)).getNumMatches() > -1 && !isEdition(queryResultList) && isNotAnIdOrMessage(queryResultList)) {
@@ -180,6 +170,20 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse, false);
                 break;
+        }
+    }
+
+    private void manageEvents(final List<Event> events) {
+        for (Event event : events) {
+            if (StringUtils.isNotEmpty(event.getMessage())) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    PrintUtils.printError(event.getMessage());
+                } else {
+                    PrintUtils.printInfo(event.getMessage());
+                }
+            } else {
+                PrintUtils.printError(event.getMessage());
+            }
         }
     }
 
@@ -309,16 +313,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<User> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
+                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tQUOTA\n");
                 sb.append("#(P)\tID\tNAME\tDESCRIPTION\n");
                 sb.append("#(S)\t\tID\tNAME\tDESCRIPTION\t#GROUPS\tSIZE\n");
             }
 
             for (User user : queryResult.getResults()) {
-                sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\n", "",
+                sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\n", "",
                         StringUtils.defaultIfEmpty(user.getId(), "-"), StringUtils.defaultIfEmpty(user.getName(), "-"),
                         StringUtils.defaultIfEmpty(user.getEmail(), "-"), StringUtils.defaultIfEmpty(user.getOrganization(), "-"),
-                        StringUtils.defaultIfEmpty(user.getAccount() != null ? user.getAccount().getType().name() : "-", "-"),
                         user.getQuota().getMaxDisk()));
 
                 if (user.getProjects().size() > 0) {

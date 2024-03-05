@@ -24,7 +24,9 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
@@ -72,9 +74,13 @@ public class FamilyQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Check permissions
         try {
-            Study study = catalogManager.getStudyManager().get(this.study, QueryOptions.empty(), token).first();
-            String userId = catalogManager.getUserManager().getUserId(token);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_FAMILIES);
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+            String organizationId = studyFqn.getOrganizationId();
+            String userId = jwtPayload.getUserId(organizationId);
+
+            Study auxStudy = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first();
+            catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, auxStudy.getUid(), userId, WRITE_FAMILIES);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

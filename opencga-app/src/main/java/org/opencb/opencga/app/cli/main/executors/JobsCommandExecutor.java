@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -50,6 +49,7 @@ import org.opencb.opencga.core.tools.result.Status;
  */
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "jobs";
     public JobsCommandOptions jobsCommandOptions;
 
     public JobsCommandExecutor(JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
@@ -69,9 +69,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "create":
                 queryResponse = create();
@@ -128,10 +125,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobAclUpdateParams jobAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobAclUpdateParams = new JobAclUpdateParams();
             RestResponse<JobAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -148,37 +144,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
     }
 
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Jobs command line");
-
-        JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
-        queryParams.putIfNotEmpty("toolScope", commandOptions.toolScope);
-        queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
-        queryParams.putIfNotEmpty("toolResource", commandOptions.toolResource);
-        queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotEmpty("tags", commandOptions.tags);
-        queryParams.putIfNotEmpty("executorId", commandOptions.executorId);
-        queryParams.putIfNotEmpty("executorFramework", commandOptions.executorFramework);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getJobClient().aggregationStats(queryParams);
-    }
-
     private RestResponse<Job> create() throws Exception {
         logger.debug("Executing create in Jobs command line");
 
@@ -193,10 +158,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobCreateParams jobCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobCreateParams = new JobCreateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -280,10 +244,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobRetryParams jobRetryParams = null;
         if (commandOptions.jsonDataModel) {
-            jobRetryParams = new JobRetryParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobRetryParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/retry"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobRetryParams = JacksonUtils.getDefaultObjectMapper()
@@ -416,10 +379,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobUpdateParams jobUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            jobUpdateParams = new JobUpdateParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(jobUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/{jobs}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobUpdateParams = JacksonUtils.getDefaultObjectMapper()

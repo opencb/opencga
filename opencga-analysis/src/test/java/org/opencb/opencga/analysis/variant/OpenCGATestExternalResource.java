@@ -49,7 +49,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,7 +61,7 @@ import java.util.Map;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -264,6 +266,14 @@ public class OpenCGATestExternalResource extends ExternalResource {
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/family-qc")).toAbsolutePath();
         inputStream = new FileInputStream("../opencga-app/app/analysis/family-qc/relatedness_thresholds.csv");
         Files.copy(inputStream, analysisPath.resolve("relatedness_thresholds.csv"), StandardCopyOption.REPLACE_EXISTING);
+
+        // Exomiser analysis files
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser")).toAbsolutePath();
+        List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
+        for (String exomiserFile : exomiserFiles) {
+            inputStream = new FileInputStream("../opencga-app/app/analysis/exomiser/" + exomiserFile);
+            Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+        }
 
         return opencgaHome;
     }

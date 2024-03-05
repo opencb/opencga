@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -51,6 +50,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "samples";
     public SamplesCommandOptions samplesCommandOptions;
 
     public SamplesCommandExecutor(SamplesCommandOptions samplesCommandOptions) throws CatalogAuthenticationException {
@@ -70,9 +70,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -127,10 +124,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleAclUpdateParams sampleAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleAclUpdateParams = new SampleAclUpdateParams();
             RestResponse<SampleAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -151,34 +147,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Samples command line");
-
-        SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("source", commandOptions.source);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
-        queryParams.putIfNotNull("somatic", commandOptions.somatic);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getSampleClient().aggregationStats(queryParams);
-    }
-
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Samples command line");
 
@@ -195,10 +163,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -231,10 +198,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleCreateParams sampleCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleCreateParams = new SampleCreateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -469,10 +435,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         SampleUpdateParams sampleUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            sampleUpdateParams = new SampleUpdateParams();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(sampleUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{samples}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -529,10 +494,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Sample> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()

@@ -27,9 +27,9 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
@@ -1330,6 +1330,7 @@ public class VariantWebService extends AnalysisWebService {
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
             }
+            Runtime.getRuntime().exec("chmod 777 " + outDir.getAbsolutePath());
 
             // Create and set up Circos executor
             CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
@@ -1361,13 +1362,13 @@ public class VariantWebService extends AnalysisWebService {
             } else {
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
-        } catch (ToolException | IOException e) {
+        } catch (ToolException | IOException | CatalogException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists() && !params.getTitle().startsWith("no.delete.")) {
+                    if (outDir.exists()) {
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {
@@ -1389,7 +1390,7 @@ public class VariantWebService extends AnalysisWebService {
 //    @Consumes(MediaType.APPLICATION_JSON)
 //    @ApiOperation(value = "Validate a VCF file" + PENDING, response = QueryResponse.class)
 //    public Response validate(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Study [[organization@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
 //        return createPendingResponse();
 //        try {

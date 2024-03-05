@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -14,6 +15,7 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysi
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
 
@@ -33,6 +35,8 @@ public class ClinicalCommandOptions {
     public final RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
     public final RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
     public final ExomiserInterpretationCommandOptions exomiserInterpretationCommandOptions;
+    public final ImportClinicalAnalysesCommandOptions importClinicalAnalysesCommandOptions;
+    public final TsvLoad tsvLoad;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -53,6 +57,8 @@ public class ClinicalCommandOptions {
         this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
         this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
         this.exomiserInterpretationCommandOptions = new ExomiserInterpretationCommandOptions();
+        this.importClinicalAnalysesCommandOptions = new ImportClinicalAnalysesCommandOptions();
+        this.tsvLoad = new TsvLoad();
     }
 
     @Parameters(commandNames = {TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND}, commandDescription =
@@ -334,5 +340,46 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
+    }
+
+    @Parameters(commandNames = {ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND},
+            commandDescription = "Import clinical analyses from a folder")
+    public class ImportClinicalAnalysesCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String IMPORT_COMMAND = "import";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input directory where clinical analysis JSON files are located", arity = 1)
+        public String input;
+    }
+
+    @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")
+    public class TsvLoad extends GeneralCliOptions.StudyOption {
+
+        public static final String TSV_LOAD_COMMAND = ClinicalTsvAnnotationLoader.ID;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"--file"}, description = "Path to the TSV file.", required = true, arity = 1)
+        public String filePath;
+
+        @Parameter(names = {"--variable-set-id"}, description = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation-set-id"}, description = "AnnotationSet id that will be given to the new annotations.",
+                required = true, arity = 1)
+        public String annotationSetId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outDir;
     }
 }

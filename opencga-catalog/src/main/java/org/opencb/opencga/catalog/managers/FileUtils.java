@@ -24,7 +24,9 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileStatus;
@@ -75,6 +77,10 @@ public class FileUtils {
      * @throws CatalogException CatalogException
      */
     public File checkFile(String studyStr, File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        JwtPayload payload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, payload);
+        String organizationId = studyFqn.getOrganizationId();
+
         if (!file.getType().equals(File.Type.FILE)) {
             return file;
         }
@@ -83,7 +89,7 @@ public class FileUtils {
         switch (file.getInternal().getStatus().getId()) {
             case FileStatus.READY:
             case FileStatus.MISSING: {
-                URI fileUri = catalogManager.getFileManager().getUri(file);
+                URI fileUri = catalogManager.getFileManager().getUri(organizationId, file);
                 IOManager ioManager;
                 try {
                     ioManager = catalogManager.getIoManagerFactory().get(fileUri);
@@ -98,15 +104,17 @@ public class FileUtils {
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                                 new FileStatus(FileStatus.MISSING));
                         catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
-                        modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
+                        modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId)
+                                .first();
                     }
                 } else if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + FileStatus.READY);
-                    ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                    ObjectMap params = getModifiedFileAttributes(organizationId, file, fileUri, calculateChecksum);
                     params.put(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
                             new FileStatus(FileStatus.READY));
-                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
+                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(),
+                            sessionId);
                     modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
@@ -134,17 +142,19 @@ public class FileUtils {
      * checksum
      * uri
      *
+     * @param organizationId    Organization id.
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
-     *                                                   TODO: Lazy checksum: Only calculate checksum if the size has changed.
+     * TODO: Lazy checksum: Only calculate checksum if the size has changed.
      * @param calculateChecksum Calculate checksum to check if have changed
      * @return ObjectMap ObjectMap
      * @throws CatalogException CatalogException
      */
-    public ObjectMap getModifiedFileAttributes(File file, URI fileUri, boolean calculateChecksum) throws CatalogException {
+    public ObjectMap getModifiedFileAttributes(String organizationId, File file, URI fileUri, boolean calculateChecksum)
+            throws CatalogException {
         if (fileUri == null) {
-            fileUri = catalogManager.getFileManager().getUri(file);
+            fileUri = catalogManager.getFileManager().getUri(organizationId, file);
         }
         String checksum = null;
         if (calculateChecksum) {
@@ -154,7 +164,7 @@ public class FileUtils {
                 throw CatalogIOException.ioManagerException(fileUri, e);
             }
         }
-        return getModifiedFileAttributes(file, checksum, fileUri, null);
+        return getModifiedFileAttributes(organizationId, file, checksum, fileUri, null);
     }
 
     /**
@@ -165,10 +175,11 @@ public class FileUtils {
      *
      * @throws CatalogException CatalogException
      */
-    private ObjectMap getModifiedFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters) throws CatalogException {
+    private ObjectMap getModifiedFileAttributes(String organizationId, File file, String checksum, URI fileUri, ObjectMap parameters)
+            throws CatalogException {
         parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
         if (fileUri == null) {
-            fileUri = catalogManager.getFileManager().getUri(file);
+            fileUri = catalogManager.getFileManager().getUri(organizationId, file);
         }
         IOManager ioManager;
         try {
@@ -261,6 +272,7 @@ public class FileUtils {
                 case BINARY:
                 case UNKNOWN:
                 case XML:
+                case PDF:
                     return File.Bioformat.NONE;
                 default:
                     break;
@@ -398,6 +410,8 @@ public class FileUtils {
             case "jpeg":
             case "tif":
                 return File.Format.IMAGE;
+            case "pdf":
+                return File.Format.PDF;
             default:
                 break;
         }

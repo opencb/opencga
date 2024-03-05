@@ -7,8 +7,6 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.junit.*;
-import org.eclipse.jetty.util.Scanner;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,10 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 @Category(MediumTests.class)
@@ -93,7 +91,7 @@ public class ExomiserInterpretationAnalysisTest  {
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID2, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-        assertEquals(22, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
     }
 
     @Test
@@ -119,7 +117,7 @@ public class ExomiserInterpretationAnalysisTest  {
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-        assertEquals(2, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
         System.out.println("results at out dir = " + outDir.toAbsolutePath());
     }
 

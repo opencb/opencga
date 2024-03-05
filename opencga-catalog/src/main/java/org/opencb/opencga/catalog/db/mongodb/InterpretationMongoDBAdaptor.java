@@ -74,11 +74,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     private final MongoDBCollection deleteInterpretationCollection;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationConverter interpretationConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) {
+                                        OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
@@ -86,7 +86,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         this.archiveInterpretationCollection = archiveInterpretationCollection;
         this.deleteInterpretationCollection = deleteInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
     }
 
@@ -106,6 +106,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public MongoDBCollection getInterpretationCollection() {
         return interpretationCollection;
+    }
+
+    public MongoDBCollection getArchiveInterpretationCollection() {
+        return archiveInterpretationCollection;
     }
 
     @Override
@@ -200,7 +204,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 }
 
                 // Update interpretation(s) in ClinicalAnalysis
-                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             case SECONDARY:
                 // Add to secondaryInterpretations array in ClinicalAnalysis
@@ -215,7 +219,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), null);
                 }
 
-                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             default:
                 throw new IllegalStateException("Unknown action " + action);
@@ -236,7 +240,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -785,7 +789,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
         }
 
-        OpenCGAResult update = clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
+        OpenCGAResult update = clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList,
+                options);
         if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update interpretation reference in Clinical Analysis to new version");
         }
@@ -877,7 +882,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             clinicalOptions.put(Constants.ACTIONS, actions);
         }
-        clinicalDBAdaptor.update(clientSession, clinicalAnalysis, clinicalParams, clinicalAuditList, clinicalOptions);
+        clinicalDBAdaptor.privateUpdate(clientSession, clinicalAnalysis, clinicalParams, Collections.emptyList(), clinicalAuditList,
+                clinicalOptions);
 
         Query query = new Query()
                 .append(QueryParams.UID.key(), interpretation.getUid())

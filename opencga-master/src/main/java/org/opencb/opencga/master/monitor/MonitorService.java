@@ -26,6 +26,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
@@ -63,7 +64,6 @@ public class MonitorService {
 
     protected static Logger logger;
 
-
     public MonitorService(Configuration configuration, StorageConfiguration storageConfiguration, String appHome, String token)
             throws CatalogException {
         this.configuration = configuration;
@@ -95,14 +95,16 @@ public class MonitorService {
         logger = LoggerFactory.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);
-        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(OPENCGA, Collections.emptyMap(), token);
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION, OPENCGA,
+                Collections.emptyMap(), token);
 
         executionDaemon = new ExecutionDaemon(
                 configuration.getMonitor().getExecutionDaemonInterval(),
                 nonExpiringToken,
                 catalogManager,
                 storageConfiguration,
-                appHome);
+                appHome,
+                configuration.getAnalysis().getPackages());
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 

@@ -65,4 +65,7 @@ public class CatalogAuthenticationException extends CatalogException {
         return new CatalogAuthenticationException(domain + ": User not allowed to access the system.");
     }
 
+    public static CatalogAuthenticationException userNotFound(String organizationId, String userId) {
+        return new CatalogAuthenticationException("User '" + userId + "' not found in organization '" + organizationId + "'.");
+    }
 }

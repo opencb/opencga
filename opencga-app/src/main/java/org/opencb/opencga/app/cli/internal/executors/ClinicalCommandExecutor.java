@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
@@ -37,14 +39,33 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
+import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
+import org.opencb.opencga.core.response.RestResponse;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND;
@@ -53,6 +74,8 @@ import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND;
+import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.PRIMARY;
+import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.SECONDARY;
 
 /**
  * Created on 01/04/20
@@ -95,6 +118,12 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 break;
             case EXOMISER_INTERPRETATION_RUN_COMMAND:
                 exomiserInterpretation();
+                break;
+            case ClinicalCommandOptions.ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND:
+                //importClinicalAnalyses();
+                break;
+            case "tsv-load":
+                tsvLoad();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -313,5 +342,20 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis);
 //        exomiserInterpretationAnalysis.setPrimary(cliOptions.primary);
         exomiserInterpretationAnalysis.start();
+    }
+
+    private void tsvLoad() throws ToolException {
+        ClinicalCommandOptions.TsvLoad options = clinicalCommandOptions.tsvLoad;
+
+        Path outDir = Paths.get(options.outDir);
+
+        ClinicalTsvAnnotationLoader annotationLoader = new ClinicalTsvAnnotationLoader();
+        annotationLoader.setAnnotationSetId(options.annotationSetId);
+        annotationLoader.setVariableSetId(options.variableSetId);
+        annotationLoader.setPath(options.filePath);
+        annotationLoader.setStudy(options.study);
+
+        annotationLoader.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        annotationLoader.start();
     }
 }

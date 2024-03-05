@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 public class ToolRunner {
 
@@ -42,16 +45,30 @@ public class ToolRunner {
     private final String opencgaHome;
     private final ToolFactory toolFactory;
 
+    private final Configuration configuration;
+
     public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         this(opencgaHome, catalogManager, new VariantStorageManager(catalogManager, storageEngineFactory));
     }
 
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory,
+                      Configuration configuration) {
+        this(opencgaHome, catalogManager, new VariantStorageManager(catalogManager, storageEngineFactory), configuration);
+    }
+
     public ToolRunner(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager) {
+        this(opencgaHome, catalogManager, variantStorageManager, null);
+    }
+
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+                      Configuration configuration) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
 
         this.variantStorageManager = variantStorageManager;
         this.toolFactory = new ToolFactory();
+
+        this.configuration = configuration;
     }
 
     /**
@@ -102,9 +119,14 @@ public class ToolRunner {
      * @throws ToolException if the execution fails
      */
     public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
-        return toolFactory
-                .createTool(toolId)
-                .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, token)
+        OpenCgaTool tool;
+        if (configuration != null && configuration.getAnalysis() != null
+                && CollectionUtils.isNotEmpty(configuration.getAnalysis().getPackages())) {
+            tool = toolFactory.createTool(toolId, configuration.getAnalysis().getPackages());
+        } else {
+            tool = toolFactory.createTool(toolId);
+        }
+        return tool.setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, token)
                 .start();
     }
 
@@ -177,6 +199,7 @@ public class ToolRunner {
      * @throws ToolException if the execution fails
      */
     public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
+
         return toolFactory
                 .createTool(tool)
                 .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, token)

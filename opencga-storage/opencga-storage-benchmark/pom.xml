@@ -22,7 +22,7 @@
     <parent>
         <artifactId>opencga-storage</artifactId>
         <groupId>org.opencb.opencga</groupId>
-        <version>2.13.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -128,18 +128,15 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
             <version>${project.parent.version}</version>
-            <classifier>shaded</classifier>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
             <version>${project.parent.version}</version>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
             <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

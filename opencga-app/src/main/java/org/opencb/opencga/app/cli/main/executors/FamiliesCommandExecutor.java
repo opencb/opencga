@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -46,6 +45,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "families";
     public FamiliesCommandOptions familiesCommandOptions;
 
     public FamiliesCommandExecutor(FamiliesCommandOptions familiesCommandOptions) throws CatalogAuthenticationException {
@@ -65,9 +65,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -120,10 +117,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyAclUpdateParams familyAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyAclUpdateParams = new FamilyAclUpdateParams();
             RestResponse<FamilyAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(familyAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -142,33 +138,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
     }
 
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Families command line");
-
-        FamiliesCommandOptions.AggregationStatsCommandOptions commandOptions = familiesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
-        queryParams.putIfNotEmpty("numMembers", commandOptions.numMembers);
-        queryParams.putIfNotEmpty("expectedSize", commandOptions.expectedSize);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getFamilyClient().aggregationStats(queryParams);
-    }
-
     private RestResponse<Job> loadAnnotationSets() throws Exception {
         logger.debug("Executing loadAnnotationSets in Families command line");
 
@@ -185,10 +154,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -222,10 +190,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyCreateParams familyCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyCreateParams = new FamilyCreateParams();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(familyCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             familyCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -386,10 +353,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyUpdateParams familyUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            familyUpdateParams = new FamilyUpdateParams();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(familyUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/{families}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             familyUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -430,10 +396,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<Family> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()

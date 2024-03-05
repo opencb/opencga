@@ -23,6 +23,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
     private final RunCommandOptions runCommandOptions;
     private final RunManualCommandOptions runManualCommandOptions;
     private final SummaryCommandOptions summaryCommandOptions;
+    private final OrganizationMigrationCommandOptions organizationCommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
@@ -32,8 +33,20 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.runCommandOptions = new RunCommandOptions();
         this.runManualCommandOptions = new RunManualCommandOptions();
+        this.organizationCommandOptions = new OrganizationMigrationCommandOptions();
     }
 
+
+    @Parameters(commandNames = {"v3.0.0"}, commandDescription = "Migrate to version 3.0.0")
+    public class OrganizationMigrationCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+        @Parameter(names = {"--user"}, description = "User whose data is going to be migrated. If more than one user of type FULL contains"
+                + " projects and studies, only the one provided will keep the data and will be fully migrated.")
+        public String user;
+    }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Obtain migrations status summary")
     public class SummaryCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
@@ -57,6 +70,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+        @Parameter(names = {"--organization"}, description = "Organization id")
+        public String organizationId;
 
         @Parameter(names = {"--status"}, description = "Filter migrations by status. PENDING, ERROR, DONE")
         public List<String> status;
@@ -126,6 +142,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
     public RunManualCommandOptions getRunManualCommandOptions() {
         return runManualCommandOptions;
+    }
+
+    public OrganizationMigrationCommandOptions getOrganizationCommandOptions() {
+        return organizationCommandOptions;
     }
 
     public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {

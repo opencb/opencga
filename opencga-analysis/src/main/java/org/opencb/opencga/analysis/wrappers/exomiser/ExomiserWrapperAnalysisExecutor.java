@@ -147,7 +147,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         Path openCgaHome = getOpencgaHomePath();
         Path exomiserDataPath = getAnalysisDataPath(ExomiserWrapperAnalysis.ID);
 
-        // And copy the application.properties
+        // Copy the analysis
+        try {
+            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile(),
+                    getOutDir().resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile());
+        } catch (IOException e) {
+            throw new ToolException("Error copying Exomiser analysis file", e);
+        }
+
+        // Copy the application.properties
         try {
             FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(),
                     getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile());
@@ -155,7 +163,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Error copying Exomiser properties file", e);
         }
 
-        // And copy the output options
+        // Copy the output options
         try {
             FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile(),
                     getOutDir().resolve(EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile());
@@ -174,7 +182,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendCommand("", sb);
 
         // Append input file params
-//        sb.append(" --analysis /jobdir/").append(EXOMISER_ANALYSIS_TEMPLATE_FILENAME)
+        sb.append(" --analysis /jobdir/").append(EXOMISER_ANALYSIS_TEMPLATE_FILENAME);
         sb.append(" --sample /jobdir/").append(sampleFile.getName());
         if (pedigreeFile != null && pedigreeFile.exists()) {
             sb.append(" --ped /jobdir/").append(pedigreeFile.getName());

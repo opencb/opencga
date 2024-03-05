@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -66,6 +65,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
+    public String categoryName = "files";
     public FilesCommandOptions filesCommandOptions;
 
     public FilesCommandExecutor(FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
@@ -85,9 +85,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -187,10 +184,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileAclUpdateParams fileAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileAclUpdateParams = new FileAclUpdateParams();
             RestResponse<FileAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -206,39 +202,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), FileAclUpdateParams.class);
         }
         return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Files command line");
-
-        FilesCommandOptions.AggregationStatsCommandOptions commandOptions = filesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("name", commandOptions.name);
-        queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("format", commandOptions.format);
-        queryParams.putIfNotEmpty("bioformat", commandOptions.bioformat);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotNull("external", commandOptions.external);
-        queryParams.putIfNotEmpty("size", commandOptions.size);
-        queryParams.putIfNotEmpty("software", commandOptions.software);
-        queryParams.putIfNotEmpty("experiment", commandOptions.experiment);
-        queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        queryParams.putIfNotEmpty("numRelatedFiles", commandOptions.numRelatedFiles);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getFileClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -257,10 +220,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         TsvAnnotationParams tsvAnnotationParams = null;
         if (commandOptions.jsonDataModel) {
-            tsvAnnotationParams = new TsvAnnotationParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/annotationSets/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
@@ -298,10 +260,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileCreateParams fileCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileCreateParams = new FileCreateParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -394,10 +355,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileFetch fileFetch = null;
         if (commandOptions.jsonDataModel) {
-            fileFetch = new FileFetch();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileFetch));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/fetch"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileFetch = JacksonUtils.getDefaultObjectMapper()
@@ -436,10 +396,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileLinkParams fileLinkParams = null;
         if (commandOptions.jsonDataModel) {
-            fileLinkParams = new FileLinkParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileLinkParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/link"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileLinkParams = JacksonUtils.getDefaultObjectMapper()
@@ -482,10 +441,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileLinkToolParams fileLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
-            fileLinkToolParams = new FileLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileLinkToolParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/link/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileLinkToolParams = JacksonUtils.getDefaultObjectMapper()
@@ -524,10 +482,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         PostLinkToolParams postLinkToolParams = null;
         if (commandOptions.jsonDataModel) {
-            postLinkToolParams = new PostLinkToolParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(postLinkToolParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/postlink/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             postLinkToolParams = JacksonUtils.getDefaultObjectMapper()
@@ -690,10 +647,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         FileUpdateParams fileUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            fileUpdateParams = new FileUpdateParams();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(fileUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{files}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             fileUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -757,10 +713,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = null;
         if (commandOptions.jsonDataModel) {
-            objectMap = new ObjectMap();
             RestResponse<File> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(objectMap));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             objectMap = JacksonUtils.getDefaultObjectMapper()
