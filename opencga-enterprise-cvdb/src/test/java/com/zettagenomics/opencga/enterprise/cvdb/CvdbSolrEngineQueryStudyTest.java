@@ -2138,6 +2138,44 @@ public class CvdbSolrEngineQueryStudyTest {
     }
 
     //-----------------------------------------------------------------------
+
+    @Test
+    public void testQueryClinicalAnalysisNPEFix() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+//        queryOptions.put(INCLUDE, "id,clinicalAnalysisId,stats,panels.id,panels.name,panels.source,analyst");
+        queryOptions.put(INCLUDE, "id,interpretation.primaryFindings.annotation.type");
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
+        assertTrue(result.getNumResults() > 0);
+    }
+
+    @Test
+    public void testQueryClinicalInterpretationNPEFix() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+        Set<String> alreadyChecked = new HashSet<>();
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+//        queryOptions.put(INCLUDE, "id,clinicalAnalysisId,stats,panels.id,panels.name,panels.source,analyst");
+        queryOptions.put(INCLUDE, "id,primaryFindings.annotation.type");
+
+        // Check existing type
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
+        assertTrue(result.getNumResults() > 0);
+    }
+
+    //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {

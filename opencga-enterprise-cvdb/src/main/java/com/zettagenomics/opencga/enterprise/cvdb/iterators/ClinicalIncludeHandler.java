@@ -81,7 +81,9 @@ public class ClinicalIncludeHandler {
                             field.set(object, applyIncludeToList(list, updateIncludes(field.getName(), includes)));
                         } else {
                             // e.g.: disorder.id
-                            field.set(object, applyIncludeRecursive(fieldValue, updateIncludes(field.getName(), includes)));
+                            if (fieldValue != null) {
+                                field.set(object, applyIncludeRecursive(fieldValue, updateIncludes(field.getName(), includes)));
+                            }
                         }
                     } else {
                         // Field belonging to the current object, e.g.: id

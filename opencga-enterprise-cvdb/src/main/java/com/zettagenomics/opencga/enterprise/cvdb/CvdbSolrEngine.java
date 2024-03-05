@@ -320,7 +320,26 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
-        //List<String> includeList = getIncludeList(queryOptions, ClinicalIncludeHandler.caFields);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (split.length > 2 && (split[1].equals("primaryFindings") || split[1].equals("secondaryFindings"))) {
+                    if (isImplClinicalVariantField(split[2])) {
+                        StringBuilder sb = new StringBuilder(split[0]).append(".").append(split[1]).append(".impl");
+                        for (int i = 2; i < split.length; i++) {
+                            sb.append(".").append(split[i]);
+                        }
+                        includeList.add(sb.toString());
+                    } else {
+                        includeList.add(include);
+                    }
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
 
         // Execute query
         try {
@@ -390,6 +409,26 @@ public class CvdbSolrEngine {
         // Parse query
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
+        if (queryOptions.containsKey(INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
+                String[] split = include.split("\\.");
+                if (split.length > 1 && (split[0].equals("primaryFindings") || split[0].equals("secondaryFindings"))) {
+                    if (isImplClinicalVariantField(split[1])) {
+                        StringBuilder sb = new StringBuilder(split[0]).append(".impl");
+                        for (int i = 1; i < split.length; i++) {
+                            sb.append(".").append(split[i]);
+                        }
+                        includeList.add(sb.toString());
+                    } else {
+                        includeList.add(include);
+                    }
+                } else {
+                    includeList.add(include);
+                }
+            }
+            queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
+        }
 
         // Execute query
         try {
@@ -462,20 +501,11 @@ public class CvdbSolrEngine {
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
             for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
-                switch (include) {
-                    case "evidences":
-                    case "comments":
-                    case "filters":
-                    case "discussion":
-                    case "confidence":
-                    case "tags":
-                    case "status":
-                    case "attributes":
-                        includeList.add(include);
-                        break;
-                    default:
-                        includeList.add("impl." + include);
-                        break;
+                String[] split = include.split(".");
+                if (isImplClinicalVariantField(split[0])) {
+                    includeList.add("impl." + include);
+                } else {
+                    includeList.add(include);
                 }
             }
             queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
@@ -931,6 +961,25 @@ public class CvdbSolrEngine {
         QueryResponse response = solrClient.query(collectionName, solrQuery);
 
         return (response.getResults().getNumFound() == 1);
+    }
+
+    //----------------------------------------------------------------------
+    private boolean isImplClinicalVariantField(String field) {
+        switch (field) {
+            case "evidences":
+            case "comments":
+            case "filters":
+            case "discussion":
+            case "confidence":
+            case "tags":
+            case "status":
+            case "attributes": {
+                return false;
+            }
+            default: {
+                return true;
+            }
+        }
     }
 
     //----------------------------------------------------------------------
