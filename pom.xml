@@ -43,21 +43,12 @@
     </modules>
 
     <properties>
-<<<<<<< HEAD
-        <pyopencga.version>2.12.2</pyopencga.version>
-        <opencgar.version>2.12.2</opencgar.version>
-        <cellbase.version>5.8.2</cellbase.version>
-        <biodata.version>2.12.1</biodata.version>
-        <java-common-libs.version>4.12.0</java-common-libs.version>
-        <iva.version>2.12.2</iva.version>
-=======
         <pyopencga.version>3.0.0_dev</pyopencga.version>
         <opencgar.version>3.0.0_dev</opencgar.version>
         <cellbase.version>6.0.0-SNAPSHOT</cellbase.version>
         <biodata.version>3.0.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>5.0.0-SNAPSHOT</java-common-libs.version>
         <iva.version>3.0.0-SNAPSHOT</iva.version>
->>>>>>> develop
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -1122,14 +1113,6 @@
                         <artifactId>slf4j-simple</artifactId>
                     </exclusion>
                 </exclusions>
-<<<<<<< HEAD
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jersey.media</groupId>
-                <artifactId>jersey-media-json-jackson</artifactId>
-                <version>2.30.1</version>
-=======
->>>>>>> develop
             </dependency>
             <dependency>
                 <groupId>com.esotericsoftware.kryo</groupId>

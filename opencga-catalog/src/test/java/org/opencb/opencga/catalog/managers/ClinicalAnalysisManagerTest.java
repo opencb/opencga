@@ -452,24 +452,24 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertNull(case1.getReport());
 
         // Add files
-        catalogManager.getFileManager().create(STUDY,
+        catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setPath("/data/file1.txt")
                         .setType(File.Type.FILE),
-                true, sessionIdUser);
-        catalogManager.getFileManager().create(STUDY,
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setPath("/data/file2.txt")
                         .setType(File.Type.FILE),
-                true, sessionIdUser);
-        catalogManager.getFileManager().create(STUDY,
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
                 new FileCreateParams()
                         .setContent(RandomStringUtils.randomAlphanumeric(1000))
                         .setPath("/data/file3.txt")
                         .setType(File.Type.FILE),
-                true, sessionIdUser);
+                true, ownerToken);
 
         ClinicalReport report = new ClinicalReport("title", "overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "logo",
                 "me", "signature", TimeUtils.getTime(), Arrays.asList(
@@ -478,8 +478,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         ),
                 Collections.singletonList(new File().setId("data:file1.txt")),
                 Collections.singletonList(new File().setId("data:file2.txt")));
-        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(STUDY, case1.getId(),
-                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
         assertNotNull(result.first().getReport());
         assertEquals(report.getTitle(), result.first().getReport().getTitle());
         assertEquals(report.getOverview(), result.first().getReport().getOverview());
@@ -508,8 +508,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                         new File().setId("data:file3.txt")
                 ))
                 .setSupportingEvidences(Collections.singletonList(new File().setId("data:file1.txt")));
-        ClinicalReport reportResult = catalogManager.getClinicalAnalysisManager().updateReport(STUDY, case1.getId(), reportToUpdate,
-                options, sessionIdUser).first();
+        ClinicalReport reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
         // Check comments
         assertEquals(3, reportResult.getComments().size());
         assertEquals("comment1", reportResult.getComments().get(0).getMessage());
@@ -542,8 +542,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                         new File().setId("data:file3.txt")
                 ));
         ClinicalComment pendingComment = reportResult.getComments().get(2);
-        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(STUDY, case1.getId(), reportToUpdate,
-                options, sessionIdUser).first();
+        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
         // Check comments
         assertEquals(1, reportResult.getComments().size());
         assertEquals(pendingComment.getMessage(), reportResult.getComments().get(0).getMessage());
@@ -574,8 +574,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setSupportingEvidences(Collections.singletonList(
                         new File().setId("data:file2.txt")
                 ));
-        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(STUDY, case1.getId(), reportToUpdate,
-                options, sessionIdUser).first();
+        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
         // Check comments
         assertEquals(1, reportResult.getComments().size());
         assertEquals("comment3", reportResult.getComments().get(0).getMessage());
