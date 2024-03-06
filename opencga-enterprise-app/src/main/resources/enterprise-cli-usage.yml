@@ -2,6 +2,7 @@ categories:
   - name: catalog
     description: "Catalog commands:"
     options:
+      - organizations
       - users
       - projects
       - studies
@@ -13,7 +14,7 @@ categories:
       - samples
       - cohorts
       - meta
-      - cva
+      - cvdb
   - name: Analysis
     description: "Analysis commands:"
     options:
