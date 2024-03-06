@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
-* Copyright 2015-2024-02-02 OpenCB
-=======
-* Copyright 2015-2024-03-04 OpenCB
->>>>>>> develop
+* Copyright 2015-2024-03-06 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.

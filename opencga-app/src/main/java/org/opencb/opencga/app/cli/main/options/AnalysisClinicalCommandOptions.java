@@ -2331,7 +2331,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = true, arity = 1)
         public String clinicalAnalysis; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--supporting-evidences-action"}, description = "Action to be performed if the array of supporting evidences is being updated.", required = false, arity = 1)
