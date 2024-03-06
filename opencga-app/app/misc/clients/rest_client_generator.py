@@ -35,6 +35,7 @@ class RestClientGenerator(ABC):
             'panels/import': {'method_name': 'import_panels'}
         }
         self.categories = {
+            'Organizations': 'Organization',
             'Users': 'User',
             'Projects': 'Project',
             'Studies': 'Study',
@@ -50,7 +51,7 @@ class RestClientGenerator(ABC):
             'Analysis - Clinical': 'ClinicalAnalysis',
             'Operations - Variant Storage': 'VariantOperation',
             'Meta': 'Meta',
-            'Cva': 'Cva',
+            'Cvdb': 'Cvdb',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

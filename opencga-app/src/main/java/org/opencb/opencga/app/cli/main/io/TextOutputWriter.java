@@ -313,16 +313,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<User> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
+                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tQUOTA\n");
                 sb.append("#(P)\tID\tNAME\tDESCRIPTION\n");
                 sb.append("#(S)\t\tID\tNAME\tDESCRIPTION\t#GROUPS\tSIZE\n");
             }
 
             for (User user : queryResult.getResults()) {
-                sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\n", "",
+                sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\n", "",
                         StringUtils.defaultIfEmpty(user.getId(), "-"), StringUtils.defaultIfEmpty(user.getName(), "-"),
                         StringUtils.defaultIfEmpty(user.getEmail(), "-"), StringUtils.defaultIfEmpty(user.getOrganization(), "-"),
-                        StringUtils.defaultIfEmpty(user.getAccount() != null ? user.getAccount().getType().name() : "-", "-"),
                         user.getQuota().getMaxDisk()));
 
                 if (user.getProjects().size() > 0) {

@@ -41,6 +41,9 @@ apiConfig:
     - name: name
       shortcut: n
   categoryConfigList:
+    - name: organizations
+      ignore: False
+      key: Organization
     - name: users
       ignore: False
       key: User

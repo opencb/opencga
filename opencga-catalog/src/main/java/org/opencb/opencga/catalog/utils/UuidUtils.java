@@ -48,7 +48,9 @@ public class UuidUtils {
         JOB(8),
         CLINICAL(9),
         PANEL(10),
-        INTERPRETATION(11);
+        INTERPRETATION(11),
+        ORGANIZATION(12),
+        NOTES(13);
 
         private final int mask;
 

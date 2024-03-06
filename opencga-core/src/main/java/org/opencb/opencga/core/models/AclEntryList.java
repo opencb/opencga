@@ -21,7 +21,7 @@ public class AclEntryList<E extends Enum<E>> {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SampleAclEntryList{");
+        final StringBuilder sb = new StringBuilder("AclEntryList{");
         sb.append("id='").append(id).append('\'');
         sb.append(", acl=").append(acl);
         sb.append('}');

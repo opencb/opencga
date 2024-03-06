@@ -124,9 +124,8 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
             // Loop
             long numMatches = 0;
-            int count = 0;
             while (sampleVariantIndexEntryIterator.hasNext()) {
-                count++;
+                numMatches++;
                 SampleVariantIndexEntry entry = sampleVariantIndexEntryIterator.next();
                 for (int i = 0; i < accumulators.size(); i++) {
                     FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
@@ -134,7 +133,6 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     accumulator.accumulate(field, entry);
                 }
             }
-            numMatches += count;
 
             // Tear down and clean up results.
             for (int i = 0; i < accumulators.size(); i++) {

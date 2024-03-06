@@ -36,6 +36,18 @@ public class FieldConstants {
     public static final String QUALITY_CONTROL_FILES_DESCRIPTION = "File IDs related to the quality control.";
     public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control.";
 
+    // Organization
+    public static final String ORGANIZATION_ID_DESCRIPTION = "Organization unique identifier.";
+    public static final String ORGANIZATION_NAME_DESCRIPTION = "Organization name.";
+    public static final String ORGANIZATION_DOMAIN_DESCRIPTION = "Organization domain. Example: 'zettagenomics.com'.";
+    public static final String ORGANIZATION_OWNER_DESCRIPTION = "Owner of the organization.";
+    public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
+    public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
+//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+//            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
+    public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
+    public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
+
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
             + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "
@@ -343,7 +355,7 @@ public class FieldConstants {
     public static final String JOB_STUDY_PARAM_OTHERS = "List of strings.";
 
     //Project
-    public static final String PROJECT_FQN = "Full Qualified Name (user@projectId).";
+    public static final String PROJECT_FQN = "Full Qualified Name (organization@projectId).";
     public static final String PROJECT_ORGANISM = "Organism to which the project belongs.";
     public static final String PROJECT_STUDIES = "Project study list.";
 

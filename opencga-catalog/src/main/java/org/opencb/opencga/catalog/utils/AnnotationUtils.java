@@ -79,10 +79,6 @@ public class AnnotationUtils {
             throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
-        if (variable.getType() == Variable.VariableType.TEXT) {
-            variable.setType(Variable.VariableType.STRING);
-        }
-
         //Check default values
         switch (variable.getType()) {
             case BOOLEAN:
@@ -196,6 +192,11 @@ public class AnnotationUtils {
                     throw new CatalogException("Repeated annotation for a unique VariableSet");
                 }
             }
+        }
+
+        if (variableSet.isUnique() && StringUtils.isEmpty(annotationSet.getId())) {
+            // If no annotation set id is provided, replicate the variable set id
+            annotationSet.setId(variableSet.getId());
         }
 
         //Get annotationSetName set and variableId map
@@ -431,7 +432,7 @@ public class AnnotationUtils {
                         Map objectMap = (Map) object;
                         checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
                                         variable.getDescription(), variable.getVariables(), null, 1, null),
-                                new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
+                                new AnnotationSet("", variable.getId(), objectMap), null, true);
                     }
                 }
                 break;
@@ -731,25 +732,28 @@ public class AnnotationUtils {
     /**
      * Fixes any field that might be missing from the annotation built by the user so it is perfectly ready for the dbAdaptors to be parsed.
      *
-     * @param study study corresponding to the entry that is being queried. Study should contain the variableSets field filled in.
-     * @param query query object containing the annotation.
+     * @param organizationId Organization id.
+     * @param study          study corresponding to the entry that is being queried. Study should contain the variableSets field filled in.
+     * @param query          query object containing the annotation.
      * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
      */
-    public static void fixQueryAnnotationSearch(Study study, Query query) throws CatalogException {
-        fixQueryAnnotationSearch(study, null, query, null);
+    public static void fixQueryAnnotationSearch(String organizationId, Study study, Query query) throws CatalogException {
+        fixQueryAnnotationSearch(organizationId, study, null, query, null);
     }
 
     /**
      * Fixes any field that might be missing from the annotation built by the user so it is perfectly ready for the dbAdaptors to be parsed.
      *
-     * @param study study corresponding to the entry that is being queried. Study should contain the variableSets field filled in.
-     * @param user for which the confidential permission should be checked.
-     * @param query query object containing the annotation.
+     * @param organizationId       Organization id.
+     * @param study                study corresponding to the entry that is being queried. Study should contain the variableSets field
+     *                             filled in.
+     * @param user                 for which the confidential permission should be checked.
+     * @param query                query object containing the annotation.
      * @param authorizationManager Authorization manager to check for confidential permissions. If null, permissions won't be checked.
      * @throws CatalogException if there are unknown variables being queried, non-existing variable sets...
      */
-    public static void fixQueryAnnotationSearch(Study study, String user, Query query, AuthorizationManager authorizationManager)
-            throws CatalogException {
+    public static void fixQueryAnnotationSearch(String organizationId, Study study, String user, Query query,
+                                                AuthorizationManager authorizationManager) throws CatalogException {
         if (query == null || query.isEmpty() || !query.containsKey(Constants.ANNOTATION)) {
             return;
         }
@@ -796,7 +800,7 @@ public class AnnotationUtils {
 
                     if (authorizationManager != null && !confidentialPermissionChecked && variableSet.isConfidential()) {
                         // We only check the confidential permission if needed once
-                        authorizationManager.checkStudyPermission(study.getUid(), user,
+                        authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
                                 StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                         confidentialPermissionChecked = true;
                     }
@@ -858,7 +862,7 @@ public class AnnotationUtils {
                 if (authorizationManager != null  && !confidentialPermissionChecked && variableSetMap.get(variableSetString)
                         .isConfidential()) {
                     // We only check the confidential permission if needed once
-                    authorizationManager.checkStudyPermission(study.getUid(), user,
+                    authorizationManager.checkStudyPermission(organizationId, study.getUid(), user,
                             StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS);
                     confidentialPermissionChecked = true;
                 }

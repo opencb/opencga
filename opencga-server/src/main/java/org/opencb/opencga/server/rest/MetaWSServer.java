@@ -121,6 +121,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
         Map<String, Class<?>> classMap = new LinkedHashMap<>();
+        classMap.put("organizations", OrganizationWSServer.class);
         classMap.put("users", UserWSServer.class);
         classMap.put("projects", ProjectWSServer.class);
         classMap.put("studies", StudyWSServer.class);

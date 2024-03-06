@@ -34,18 +34,13 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
-import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
-import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
-import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
-import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.panel.PanelImportTask;
-import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
@@ -74,6 +69,7 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -95,6 +91,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclParams;
@@ -149,6 +146,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
+    private List<String> packages;
+
     private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
@@ -171,25 +170,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
-            put(FileIndexTask.ID, "files secondary-index");
             put(FileTsvAnnotationLoader.ID, "files tsv-load");
             put(PostLinkSampleAssociation.ID, "files postlink");
 
-            put(SampleIndexTask.ID, "samples secondary-index");
             put(SampleTsvAnnotationLoader.ID, "samples tsv-load");
 
-            put(IndividualIndexTask.ID, "individuals secondary-index");
             put(IndividualTsvAnnotationLoader.ID, "individuals tsv-load");
 
-            put(CohortIndexTask.ID, "cohorts secondary-index");
             put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
 
-            put(FamilyIndexTask.ID, "families secondary-index");
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
 
             put(PanelImportTask.ID, "panels import");
-
-            put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index-run", "alignment index-run");
             put("coverage-index-run", "alignment coverage-index-run");
@@ -251,9 +243,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token,
-                           CatalogManager catalogManager, StorageConfiguration storageConfiguration, String appHome)
-            throws CatalogDBException {
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, StorageConfiguration storageConfiguration,
+                           String appHome) throws CatalogDBException {
+        this(interval, token, catalogManager, storageConfiguration, appHome, Collections.singletonList(ToolFactory.DEFAULT_PACKAGE));
+    }
+
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, StorageConfiguration storageConfiguration,
+                           String appHome, List<String> packages) throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
@@ -271,6 +267,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        if (CollectionUtils.isEmpty(packages)) {
+            this.packages = Collections.singletonList(ToolFactory.DEFAULT_PACKAGE);
+        } else {
+            this.packages = packages;
+        }
+        logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
     @Override
@@ -306,48 +309,54 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkJobs() {
-        long pendingJobs = -1;
-        long queuedJobs = -1;
-        long runningJobs = -1;
-        try {
-            pendingJobs = jobManager.count(pendingJobsQuery, token).getNumMatches();
-            queuedJobs = jobManager.count(queuedJobsQuery, token).getNumMatches();
-            runningJobs = jobManager.count(runningJobsQuery, token).getNumMatches();
-        } catch (CatalogException e) {
-            logger.error("{}", e.getMessage(), e);
+    protected void checkJobs() throws CatalogException {
+        List<String> organizationIds = catalogManager.getAdminManager().getOrganizationIds(token);
+        for (String organizationId : organizationIds) {
+            long pendingJobs = -1;
+            long queuedJobs = -1;
+            long runningJobs = -1;
+            try {
+                pendingJobs = jobManager.countInOrganization(organizationId, pendingJobsQuery, token).getNumMatches();
+                queuedJobs = jobManager.countInOrganization(organizationId, queuedJobsQuery, token).getNumMatches();
+                runningJobs = jobManager.countInOrganization(organizationId, runningJobsQuery, token).getNumMatches();
+            } catch (CatalogException e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+            logger.info("----- EXECUTION DAEMON  ----- Organization={} --> pending={}, queued={}, running={}", organizationId, pendingJobs,
+                    queuedJobs, runningJobs);
         }
-        logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
 
-            /*
-            PENDING JOBS
-             */
-        checkPendingJobs();
+        /*
+        PENDING JOBS
+        */
+        checkPendingJobs(organizationIds);
 
-            /*
-            QUEUED JOBS
-             */
-        checkQueuedJobs();
+        /*
+        QUEUED JOBS
+        */
+        checkQueuedJobs(organizationIds);
 
-            /*
-            RUNNING JOBS
-             */
-        checkRunningJobs();
+        /*
+        RUNNING JOBS
+        */
+        checkRunningJobs(organizationIds);
     }
 
-    protected void checkRunningJobs() {
-        int handledRunningJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(runningJobsQuery, queryOptions, token)) {
-            while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledRunningJobs += checkRunningJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+    protected void checkRunningJobs(List<String> organizationIds) {
+        for (String organizationId : organizationIds) {
+            int handledRunningJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, runningJobsQuery, queryOptions, token)) {
+                while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledRunningJobs += checkRunningJob(job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
@@ -392,19 +401,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkQueuedJobs() {
-        int handledQueuedJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(queuedJobsQuery, queryOptions, token)) {
-            while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledQueuedJobs += checkQueuedJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+    protected void checkQueuedJobs(List<String> organizationIds) {
+        for (String organizationId : organizationIds) {
+            int handledQueuedJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, queuedJobsQuery, queryOptions, token)) {
+                while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledQueuedJobs += checkQueuedJob(job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
@@ -444,32 +455,35 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    protected void checkPendingJobs() {
+    protected void checkPendingJobs(List<String> organizationIds) {
         // Clear job counts each cycle
         jobsCountByType.clear();
 
-        int handledPendingJobs = 0;
-        try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
-            while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                try {
-                    Job job = iterator.next();
-                    handledPendingJobs += checkPendingJob(job);
-                } catch (Exception e) {
-                    logger.error("{}", e.getMessage(), e);
+        for (String organizationId : organizationIds) {
+            int handledPendingJobs = 0;
+            try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
+                while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                    try {
+                        Job job = iterator.next();
+                        handledPendingJobs += checkPendingJob(organizationId, job);
+                    } catch (Exception e) {
+                        logger.error("{}", e.getMessage(), e);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
         }
     }
 
     /**
      * Check everything is correct and queues the job.
      *
+     * @param organizationId Organization id.
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    protected int checkPendingJob(Job job) {
+    protected int checkPendingJob(String organizationId, Job job) {
         if (StringUtils.isEmpty(job.getStudy().getId())) {
             return abortJob(job, "Missing mandatory 'studyUuid' field");
         }
@@ -478,20 +492,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
         }
 
-        if (!canBeQueued(job)) {
+        if (!canBeQueued(organizationId, job)) {
             return 0;
         }
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool().getId());
+            tool = new ToolFactory().getTool(job.getTool().getId(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + job.getTool().getId() + " not found", e);
         }
 
         try {
-            checkToolExecutionPermission(job);
+            checkToolExecutionPermission(organizationId, job);
         } catch (Exception e) {
             return abortJob(job, e);
         }
@@ -520,7 +534,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         String userToken;
         try {
-            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), Collections.emptyMap(), token);
+            userToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, job.getUserId(), Collections.emptyMap(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'", e);
         }
@@ -535,7 +549,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-
         Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
@@ -548,8 +561,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         } else {
             try {
-                // JOBS/user/job_id/
-                updateParams.setOutDir(getValidDefaultOutDir(job));
+                // JOBS/organizationId/user/job_id/
+                updateParams.setOutDir(getValidDefaultOutDir(organizationId, job));
             } catch (CatalogException e) {
                 return abortJob(job, "Cannot create output directory.", e);
             }
@@ -593,35 +606,48 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return 1;
     }
 
-    protected void checkToolExecutionPermission(Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool().getId());
+    protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
+        Tool tool = new ToolFactory().getTool(job.getTool().getId(), packages);
 
-        if (catalogManager.getAuthorizationManager().isInstallationAdministrator(job.getUserId())) {
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        String user = job.getUserId();
+        String userToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, user, null, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(userToken);
+
+        if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
+            // Hard check. Within READ_ONLY mode, if the tool is an operation on variant, rga or alignment, we forbid it.
+            // Neither opencga administrators can run it.
+            if (tool.type() ==  Tool.Type.OPERATION
+                    && (tool.resource() == Enums.Resource.VARIANT
+                    || tool.resource() == Enums.Resource.RGA
+                    || tool.resource() == Enums.Resource.ALIGNMENT)) {
+                // Forbid storage operations!
+                throw new CatalogAuthorizationException("Unable to execute tool '" + tool.id() + "', "
+                        + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
+                        + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
+        }
+
+        if (authorizationManager.isOpencgaAdministrator(jwtPayload)) {
             // Installation administrator user can run everything
             return;
         }
-        if (tool.scope().equals(Tool.Scope.GLOBAL)) {
-            throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
-                    + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
+
+        if (tool.scope() == Tool.Scope.GLOBAL) {
+            // Only installation administrators can run tools with scope global
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "run tools with scope '" + Tool.Scope.GLOBAL + "'");
+        } else if (tool.scope() == Tool.Scope.ORGANIZATION) {
+            // Only organization owners or administrators can run tools with scope organization
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, user);
         } else {
-            if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.USER_PROJECT_SEPARATOR)) {
-                // If the user is the owner of the project, accept all.
+            if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)) {
+                // Organization administrators can run tools with scope study or project
                 return;
             }
 
             // Validate user is owner or belongs to the right group
             String requiredGroup;
             if (tool.type() == Tool.Type.OPERATION) {
-                if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
-                    if (tool.resource() == Enums.Resource.VARIANT
-                            || tool.resource() == Enums.Resource.RGA
-                            || tool.resource() == Enums.Resource.ALIGNMENT) {
-                        // Forbid storage operations!
-                        abortJob(job, "Unable to execute tool '" + tool.id() + "', "
-                                + "which is an " + Tool.Type.OPERATION + " on resource " + tool.resource() + ". "
-                                + "The storage engine is in mode=" + storageConfiguration.getMode());
-                    }
-                }
                 requiredGroup = ParamConstants.ADMINS_GROUP;
             } else {
                 requiredGroup = ParamConstants.MEMBERS_GROUP;
@@ -720,9 +746,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return outDir;
     }
 
-    private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
+    private File getValidDefaultOutDir(String organizationId, Job job) throws CatalogException {
+        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + organizationId + "/" + job.getUserId() + "/"
+                + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token)
+                .first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -739,7 +766,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check if the user already has permissions set in his folder
         OpenCGAResult<AclEntryList<FilePermissions>> result = fileManager.getAcls(job.getStudy().getId(),
-                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
+                Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"), job.getUserId(), true, token);
         if (result.getNumResults() == 0 || result.first().getAcl().isEmpty()
                 || CollectionUtils.isEmpty(result.first().getAcl().get(0).getPermissions())) {
             // Add permissions to do anything under that path to the user launching the job
@@ -747,10 +774,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .stream()
                     .map(FilePermissions::toString)
                     .collect(Collectors.joining(","));
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new FileAclParams(null, allFilePermissions), SET, token);
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"),
+                    job.getUserId(), new FileAclParams(null, allFilePermissions), SET, token);
             // Remove permissions to the @members group
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + organizationId + "/" + job.getUserId() + "/"),
                     StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
         }
 
@@ -830,7 +857,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    private boolean canBeQueued(Job job) {
+    private boolean canBeQueued(String organizationId, Job job) {
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
                 if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getId())) {
@@ -852,18 +879,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             // No limit for this tool
             return true;
         } else {
-            return canBeQueued(job.getTool().getId(), maxJobs);
+            return canBeQueued(organizationId, job.getTool().getId(), maxJobs);
         }
     }
 
-    private boolean canBeQueued(String toolId, int maxJobs) {
+    private boolean canBeQueued(String organizationId, String toolId, int maxJobs) {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED + ","
                         + Enums.ExecutionStatus.RUNNING)
                 .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
         long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
             try {
-                return catalogManager.getJobManager().count(query, token).getNumMatches();
+                return catalogManager.getJobManager().countInOrganization(organizationId, query, token).getNumMatches();
             } catch (CatalogException e) {
                 logger.error("Error counting the current number of running and queued \"" + toolId + "\" jobs", e);
                 return 0L;

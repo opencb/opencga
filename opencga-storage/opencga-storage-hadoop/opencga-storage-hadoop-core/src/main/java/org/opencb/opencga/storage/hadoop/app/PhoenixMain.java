@@ -153,7 +153,7 @@ public class PhoenixMain extends AbstractMain {
             throw new IllegalStateException("Variants table '" + dbAdaptor.getVariantTable() + "' doesn't exist");
         }
 
-        VariantPhoenixSchemaManager.dropTable(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable(), true);
+        VariantPhoenixSchemaManager.dropView(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable(), true);
 
     }
 

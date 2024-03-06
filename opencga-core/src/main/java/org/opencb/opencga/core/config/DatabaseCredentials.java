@@ -43,6 +43,13 @@ public class DatabaseCredentials {
         this(hosts, user, password, new HashMap<>());
     }
 
+    public DatabaseCredentials(DatabaseCredentials credentials) {
+        this.hosts = credentials.hosts;
+        this.user = credentials.user;
+        this.password = credentials.password;
+        this.options = credentials.options;
+    }
+
     public DatabaseCredentials(List<String> hosts, String user, String password, Map<String, String> options) {
         this.hosts = hosts;
         this.user = user;
@@ -64,34 +71,38 @@ public class DatabaseCredentials {
         return hosts;
     }
 
-    public void setHosts(List<String> hosts) {
+    public DatabaseCredentials setHosts(List<String> hosts) {
         this.hosts = hosts == null
                 ? java.util.Collections.emptyList()
                 : hosts.stream().flatMap(s -> java.util.Arrays.stream(s.split(","))).collect(java.util.stream.Collectors.toList());
+        return this;
     }
 
     public String getUser() {
         return user;
     }
 
-    public void setUser(String user) {
+    public DatabaseCredentials setUser(String user) {
         this.user = user;
+        return this;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public DatabaseCredentials setPassword(String password) {
         this.password = password;
+        return this;
     }
 
     public Map<String, String> getOptions() {
         return options;
     }
 
-    public void setOptions(Map<String, String> options) {
+    public DatabaseCredentials setOptions(Map<String, String> options) {
         this.options = options;
+        return this;
     }
 
 }

@@ -16,30 +16,23 @@
 
 package org.opencb.opencga.server.rest.admin;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.cohort.CohortIndexTask;
-import org.opencb.opencga.analysis.family.FamilyIndexTask;
-import org.opencb.opencga.analysis.file.FileIndexTask;
-import org.opencb.opencga.analysis.individual.IndividualIndexTask;
-import org.opencb.opencga.analysis.job.JobIndexTask;
-import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -48,12 +41,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY_FQN;
 import static org.opencb.opencga.core.models.admin.UserImportParams.ResourceType.*;
 
 @Path("/{apiVersion}/admin")
@@ -79,11 +69,12 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response userSearch(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER) String user,
             @ApiParam(value = ParamConstants.USER_ACCOUNT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.USER_ACCOUNT_TYPE) String account,
             @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
         try {
-            return createOkResponse(catalogManager.getAdminManager().userSearch(query, queryOptions, token));
+            return createOkResponse(catalogManager.getAdminManager().userSearch(organizationId, query, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -93,19 +84,17 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/users/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'GUEST' (default) or 'FULL'")
-    public Response create(@ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user) {
+    @ApiOperation(value = "Create a new user", response = User.class)
+    public Response create(
+            @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
+    ) {
         try {
             if (!user.checkValidParams()) {
-                createErrorResponse(new CatalogException("id, name, email or password not present"));
-            }
-
-            if (user.getType() == null) {
-                user.setType(Account.AccountType.GUEST);
+                return createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
-                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, user.getType(), token);
+                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, token);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -125,7 +114,10 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "configuration. <br>"
                     + "<b>type</b> will be one of 'guest' or 'full'. If not provided, it will be considered 'guest' by default."
     )
-    public Response remoteImport(@ApiParam(value = "JSON containing the parameters", required = true) UserImportParams remoteParams) {
+    public Response remoteImport(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) UserImportParams remoteParams
+    ) {
         try {
             if (remoteParams.getResourceType() == null) {
                 throw new CatalogException("Missing mandatory 'resourceType' field.");
@@ -135,14 +127,14 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             if (remoteParams.getResourceType() == USER || remoteParams.getResourceType() == APPLICATION) {
-                catalogManager.getUserManager().importRemoteEntities(remoteParams.getAuthenticationOriginId(), remoteParams.getId(),
+                catalogManager.getUserManager().importRemoteEntities(organizationId, remoteParams.getAuthenticationOriginId(), remoteParams.getId(),
                         remoteParams.getResourceType() == APPLICATION, remoteParams.getStudyGroup(), remoteParams.getStudy(), token);
             } else if (remoteParams.getResourceType() == GROUP) {
                 if (remoteParams.getId().size() > 1) {
                     throw new CatalogException("More than one group found in 'id'. Only one group is accepted at a time");
                 }
 
-                catalogManager.getUserManager().importRemoteGroupOfUsers(remoteParams.getAuthenticationOriginId(), remoteParams.getId().get(0),
+                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, remoteParams.getAuthenticationOriginId(), remoteParams.getId().get(0),
                         remoteParams.getStudyGroup(), remoteParams.getStudy(), false, token);
             } else {
                 throw new CatalogException("Unknown resourceType '" + remoteParams.getResourceType() + "'");
@@ -154,17 +146,36 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/users/permissions")
+    @ApiOperation(value = "User permissions", notes = "Effective permissions assigned to the users for a given list of entries.",
+            response = Acl.class)
+    public Response effectivePermissions(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.ENTRY_ID_LIST_DESCRIPTION) @QueryParam(ParamConstants.ENTRY_ID_LIST) String entryIdList,
+            @ApiParam(value = ParamConstants.PERMISSION_LIST_DESCRIPTION) @QueryParam(ParamConstants.PERMISSION_LIST) String permissionList,
+            @ApiParam(value = ParamConstants.CATEGORY_DESCRIPTION) @QueryParam(ParamConstants.CATEGORY) String category) {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().getEffectivePermissions(studyStr, getIdList(entryIdList),
+                    getIdListOrEmpty(permissionList), category, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+
+    }
+
     @POST
     @Path("/users/{user}/groups/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add or remove users from existing groups", response = Group.class)
     public Response updateGroups(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_DESCRIPTION) @PathParam(ParamConstants.USER) String user,
             @ApiParam(value = "Action to be performed: ADD or REMOVE user to/from groups", allowableValues = "ADD,REMOVE",
                     defaultValue = "ADD") @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) UserUpdateGroup updateParams) {
         try {
-            return createOkResponse(catalogManager.getAdminManager().updateGroups(user, updateParams.getStudyIds(), updateParams.getGroupIds(), action, token));
+            return createOkResponse(catalogManager.getAdminManager().updateGroups(organizationId, user, updateParams.getStudyIds(), updateParams.getGroupIds(), action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -176,7 +187,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
                     + "<ul>"
                     + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
-                    + "<li><b>study</b>: Study [[user@]project:]study where the list of users will be associated to.</li>"
+                    + "<li><b>study</b>: Study [[organization@]project:]study where the list of users will be associated to.</li>"
                     + "<li><b>from</b>: Group defined in the authenticated origin to be synchronised.</li>"
                     + "<li><b>to</b>: Group in a study that will be synchronised.</li>"
                     + "<li><b>syncAll</b>: Flag indicating whether to synchronise all the groups present in the study with"
@@ -187,13 +198,16 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "synchronised with any other group.</li>"
                     + "</ul>"
     )
-    public Response externalSync(@ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams) {
+    public Response externalSync(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+    ) {
         try {
             // TODO: These two methods should return an OpenCGAResult containing at least the number of changes
             if (syncParams.isSyncAll()) {
-                catalogManager.getUserManager().syncAllUsersOfExternalGroup(syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(organizationId, syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
             } else {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
+                catalogManager.getUserManager().importRemoteGroupOfUsers(organizationId, syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
                         syncParams.getTo(), syncParams.getStudy(), true, token);
             }
             return createOkResponse(OpenCGAResult.empty(Group.class));
@@ -240,53 +254,17 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/catalog/indexStats")
-    @ApiOperation(value = "Sync Catalog into the Solr", response = Boolean.class)
-    public Response syncSolr(@ApiParam(value = "Collection to be indexed (file, sample, individual, family, cohort and/or job)." +
-            " If not provided, all of them will be indexed.") @QueryParam("collection") String collection) {
-        try {
-            boolean isEmpty = StringUtils.isEmpty(collection);
-
-            ObjectMap params = new ObjectMap();
-            List<OpenCGAResult<Job>> results = new ArrayList<>(6);
-            if (isEmpty || collection.equalsIgnoreCase("file")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            if (isEmpty || collection.equalsIgnoreCase("sample")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            if (isEmpty || collection.equalsIgnoreCase("individual")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            if (isEmpty || collection.equalsIgnoreCase("family")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            if (isEmpty || collection.equalsIgnoreCase("cohort")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            if (isEmpty || collection.equalsIgnoreCase("job")) {
-                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            }
-            return createOkResponse(OpenCGAResult.merge(results));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
     @Path("/catalog/install")
     @ApiOperation(value = "Install OpenCGA database", notes = "Creates and initialises the OpenCGA database <br>"
             + "<ul>"
             + "<il><b>secretKey</b>: Secret key needed to authenticate through OpenCGA (JWT)</il><br>"
             + "<il><b>password</b>: Password that will be set to perform future administrative operations over OpenCGA</il><br>"
             + "<il><b>email</b>: Administrator's email address.</il><br>"
-            + "<il><b>organization</b>: Administrator's organization.</il><br>"
             + "<ul>")
     public Response install(
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallationParams installParams) {
         try {
-            catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
-                    installParams.getOrganization(), false);
+            catalogManager.installCatalogDB("HS256", installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(), false);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -343,11 +321,14 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/catalog/jwt")
     @ApiOperation(value = "Change JWT secret key")
-    public Response jwt(@ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams) {
+    public Response jwt(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams
+    ) {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.getSecretKey());
         try {
-            catalogManager.updateJWTParameters(params, token);
+            catalogManager.updateJWTParameters(organizationId, params, token);
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -357,11 +338,14 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/token")
     @ApiOperation(value = "Obtain a valid token for a user", hidden = true)
-    public Response token(@ApiParam(value = "Token parameters", required = true) TokenParams jwtParams) {
+    public Response token(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = "Token parameters", required = true) TokenParams jwtParams
+    ) {
         try {
             String newToken = jwtParams.getExpiration() != null
-                    ? catalogManager.getUserManager().getToken(jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
-                    : catalogManager.getUserManager().getNonExpiringToken(jwtParams.getUserId(), jwtParams.getAttributes(), token);
+                    ? catalogManager.getUserManager().getToken(organizationId, jwtParams.getUserId(), jwtParams.getAttributes(), jwtParams.getExpiration(), token)
+                    : catalogManager.getUserManager().getNonExpiringToken(organizationId, jwtParams.getUserId(), jwtParams.getAttributes(), token);
             AuthenticationResponse authResponse = new AuthenticationResponse(newToken);
             OpenCGAResult<AuthenticationResponse> opencgaResponse = new OpenCGAResult<>(0, Collections.emptyList(), 1,
                     Collections.singletonList(authResponse), 1);
