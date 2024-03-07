@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.api;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
@@ -43,7 +44,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_OWNER_DESCRIPTION = "Owner of the organization.";
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
-//    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
+    //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
@@ -98,7 +99,7 @@ public class FieldConstants {
             + " sample.";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION = "Genome plot for the quality control of the"
             + " sample.";
-    public static final String SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION  = "List of HRDetect results for a given sample";
+    public static final String SAMPLE_QUALITY_CONTROL_METRICS_HRDETEC_DESCRIPTION = "List of HRDetect results for a given sample";
     public static final String SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION = "File for the quality control metrics of the "
             + "sample.";
 
@@ -469,7 +470,7 @@ public class FieldConstants {
     public static final String HRDETECT_CNV_QUERY_DESCRIPTION = "CNV query";
     public static final String HRDETECT_INDEL_QUERY_DESCRIPTION = "INDEL query";
     public static final String HRDETECT_SNV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV3 input for"
-        + " HRDetect.";
+            + " HRDetect.";
     public static final String HRDETECT_SNV8_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SNV8 input for"
             + " HRDetect.";
     public static final String HRDETECT_SV3_CUSTOM_NAME_DESCRIPTION = "Custom signature name that will be considered as SV3 input for"
@@ -488,11 +489,37 @@ public class FieldConstants {
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 
-    // Alignment QC analysis (asample-qc-run)
+    // Alignment QC analysis (sample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"
             + " commas): " + AlignmentQcParams.STATS_SKIP_VALUE + ", " + AlignmentQcParams.FLAGSTATS_SKIP_VALUE + ", "
             + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
+    // ROH analysis
+    public static final String ROH_SAMPLE_ID_DESCRIPTION = "Sample to analyse";
+    public static final String ROH_CHROMOSOME_DESCRIPTION = "Chromosome to analyse";
+    public static final String ROH_FILTER_DESCRIPTION = "FILTER (VCF FILTER annotation field) category to filter in variants in the ROH"
+            + " analysis. Default: PASS.";
+    public static final String ROH_GENOTYPE_QUALITY_DESCRIPTION = "GQ (VCF genotype quality annotation field) threshold to filter in"
+            + " variants in the ROH analysis. Default: 40 (GQ>40).";
+    public static final String ROH_SKIP_GENOTYPE_QUALITY_DESCRIPTION = "Flag to not use the GQ (VCF genotype quality annotation field)"
+            + " to filter in variants in the ROH analysis. Default: false";
+    public static final String ROH_HOMOZYG_WINDOW_SNP_DESCRIPTION = "Plink's parameter to set the scanning window size to look for ROHs."
+            + " Default: 50";
+    public static final String ROH_HOMOZYG_WINDOW_HET_DESCRIPTION = "Plink's parameter to set the maximum number of heterozygous calls in"
+            + " a scanning window hit. Default: 1";
+    public static final String ROH_HOMOZYG_WINDOW_MISSING_DESCRIPTION = "Plink's parameter to set the maximum number of missing calls in a"
+            + " scanning window hit. Default: 5";
+    public static final String ROH_HOMOZYG_WINDOW_THRESHOLD_DESCRIPTION = "Plink's parameter to set the minimum scanning window rate."
+            + " Default: 0.05";
+    public static final String ROH_HOMOZYG_KB_DESCRIPTION = "Plink's parameter to set the minimum ROH length in kilobases (kb)."
+            + " Default: 1000";
+    public static final String ROH_HOMOZYG_SNP_DESCRIPTION = "Plink's parameter to set the minimum number of snps in a ROH. Default: 100";
+    public static final String ROH_HOMOZYG_HET_DESCRIPTION = "Plink's parameter to set the maximum number of heterozygous calls in a ROH."
+            + " Default: unlimited.";
+    public static final String ROH_HOMOZYG_DENSITY_DESCRIPTION = "Plink's parameter to set the maximum inverse ROH density (kb/SNP)."
+            + " Minimum ROH density: 1 SNP per X kb. Default: 50";
+    public static final String ROH_HOMOZYG_GAP_DESCRIPTION = "Plink's parameter to set the maximum gap length in kb between two"
+            + " consecutive SNPs to be considered part of the same ROH. Default: 1000";
 }

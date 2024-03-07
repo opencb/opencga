@@ -51,6 +51,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.roh.RohWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -63,6 +64,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.RohWrapperParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -1122,6 +1124,31 @@ public class VariantAnalysisTest {
         thrown.expectMessage("The storage engine is in mode=READ_ONLY");
         variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration("https://uk.ws.zettagenomics.com/cellbase/", "v5.2", "1", ""), false, null, token);
     }
+
+    @Test
+    public void testRoh() throws IOException, ToolException {
+        Path rohOutDir = Paths.get(opencga.createTmpOutdir("_roh"));
+
+        // SNV fitting
+        RohWrapperParams params = new RohWrapperParams();
+        params.setSampleId(son);
+        params.setChromosome("1");
+//        params.setId(snvSignature.getId());
+//        params.setFitId("snv-fitting-1");
+//        params.setFitMethod("FitMS");
+//        params.setFitSigVersion("RefSigv2");
+//        params.setFitOrgan("Breast");
+//        params.setFitNBoot(100);
+//        params.setFitThresholdPerc(5.0f);
+//        params.setFitThresholdPval(0.05f);
+//        params.setFitMaxRareSigs(1);
+//        params.setSkip("catalogue");
+
+        toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, CANCER_STUDY),
+                rohOutDir, null, token);
+    }
+
+    //-------------------------------------------------------------------------
 
     public void checkExecutionResult(ExecutionResult er) {
         checkExecutionResult(er, true);
