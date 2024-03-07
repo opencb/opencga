@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Admin;
@@ -126,7 +127,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 .setAlgorithm("HS256")
                 .setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH))
         );
-        catalogDBAdaptor = new MongoDBAdaptorFactory(configuration);
+        catalogDBAdaptor = new MongoDBAdaptorFactory(configuration, new IOManagerFactory());
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
