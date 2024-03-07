@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
@@ -140,8 +141,9 @@ public class OrganizationMongoDBAdaptorFactory {
 
     private final Logger logger;
 
-    public OrganizationMongoDBAdaptorFactory(MongoDataStoreManager mongoDataStoreManager, MongoDBConfiguration mongoDBConfiguration,
-                                             String organizationId, Configuration configuration) throws CatalogDBException {
+    public OrganizationMongoDBAdaptorFactory(String organizationId, MongoDataStoreManager mongoDataStoreManager,
+                                             MongoDBConfiguration mongoDBConfiguration, Configuration configuration,
+                                             IOManagerFactory ioManagerFactory) throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
         this.organizationId = organizationId;
@@ -195,7 +197,7 @@ public class OrganizationMongoDBAdaptorFactory {
         notesDBAdaptor = new NotesMongoDBAdaptor(notesCollection, notesArchivedCollection, deletedNotesCollection,
                 configuration, this);
         organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, configuration, this);
-        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, configuration, this);
+        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, configuration, this, ioManagerFactory);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection, configuration,
                 this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,
