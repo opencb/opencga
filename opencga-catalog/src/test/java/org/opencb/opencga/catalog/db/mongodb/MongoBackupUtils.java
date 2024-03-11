@@ -87,7 +87,8 @@ public class MongoBackupUtils {
         logger.info("Database dump created in {} milliseconds.", stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
-    public static void restore(CatalogManager catalogManager, Path opencgaHome) throws CatalogDBException, IOException, CatalogIOException {
+    public static void restore(CatalogManager catalogManager, Path opencgaHome)
+            throws CatalogDBException, IOException, CatalogIOException, URISyntaxException {
         StopWatch stopWatch = StopWatch.createStarted();
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
@@ -130,7 +131,8 @@ public class MongoBackupUtils {
     }
 
     private static void restoreDatabase(CatalogManager catalogManager, Path opencgaHome, String organizationId, String databaseName,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) throws IOException, CatalogIOException, CatalogDBException {
+                                        MongoDBAdaptorFactory dbAdaptorFactory)
+            throws IOException, CatalogIOException, CatalogDBException, URISyntaxException {
         MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getMongoDataStore().getMongoClient();
         MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");
         Bson emptyBsonQuery = new Document();
@@ -175,7 +177,7 @@ public class MongoBackupUtils {
                             createFile(ioManager, document);
                         } else if (OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION.equals(collection)) {
                             // Create temporal study folder
-                            ioManager.createDirectory(Paths.get(replacedUri).toUri(), true);
+                            ioManager.createDirectory(UriUtils.createUri(replacedUri), true);
                         }
                     }
                     documentList.add(document);

@@ -222,7 +222,7 @@ public class AdminManager extends AbstractManager {
         String userId = jwtPayload.getUserId(organizationId);
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, jwtPayload);
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
             ParamUtils.checkParameter(category, "category");
             ParamUtils.checkNotEmptyArray(entryIdList, "entry id list");
