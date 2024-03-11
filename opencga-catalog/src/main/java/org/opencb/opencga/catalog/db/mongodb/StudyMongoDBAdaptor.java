@@ -487,6 +487,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(result);
     }
 
+    void addUsersToAdminsAndMembersGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("List of 'members' is missing or empty.");
+        }
+
+        Document query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+
+        query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.MEMBERS_GROUP);
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
     @Override
     public OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (CollectionUtils.isEmpty(members)) {
@@ -501,6 +514,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (update.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+        return new OpenCGAResult<>(update);
+    }
+
+    OpenCGAResult<Group> removeUsersFromAdminsGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("Unable to remove members from group. List of members is empty.");
+        }
+
+        Document query = new Document()
+                .append(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Bson pull = Updates.pullAll("groups.$.userIds", members);
+        DataResult update = studyCollection.update(clientSession, query, pull, new QueryOptions(MongoDBCollection.MULTI, true));
         return new OpenCGAResult<>(update);
     }
 
