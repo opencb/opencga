@@ -3,18 +3,29 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -118,5 +129,75 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         assertNull(organization.getOwner());
     }
 
+    @Test
+    public void updateOrganizationTest() throws CatalogException {
+        // Owner update
+        Organization organization = catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setName("name"), INCLUDE_RESULT, ownerToken).first();
+        assertEquals("name", organization.getName());
+
+        // Admin update
+        organization = catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setName("name2"), INCLUDE_RESULT, orgAdminToken1).first();
+        assertEquals("name2", organization.getName());
+
+        // Normal user update
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setName("name2"), INCLUDE_RESULT, normalToken1));
+
+        // Admin update owner
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setOwner(normalUserId2), INCLUDE_RESULT, orgAdminToken1));
+        // Admin update admins
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setAdmins(Collections.singletonList(normalUserId1)), INCLUDE_RESULT, orgAdminToken1));
+
+        // Owner changes owner
+        organization = catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams().setOwner(normalUserId2),
+                INCLUDE_RESULT, ownerToken).first();
+        assertEquals(normalUserId2, organization.getOwner());
+
+        QueryOptions studyOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.GROUPS.key())
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        OpenCGAResult<Study> result = catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), studyOptions,
+                normalToken2);
+        assertEquals(3, result.getNumResults());
+        for (Study study : result.getResults()) {
+            for (Group group : study.getGroups()) {
+                if (ParamConstants.ADMINS_GROUP.equals(group.getId())) {
+                    assertTrue(group.getUserIds().contains(normalUserId2));
+                    assertFalse(group.getUserIds().contains(orgOwnerUserId));
+                    assertFalse(group.getUserIds().contains(normalUserId1));
+                }
+            }
+        }
+
+        // Previous owner changes admins
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setOwner(normalUserId2), INCLUDE_RESULT, ownerToken));
+
+        // Current owner changes admins
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), ParamUtils.AddRemoveAction.ADD);
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        organization = catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setAdmins(Collections.singletonList(normalUserId1)), options, normalToken2).first();
+        assertEquals(3, organization.getAdmins().size());
+        assertTrue(organization.getAdmins().contains(normalUserId1));
+
+        // Check study admins
+        result = catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), studyOptions, normalToken2);
+        assertEquals(3, result.getNumResults());
+        for (Study study : result.getResults()) {
+            for (Group group : study.getGroups()) {
+                if (ParamConstants.ADMINS_GROUP.equals(group.getId())) {
+                    assertTrue(group.getUserIds().contains(normalUserId1));
+                }
+            }
+        }
+    }
 
 }
