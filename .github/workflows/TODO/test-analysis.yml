@@ -45,7 +45,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        module: ["opencga-enterprise-core", "opencga-enterprise-cva"]
+        module: ["opencga-enterprise-core", "opencga-enterprise-cvdb"]
     steps:
       - name: Download result dir
         uses: actions/download-artifact@v3
