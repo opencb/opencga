@@ -70,11 +70,13 @@ public abstract class FacetFieldAccumulator<T> {
      * Accumulate T in the given field.
      * @param field   Field
      * @param t       element
+     * @return        true if the count was increased, false otherwise
      */
-    public final void accumulate(FacetField field, T t) {
+    public final boolean accumulate(FacetField field, T t) {
         List<FacetField.Bucket> buckets = getBuckets(field, t);
         if (buckets == null || buckets.isEmpty()) {
-            return;
+            // Do not increase count if the element does not belong to any bucket
+            return false;
         }
         field.addCount(1);
         for (FacetField.Bucket bucket : buckets) {
@@ -83,7 +85,17 @@ public abstract class FacetFieldAccumulator<T> {
                 nestedFieldAccumulator.accumulate(bucket.getFacetFields().get(0), t);
             }
         }
+        return true;
     }
 
     protected abstract List<FacetField.Bucket> getBuckets(FacetField field, T t);
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("FacetFieldAccumulator{name:'");
+        sb.append(getName()).append('\'');
+        sb.append(", nestedFieldAccumulator:").append(nestedFieldAccumulator);
+        sb.append('}');
+        return sb.toString();
+    }
 }

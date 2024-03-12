@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.bson.Document;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -44,20 +46,24 @@ import static org.junit.Assert.*;
  * Created by pfurio on 19/01/16.
  */
 @Category(MediumTests.class)
-public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
+public class UserMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void nativeGet() throws Exception {
-        Query query = new Query("id", "imedina");
-        DataResult queryResult = catalogUserDBAdaptor.nativeGet(query, null);
+        Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), normalUserId1);
+        DataResult<Document> queryResult = catalogUserDBAdaptor.nativeGet(query, null);
+        assertEquals(1, queryResult.getNumResults());
+        assertEquals(normalUserId1, queryResult.first().getString(UserDBAdaptor.QueryParams.ID.key()));
     }
 
     @Test
     public void createUserTest() throws CatalogException {
         User user = new User("NewUser", "", "", "", new UserInternal(new UserStatus()));
-        catalogUserDBAdaptor.insert(user, "", null);
+        OpenCGAResult insert = catalogUserDBAdaptor.insert(user, "", null);
+        assertEquals(1, insert.getNumInserted());
 
         thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("already exists");
         catalogUserDBAdaptor.insert(user, "", null);
     }
 
@@ -67,9 +73,8 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogUserDBAdaptor.insert(deletable1, "1234", null);
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), "deletable1");
         DataResult<User> userResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
-        assertFalse(userResult.getResults().isEmpty());
-        assertNotNull(userResult.first());
-
+        assertEquals(1, userResult.getNumResults());
+        assertEquals("deletable1", userResult.first().getId());
         assertEquals(InternalStatus.READY, userResult.first().getInternal().getStatus().getId());
 
         DataResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
@@ -78,25 +83,17 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
         DataResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
         assertEquals(InternalStatus.DELETED, queryResult.first().getInternal().getStatus().getId());
-
-
-        /*
-        thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.delete(deletable1.getId());
-        */
     }
 
     @Test
     public void getUserTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        DataResult<User> user = catalogUserDBAdaptor.get(user1.getId(), null);
-        assertNotSame(0, user.getResults().size());
+        DataResult<User> user = catalogUserDBAdaptor.get(normalUserId1, null);
+        assertEquals(1, user.getNumResults());
+        assertEquals(normalUserId1, user.first().getId());
 
-        user = catalogUserDBAdaptor.get(user3.getId(), null);
-        assertFalse(user.getResults().isEmpty());
-        assertFalse(user.first().getProjects().isEmpty());
-
-        user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")));
-        assertEquals(null, user.first().getProjects());
+        user = catalogUserDBAdaptor.get(normalUserId3, null);
+        assertEquals(1, user.getNumResults());
+        assertEquals(normalUserId3, user.first().getId());
 
         OpenCGAResult<User> nonExistingUser = catalogUserDBAdaptor.get("NonExistingUser", null);
         assertEquals(0, nonExistingUser.getNumResults());
@@ -104,29 +101,29 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void changePasswordTest() throws CatalogDBException, CatalogAuthenticationException {
-        DataResult result = catalogUserDBAdaptor.changePassword(user2.getId(), "1111", "1234");
+        DataResult result = catalogUserDBAdaptor.changePassword(normalUserId1, TestParamConstants.PASSWORD, "1234");
         assertEquals(1, result.getNumUpdated());
 
         thrown.expect(CatalogAuthenticationException.class);
-        catalogUserDBAdaptor.changePassword(user2.getId(), "BAD_PASSWORD", "asdf");
+        catalogUserDBAdaptor.changePassword(normalUserId1, "BAD_PASSWORD", "asdf");
     }
 
     @Test
     public void modifyUserTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap genomeMapsConfig = new ObjectMap("lastPosition", "4:1222222:1333333");
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
-        catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps", genomeMapsConfig);
-        catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps2", genomeMapsConfig);
+        catalogUserDBAdaptor.setConfig(normalUserId1, "genomemaps", genomeMapsConfig);
+        catalogUserDBAdaptor.setConfig(normalUserId1, "genomemaps2", genomeMapsConfig);
 
-        User user = catalogUserDBAdaptor.get(user1.getId(), null).first();
+        User user = catalogUserDBAdaptor.get(normalUserId1, null).first();
         assertNotNull(user.getConfigs().get("genomemaps"));
         assertNotNull(user.getConfigs().get("genomemaps2"));
         Map<String, Object> genomemaps = user.getConfigs().get("genomemaps");
         assertNotNull(genomemaps.get("otherConf"));
         assertNotNull(genomemaps.get("lastPosition"));
 
-        catalogUserDBAdaptor.deleteConfig(user1.getId(), "genomemaps");
-        user = catalogUserDBAdaptor.get(user1.getId(), null).first();
+        catalogUserDBAdaptor.deleteConfig(normalUserId1, "genomemaps");
+        user = catalogUserDBAdaptor.get(normalUserId1, null).first();
         assertNull(user.getConfigs().get("genomemaps"));
         assertNotNull(user.getConfigs().get("genomemaps2"));
     }
@@ -137,8 +134,8 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
 
-        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
+        catalogUserDBAdaptor.addFilter(normalUserId1, filter);
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(normalUserId1, new QueryOptions());
 
         UserFilter filterResult = userDataResult.first().getFilters().get(0);
 
@@ -154,16 +151,16 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
-        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
+        catalogUserDBAdaptor.addFilter(normalUserId1, filter);
 
         ObjectMap params = new ObjectMap()
                 .append(UserDBAdaptor.FilterParams.DESCRIPTION.key(), "The description has changed")
                 .append(UserDBAdaptor.FilterParams.RESOURCE.key(), Enums.Resource.VARIANT)
                 .append(UserDBAdaptor.FilterParams.QUERY.key(), new Query("key3", "whatever"))
                 .append(UserDBAdaptor.FilterParams.OPTIONS.key(), new QueryOptions("options", "optionsValue"));
-        catalogUserDBAdaptor.updateFilter(user4.getId(), filter.getId(), params);
+        catalogUserDBAdaptor.updateFilter(normalUserId1, filter.getId(), params);
 
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(normalUserId1, new QueryOptions());
 
         UserFilter filterResult = userDataResult.first().getFilters().get(0);
 
@@ -181,9 +178,9 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
 
-        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
-        catalogUserDBAdaptor.deleteFilter(user4.getId(), filter.getId());
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
+        catalogUserDBAdaptor.addFilter(normalUserId1, filter);
+        catalogUserDBAdaptor.deleteFilter(normalUserId1, filter.getId());
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(normalUserId1, new QueryOptions());
 
         List<UserFilter> filters = userDataResult.first().getFilters();
         assertTrue(filters.size() == 0);
@@ -196,21 +193,21 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
-        DataResult writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        DataResult writeResult = catalogUserDBAdaptor.setConfig(normalUserId1, "config1", objectMap);
 
         assertEquals(1, writeResult.getNumUpdated());
 
-        DataResult<User> queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
+        DataResult<User> queryResult = catalogUserDBAdaptor.get(normalUserId1, QueryOptions.empty());
         ObjectMap result = queryResult.first().getConfigs().get("config1");
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof Map);
 
         // Update the config
         objectMap.put("key2", objectMap.get("key1"));
-        writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        writeResult = catalogUserDBAdaptor.setConfig(normalUserId1, "config1", objectMap);
         assertEquals(1, writeResult.getNumUpdated());
 
-        queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
+        queryResult = catalogUserDBAdaptor.get(normalUserId1, QueryOptions.empty());
         result = queryResult.first().getConfigs().get("config1");
 
         assertTrue(result.get("key1") instanceof List);
@@ -223,13 +220,13 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
-        catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        catalogUserDBAdaptor.setConfig(normalUserId1, "config1", objectMap);
 
-        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+        catalogUserDBAdaptor.deleteConfig(normalUserId1, "config1");
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("Could not delete config1 configuration");
-        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+        catalogUserDBAdaptor.deleteConfig(normalUserId1, "config1");
     }
 
 

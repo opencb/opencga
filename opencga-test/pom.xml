@@ -96,38 +96,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.10</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assemble</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <repositoryName>libs</repositoryName>
-                    <repositoryLayout>flat</repositoryLayout>
-                    <useWildcardClassPath>false</useWildcardClassPath>
-                    <!--By default, "etc".-->
-                    <configurationDirectory>conf</configurationDirectory>
-                    <!--Do we need to include the configuration folder in the classpath?-->
-                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
-                    <programs>
-                        <program>
-                            <id>opencga-test.sh</id>
-                            <mainClass>org.opencb.opencga.test.manager.TestGeneratorManager</mainClass>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
-                    </programs>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>

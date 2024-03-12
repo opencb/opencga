@@ -11,8 +11,12 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -85,11 +89,8 @@ public class PedigreeGraphUtils {
         if (!imgFile.exists()) {
             throw new IOException("Pedigree graph image file (" + PEDIGREE_IMAGE_FILENAME + ") not found at " + outDir);
         }
-
-        FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-        byte[] bytes = new byte[(int) imgFile.length()];
-        fileInputStreamReader.read(bytes);
-        return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+        byte[] bytes = Files.readAllBytes(imgFile.toPath());
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     public static Object getJsonPedigreeGraph(Path outDir) throws IOException {
@@ -107,9 +108,7 @@ public class PedigreeGraphUtils {
             throw new IOException("Pedigree graph TSV file (" + PEDIGREE_TSV_FILENAME + ") not found at " + outDir);
         }
 
-        FileInputStream fileInputStreamReader = new FileInputStream(tsvFile);
-        byte[] bytes = new byte[(int) tsvFile.length()];
-        fileInputStreamReader.read(bytes);
+        byte[] bytes = Files.readAllBytes(tsvFile.toPath());
         return new String(bytes, StandardCharsets.UTF_8);
     }
 

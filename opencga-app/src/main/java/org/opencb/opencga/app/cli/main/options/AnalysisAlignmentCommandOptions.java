@@ -200,7 +200,7 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = "File ID", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--region"}, description = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000", required = false, arity = 1)
@@ -238,7 +238,7 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--file2"}, description = "Input file #2 (e.g. germline file)", required = true, arity = 1)
         public String file2; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--skip-log2"}, description = "Do not apply Log2 to normalise the coverage ratio", required = false, help = true, arity = 0)
@@ -276,7 +276,7 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--gene"}, description = "Comma separated list of genes, e.g.: BCRA2,TP53", required = true, arity = 1)
         public String gene; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--threshold"}, description = "Only regions whose coverage depth is under this threshold will be reported.", required = false, arity = 1)
@@ -492,7 +492,7 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = "File ID", required = true, arity = 1)
         public String file; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--region"}, description = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000", required = false, arity = 1)

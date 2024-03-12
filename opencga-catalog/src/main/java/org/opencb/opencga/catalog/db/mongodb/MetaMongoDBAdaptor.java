@@ -52,13 +52,13 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     private static final String OLD_ID = "_id";
     public static final Bson METADATA_QUERY = Filters.or(
-            Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
-            Filters.eq(OLD_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID));
+            Filters.eq(ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID),
+            Filters.eq(OLD_ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID));
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.getInstance().getBuildVersion();
 
     public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory) {
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(MetaMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
@@ -112,25 +112,25 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             throw new UncheckedIOException(e);
         }
 
-        createIndexes(MongoDBAdaptorFactory.USER_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.FILE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.JOB_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.AUDIT_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.USER_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.AUDIT_COLLECTION, indexes);
 
         // Versioned collections
-        createIndexes(MongoDBAdaptorFactory.SAMPLE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_ARCHIVE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.FAMILY_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.FAMILY_ARCHIVE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.PANEL_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
-        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.SAMPLE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INDIVIDUAL_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INDIVIDUAL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FAMILY_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.FAMILY_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.PANEL_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
+        createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
     }
 
     private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {
@@ -188,7 +188,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
-        metadataObject.put(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        metadataObject.put(ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(admin, "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()

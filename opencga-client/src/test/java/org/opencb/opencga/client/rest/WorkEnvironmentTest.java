@@ -42,6 +42,7 @@ import java.nio.file.StandardCopyOption;
 @Category(ShortTests.class)
 public class WorkEnvironmentTest extends ExternalResource {
 
+    protected String organizationId = "test";
     protected OpenCGAClient openCGAClient;
     protected Path opencgaHome;
     protected CatalogManager catalogManager;
@@ -90,14 +91,14 @@ public class WorkEnvironmentTest extends ExternalResource {
 
         catalogManager = new CatalogManager(configuration);
 
-        CatalogDemo.createDemoDatabase(catalogManager, TestParamConstants.ADMIN_PASSWORD, true);
+        CatalogDemo.createDemoDatabase(catalogManager, organizationId, TestParamConstants.ADMIN_PASSWORD, true);
 
         restServer = new RestServer(opencgaHome);
         restServer.start();
 
 //        catalogManager = new CatalogManager(configuration);
         clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
-        openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
+        openCGAClient = new OpenCGAClient(organizationId, "user1", "user1_pass", clientConfiguration);
     }
 
     @Override

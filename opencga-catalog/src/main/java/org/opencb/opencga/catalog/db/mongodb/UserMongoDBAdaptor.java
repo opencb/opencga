@@ -74,7 +74,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     private static final String PRIVATE_PASSWORD = "_password";
 
     public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory) {
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(UserMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
@@ -302,29 +302,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
-        QueryOptions userOptions;
-        if (includeProjects(options)) {
-            userOptions = filterQueryOptions(options, Arrays.asList(ID, PROJECTS_UID.key()));
-        } else {
-            userOptions = filterQueryOptions(options, Collections.singletonList(ID));
-        }
+        QueryOptions userOptions = filterQueryOptions(options, Collections.singletonList(ID));
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
-        if (includeStudies(options)) {
-            for (User user : userDataResult.getResults()) {
-                if (user.getProjects() != null) {
-                    for (Project project : user.getProjects()) {
-                        Query query1 = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-                        QueryOptions studyOptions = extractNestedOptions(options, PROJECTS.key() + ".studies.");
-                        OpenCGAResult<Study> studyResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(query1, studyOptions);
-                        project.setStudies(studyResult.getResults());
-                    }
-                }
-            }
-        }
-
-        if (includeSharedProjects(options)) {
-            QueryOptions sharedProjectOptions = extractNestedOptions(options, SHARED_PROJECTS.key());
+        if (includeProjects(options)) {
+            QueryOptions sharedProjectOptions = extractNestedOptions(options, PROJECTS.key());
             sharedProjectOptions = filterQueryOptions(sharedProjectOptions, Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(),
                     "studies." + StudyDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
             extractSharedProjects(userDataResult, sharedProjectOptions);
@@ -355,50 +337,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         return true;
     }
 
-    private boolean includeSharedProjects(QueryOptions options) {
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-
-        if (!includeList.isEmpty()) {
-            for (String includeKey : includeList) {
-                if (includeKey.startsWith(SHARED_PROJECTS.key() + ".")) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (!excludeList.isEmpty()) {
-            for (String excludeKey : excludeList) {
-                if (excludeKey.equals(SHARED_PROJECTS.key())) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private boolean includeStudies(QueryOptions options) {
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-
-        if (!includeList.isEmpty()) {
-            for (String includeKey : includeList) {
-                if (includeKey.startsWith(PROJECTS.key() + ".studies.")) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (!excludeList.isEmpty()) {
-            for (String excludeKey : excludeList) {
-                if (excludeKey.equals(PROJECTS.key() + ".studies")) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     private void extractSharedProjects(DataResult<User> userDataResult, QueryOptions options) throws CatalogDBException {
         Set<String> users = userDataResult.getResults().stream().map(User::getId).collect(Collectors.toSet());
 
@@ -406,7 +344,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Map<String, Study> studyMap = new HashMap<>();
         Map<String, String> studyProjectMap = new HashMap<>();
         Map<String, List<String>> userStudyMap = new HashMap<>();
-        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(new Query(), options);
+        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDBAdaptor().get(new Query(), options);
         for (Project project : result.getResults()) {
             projectMap.put(project.getFqn(), project);
             if (project.getStudies() != null) {
@@ -439,7 +377,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             }
         }
 
-        // Add SharedProject information
+        // Add sharedProject information
         for (User user : userDataResult.getResults()) {
             if (userStudyMap.containsKey(user.getId())) {
                 Map<String, List<Study>> projectStudyMap = new HashMap<>();
@@ -460,7 +398,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     projectList.add(project);
                 }
 
-                user.setSharedProjects(projectList);
+                user.setProjects(projectList);
             }
         }
     }
@@ -480,7 +418,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                 for (Document project : projects) {
                     Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.get(ProjectDBAdaptor
                             .QueryParams.UID.key()));
-                    OpenCGAResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
+                    OpenCGAResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDBAdaptor().nativeGet(query1, options);
                     projectsTmp.add(queryResult1.first());
                 }
                 user.remove("projects");
@@ -578,35 +516,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("The user {" + id + "} was already " + user.getInternal().getStatus().getId());
         }
 
-        // If we don't find the force parameter, we check first if the user does not have an active project.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            // Delete the active projects (if any)
-            query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), id);
-            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
-        }
-
         // Change the status of the user to deleted
         return setStatus(id, UserStatus.DELETED);
-    }
-
-    /**
-     * Checks whether the userId has any active project.
-     *
-     * @param userId user id.
-     * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
-     */
-    private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        checkId(userId);
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), InternalStatus.READY);
-        Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).getNumMatches();
-        if (count > 0) {
-            throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
-        }
     }
 
     @Override
@@ -771,15 +682,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case QUOTA:
-                    case ACCOUNT_TYPE:
                     case ACCOUNT_AUTHENTICATION_ID:
                     case ACCOUNT_CREATION_DATE:
-                    case PROJECTS:
-                    case PROJECTS_UID:
-                    case PROJECT_NAME:
-                    case PROJECTS_ID:
-                    case PROJECT_ORGANIZATION:
-                    case PROJECT_STATUS:
                     case TOOL_ID:
                     case TOOL_NAME:
                     case TOOL_ALIAS:

@@ -22,8 +22,10 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileFetch;
@@ -73,9 +75,11 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
         }
 
         try {
+            JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+            CatalogFqn catalogFqn= CatalogFqn.extractFqnFromStudy(studyFqn, jwtPayload);
             Study study = catalogManager.getStudyManager().get(studyFqn, StudyManager.INCLUDE_STUDY_IDS, token).first();
 
-            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, toolParams.getPath(), false,
+            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(study.getFqn(), toolParams.getPath(), false,
                     QueryOptions.empty(), token);
             if (parents.getNumResults() == 0) {
                 throw new ToolException("No parent folders found for " + toolParams.getPath());
@@ -85,10 +89,10 @@ public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
                 throw new CatalogException("Parent path " + parents.first().getPath() + " is external. Cannot download to mounted folders");
             }
 
-            String userId = catalogManager.getUserManager().getUserId(token);
+            String userId = jwtPayload.getUserId(catalogFqn.getOrganizationId());
             // Check write permissions over the path
-            catalogManager.getAuthorizationManager()
-                    .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FilePermissions.WRITE);
+            catalogManager.getAuthorizationManager().checkFilePermission(catalogFqn.getOrganizationId(), study.getUid(),
+                    parents.first().getUid(), userId, FilePermissions.WRITE);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

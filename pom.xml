@@ -43,35 +43,36 @@
     </modules>
 
     <properties>
-        <pyopencga.version>2.12.3</pyopencga.version>
-        <opencgar.version>2.12.3</opencgar.version>
-        <cellbase.version>5.8.2</cellbase.version>
-        <biodata.version>2.12.1</biodata.version>
-        <java-common-libs.version>4.12.0</java-common-libs.version>
-        <iva.version>2.12.3</iva.version>
+        <pyopencga.version>3.1.0_dev</pyopencga.version>
+        <opencgar.version>3.1.0_dev</opencgar.version>
+        <cellbase.version>6.1.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.1.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.1.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.1.0-SNAPSHOT</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
-        <jackson.version>2.11.4</jackson.version>
+        <jackson.version>2.14.3</jackson.version>
         <jersey.version>2.30.1</jersey.version>
         <collections.version>4.4</collections.version>
         <avro.version>1.7.7</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
         <grpc.version>1.28.1</grpc.version>
-        <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
-        <solr.version>8.8.2</solr.version>
+        <solr.version>8.11.2</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
-        <jetty.version>9.4.17.v20190418</jetty.version>
-        <guava.version>19.0</guava.version>
+<!--        <jetty.version>9.4.17.v20190418</jetty.version>-->
+        <jetty.version>9.4.51.v20230217</jetty.version>
+        <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
+        <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
         <mongodb-driver.version>4.8.2</mongodb-driver.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
-        <commons-io.version>2.5</commons-io.version>
+        <commons-io.version>2.8.0</commons-io.version>
+        <commons-lang3.version>3.14.0</commons-lang3.version>
         <commons-codec.version>1.7</commons-codec.version>
         <reflections.version>0.9.10</reflections.version>
         <mockito.version>2.2.27</mockito.version>
-        <commons-lang26.version>2.6</commons-lang26.version>
         <findbugs-annotations.version>2.0.1</findbugs-annotations.version>
         <junit.version>4.13.2</junit.version>
         <jline.version>3.12.1</jline.version>
@@ -89,6 +90,7 @@
         <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
         <azure-client.version>1.5.4</azure-client.version>
         <azure-batch.version>4.0.1</azure-batch.version>
+        <!-- Cannot upgrade the version until we upgrade GRPC version -->
         <azure.version>1.13.0</azure.version>
         <azure.optional>true</azure.optional>
         <azure-storage-blob.version>11.0.0</azure-storage-blob.version>
@@ -110,24 +112,23 @@
         <rxjava.version>2.2.0</rxjava.version>
         <client-runtime.version>2.1.0</client-runtime.version>
         <reactive-streams.version>1.0.0</reactive-streams.version>
-        <snappy-java.version>1.1.7.6</snappy-java.version>
+        <snappy-java.version>1.1.8.2</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
+        <jorphan.version>5.0</jorphan.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-        <opencga-storage-hadoop-deps.id-default>
-            hdp3.1
-        </opencga-storage-hadoop-deps.id-default>
-        <opencga-storage-hadoop-deps.artifactId-default>
-            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}
-        </opencga-storage-hadoop-deps.artifactId-default>
-        <opencga-storage-hadoop-deps.id>
-            ${opencga-storage-hadoop-deps.id-default}
-        </opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>
-            opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
-        </opencga-storage-hadoop-deps.artifactId>
-        <jorphan.version>5.0</jorphan.version>
+
+        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+
+        <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
+        <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
+        <opencga-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-hadoop-lib.artifactId>
+        <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-hadoop-shaded.artifactId>
+
+        <opencga-storage-hadoop-compat.id-default>hbase2.0</opencga-storage-hadoop-compat.id-default>
+        <opencga-storage-hadoop-compat.id>${opencga-storage-hadoop-compat.id-default}</opencga-storage-hadoop-compat.id>
+
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
@@ -141,11 +142,18 @@
         <parquet-hadoop.version>${parquet-common.version}</parquet-hadoop.version>
         <parquet-common.version>1.7.0</parquet-common.version>
         <commons-logging.version>1.1.3</commons-logging.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
         <jcl-over-slf4j.version>1.7.24</jcl-over-slf4j.version>
         <servlet-api.version>2.5-20081211</servlet-api.version>
 
+
+        <!--TO REMOVE:
+            The version of Java (11.0.21) used to run this analysis is deprecated, and SonarCloud no longer supports it. Please upgrade to Java 17 or later.
+            As a temporary measure, you can set the property 'sonar.scanner.force-deprecated-java-version' to 'true' to continue using Java 11.0.21
+            This workaround will only be effective until January 28, 2024. After this date, all scans using the deprecated Java 11 will fail.
+         -->
+        <sonar.scanner.force-deprecated-java-version>true</sonar.scanner.force-deprecated-java-version>
         <kryo.version>2.23.0</kryo.version>
+
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
     </properties>
@@ -249,6 +257,17 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-app</artifactId>
                 <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id.default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-test</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -259,12 +278,6 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${project.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga</groupId>
-                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -272,18 +285,6 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga</groupId>
-                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-hadoop-deps-hdp3.1</artifactId>
-                <version>${project.version}</version>
-                <classifier>shaded</classifier>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -307,6 +308,12 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-server</artifactId>
                 <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id.default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- OpenCB dependencies -->
@@ -406,11 +413,6 @@
                 <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons-lang26.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
@@ -463,6 +465,11 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -634,6 +641,26 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-xml</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-rewrite</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-client</artifactId>
                 <version>${jetty.version}</version>
             </dependency>
@@ -653,23 +680,13 @@
                 <version>${jetty.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.glassfish.jersey.containers</groupId>
-                <artifactId>jersey-container-servlet</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jersey.inject</groupId>
-                <artifactId>jersey-hk2</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-client</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.glassfish.jersey.media</groupId>
-                <artifactId>jersey-media-multipart</artifactId>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-common</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -680,6 +697,31 @@
             <dependency>
                 <groupId>org.glassfish.jersey.containers</groupId>
                 <artifactId>jersey-container-servlet-core</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-json-jackson</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-multipart</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-jaxb</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -780,17 +822,6 @@
                 <version>${mongodb-driver.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.zookeeper</groupId>
-                <artifactId>zookeeper</artifactId>
-                <version>${zookeeper.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
                 <version>${commons-logging.version}</version>
@@ -823,9 +854,6 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <!--WARNING-->
-                <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
-                <!--See #1086-->
                 <version>${guava.version}</version>
             </dependency>
             <dependency>
@@ -964,11 +992,6 @@
             </dependency>
             <dependency>
                 <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson-codehaus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-core-asl</artifactId>
                 <version>${jackson-codehaus.version}</version>
             </dependency>
@@ -1092,11 +1115,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.glassfish.jersey.media</groupId>
-                <artifactId>jersey-media-json-jackson</artifactId>
-                <version>2.30.1</version>
-            </dependency>
-            <dependency>
                 <groupId>com.esotericsoftware.kryo</groupId>
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
@@ -1119,7 +1137,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
-                    <version>2.4.3</version>
+                    <version>3.5.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -1491,29 +1509,57 @@
 
         <profile>
             <id>hdp3.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hdp3.1</value>
+                </property>
+            </activation>
             <properties>
-                <opencga-storage-hadoop-deps.id>hdp3.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>
-                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
-                </opencga-storage-hadoop-deps.artifactId>
+                <opencga-hadoop-shaded.id>hdp3.1</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>hdi5.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hdi5.1</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>hdi5.1</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>
             <id>emr6.1</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr6.1</value>
+                </property>
+            </activation>
             <properties>
-                <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>
-                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
-                </opencga-storage-hadoop-deps.artifactId>
+                <opencga-hadoop-shaded.id>emr6.1</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.2</opencga-storage-hadoop-compat.id>
+                <!--  AWS changes the version of Jetty in their custom jar -->
+                <jetty-for-hadoop-test.version>9.4.20.v20190813</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
-            <id>hdp2.6</id>
+            <id>emr6.13</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr6.13</value>
+                </property>
+            </activation>
             <properties>
-                <opencga-storage-hadoop-deps.id>hdp2.6</opencga-storage-hadoop-deps.id>
-                <opencga-storage-hadoop-deps.artifactId>
-                    opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}
-                </opencga-storage-hadoop-deps.artifactId>
+                <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>

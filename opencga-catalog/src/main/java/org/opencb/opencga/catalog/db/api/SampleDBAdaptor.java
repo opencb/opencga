@@ -62,7 +62,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Sample> get(long sampleId, QueryOptions options)

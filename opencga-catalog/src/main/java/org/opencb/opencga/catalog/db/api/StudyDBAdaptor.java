@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -197,7 +198,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    OpenCGAResult<Study> nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
+    OpenCGAResult<Study> nativeInsert(Map<String, Object> study) throws CatalogDBException;
 
     OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
@@ -208,12 +209,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
-
-    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getOwnerId(long studyId) throws CatalogDBException;
 
     OpenCGAResult<Study> createGroup(long studyId, Group group) throws CatalogDBException;
 
@@ -429,9 +424,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
-
-    OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -482,7 +475,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
 
-        OWNER("_ownerId", TEXT, ""),
         COHORTS("cohorts", TEXT_ARRAY, ""),
 
         DELETED("deleted", BOOLEAN, ""),
