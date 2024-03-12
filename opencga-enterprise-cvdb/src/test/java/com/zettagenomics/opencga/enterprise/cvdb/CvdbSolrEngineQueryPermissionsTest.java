@@ -23,8 +23,11 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
@@ -46,6 +49,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 public class CvdbSolrEngineQueryPermissionsTest {
 
     protected static CvdbSolrEngine cvdbEngine;
+    protected static String organizationId = "test";
     protected static String projectId = "project1";
     protected static Study study;
 
@@ -97,15 +101,16 @@ public class CvdbSolrEngineQueryPermissionsTest {
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
         opencgaToken = catalogManager.getUserManager().loginAsAdmin(ADMIN_PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
-                Account.AccountType.FULL, opencgaToken);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user").setName("User Name").setOrganization(organizationId), PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user2").setName("User Name2").setOrganization(organizationId), PASSWORD, opencgaToken);
 
-        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+        catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams()
+                        .setOwner("user"),
+                null, opencgaToken);
 
-        catalogManager.getUserManager().create("user3", "User Name3", "mail3@ebi.ac.uk", PASSWORD, "", null,
-                Account.AccountType.GUEST, opencgaToken);
+        sessionIdUser = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
@@ -130,7 +135,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user" can access to all clinical analyses
-        String token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
         assertEquals(2, result.getNumResults());
         for (ClinicalAnalysis ca : result.getResults()) {
@@ -138,7 +143,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user2" only can access the clinical analysis "user2ViewerforCaId"
-        token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user2", PASSWORD).getToken();
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
         assertEquals(1, result.getNumResults());
         for (ClinicalAnalysis ca : result.getResults()) {
@@ -148,7 +153,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // "user3" can not access any clinical analyses
         // (expected = CatalogAuthorizationException.class)
-        token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
     }
 
@@ -166,7 +171,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
 
         // "user" can access to all clinical analyses
-        String token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
@@ -181,7 +186,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user2" only can access the clinical analysis "user2ViewerforCaId"
-        token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user2", PASSWORD).getToken();
         result = cvdbEngine.searchClinicalVariants(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         alreadyChecked.clear();
@@ -198,7 +203,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // "user3" can not access any clinical analyses
         // (expected = CatalogAuthorizationException.class)
-        token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalVariants(query, queryOptions, token);
     }
 
@@ -216,7 +221,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CV_TYPE_NAME, "INDEL");
 
         // "user" can access to all clinical analyses
-        String token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (Interpretation ci : result.getResults()) {
@@ -224,7 +229,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user2" only can access the clinical analysis "user2ViewerforCaId"
-        token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user2", PASSWORD).getToken();
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (Interpretation ci : result.getResults()) {
@@ -234,7 +239,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // "user3" can not access any clinical analyses
         // expected = CatalogAuthorizationException.class
-        token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
     }
 
@@ -251,7 +256,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
         query.put(CV_TYPE_NAME, "INDEL");
 
-        String token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
@@ -262,7 +267,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user2" only can access the clinical analysis "user2ViewerforCaId"
-        token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user2", PASSWORD).getToken();
         result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
         assertTrue(result.getNumResults() > 0);
         for (ClinicalVariantEvidence cve : result.getResults()) {
@@ -279,7 +284,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
         // "user3" can not access any clinical analyses
         // (expected = CatalogAuthorizationException.class)
-        token = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
     }
 

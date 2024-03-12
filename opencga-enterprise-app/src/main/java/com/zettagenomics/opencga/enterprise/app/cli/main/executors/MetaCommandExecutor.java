@@ -32,6 +32,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "meta";
     public MetaCommandOptions metaCommandOptions;
 
     public MetaCommandExecutor(MetaCommandOptions metaCommandOptions) throws CatalogAuthenticationException {
@@ -111,7 +112,11 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         logger.debug("Executing model in Meta command line");
 
         MetaCommandOptions.ModelCommandOptions commandOptions = metaCommandOptions.modelCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().model();
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("model", commandOptions.model);
+
+        return enterpriseOpenCGAClient.getEnterpriseMetaClient().model(queryParams);
     }
 
     private RestResponse<String> ping() throws Exception {

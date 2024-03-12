@@ -20,13 +20,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
 import org.opencb.opencga.core.models.user.FilterUpdateParams;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
 import org.opencb.opencga.core.response.QueryType;
@@ -48,6 +48,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "users";
     public UsersCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
@@ -65,6 +66,12 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "anonymous":
+                queryResponse = anonymous();
+                break;
+            case "create":
+                queryResponse = create();
+                break;
             case "login":
                 queryResponse = login();
                 break;
@@ -86,9 +93,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             case "password-reset":
                 queryResponse = resetPassword();
                 break;
-            case "projects":
-                queryResponse = projects();
-                break;
             case "update":
                 queryResponse = update();
                 break;
@@ -107,11 +111,48 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
     }
 
+    private RestResponse<AuthenticationResponse> anonymous() throws Exception {
+        logger.debug("Executing anonymous in Users command line");
+
+        UsersCommandOptions.AnonymousCommandOptions commandOptions = usersCommandOptions.anonymousCommandOptions;
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().anonymous(commandOptions.organization);
+    }
+
+    private RestResponse<User> create() throws Exception {
+        logger.debug("Executing create in Users command line");
+
+        UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
+
+        UserCreateParams userCreateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/create"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            userCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "email",commandOptions.email, true);
+            putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "organization",commandOptions.organization, true);
+
+            userCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), UserCreateParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseUserClient().create(userCreateParams);
+    }
+
     private RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Executing login in Users command line");
 
         CustomUsersCommandOptions.LoginCommandOptions commandOptions = usersCommandOptions.loginCommandOptions;
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
         queryParams.putIfNotEmpty("user", commandOptions.user);
         queryParams.putIfNotEmpty("password", commandOptions.password);
         queryParams.putIfNotEmpty("refreshToken", commandOptions.refreshToken);
@@ -126,16 +167,16 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         PasswordChangeParams passwordChangeParams = null;
         if (commandOptions.jsonDataModel) {
-            passwordChangeParams = new PasswordChangeParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(passwordChangeParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/password"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), PasswordChangeParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "organizationId",commandOptions.organizationId, true);
             putNestedIfNotEmpty(beanParams, "user",commandOptions.user, true);
             putNestedIfNotEmpty(beanParams, "password",commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "newPassword",commandOptions.newPassword, true);
@@ -156,6 +197,7 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
         return enterpriseOpenCGAClient.getEnterpriseUserClient().info(commandOptions.users, queryParams);
     }
@@ -182,10 +224,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         ConfigUpdateParams configUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            configUpdateParams = new ConfigUpdateParams();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(configUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/configs/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             configUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -220,20 +261,6 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         return enterpriseOpenCGAClient.getEnterpriseUserClient().resetPassword(commandOptions.user);
     }
 
-    private RestResponse<Project> projects() throws Exception {
-        logger.debug("Executing projects in Users command line");
-
-        UsersCommandOptions.ProjectsCommandOptions commandOptions = usersCommandOptions.projectsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("include", commandOptions.include);
-        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
-        queryParams.putIfNotNull("limit", commandOptions.limit);
-        queryParams.putIfNotNull("skip", commandOptions.skip);
-
-        return enterpriseOpenCGAClient.getEnterpriseUserClient().projects(commandOptions.user, queryParams);
-    }
-
     private RestResponse<User> update() throws Exception {
         logger.debug("Executing update in Users command line");
 
@@ -247,10 +274,9 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
 
         UserUpdateParams userUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            userUpdateParams = new UserUpdateParams();
             RestResponse<User> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(userUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/users/{user}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             userUpdateParams = JacksonUtils.getDefaultObjectMapper()

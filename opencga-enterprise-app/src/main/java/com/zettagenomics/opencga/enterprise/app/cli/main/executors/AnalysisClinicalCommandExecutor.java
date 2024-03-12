@@ -7,6 +7,7 @@ import com.zettagenomics.opencga.enterprise.app.cli.main.options.AnalysisClinica
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -41,6 +43,8 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpd
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.ClinicalRequest;
+import org.opencb.opencga.core.models.clinical.ClinicalResponsible;
 import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
 import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.FamilyParam;
@@ -54,7 +58,9 @@ import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
@@ -78,6 +84,7 @@ import org.opencb.opencga.core.response.RestResponse;
  */
 public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
+    public String categoryName = "clinical";
     public AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
 
     public AnalysisClinicalCommandExecutor(AnalysisClinicalCommandOptions analysisClinicalCommandOptions) throws CatalogAuthenticationException {
@@ -97,6 +104,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+            case "annotation-sets-load":
+                queryResponse = loadAnnotationSets();
                 break;
             case "clinical-configuration-update":
                 queryResponse = updateClinicalConfiguration();
@@ -200,6 +210,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             case "update":
                 queryResponse = update();
                 break;
+            case "annotation-sets-annotations-update":
+                queryResponse = updateAnnotationSetsAnnotations();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -217,6 +230,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                 break;
             case "interpretation-update":
                 queryResponse = updateInterpretation();
+                break;
+            case "report-update":
+                queryResponse = updateReport();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -242,10 +258,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
             RestResponse<ClinicalAnalysisAclEntryList> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisAclUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/acl/{members}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -262,6 +277,40 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
     }
 
+    private RestResponse<Job> loadAnnotationSets() throws Exception {
+        logger.debug("Executing loadAnnotationSets in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.LoadAnnotationSetsCommandOptions commandOptions = analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("parents", commandOptions.parents);
+        queryParams.putIfNotEmpty("annotationSetId", commandOptions.annotationSetId);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        TsvAnnotationParams tsvAnnotationParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/annotationSets/load"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "content",commandOptions.content, true);
+
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), TsvAnnotationParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+    }
+
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
         logger.debug("Executing updateClinicalConfiguration in Analysis - Clinical command line");
 
@@ -276,10 +325,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisStudyConfiguration));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/clinical/configuration/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper()
@@ -313,10 +361,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -337,6 +384,18 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
+            putNestedIfNotEmpty(beanParams, "request.id",commandOptions.requestId, true);
+            putNestedIfNotEmpty(beanParams, "request.justification",commandOptions.requestJustification, true);
+            putNestedIfNotEmpty(beanParams, "request.date",commandOptions.requestDate, true);
+            putNestedIfNotNull(beanParams, "request.attributes",commandOptions.requestAttributes, true);
+            putNestedIfNotEmpty(beanParams, "responsible.id",commandOptions.responsibleId, true);
+            putNestedIfNotEmpty(beanParams, "responsible.name",commandOptions.responsibleName, true);
+            putNestedIfNotEmpty(beanParams, "responsible.email",commandOptions.responsibleEmail, true);
+            putNestedIfNotEmpty(beanParams, "responsible.organization",commandOptions.responsibleOrganization, true);
+            putNestedIfNotEmpty(beanParams, "responsible.department",commandOptions.responsibleDepartment, true);
+            putNestedIfNotEmpty(beanParams, "responsible.address",commandOptions.responsibleAddress, true);
+            putNestedIfNotEmpty(beanParams, "responsible.city",commandOptions.responsibleCity, true);
+            putNestedIfNotEmpty(beanParams, "responsible.postcode",commandOptions.responsiblePostcode, true);
             putNestedIfNotEmpty(beanParams, "interpretation.description",commandOptions.interpretationDescription, true);
             putNestedIfNotEmpty(beanParams, "interpretation.clinicalAnalysisId",commandOptions.interpretationClinicalAnalysisId, true);
             putNestedIfNotEmpty(beanParams, "interpretation.creationDate",commandOptions.interpretationCreationDate, true);
@@ -344,6 +403,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             putNestedIfNotNull(beanParams, "interpretation.locked",commandOptions.interpretationLocked, true);
             putNestedIfNotNull(beanParams, "interpretation.attributes",commandOptions.interpretationAttributes, true);
             putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
+            putNestedIfNotNull(beanParams, "qualityControl.comments",commandOptions.qualityControlComments, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
@@ -466,7 +527,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -574,10 +637,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         CvdbIndexTaskParams cvdbIndexTaskParams = null;
         if (commandOptions.jsonDataModel) {
-            cvdbIndexTaskParams = new CvdbIndexTaskParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(cvdbIndexTaskParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/cvdb/index/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             cvdbIndexTaskParams = JacksonUtils.getDefaultObjectMapper()
@@ -703,7 +765,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -901,7 +965,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -1099,7 +1165,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("projectId", commandOptions.projectId);
         queryParams.putIfNotEmpty("studyId", commandOptions.studyId);
         queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotEmpty("caId", commandOptions.caId);
         queryParams.putIfNotEmpty("caDescription", commandOptions.caDescription);
         queryParams.putIfNotEmpty("caType", commandOptions.caType);
@@ -1220,6 +1288,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1323,10 +1392,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(cancerTieringInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/cancerTiering/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1362,10 +1430,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ExomiserInterpretationAnalysisParams exomiserInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            exomiserInterpretationAnalysisParams = new ExomiserInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(exomiserInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/exomiser/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             exomiserInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1399,10 +1466,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(teamInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/team/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1439,10 +1505,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(tieringInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/tiering/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1479,10 +1544,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(zettaInterpretationAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/zetta/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1566,10 +1630,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ClinicalAnalysisLoadParams clinicalAnalysisLoadParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisLoadParams = new ClinicalAnalysisLoadParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisLoadParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/load"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisLoadParams = JacksonUtils.getDefaultObjectMapper()
@@ -1719,10 +1782,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         RgaAnalysisParams rgaAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            rgaAnalysisParams = new RgaAnalysisParams();
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(rgaAnalysisParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/rga/index/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
@@ -1904,6 +1966,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotNull("limit", commandOptions.limit);
         queryParams.putIfNotNull("skip", commandOptions.skip);
         queryParams.putIfNotNull("count", commandOptions.count);
+        queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("id", commandOptions.id);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -1929,6 +1992,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("release", commandOptions.release);
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -2051,6 +2115,8 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("analystsAction", commandOptions.analystsAction);
+        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -2059,10 +2125,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
             RestResponse<ClinicalAnalysis> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(clinicalAnalysisUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalyses}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -2084,7 +2149,21 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
             putNestedIfNotEmpty(beanParams, "report.signedBy",commandOptions.reportSignedBy, true);
             putNestedIfNotEmpty(beanParams, "report.signature",commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "report.date",commandOptions.reportDate, true);
+            putNestedIfNotEmpty(beanParams, "request.id",commandOptions.requestId, true);
+            putNestedIfNotEmpty(beanParams, "request.justification",commandOptions.requestJustification, true);
+            putNestedIfNotEmpty(beanParams, "request.date",commandOptions.requestDate, true);
+            putNestedIfNotNull(beanParams, "request.attributes",commandOptions.requestAttributes, true);
+            putNestedIfNotEmpty(beanParams, "responsible.id",commandOptions.responsibleId, true);
+            putNestedIfNotEmpty(beanParams, "responsible.name",commandOptions.responsibleName, true);
+            putNestedIfNotEmpty(beanParams, "responsible.email",commandOptions.responsibleEmail, true);
+            putNestedIfNotEmpty(beanParams, "responsible.organization",commandOptions.responsibleOrganization, true);
+            putNestedIfNotEmpty(beanParams, "responsible.department",commandOptions.responsibleDepartment, true);
+            putNestedIfNotEmpty(beanParams, "responsible.address",commandOptions.responsibleAddress, true);
+            putNestedIfNotEmpty(beanParams, "responsible.city",commandOptions.responsibleCity, true);
+            putNestedIfNotEmpty(beanParams, "responsible.postcode",commandOptions.responsiblePostcode, true);
             putNestedIfNotNull(beanParams, "qualityControl.summary",commandOptions.qualityControlSummary, true);
+            putNestedIfNotNull(beanParams, "qualityControl.comments",commandOptions.qualityControlComments, true);
+            putNestedIfNotNull(beanParams, "qualityControl.files",commandOptions.qualityControlFiles, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotEmpty(beanParams, "dueDate",commandOptions.dueDate, true);
@@ -2099,6 +2178,32 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
 
+    private RestResponse<Sample> updateAnnotationSetsAnnotations() throws Exception {
+        logger.debug("Executing updateAnnotationSetsAnnotations in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.UpdateAnnotationSetsAnnotationsCommandOptions commandOptions = analysisClinicalCommandOptions.updateAnnotationSetsAnnotationsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("action", commandOptions.action);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ObjectMap objectMap = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Sample> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().updateAnnotationSetsAnnotations(commandOptions.clinicalAnalysis, commandOptions.annotationSet, objectMap, queryParams);
+    }
+
     private RestResponse<ClinicalAnalysis> info() throws Exception {
         logger.debug("Executing info in Analysis - Clinical command line");
 
@@ -2107,6 +2212,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("flattenAnnotations", commandOptions.flattenAnnotations);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -2134,10 +2240,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         InterpretationCreateParams interpretationCreateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationCreateParams = new InterpretationCreateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(interpretationCreateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
@@ -2224,10 +2329,9 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
 
         InterpretationUpdateParams interpretationUpdateParams = null;
         if (commandOptions.jsonDataModel) {
-            interpretationUpdateParams = new InterpretationUpdateParams();
             RestResponse<Interpretation> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(interpretationUpdateParams));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
@@ -2250,5 +2354,49 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                     .readValue(beanParams.toJson(), InterpretationUpdateParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
+    }
+
+    private RestResponse<ClinicalReport> updateReport() throws Exception {
+        logger.debug("Executing updateReport in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.UpdateReportCommandOptions commandOptions = analysisClinicalCommandOptions.updateReportCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("supportingEvidencesAction", commandOptions.supportingEvidencesAction);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ClinicalReport clinicalReport = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ClinicalReport> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalReport = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalReport.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "title",commandOptions.title, true);
+            putNestedIfNotEmpty(beanParams, "overview",commandOptions.overview, true);
+            putNestedIfNotEmpty(beanParams, "discussion.author",commandOptions.discussionAuthor, true);
+            putNestedIfNotEmpty(beanParams, "discussion.date",commandOptions.discussionDate, true);
+            putNestedIfNotEmpty(beanParams, "discussion.text",commandOptions.discussionText, true);
+            putNestedIfNotEmpty(beanParams, "logo",commandOptions.logo, true);
+            putNestedIfNotEmpty(beanParams, "signedBy",commandOptions.signedBy, true);
+            putNestedIfNotEmpty(beanParams, "signature",commandOptions.signature, true);
+            putNestedIfNotEmpty(beanParams, "date",commandOptions.date, true);
+
+            clinicalReport = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalReport.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().updateReport(commandOptions.clinicalAnalysis, clinicalReport, queryParams);
     }
 }

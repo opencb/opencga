@@ -6,7 +6,7 @@
 
     <groupId>com.zettagenomics.opencga-enterprise</groupId>
     <artifactId>opencga-enterprise</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -19,13 +19,13 @@
     </modules>
 
     <properties>
-        <opencga.version>3.0.0-SNAPSHOT</opencga.version>
-        <pyopencga.version>2.0.0_dev</pyopencga.version>
-        <opencgar.version>2.0.0_dev</opencgar.version>
-        <cellbase.version>6.0.0-SNAPSHOT</cellbase.version>
-        <biodata.version>3.0.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>5.0.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.0.0-SNAPSHOT</iva.version>
+        <opencga.version>3.1.0-SNAPSHOT</opencga.version>
+        <pyopencga.version>2.1.0_dev</pyopencga.version>
+        <opencgar.version>2.1.0_dev</opencgar.version>
+        <cellbase.version>6.1.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.1.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.1.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>2.1.0-SNAPSHOT</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -34,30 +34,31 @@
         <avro.version>1.7.7</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
         <grpc.version>1.28.1</grpc.version>
-        <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
-        <solr.version>8.8.2</solr.version>
+        <solr.version>8.11.2</solr.version>
         <jjwt.version>0.11.2</jjwt.version>
-        <jetty.version>9.4.17.v20190418</jetty.version>
+        <jetty.version>9.4.51.v20230217</jetty.version>
         <junit.version>4.13.2</junit.version>
         <jline.version>3.12.1</jline.version>
         <mail.version>1.4.7</mail.version>
         <mockito.version>2.2.27</mockito.version>
         <ga4gh.version>0.6.0a5</ga4gh.version>
         <jcommander.version>1.69</jcommander.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-lang3.version>3.14.0</commons-lang3.version>
         <cas.version>3.6.4</cas.version>
         <servlet-api.version>3.1.0</servlet-api.version>
         <jakarta.version>2.1.6</jakarta.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
-        <commons-io.version>2.5</commons-io.version>
+        <commons-io.version>2.8.0</commons-io.version>
 
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-        <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
-        <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
-        <opencga-storage-hadoop-deps.id>${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.id>
-        <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+
+        <opencga-hadoop-shaded.id-default>hdp3.1</opencga-hadoop-shaded.id-default>
+        <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
+        <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
+        <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -70,10 +71,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!--WARNING-->
-        <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
-        <!--See #1086-->
-        <guava.version>19.0</guava.version>
+        <guava.version>28.0-jre</guava.version>
         <commons-lang.version>2.6</commons-lang.version>
         <bson.version>4.8.2</bson.version>
     </properties>
@@ -155,23 +153,11 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-app</artifactId>
                 <version>${opencga.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga</groupId>
-                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-server</artifactId>
                 <version>${opencga.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.opencb.opencga</groupId>
-                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -180,7 +166,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                <artifactId>${opencga-storage-hadoop-lib.artifactId}</artifactId>
                 <version>${opencga.version}</version>
                 <exclusions>
                     <!-- This dependency version conflicts with opencga-core's same dependency version. -->
@@ -330,6 +316,11 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -590,7 +581,7 @@
             <properties>
                 <opencga.war.name>opencga-enterprise-${project.parent.version}</opencga.war.name>
 
-                <ENTERPRISE.SSO.ACTIVE>true</ENTERPRISE.SSO.ACTIVE>
+                <ENTERPRISE.SSO.ACTIVE>false</ENTERPRISE.SSO.ACTIVE>
                 <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
                 <ENTERPRISE.SSO.SERVER.NAME>http://localhost:9090</ENTERPRISE.SSO.SERVER.NAME>
                 <ENTERPRISE.SSO.PYTHON.BIN>python3</ENTERPRISE.SSO.PYTHON.BIN>
@@ -702,6 +693,9 @@
                             <ignoredUsedUndeclaredDependencies>
                                 <ignoredUsedUndeclaredDependency>
                                     jakarta.ws.rs:jakarta.ws.rs-api*
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    javax.ws.rs:jsr311-api
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredNonTestScopedDependencies>

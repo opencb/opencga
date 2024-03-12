@@ -14,7 +14,9 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -45,12 +47,18 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
+        JwtPayload jwtPayload = getCatalogManager().getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(getStudyFqn(), jwtPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = jwtPayload.getUserId(organizationId);
+        getCatalogManager().getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+
         // Get study
         Study study = getCatalogManager().getStudyManager().get(getStudyFqn(), QueryOptions.empty(), token).first();
 
         // Check project
         Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study.getFqn());
-        project = catalogManager.getProjectManager().search(query, QueryOptions.empty(), token).first();
+        project = catalogManager.getProjectManager().search(organizationId, query, QueryOptions.empty(), token).first();
         // Sanity check
         if (project == null) {
             throw new CvdbException("Something wrong happened, could not get project from study '" + study.getFqn() + "'");

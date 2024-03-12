@@ -21,10 +21,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.bson.Document;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -93,10 +91,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
-        configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), ADMIN_PASSWORD, "opencga@admin.com", "",
-                true, true);
+        String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
+        catalogManager.installCatalogDB("HS256", secretKey, ADMIN_PASSWORD, "opencga@admin.com", true);
         catalogManager.close();
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
@@ -142,32 +139,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
         try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
-            for (String collection : MongoDBAdaptorFactory.COLLECTIONS_LIST) {
-                dbAdaptorFactory.getMongoDataStore().getCollection(collection).remove(new Document(), QueryOptions.empty());
-            }
+            dbAdaptorFactory.deleteCatalogDB();
         }
-
-//        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-//        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
-//            if (hostPort.contains(":")) {
-//                String[] split = hostPort.split(":");
-//                Integer port = Integer.valueOf(split[1]);
-//                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-//            } else {
-//                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-//            }
-//        }
-//        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-//
-////        if (catalogManager == null) {
-////            catalogManager = new CatalogManager(configuration);
-////        }
-//
-////        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-//        MongoDataStore db = mongoManager.get(configuration.getDatabasePrefix() + "_catalog");
-//        db.getDb().drop();
-////        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-//        mongoManager.close(configuration.getDatabasePrefix() + "_catalog");
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());
