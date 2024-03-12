@@ -4,25 +4,23 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.WriteModel;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +32,7 @@ public abstract class MigrationTool {
     protected CatalogManager catalogManager;
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected MigrationRun migrationRun;
+    protected String organizationId;
     protected Path appHome;
     protected String token;
 
@@ -66,11 +65,12 @@ public abstract class MigrationTool {
     }
 
     public final void setup(Configuration configuration, CatalogManager catalogManager, MongoDBAdaptorFactory dbAdaptorFactory,
-                            MigrationRun migrationRun, Path appHome, ObjectMap params, String token) {
+                            MigrationRun migrationRun, String organizationId, Path appHome, ObjectMap params, String token) {
         this.configuration = configuration;
         this.catalogManager = catalogManager;
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.migrationRun = migrationRun;
+        this.organizationId = organizationId;
         this.appHome = appHome;
         this.params = params;
         this.token = token;
@@ -103,65 +103,6 @@ public abstract class MigrationTool {
         return storageConfiguration;
     }
 
-    protected final void runJavascript(Path file) throws MigrationException {
-        String authentication = "";
-        if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
-                && StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getPassword())) {
-            authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
-                    + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
-                    + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_ENABLED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.SSL_ENABLED))) {
-            authentication += "--ssl ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
-                .get(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED))) {
-            authentication += "--sslAllowInvalidCertificates ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null
-                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED)
-                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
-                .get(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED))) {
-            authentication += "--sslAllowInvalidHostnames ";
-        }
-        if (configuration.getCatalog().getDatabase().getOptions() != null && StringUtils.isNotEmpty(
-                configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.AUTHENTICATION_MECHANISM))) {
-            authentication += "--authenticationMechanism "
-                    + configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.AUTHENTICATION_MECHANISM) + " ";
-        }
-
-        String catalogCli = "mongo " + authentication
-                + StringUtils.join(configuration.getCatalog().getDatabase().getHosts(), ",") + "/"
-                + catalogManager.getCatalogDatabase() + " " + file.getFileName();
-
-        privateLogger.info("Running Javascript cli {} from {}", catalogCli, file.getParent());
-        ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
-        processBuilder.directory(file.getParent().toFile());
-        Process p;
-        try {
-            p = processBuilder.start();
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-            while ((line = input.readLine()) != null) {
-                privateLogger.info(line);
-            }
-            p.waitFor();
-            input.close();
-        } catch (IOException | InterruptedException e) {
-            throw new MigrationException("Error executing cli: " + e.getMessage(), e);
-        }
-
-        if (p.exitValue() == 0) {
-            privateLogger.info("Finished Javascript catalog migration");
-        } else {
-            throw new MigrationException("Error with Javascript catalog migrating!");
-        }
-    }
-
     @FunctionalInterface
     protected interface MigrateCollectionFunc {
         void accept(Document document, List<WriteModel<Document>> bulk);
@@ -172,11 +113,13 @@ public abstract class MigrationTool {
         void accept(Document document);
     }
 
-    protected final void migrateCollection(String collection, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
+    protected final void migrateCollection(String collection, Bson query, Bson projection, MigrateCollectionFunc migrateFunc)
+            throws CatalogDBException {
         migrateCollection(collection, collection, query, projection, migrateFunc);
     }
 
-    protected final void migrateCollection(List<String> collections, Bson query, Bson projection, MigrateCollectionFunc migrateFunc) {
+    protected final void migrateCollection(List<String> collections, Bson query, Bson projection, MigrateCollectionFunc migrateFunc)
+            throws CatalogDBException {
         for (String collection : collections) {
             privateLogger.info("Starting migration in {}", collection);
             migrateCollection(collection, collection, query, projection, migrateFunc);
@@ -184,8 +127,9 @@ public abstract class MigrationTool {
     }
 
     protected final void migrateCollection(String inputCollection, String outputCollection, Bson query, Bson projection,
-                                           MigrateCollectionFunc migrateFunc) {
-        migrateCollection(getMongoCollection(inputCollection), getMongoCollection(outputCollection), query, projection, migrateFunc);
+                                           MigrateCollectionFunc migrateFunc) throws CatalogDBException {
+        migrateCollection(getMongoCollection(inputCollection),
+                getMongoCollection(outputCollection), query, projection, migrateFunc);
     }
 
     protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
@@ -225,15 +169,15 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void createIndex(String collection, Document index) {
+    protected final void createIndex(String collection, Document index) throws CatalogDBException {
         createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
     }
 
-    protected final void createIndex(List<String> collections, Document index) {
+    protected final void createIndex(List<String> collections, Document index) throws CatalogDBException {
         createIndexes(collections, Collections.singletonList(index));
     }
 
-    protected final void createIndexes(List<String> collections, List<Document> indexes) {
+    protected final void createIndexes(List<String> collections, List<Document> indexes) throws CatalogDBException {
         for (String collection : collections) {
             for (Document index : indexes) {
                 createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
@@ -241,7 +185,8 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void createIndex(String collection, Document index, IndexOptions options) {
+    protected final void createIndex(String collection, Document index, IndexOptions options)
+            throws CatalogDBException {
         createIndex(getMongoCollection(collection), index, options);
     }
 
@@ -253,7 +198,7 @@ public abstract class MigrationTool {
         collection.createIndex(index, options);
     }
 
-    protected final void dropIndex(String collection, Document index) {
+    protected final void dropIndex(String collection, Document index) throws CatalogDBException {
         dropIndex(getMongoCollection(collection), index);
     }
 
@@ -275,9 +220,14 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
+    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc)
+            throws CatalogDBException {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
+        queryMongo(inputCollection, query, projection, queryCollectionFunc);
+    }
 
+    protected final void queryMongo(MongoCollection<Document> inputCollection, Bson query, Bson projection,
+                                    QueryCollectionFunc queryCollectionFunc) throws CatalogDBException {
         try (MongoCursor<Document> it = inputCollection
                 .find(query)
                 .batchSize(batchSize)
@@ -291,8 +241,8 @@ public abstract class MigrationTool {
         }
     }
 
-    protected final MongoCollection<Document> getMongoCollection(String collectionName) {
-        return dbAdaptorFactory.getMongoDataStore().getDb().getCollection(collectionName);
+    protected final MongoCollection<Document> getMongoCollection(String collectionName) throws CatalogDBException {
+        return dbAdaptorFactory.getMongoDataStore(organizationId).getDb().getCollection(collectionName);
     }
 
     protected <T> Document convertToDocument(T value) {

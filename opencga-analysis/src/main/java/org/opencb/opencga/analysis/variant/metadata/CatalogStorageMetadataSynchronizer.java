@@ -623,7 +623,7 @@ public class CatalogStorageMetadataSynchronizer {
                     logger.info("File \"{}\" change status from {} to {}", file.getName(),
                             VariantIndexStatus.READY, newStatus);
                     index.setStatus(new VariantIndexStatus(newStatus, "Not indexed, regarding Storage Metadata"));
-                    catalogManager.getFileManager().updateFileInternalVariantIndex(file, index, token);
+                    catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
                     modified = true;
                 }
             }
@@ -682,7 +682,7 @@ public class CatalogStorageMetadataSynchronizer {
                                 prevStatus, newStatus);
                         index.setStatus(new VariantIndexStatus(newStatus, "Error loading. Reset status to " + newStatus));
 
-                        catalogManager.getFileManager().updateFileInternalVariantIndex(file, index, token);
+                        catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
                         modified = true;
                     } else {
                         // Running job. Might be transforming, or have just started. Do not modify the status!
@@ -723,7 +723,7 @@ public class CatalogStorageMetadataSynchronizer {
                         newStatus = VariantIndexStatus.INDEXING;
                     }
                     index.setStatus(new VariantIndexStatus(newStatus, "File is being loaded regarding Storage"));
-                    catalogManager.getFileManager().updateFileInternalVariantIndex(file, index, token);
+                    catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
                     modified = true;
                 }
             }
@@ -749,7 +749,7 @@ public class CatalogStorageMetadataSynchronizer {
             logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, VariantIndexStatus.READY);
             index.setStatus(new VariantIndexStatus(VariantIndexStatus.READY, "Indexed, regarding Storage Metadata"));
 
-            catalogManager.getFileManager().updateFileInternalVariantIndex(file, index, token);
+            catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
             modified = true;
         }
         boolean catalogAnnotationIndexReady = InternalStatus.READY.equals(
@@ -761,7 +761,7 @@ public class CatalogStorageMetadataSynchronizer {
             } else {
                 internalVariantAnnotationIndex.setStatus(new IndexStatus(IndexStatus.NONE, ""));
             }
-            catalogManager.getFileManager().updateFileInternalVariantAnnotationIndex(file, internalVariantAnnotationIndex, token);
+            catalogManager.getFileManager().updateFileInternalVariantAnnotationIndex(study.getName(), file, internalVariantAnnotationIndex, token);
             modified = true;
         }
         boolean catalogSecondaryIndexReady = InternalStatus.READY.equals(
@@ -773,7 +773,7 @@ public class CatalogStorageMetadataSynchronizer {
             } else {
                 internalVariantSecondaryIndex.setStatus(new IndexStatus(IndexStatus.NONE, ""));
             }
-            catalogManager.getFileManager().updateFileInternalVariantSecondaryAnnotationIndex(file, internalVariantSecondaryIndex, token);
+            catalogManager.getFileManager().updateFileInternalVariantSecondaryAnnotationIndex(study.getName(), file, internalVariantSecondaryIndex, token);
             modified = true;
         }
 
@@ -819,7 +819,7 @@ public class CatalogStorageMetadataSynchronizer {
                             SAMPLE_QUERY_OPTIONS, token)) {
                 while (iterator.hasNext()) {
                     Sample sample = iterator.next();
-                    if (synchronizeSample(sampleMetadataMap.get(sample.getId()), sample, sampleIndexVersion, token)) {
+                    if (synchronizeSample(study, sampleMetadataMap.get(sample.getId()), sample, sampleIndexVersion, token)) {
                         modified = true;
                         modifiedSamples++;
                     }
@@ -831,8 +831,8 @@ public class CatalogStorageMetadataSynchronizer {
         return modified;
     }
 
-    private boolean synchronizeSample(SampleMetadata sampleMetadata, Sample sample, int lastSampleIndexVersion, String token)
-            throws CatalogException {
+    private boolean synchronizeSample(StudyMetadata study, SampleMetadata sampleMetadata, Sample sample, int lastSampleIndexVersion,
+                                      String token) throws CatalogException {
         boolean modified = false;
 
         String catalogIndexStatus = secureGet(sample, s -> s.getInternal().getVariant().getIndex().getStatus().getId(), null);
@@ -842,7 +842,7 @@ public class CatalogStorageMetadataSynchronizer {
                 || catalogNumFiles != sampleMetadata.getFiles().size()
                 || catalogMultiFile != sampleMetadata.isMultiFileSample()) {
             catalogManager.getSampleManager()
-                    .updateSampleInternalVariantIndex(sample,
+                    .updateSampleInternalVariantIndex(study.getName(), sample,
                             new SampleInternalVariantIndex(
                                     new IndexStatus(sampleMetadata.getIndexStatus().name()),
                                     sampleMetadata.getFiles().size(),
@@ -852,7 +852,7 @@ public class CatalogStorageMetadataSynchronizer {
         String catalogAnnotationIndexStatus = secureGet(sample, s -> s.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null);
         if (!sampleMetadata.getAnnotationStatus().name().equals(catalogAnnotationIndexStatus)) {
             catalogManager.getSampleManager()
-                    .updateSampleInternalVariantAnnotationIndex(sample,
+                    .updateSampleInternalVariantAnnotationIndex(study.getName(), sample,
                             new SampleInternalVariantAnnotationIndex(
                                     new IndexStatus(sampleMetadata.getAnnotationStatus().name())), token);
             modified = true;
@@ -862,7 +862,7 @@ public class CatalogStorageMetadataSynchronizer {
                 s -> s.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null);
         if (!sampleMetadata.getSecondaryAnnotationIndexStatus().name().equals(catalogSecondaryAnnotationIndexStatus)) {
             catalogManager.getSampleManager()
-                    .updateSampleInternalVariantSecondaryAnnotationIndex(sample,
+                    .updateSampleInternalVariantSecondaryAnnotationIndex(study.getName(), sample,
                             new SampleInternalVariantSecondaryAnnotationIndex(
                                     new IndexStatus(sampleMetadata.getSecondaryAnnotationIndexStatus().name())), token);
             modified = true;
@@ -930,7 +930,7 @@ public class CatalogStorageMetadataSynchronizer {
 
         if (catalogVariantSecondarySampleIndexModified) {
             catalogManager.getSampleManager()
-                    .updateSampleInternalVariantSecondarySampleIndex(sample, catalogVariantSecondarySampleIndex, token);
+                    .updateSampleInternalVariantSecondarySampleIndex(study.getName(), sample, catalogVariantSecondarySampleIndex, token);
             modified = true;
         }
         return modified;
@@ -950,7 +950,7 @@ public class CatalogStorageMetadataSynchronizer {
                 .iterator(study, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                catalogManager.getFileManager().updateFileInternalVariantIndex(file, FileInternalVariantIndex.init()
+                catalogManager.getFileManager().updateFileInternalVariantIndex(study, file, FileInternalVariantIndex.init()
                         .setStatus(new VariantIndexStatus(VariantIndexStatus.NONE)), token);
             }
         }

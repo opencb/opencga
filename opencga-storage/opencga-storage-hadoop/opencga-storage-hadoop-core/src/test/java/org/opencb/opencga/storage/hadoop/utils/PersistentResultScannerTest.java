@@ -63,7 +63,8 @@ public class PersistentResultScannerTest {
         int i = 0;
         for (Iterator<Result> iterator = scanner.iterator(); iterator.hasNext(); ) {
             Result result = iterator.next();
-            System.out.println(Bytes.toString(result.getRow()));
+            assertNotNull(result);
+            assertNotNull(result.getRow());
             i++;
             if (i == 50 || i == 99) {
                 int scannersCount = persistentScanner.getScannersCount();

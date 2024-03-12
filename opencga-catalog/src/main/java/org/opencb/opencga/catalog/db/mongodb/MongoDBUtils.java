@@ -85,7 +85,7 @@ public class MongoDBUtils {
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 
-        Bson query = Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -289,9 +289,13 @@ public class MongoDBUtils {
     }
 
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        filterStringParams(parameters, filteredParams, acceptedParams, "");
+    }
+
+    static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams, String dbKeyPrefix) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                filteredParams.put(s, parameters.getString(s));
+                filteredParams.put(dbKeyPrefix + s, parameters.getString(s));
             }
         }
     }
@@ -361,6 +365,11 @@ public class MongoDBUtils {
     }
 
     static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+        filterObjectParams(parameters, filteredParams, acceptedMapParams, "");
+    }
+
+    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams,
+                                   String dbKeyPrefix) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
                 Document document;
@@ -371,10 +380,10 @@ public class MongoDBUtils {
                         for (Object object : originalList) {
                             documentList.add(getMongoDBDocument(object, s));
                         }
-                        filteredParams.put(s, documentList);
+                        filteredParams.put(dbKeyPrefix + s, documentList);
                     } else {
                         document = getMongoDBDocument(parameters.get(s), s);
-                        filteredParams.put(s, document);
+                        filteredParams.put(dbKeyPrefix + s, document);
                     }
                 } catch (CatalogDBException e) {
                     logger.warn("Skipping key '" + s + "': " + e.getMessage(), e);
@@ -801,7 +810,7 @@ public class MongoDBUtils {
         }
     }
     public static String getMongoDBCli(DatabaseCredentials credentials, String database) {
-        String sb = "mongo" + getMongoDBCliOpts(credentials)
+        String sb = "mongosh" + getMongoDBCliOpts(credentials)
                 + "'" + getMongoDBUri(credentials, database) + "'";
         return sb;
 
@@ -829,6 +838,10 @@ public class MongoDBUtils {
 
     public static URI getMongoDBUri(DatabaseCredentials credentials) {
         return getMongoDBUri(credentials, null);
+    }
+
+    public static URI getMongoDBUriRedacted(DatabaseCredentials credentials) {
+        return getMongoDBUri(new DatabaseCredentials(credentials).setPassword("<redacted>"), null);
     }
 
     public static URI getMongoDBUri(DatabaseCredentials credentials, String database) {

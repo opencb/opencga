@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,11 +84,7 @@ public class JwtManager {
         return this;
     }
 
-    public String createJWTToken(String userId, long expiration) {
-        return createJWTToken(userId, Collections.emptyMap(), expiration);
-    }
-
-    public String createJWTToken(String userId, Map<String, Object> claims, long expiration) {
+    public String createJWTToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
@@ -95,7 +92,8 @@ public class JwtManager {
             jwtBuilder.setClaims(claims);
         }
         jwtBuilder.setSubject(userId)
-                .setAudience("OpenCGA users")
+                .setAudience(organizationId)
+                .setIssuer("OpenCGA")
                 .setIssuedAt(new Date(currentTime))
                 .signWith(privateKey, algorithm);
 
@@ -114,6 +112,17 @@ public class JwtManager {
     public void validateToken(String token, Key publicKey) throws CatalogAuthenticationException {
         parseClaims(token, publicKey);
     }
+
+    public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
+        Claims body = parseClaims(token, publicKey).getBody();
+        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
+    }
+
+    public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
+        Claims body = parseClaims(token, publicKey).getBody();
+        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
+    }
+
 
     public String getAudience(String token) throws CatalogAuthenticationException {
         return getAudience(token, this.publicKey);

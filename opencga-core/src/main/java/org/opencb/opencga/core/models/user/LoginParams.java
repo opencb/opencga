@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.core.models.user;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public class LoginParams {
 
+    @JsonAlias({"organizationId"})
+    private String organization;
     private String user;
     private String password;
     private String refreshToken;
@@ -25,16 +29,18 @@ public class LoginParams {
     public LoginParams() {
     }
 
-    public LoginParams(String user, String password) {
-        this.user = user;
-        this.password = password;
-    }
-
     public LoginParams(String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
-    public LoginParams(String user, String password, String refreshToken) {
+    public LoginParams(String organization, String user, String password) {
+        this.organization = organization;
+        this.user = user;
+        this.password = password;
+    }
+
+    public LoginParams(String organization, String user, String password, String refreshToken) {
+        this.organization = organization;
         this.user = user;
         this.password = password;
         this.refreshToken = refreshToken;
@@ -43,11 +49,21 @@ public class LoginParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");
-        sb.append("user='").append(user).append('\'');
-        sb.append(", password='").append("********").append('\'');
-        sb.append(", refreshToken='").append("********").append('\'');
+        sb.append("organization='").append(organization).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public LoginParams setOrganization(String organization) {
+        this.organization = organization;
+        return this;
     }
 
     public String getUser() {

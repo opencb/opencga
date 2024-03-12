@@ -17,16 +17,25 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +45,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Created by imedina on 19/04/16.
@@ -280,6 +290,95 @@ public abstract class CommandExecutor {
         this.sessionManager = sessionManager;
         return this;
     }
+
+
+    public String getObjectAsJSON(String objectCategory, String objectPath, OpenCGAClient openCGAClient) throws Exception {
+        StringBuilder jsonInString = new StringBuilder("\n");
+        try {
+            ObjectMap queryParams = new ObjectMap();
+            queryParams.putIfNotEmpty("category", objectCategory);
+            RestResponse<List> response = openCGAClient.getMetaClient().api(queryParams);
+            ObjectMapper jsonObjectMapper = new ObjectMapper();
+            for (List list : response.getResponses().get(0).getResults()) {
+                List<RestCategory> categories = jsonObjectMapper.convertValue(list, new TypeReference<List<RestCategory>>() {});
+                for (RestCategory category : categories) {
+                    for (RestEndpoint endpoint : category.getEndpoints()) {
+                        if (objectPath.equals(endpoint.getPath())) {
+                            boolean enc = false;
+                            for (RestParameter parameter : endpoint.getParameters()) {
+                                //jsonInString += parameter.getName()+":"+parameter.getAllowedValues()+"\n";
+                                if (parameter.getData() != null) {
+                                    enc = true;
+                                    jsonInString.append(printBody(parameter.getData(), ""));
+                                }
+                            }
+                            if (!enc) {
+                                jsonInString.append("No model available");
+                            }
+                            //
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            jsonInString = new StringBuilder("Data model not found.");
+            CommandLineUtils.error(e);
+        }
+        return jsonInString.toString();
+    }
+
+    private String printBody(List<RestParameter> data, String tabs) {
+        String res = "";
+        res += "{\n";
+        String tab = "    " + tabs;
+        for (RestParameter parameter : data) {
+            if (parameter.getData() == null) {
+                res += printParameter(parameter, tab);
+            } else {
+                res += tab + "\"" +parameter.getName() + "\"" + ": [" + printBody(parameter.getData(), tab) + "],\n";
+            }
+        }
+        res += tabs + "}";
+        return res;
+
+    }
+
+    private String printParameter(RestParameter parameter, String tab) {
+
+        return tab + "\"" + parameter.getName() + "\"" + ":" + printParameterValue(parameter) + ",\n";
+    }
+
+    private String printParameterValue(RestParameter parameter) {
+
+        if(!StringUtils.isEmpty(parameter.getAllowedValues())){
+            return parameter.getAllowedValues().replace(" ", "|");
+        }
+        switch (parameter.getType()) {
+            case "Boolean":
+            case "java.lang.Boolean":
+                return "false";
+            case "Long":
+            case "Float":
+            case "Double":
+            case "Integer":
+            case "int":
+            case "double":
+            case "float":
+            case "long":
+                return "0";
+            case "List":
+                return "[\"\"]";
+            case "Date":
+                return "\"dd/mm/yyyy\"";
+            case "Map":
+                return "{\"key\": \"value\"}";
+            case "String":
+                return "\"\"";
+            default:
+                return "\"-\"";
+        }
+    }
+
 
     public Logger getLogger() {
         return logger;

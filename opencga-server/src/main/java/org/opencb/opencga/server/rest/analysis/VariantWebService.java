@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
@@ -1391,7 +1390,7 @@ public class VariantWebService extends AnalysisWebService {
 //    @Consumes(MediaType.APPLICATION_JSON)
 //    @ApiOperation(value = "Validate a VCF file" + PENDING, response = QueryResponse.class)
 //    public Response validate(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Study [[organization@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
 //        return createPendingResponse();
 //        try {

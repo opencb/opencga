@@ -20,15 +20,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <opencga-storage-hadoop-deps.version>${project.parent.version}</opencga-storage-hadoop-deps.version>
-        <module-opencga-storage-hadoop-deps>false</module-opencga-storage-hadoop-deps>
-    </properties>
-
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -37,94 +32,8 @@
 
     <modules>
         <module>opencga-storage-hadoop-core</module>
+        <module>opencga-storage-hadoop-compat</module>
+        <module>opencga-storage-hadoop-lib</module>
     </modules>
-
-    <profiles>
-        <!-- Add opencga-storage-hadoop-deps as an extra module. Force to recompile the opencga-storage-hadoop-deps -->
-        <profile>
-            <id>opencga-storage-hadoop-deps</id>
-            <modules>
-                <module>opencga-storage-hadoop-deps</module>
-            </modules>
-        </profile>
-    </profiles>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>compile-hadoop-deps</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <target>
-                                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpathref="maven.plugin.classpath" />
-                                <if>
-                                    <and>
-                                        <!--Only compile from parent opencga-storage-hadoop-->
-                                        <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
-                                        <!--Compile if file is not available-->
-                                        <not>
-                                            <available file="${settings.localRepository}/org/opencb/opencga/${opencga-storage-hadoop-deps.artifactId}/${opencga-storage-hadoop-deps.version}/${opencga-storage-hadoop-deps.artifactId}-${opencga-storage-hadoop-deps.version}-shaded.jar"/>
-                                        </not>
-                                        <!--Compile if opencga-storage-hadoop-deps has not been included as a module-->
-                                        <!--See profile opencga-storage-hadoop-deps-->
-                                        <not>
-                                            <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
-                                        </not>
-                                    </and>
-                                    <then>
-                                        <echo>${settings.localRepository}/org/opencb/opencga/${opencga-storage-hadoop-deps.artifactId}/${opencga-storage-hadoop-deps.version}/${opencga-storage-hadoop-deps.artifactId}-${opencga-storage-hadoop-deps.version}-shaded.jar</echo>
-                                        <echo>Compile ${opencga-storage-hadoop-deps.artifactId}-${opencga-storage-hadoop-deps.version}</echo>
-                                        <exec executable="mvn" failonerror="true">
-                                            <arg value="-f"/>
-                                            <arg value="${project.basedir}/pom.xml"/>
-                                            <arg value="-Popencga-storage-hadoop-deps"/>
-                                            <arg value="-pl"/>
-                                            <arg value=":opencga-storage-hadoop-deps,:${opencga-storage-hadoop-deps.artifactId}"/>
-                                            <arg value="install"/>
-                                        </exec>
-                                    </then>
-                                    <else>
-                                        <if>
-                                            <and>
-                                                <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
-
-                                                <not>
-                                                    <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
-                                                </not>
-
-                                                <available file="${settings.localRepository}/org/opencb/opencga/${opencga-storage-hadoop-deps.artifactId}/${opencga-storage-hadoop-deps.version}/${opencga-storage-hadoop-deps.artifactId}-${opencga-storage-hadoop-deps.version}-shaded.jar"/>
-                                            </and>
-                                            <then>
-                                                <echo>------------------------------------------------------------------------</echo>
-                                                <echo>Skip compile opencga-storage-hadoop-deps. If required, compile with -Popencga-storage-hadoop-deps,${opencga-storage-hadoop-deps.id}</echo>
-                                                <echo>Shaded jar file already exists: ${settings.localRepository}/org/opencb/opencga/${opencga-storage-hadoop-deps.artifactId}/${opencga-storage-hadoop-deps.version}/${opencga-storage-hadoop-deps.artifactId}-${opencga-storage-hadoop-deps.version}-shaded.jar</echo>
-                                                <echo>------------------------------------------------------------------------</echo>
-                                            </then>
-                                        </if>
-                                    </else>
-                                </if>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-
-                </executions>
-
-                <dependencies>
-                    <dependency>
-                        <groupId>ant-contrib</groupId>
-                        <artifactId>ant-contrib</artifactId>
-                        <version>20020829</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

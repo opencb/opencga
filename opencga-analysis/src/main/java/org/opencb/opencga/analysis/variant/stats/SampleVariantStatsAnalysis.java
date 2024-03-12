@@ -87,7 +87,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         if (toolParams.isIndex()) {
-            String userId = getCatalogManager().getUserManager().getUserId(getToken());
+            String userId = getCatalogManager().getUserManager().validateToken(getToken()).getUserId();
             Study study = getCatalogManager().getStudyManager().get(this.study, new QueryOptions(), getToken()).first();
             boolean isOwner = study.getFqn().startsWith(userId + "@");
             if (!isOwner) {

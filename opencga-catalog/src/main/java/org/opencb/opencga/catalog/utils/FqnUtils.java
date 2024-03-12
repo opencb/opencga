@@ -7,7 +7,7 @@ import java.util.Objects;
 public class FqnUtils {
 
     public static class FQN {
-        private final String user;
+        private final String organization;
         private final String project;
         private final String study;
         private final String projectFqn;
@@ -16,12 +16,12 @@ public class FqnUtils {
             if (fqn == null || fqn.isEmpty()) {
                 throw new IllegalArgumentException("Empty FQN");
             }
-            int idx1 = fqn.indexOf(ParamConstants.USER_PROJECT_SEPARATOR);
+            int idx1 = fqn.indexOf(ParamConstants.ORGANIZATION_PROJECT_SEPARATOR);
             int idx2 = fqn.indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR, idx1 + 1);
             if (idx1 < 0) {
-                throw new IllegalArgumentException("Invalid FQN. Expected <user>@<project>[:<study>]. Got '" + fqn + "'");
+                throw new IllegalArgumentException("Invalid FQN. Expected <organization>@<project>[:<study>]. Got '" + fqn + "'");
             }
-            user = fqn.substring(0, idx1);
+            organization = fqn.substring(0, idx1);
             if (idx2 < 0) {
                 project = fqn.substring(idx1 + 1);
                 projectFqn = fqn;
@@ -33,19 +33,19 @@ public class FqnUtils {
             }
         }
 
-        public FQN(String user, String project) {
-            this(user, project, null);
+        public FQN(String organization, String project) {
+            this(organization, project, null);
         }
 
-        public FQN(String user, String project, String study) {
-            this.user = Objects.requireNonNull(user);
+        public FQN(String organization, String project, String study) {
+            this.organization = Objects.requireNonNull(organization);
             this.project = Objects.requireNonNull(project);
-            projectFqn = user + ParamConstants.USER_PROJECT_SEPARATOR + project;
+            projectFqn = organization + ParamConstants.ORGANIZATION_PROJECT_SEPARATOR + project;
             this.study = study;
         }
 
-        public String getUser() {
-            return user;
+        public String getOrganization() {
+            return organization;
         }
 
         public String getProject() {
@@ -62,8 +62,8 @@ public class FqnUtils {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder(user)
-                    .append(ParamConstants.USER_PROJECT_SEPARATOR)
+            final StringBuilder sb = new StringBuilder(organization)
+                    .append(ParamConstants.ORGANIZATION_PROJECT_SEPARATOR)
                     .append(project);
             if (study != null) {
                 sb.append(ParamConstants.PROJECT_STUDY_SEPARATOR)
@@ -77,8 +77,8 @@ public class FqnUtils {
         return new FQN(fqn);
     }
 
-    public static String getUser(String fqn) {
-        return new FQN(fqn).getUser();
+    public static String getOrganization(String fqn) {
+        return new FQN(fqn).getOrganization();
     }
 
     public static String getProject(String fqn) {
@@ -93,12 +93,12 @@ public class FqnUtils {
         return new FQN(fqn).getProjectFqn();
     }
 
-    public static String buildFqn(String user, String project) {
-        return new FQN(user, project).toString();
+    public static String buildFqn(String organizationId, String project) {
+        return new FQN(organizationId, project).toString();
     }
 
-    public static String buildFqn(String user, String project, String study) {
-        return new FQN(user, project, study).toString();
+    public static String buildFqn(String organizationId, String project, String study) {
+        return new FQN(organizationId, project, study).toString();
     }
 
 }

@@ -52,7 +52,7 @@ email:
   ssl: false
 
 hooks:
-  user@1000G:phase1:   # Full Qualified Name of the study.
+  test@1000G:phase1:   # Full Qualified Name of the study.
     file:               # Entity where the hook will be checked
      - field: "name"     # Field of the entity to be checked
        value: "~(.*)vcf.gz$"    # Value to be checked

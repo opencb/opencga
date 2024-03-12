@@ -29,8 +29,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -62,6 +62,7 @@ public class FileWSServerTest {
     private WebTarget webTarget;
     private static WSServerTestUtils serverTestUtils;
     private String sessionId;
+    private String organizationId = "test";
     private String studyId = "user@1000G:phase1";
     public static final Path ROOT_DIR = Paths.get("/tmp/opencga-server-FileWSServerTest-folder");
 
@@ -91,16 +92,16 @@ public class FileWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login(organizationId, "user", TestParamConstants.PASSWORD).getToken();
 
         if (ROOT_DIR.toFile().exists()) {
             IOUtils.deleteDirectory(ROOT_DIR);
         }
         Files.createDirectory(ROOT_DIR);
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file1.txt").toString());
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("file1.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
         Files.createDirectory(ROOT_DIR.resolve("data"));
-        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
+        MongoBackupUtils.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
         String fileName = "variant-test-file.vcf.gz";
         Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
         fileName = "HG00096.chrom20.small.bam";
@@ -182,7 +183,7 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
 
         QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
-        file = OpenCGAWSServer.catalogManager.getFileManager().get(file.getUid(), null, sessionId).first();
+        file = OpenCGAWSServer.catalogManager.getFileManager().get(organizationId, file.getUid(), null, sessionId).first();
         assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 

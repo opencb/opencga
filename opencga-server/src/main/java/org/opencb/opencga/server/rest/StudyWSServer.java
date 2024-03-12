@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -43,9 +42,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -328,8 +325,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
             StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getTemplate());
-            List<String> idList = getIdList(params.getStudy(), false);
-            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, action, token));
+            return createOkResponse(studyManager.updateAcl(params.getStudy(), memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -365,40 +361,40 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studies}/aggregationStats")
-    @ApiOperation(value = "Fetch catalog study stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
-            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
-            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
-            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
-            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
-            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
-            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
-            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
-            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
-        try {
-            if (defaultStats == null) {
-                defaultStats = true;
-            }
-            List<String> idList = getIdList(studies);
-            Map<String, Object> result = new HashMap<>();
-            for (String study : idList) {
-                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
-                        familyFields, jobFields, defaultStats, token));
-            }
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{studies}/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog study stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = "Comma separated list of studies [[organization@]project:]study up to a maximum of 100", required = true)
+//            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
+//            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+//            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+//            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+//            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+//            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+//            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
+//            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+//                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
+//        try {
+//            if (defaultStats == null) {
+//                defaultStats = true;
+//            }
+//            List<String> idList = getIdList(studies);
+//            Map<String, Object> result = new HashMap<>();
+//            for (String study : idList) {
+//                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
+//                        familyFields, jobFields, defaultStats, token));
+//            }
+//            return createOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{study}/variableSets/update")
@@ -423,9 +419,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(),
-                        params.getUnique(),
-                        params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
+                VariableSet variableSet = params.toVariableSet();
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, variableSet, token);
             } else {
                 boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
                 queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);

@@ -1,4 +1,5 @@
 configuration:
+  organizationId: test
   version: 3.0.0
   index: false
   projectId: project

@@ -86,7 +86,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     private final ClinicalAnalysisConverter clinicalConverter;
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
-                                          Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+                                          Configuration configuration, OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ClinicalAnalysisMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalCollection = clinicalCollection;
@@ -142,18 +142,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         parameters.put(PANELS.key(), panelParamList);
     }
 
-    static void fixFilesForRemoval(ObjectMap parameters) {
-        if (parameters.get(FILES.key()) == null) {
+    static void fixFilesForRemoval(ObjectMap parameters, String key) {
+        if (parameters.get(key) == null) {
             return;
         }
 
         List<Document> fileParamList = new LinkedList<>();
-        for (Object file : parameters.getAsList(FILES.key())) {
+        for (Object file : parameters.getAsList(key)) {
             if (file instanceof File) {
                 fileParamList.add(new Document("uid", ((File) file).getUid()));
             }
         }
-        parameters.put(FILES.key(), fileParamList);
+        parameters.put(key, fileParamList);
     }
 
     static void fixAnalystsForRemoval(ObjectMap parameters) {
@@ -410,12 +410,86 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+
+        if (parameters.containsKey(REPORT_UPDATE.key())) {
+            ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
+            reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
+            String[] stringParams = {ReportQueryParams.TITLE.key(), ReportQueryParams.OVERVIEW.key(), ReportQueryParams.LOGO.key(),
+                    ReportQueryParams.SIGNED_BY.key(), ReportQueryParams.SIGNATURE.key(), ReportQueryParams.DATE.key(), };
+            filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
+
+            String[] objectParams = {ReportQueryParams.DISCUSSION.key()};
+            filterObjectParams(reportParameters, document.getSet(), objectParams, REPORT.key() + ".");
+
+            String[] commentParams = {ReportQueryParams.COMMENTS.key()};
+            ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction
+                    .from(actionMap, ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+            switch (basicOperation) {
+                case REMOVE:
+                    fixCommentsForRemoval(reportParameters);
+                    filterObjectParams(reportParameters, document.getPull(), commentParams, REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), commentParams, REPORT.key() + ".");
+                    break;
+                case REPLACE:
+                    filterReplaceParams(reportParameters.getAsList(ReportQueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                            ClinicalComment::getDate, QueryParams.REPORT.key() + "." + QueryParams.COMMENTS_DATE.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+
+            String[] filesParams = new String[]{ReportQueryParams.FILES.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.FILES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(reportParameters, document.getSet(), filesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getSet(),  QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.FILES.key());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(reportParameters, ReportQueryParams.FILES.key());
+                    filterObjectParams(reportParameters, document.getPull(), filesParams, QueryParams.REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), filesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getAddToSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.FILES.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+
+            String[] supportingEvidencesParams = new String[]{ReportQueryParams.SUPPORTING_EVIDENCES.key()};
+            operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.SUPPORTING_EVIDENCES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(reportParameters, document.getSet(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(reportParameters, ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    filterObjectParams(reportParameters, document.getPull(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getAddToSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+        }
+
         clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
         clinicalConverter.validateReportToUpdate(document.getSet());
-
-        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
         String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
@@ -463,7 +537,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 clinicalConverter.validateFilesToUpdate(document.getSet());
                 break;
             case REMOVE:
-                fixFilesForRemoval(parameters);
+                fixFilesForRemoval(parameters, FILES.key());
                 filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
@@ -783,7 +857,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
                 ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
         return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, clinicalConverter, iteratorFilter, dbAdaptorFactory, studyUid,
@@ -798,7 +872,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
                 ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
         return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
@@ -946,7 +1020,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
         }
 
-        long clinicalUid = getNewUid();
+        long clinicalUid = getNewUid(clientSession);
 
         clinicalAnalysis.setAudit(clinicalAudit);
 

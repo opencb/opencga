@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -374,9 +374,8 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storage-hadoop</name>
+                    <name>!skipStorageHadoop</name>
                 </property>
-                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
@@ -386,9 +385,9 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
                     <version>${project.parent.version}</version>
-                    <classifier>shaded</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>

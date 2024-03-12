@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 public class SampleAnnotationIndexQuery {
     private final byte[] annotationIndexMask; // byte[] = {mask , index}
+    private final Boolean intergenic;
     private final IndexFieldFilter consequenceTypeFilter;
     private final IndexFieldFilter biotypeFilter;
     private final IndexFieldFilter transcriptFlagFilter;
@@ -17,6 +18,7 @@ public class SampleAnnotationIndexQuery {
 
     public SampleAnnotationIndexQuery(SampleIndexSchema schema) {
         this.annotationIndexMask = new byte[]{0, 0};
+        this.intergenic = null;
         this.consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         this.biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
         this.transcriptFlagFilter = schema.getTranscriptFlagIndexSchema().getField().noOpFilter();
@@ -25,12 +27,16 @@ public class SampleAnnotationIndexQuery {
         this.populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
     }
 
-    public SampleAnnotationIndexQuery(byte[] annotationIndexMask, IndexFieldFilter consequenceTypeFilter, IndexFieldFilter biotypeFilter,
+    public SampleAnnotationIndexQuery(byte[] annotationIndexMask,
+                                      Boolean intergenic,
+                                      IndexFieldFilter consequenceTypeFilter,
+                                      IndexFieldFilter biotypeFilter,
                                       IndexFieldFilter transcriptFlagFilter,
                                       CombinationTripleIndexSchema.Filter ctBtTfFilter,
                                       IndexFilter clinicalFilter,
                                       IndexFilter populationFrequencyFilter) {
         this.annotationIndexMask = annotationIndexMask;
+        this.intergenic = intergenic;
         this.consequenceTypeFilter = consequenceTypeFilter;
         this.biotypeFilter = biotypeFilter;
         this.transcriptFlagFilter = transcriptFlagFilter;
@@ -45,6 +51,10 @@ public class SampleAnnotationIndexQuery {
 
     public byte getAnnotationIndex() {
         return annotationIndexMask[1];
+    }
+
+    public Boolean getIntergenic() {
+        return intergenic;
     }
 
     public IndexFieldFilter getConsequenceTypeFilter() {
