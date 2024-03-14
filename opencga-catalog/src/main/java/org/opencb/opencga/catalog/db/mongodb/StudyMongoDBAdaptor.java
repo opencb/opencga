@@ -89,7 +89,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.variableSetConverter = new VariableSetConverter();
     }
 
-    static Document getDocumentUpdateParams(ObjectMap parameters) {
+    static Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document studyParameters = new Document();
 
         String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};

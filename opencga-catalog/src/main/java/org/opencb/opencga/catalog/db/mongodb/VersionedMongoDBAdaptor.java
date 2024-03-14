@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -96,6 +97,10 @@ public class VersionedMongoDBAdaptor {
     }
 
     public interface VersionedModelExecution<T> {
+        T execute(List<Document> entryList) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    }
+
+    public interface NonVersionedModelExecution<T> {
         T execute() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
@@ -120,17 +125,23 @@ public class VersionedMongoDBAdaptor {
 
     protected <T> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(session, sourceQuery, update, null, null);
+        return update(session, sourceQuery, Collections.emptyList(), update, Collections.emptyList(), null, null);
+    }
+
+    protected <T> T update(ClientSession session, Bson sourceQuery, List<String> includeFields, VersionedModelExecution<T> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, includeFields, update, Collections.emptyList(), null, null);
     }
 
     protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
                               PostVersionIncrementIterator<E> postVersionIncrementIterator,
                               ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(session, sourceQuery, update, Collections.emptyList(), postVersionIncrementIterator, postVersionIncrementExecution);
+        return update(session, sourceQuery, Collections.emptyList(), update, Collections.emptyList(), postVersionIncrementIterator,
+                postVersionIncrementExecution);
     }
 
-    protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
+    protected <T, E> T update(ClientSession session, Bson sourceQuery, List<String> includeFields, VersionedModelExecution<T> update,
                            List<String> postVersionIncrementAdditionalIncludeFields, PostVersionIncrementIterator<E> dbIterator,
                            ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -138,12 +149,18 @@ public class VersionedMongoDBAdaptor {
 
         // 1. Increment version
         // 1.1 Only increase version of those documents not already increased by same transaction id
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID, VERSION, PRIVATE_TRANSACTION_ID));
+        Set<String> toInclude = new HashSet<>(Arrays.asList(ID, VERSION, PRIVATE_TRANSACTION_ID));
+        if (CollectionUtils.isNotEmpty(includeFields)) {
+            toInclude.addAll(includeFields);
+        }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, new ArrayList<>(toInclude));
         List<String> allIds = new LinkedList<>();
         List<String> idsChanged = new LinkedList<>();
+        List<Document> entryList = new LinkedList<>();
         try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
+                entryList.add(result);
 
                 String id = result.getString(ID);
                 int version = result.get(VERSION, Number.class).intValue();
@@ -178,7 +195,7 @@ public class VersionedMongoDBAdaptor {
         }
 
         // 2. Execute main update
-        T executionResult = update.execute();
+        T executionResult = update.execute(entryList);
 
         // 3. Fetch document containing update and copy into the archive collection
         Bson bsonQuery = Filters.in(ID, allIds);
@@ -227,7 +244,7 @@ public class VersionedMongoDBAdaptor {
         return executionResult;
     }
 
-    protected <T> T updateWithoutVersionIncrement(Bson sourceQuery, VersionedModelExecution<T> update)
+    protected <T> T updateWithoutVersionIncrement(Bson sourceQuery, NonVersionedModelExecution<T> update)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // Execute main update
         T executionResult = update.execute();

@@ -48,6 +48,16 @@ public class FieldConstants {
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
 
+    // Notes
+    public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
+    public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
+    public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
+    public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
+    public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
+    public static final String NOTES_VALUE_TYPE_DESCRIPTION = "Type of the value written in the Note.";
+    public static final String NOTES_VALUE_DESCRIPTION = "Value stored in the Note.";
+
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
             + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "

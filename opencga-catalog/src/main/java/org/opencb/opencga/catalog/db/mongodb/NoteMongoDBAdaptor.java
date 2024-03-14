@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.NotesDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.NotesConverter;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.NoteConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -20,81 +20,85 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.notes.Notes;
+import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterObjectParams;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
-public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdaptor {
+public class NoteMongoDBAdaptor extends MongoDBAdaptor implements NoteDBAdaptor {
 
-    private final MongoDBCollection notesCollection;
-    private final MongoDBCollection archiveNotesCollection;
-    private final MongoDBCollection deletedNotesCollection;
-    private final NotesConverter notesConverter;
+    private final MongoDBCollection noteCollection;
+    private final MongoDBCollection archiveNoteCollection;
+    private final MongoDBCollection deletedNoteCollection;
+    private final NoteConverter noteConverter;
     private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
-    public NotesMongoDBAdaptor(MongoDBCollection notesCollection, MongoDBCollection archiveNotesCollection,
-                               MongoDBCollection deletedNotesCollection, Configuration configuration,
-                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(NotesMongoDBAdaptor.class));
+    public NoteMongoDBAdaptor(MongoDBCollection noteCollection, MongoDBCollection archiveNoteCollection,
+                              MongoDBCollection deletedNoteCollection, Configuration configuration,
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(NoteMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.notesCollection = notesCollection;
-        this.archiveNotesCollection = archiveNotesCollection;
-        this.deletedNotesCollection = deletedNotesCollection;
-        this.notesConverter = new NotesConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(notesCollection, archiveNotesCollection,
-                deletedNotesCollection);
+        this.noteCollection = noteCollection;
+        this.archiveNoteCollection = archiveNoteCollection;
+        this.deletedNoteCollection = deletedNoteCollection;
+        this.noteConverter = new NoteConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(noteCollection, archiveNoteCollection,
+                deletedNoteCollection);
     }
 
     @Override
-    public OpenCGAResult<Notes> insert(Notes notes)
+    public OpenCGAResult<Note> insert(Note note)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
-            logger.debug("Starting notes insert transaction for notes id '{}'", notes.getId());
+            logger.debug("Starting note insert transaction for note id '{}'", note.getId());
 
-            insert(clientSession, notes);
+            insert(clientSession, note);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create notes {}: {}", notes.getId(), e.getMessage()));
+        }, e -> logger.error("Could not create note {}: {}", note.getId(), e.getMessage()));
     }
 
-    Notes insert(ClientSession clientSession, Notes notes)
+    Note insert(ClientSession clientSession, Note note)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (StringUtils.isEmpty(notes.getId())) {
-            throw new CatalogDBException("Missing notes id");
+        if (StringUtils.isEmpty(note.getId())) {
+            throw new CatalogDBException("Missing note id");
         }
 
-        // Check it doesn't already exist a notes with same id
-        Bson bson = Filters.eq(QueryParams.ID.key(), notes.getId());
-        DataResult<Long> count = notesCollection.count(clientSession, bson);
+        if (note.getStudyUid() <= 0) {
+            note.setStudyUid(-1L);
+        }
+        // Check it doesn't already exist a note with same id and study
+        Bson bson = Filters.and(
+                Filters.eq(QueryParams.ID.key(), note.getId()),
+                Filters.eq(QueryParams.STUDY_UID.key(), note.getStudyUid())
+        );
+        DataResult<Long> count = noteCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Notes { id: '" + notes.getId() + "'} already exists.");
+            throw new CatalogDBException("Note { id: '" + note.getId() + "'} already exists.");
         }
-        long notesUid = getNewUid(clientSession);
-        notes.setUid(notesUid);
-        if (StringUtils.isEmpty(notes.getUuid())) {
-            notes.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTES));
+        long noteUid = getNewUid(clientSession);
+        note.setUid(noteUid);
+        if (StringUtils.isEmpty(note.getUuid())) {
+            note.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTES));
         }
 
-        Document notesObject = notesConverter.convertToStorageType(notes);
+        Document noteObject = noteConverter.convertToStorageType(note);
 
         // Private parameters
-        notesObject.put(PRIVATE_CREATION_DATE,
-                StringUtils.isNotEmpty(notes.getCreationDate()) ? TimeUtils.toDate(notes.getCreationDate()) : TimeUtils.getDate());
-        notesObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(notes.getModificationDate())
-                ? TimeUtils.toDate(notes.getModificationDate()) : TimeUtils.getDate());
+        noteObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(note.getCreationDate()) ? TimeUtils.toDate(note.getCreationDate()) : TimeUtils.getDate());
+        noteObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(note.getModificationDate())
+                ? TimeUtils.toDate(note.getModificationDate()) : TimeUtils.getDate());
 
-        logger.debug("Inserting notes '{}'...", notes.getId());
-        versionedMongoDBAdaptor.insert(clientSession, notesObject);
-        logger.debug("Notes '{}' successfully inserted", notes.getId());
+        logger.debug("Inserting note '{}'...", note.getId());
+        versionedMongoDBAdaptor.insert(clientSession, noteObject);
+        logger.debug("Note '{}' successfully inserted", note.getId());
 
-        return notes;
+        return note;
     }
 
     @Override
@@ -103,18 +107,18 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Notes> stats(Query query) {
+    public OpenCGAResult<Note> stats(Query query) {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Notes> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Note> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    OpenCGAResult<Notes> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Note> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        try (DBIterator<Notes> dbIterator = iterator(clientSession, query, options)) {
+        try (DBIterator<Note> dbIterator = iterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -131,90 +135,101 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, uid, parameters, queryOptions));
         } catch (CatalogDBException e) {
-            logger.error("Could not update notes: {}", e.getMessage(), e);
-            throw new CatalogDBException("Could not update notes: " + e.getMessage(), e.getCause());
+            logger.error("Could not update note: {}", e.getMessage(), e);
+            throw new CatalogDBException("Could not update note: " + e.getMessage(), e.getCause());
         }
     }
 
     @Override
-    public OpenCGAResult<Notes> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Note> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, long notesUid, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, long noteUid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
-        Query tmpQuery = new Query(QueryParams.UID.key(), notesUid);
+        Query tmpQuery = new Query(QueryParams.UID.key(), noteUid);
         Bson bsonQuery = parseQuery(tmpQuery);
-        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
-            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
-            Document notesUpdate = updateParams.toFinalUpdateDocument();
+        List<String> includeFields = Collections.singletonList(QueryParams.VALUE_TYPE.key());
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, includeFields, (noteList) -> {
+            Document note = noteList.get(0);
+            UpdateDocument updateParams = parseAndValidateUpdateParams(note, parameters, queryOptions);
+            Document noteUpdate = updateParams.toFinalUpdateDocument();
 
-            if (notesUpdate.isEmpty()) {
+            if (noteUpdate.isEmpty()) {
                 if (!parameters.isEmpty()) {
                     logger.error("Non-processed update parameters: {}", parameters.keySet());
                 }
                 throw new CatalogDBException("Nothing to be updated");
             }
 
-            logger.debug("Notes update: query : {}, update: {}", bsonQuery.toBsonDocument(), notesUpdate.toBsonDocument());
-            DataResult<?> result = notesCollection.update(clientSession, bsonQuery, notesUpdate, new QueryOptions("multi", true));
+            logger.debug("Note update: query : {}, update: {}", bsonQuery.toBsonDocument(), noteUpdate.toBsonDocument());
+            DataResult<?> result = noteCollection.update(clientSession, bsonQuery, noteUpdate, new QueryOptions("multi", true));
 
             if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Notes '" + notesUid + "' not found");
+                throw new CatalogDBException("Note '" + noteUid + "' not found");
             }
 
             List<Event> events = new ArrayList<>();
             if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, "", "Notes was already updated"));
+                events.add(new Event(Event.Type.WARNING, "", "Note was already updated"));
             }
 
-            logger.debug("Notes '{}' successfully updated", notesUid);
+            logger.debug("Note '{}' successfully updated", noteUid);
 
             return endWrite(tmpStartTime, 1, 1, events);
         });
     }
 
-    private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query tmpQuery,
-                                                        QueryOptions queryOptions) {
+    private UpdateDocument parseAndValidateUpdateParams(Document note, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
-            String time = parameters.getString(QueryParams.CREATION_DATE.key());
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_CREATION_DATE, date);
-        }
-        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
-            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
-        }
+//        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+//            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+//            Date date = TimeUtils.toDate(time);
+//            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+//            document.getSet().put(PRIVATE_CREATION_DATE, date);
+//        }
+//        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+//            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+//            Date date = TimeUtils.toDate(time);
+//            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+//            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+//        }
 
-        final String[] acceptedStringParams = {QueryParams.VALUE_TYPE.key()};
+        final String[] acceptedStringParams = {QueryParams.USER_ID.key(), QueryParams.VISIBILITY.key()};
         filterStringParams(parameters, document.getSet(), acceptedStringParams);
 
-        final String[] acceptedObjectParams = {QueryParams.VALUE.key()};
-        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+        Object value = parameters.get(QueryParams.VALUE.key());
+        if (value != null) {
+            String valueTypeStr = note.getString(QueryParams.VALUE_TYPE.key());
+            Note.Type type = Note.Type.valueOf(valueTypeStr);
+            if (type.equals(Note.Type.OBJECT)) {
+                final String[] acceptedValueParams = {QueryParams.VALUE.key()};
+                filterObjectParams(parameters, document.getSet(), acceptedValueParams);
+            } else {
+                document.getSet().put(QueryParams.VALUE.key(), value);
+            }
+        }
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        // Phenotypes
+        // Tags
         if (parameters.containsKey(QueryParams.TAGS.key())) {
             ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(),
                     ParamUtils.BasicUpdateAction.ADD);
             String[] tagsParams = {QueryParams.TAGS.key()};
             switch (operation) {
                 case SET:
-                    filterObjectParams(parameters, document.getSet(), tagsParams);
+                    filterStringListParams(parameters, document.getSet(), tagsParams);
                     break;
                 case REMOVE:
-                    filterObjectParams(parameters, document.getPull(), tagsParams);
+                    filterStringListParams(parameters, document.getPull(), tagsParams);
                     break;
                 case ADD:
-                    filterObjectParams(parameters, document.getAddToSet(), tagsParams);
+                    filterStringListParams(parameters, document.getAddToSet(), tagsParams);
                     break;
                 default:
                     throw new IllegalStateException("Unknown operation " + operation);
@@ -235,53 +250,53 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Notes> delete(Notes notes)
+    public OpenCGAResult<Note> delete(Note note)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, notes));
+            return runTransaction(clientSession -> privateDelete(clientSession, note));
         } catch (CatalogDBException e) {
-            throw new CatalogDBException("Could not delete notes " + notes.getId() + ": " + e.getMessage(), e);
+            throw new CatalogDBException("Could not delete note " + note.getId() + ": " + e.getMessage(), e);
         }
     }
 
-    private OpenCGAResult<Notes> privateDelete(ClientSession clientSession, Notes notes)
+    private OpenCGAResult<Note> privateDelete(ClientSession clientSession, Note note)
             throws CatalogDBException {
         long tmpStartTime = startQuery();
 
-        logger.debug("Deleting notes {} ({})", notes.getId(), notes.getUid());
+        logger.debug("Deleting note {} ({})", note.getId(), note.getUid());
 
-        // Delete notes
-        Query notesQuery = new Query(QueryParams.UID.key(), notes.getUid());
-        Bson bsonQuery = parseQuery(notesQuery);
+        // Delete note
+        Query noteQuery = new Query(QueryParams.UID.key(), note.getUid());
+        Bson bsonQuery = parseQuery(noteQuery);
         versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
-        logger.debug("Notes {}({}) deleted", notes.getId(), notes.getUid());
+        logger.debug("Note {}({}) deleted", note.getId(), note.getUid());
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     @Override
-    public OpenCGAResult<Notes> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<Note> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Notes> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<Note> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Notes> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<Note> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public DBIterator<Notes> iterator(Query query, QueryOptions options)
+    public DBIterator<Note> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
-    DBIterator<Notes> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    DBIterator<Note> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new CatalogMongoDBIterator<>(mongoCursor, notesConverter);
+        return new CatalogMongoDBIterator<>(mongoCursor, noteConverter);
     }
 
     @Override
@@ -302,26 +317,26 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
         }
 
         Bson bson = parseQuery(finalQuery);
-        MongoDBCollection collection = getQueryCollection(finalQuery, notesCollection, archiveNotesCollection,
-                deletedNotesCollection);
-        logger.debug("Notes query: {}", bson.toBsonDocument());
+        MongoDBCollection collection = getQueryCollection(finalQuery, noteCollection, archiveNoteCollection,
+                deletedNoteCollection);
+        logger.debug("Note query: {}", bson.toBsonDocument());
         return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     @Override
-    public OpenCGAResult<Notes> rank(Query query, String field, int numResults, boolean asc)
+    public OpenCGAResult<Note> rank(Query query, String field, int numResults, boolean asc)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Notes> groupBy(Query query, String field, QueryOptions options)
+    public OpenCGAResult<Note> groupBy(Query query, String field, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Notes> groupBy(Query query, List<String> fields, QueryOptions options)
+    public OpenCGAResult<Note> groupBy(Query query, List<String> fields, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
@@ -355,6 +370,12 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
             }
             try {
                 switch (queryParam) {
+                    case UID:
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case STUDY_UID:
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
@@ -362,10 +383,11 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ID:
+                    case UUID:
+                    case SCOPE:
                     case USER_ID:
                     case TAGS:
                     case VERSION:
-                    case VALUE_TYPE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

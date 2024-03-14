@@ -268,7 +268,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) {
+    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),

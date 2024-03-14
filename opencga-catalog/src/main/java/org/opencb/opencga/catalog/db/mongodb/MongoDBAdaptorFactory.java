@@ -31,14 +31,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.NoteManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationSummary;
-import org.opencb.opencga.core.models.notes.Notes;
-import org.opencb.opencga.core.models.notes.NotesCreateParams;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,11 +181,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         }
         if (adminFactory.isCatalogDBReady()) {
             // Read organizations present in the installation
-            Query query = new Query(NotesDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
-            OpenCGAResult<Notes> results = adminFactory.getCatalogNotesDBAdaptor().get(query, new QueryOptions());
+            Query query = new Query(NoteDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
+            OpenCGAResult<Note> results = adminFactory.getCatalogNotesDBAdaptor().get(query, new QueryOptions());
 
-            for (Notes organizationNotes : results.getResults()) {
-                OrganizationSummary organizationSummary = getOrganizationSummary(organizationNotes);
+            for (Note organizationNote : results.getResults()) {
+                OrganizationSummary organizationSummary = getOrganizationSummary(organizationNote);
                 if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationSummary.getId())
                         && (!organizationDBAdaptorMap.containsKey(organizationSummary.getId()))) {
                     OrganizationMongoDBAdaptorFactory orgFactory = configureOrganizationMongoDBAdaptorFactory(organizationSummary.getId(),
@@ -195,9 +196,9 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         }
     }
 
-    private OrganizationSummary getOrganizationSummary(Notes notes) {
+    private OrganizationSummary getOrganizationSummary(Note note) {
         try {
-            String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(notes.getValue());
+            String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(note.getValue());
             return JacksonUtils.getDefaultObjectMapper().readerFor(OrganizationSummary.class).readValue(orgSummaryString);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -221,11 +222,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 orgFactory = getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION);
 
                 // Read organizations present in the installation
-                Query query = new Query(NotesDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
-                OpenCGAResult<Notes> results = orgFactory.getCatalogNotesDBAdaptor().get(query, new QueryOptions());
+                Query query = new Query(NoteDBAdaptor.QueryParams.TAGS.key(), OrganizationTag.ACTIVE.name());
+                OpenCGAResult<Note> results = orgFactory.getCatalogNotesDBAdaptor().get(query, new QueryOptions());
 
-                for (Notes organizationNotes : results.getResults()) {
-                    OrganizationSummary organizationSummary = getOrganizationSummary(organizationNotes);
+                for (Note organizationNote : results.getResults()) {
+                    OrganizationSummary organizationSummary = getOrganizationSummary(organizationNote);
                     if (organizationSummary.getId().equals(organizationId)) {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
@@ -271,18 +272,19 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), OrganizationTag.ACTIVE.name(), null);
-            NotesCreateParams notesCreateParams = new NotesCreateParams(ORGANIZATION_PREFIX + organization.getId(),
-                    Collections.singletonList(OrganizationTag.ACTIVE.name()), Notes.Type.OBJECT, null);
+            NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(), Note.Scope.ORGANIZATION,
+                    "", Collections.singletonList(OrganizationTag.ACTIVE.name()), Note.Visibility.PRIVATE, Note.Type.OBJECT, null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
                 Map<String, Object> value = JacksonUtils.getDefaultObjectMapper().readerFor(Map.class).readValue(orgSummaryString);
-                notesCreateParams.setValue(value);
+                noteCreateParams.setValue(value);
             } catch (JsonMappingException e) {
                 throw new RuntimeException(e);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-            Notes notes = notesCreateParams.toSettings(userId);
+            Note note = noteCreateParams.toNote(userId);
+            NoteManager.validateNewNote(note, userId);
 
             // Create new database and indexes
             organizationDBAdaptorFactory.createAllCollections();
@@ -293,11 +295,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     .insert(organization, options);
 
             // Keep track of current organization in the ADMIN organization
-            if (StringUtils.isNotEmpty(notes.getUserId())) {
+            if (StringUtils.isNotEmpty(note.getUserId())) {
                 // Remove admin organization prefix from userId as it's written in that same organization
-                notes.setUserId(notes.getUserId().replace(ParamConstants.ADMIN_ORGANIZATION + ":", ""));
+                note.setUserId(note.getUserId().replace(ParamConstants.ADMIN_ORGANIZATION + ":", ""));
             }
-            getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getCatalogNotesDBAdaptor().insert(notes);
+            getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION).getCatalogNotesDBAdaptor().insert(note);
             return result;
         } catch (Exception e) {
             OrganizationMongoDBAdaptorFactory tmpOrgFactory = organizationDBAdaptorMap.remove(organization.getId());
@@ -321,7 +323,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public NotesDBAdaptor getCatalogSettingsDBAdaptor(String organizationId) throws CatalogDBException {
+    public NoteDBAdaptor getCatalogNoteDBAdaptor(String organizationId) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogNotesDBAdaptor();
     }
 
