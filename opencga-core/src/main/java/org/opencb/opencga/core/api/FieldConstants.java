@@ -43,6 +43,7 @@ public class FieldConstants {
     public static final String ORGANIZATION_OWNER_DESCRIPTION = "Owner of the organization.";
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
+    public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
 //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";

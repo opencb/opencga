@@ -126,7 +126,15 @@ public class NoteMongoDBAdaptor extends MongoDBAdaptor implements NoteDBAdaptor 
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        return nativeGet(null, query, options);
+    }
+
+
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
+            return endQuery(startTime, dbIterator);
+        }
     }
 
     @Override
@@ -302,7 +310,14 @@ public class NoteMongoDBAdaptor extends MongoDBAdaptor implements NoteDBAdaptor 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        return nativeIterator(null, query, options);
+    }
+
+    DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(NATIVE_QUERY, true);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new CatalogMongoDBIterator<>(mongoCursor, clientSession, null, null);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
@@ -388,6 +403,7 @@ public class NoteMongoDBAdaptor extends MongoDBAdaptor implements NoteDBAdaptor 
                     case USER_ID:
                     case TAGS:
                     case VERSION:
+                    case VISIBILITY:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

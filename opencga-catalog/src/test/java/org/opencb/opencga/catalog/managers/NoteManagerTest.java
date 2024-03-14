@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
@@ -68,6 +69,44 @@ public class NoteManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("denied");
         catalogManager.getNotesManager().update(note.getId(), noteUpdateParams, INCLUDE_RESULT, studyAdminToken1).first();
+    }
+
+    @Test
+    public void getOrganizationNoteTest() throws CatalogException {
+        NoteCreateParams noteCreateParams1 = new NoteCreateParams()
+                .setId("note1")
+                .setScope(Note.Scope.ORGANIZATION)
+                .setVisibility(Note.Visibility.PRIVATE)
+                .setValueType(Note.Type.STRING)
+                .setValue("hello");
+        catalogManager.getNotesManager().create(noteCreateParams1, INCLUDE_RESULT, ownerToken).first();
+
+        NoteCreateParams noteCreateParams2 = new NoteCreateParams()
+                .setId("note2")
+                .setScope(Note.Scope.ORGANIZATION)
+                .setVisibility(Note.Visibility.PUBLIC)
+                .setValueType(Note.Type.STRING)
+                .setValue("hello");
+        catalogManager.getNotesManager().create(noteCreateParams2, INCLUDE_RESULT, ownerToken).first();
+
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, null, ownerToken).first();
+        assertEquals(2, organization.getNotes().size());
+        assertEquals(noteCreateParams1.getId(), organization.getNotes().get(0).getId());
+        assertEquals(noteCreateParams2.getId(), organization.getNotes().get(1).getId());
+
+        // Check accessibility to private notes
+        organization = catalogManager.getOrganizationManager().get(organizationId, null, orgAdminToken1).first();
+        assertEquals(2, organization.getNotes().size());
+        assertEquals(noteCreateParams1.getId(), organization.getNotes().get(0).getId());
+        assertEquals(noteCreateParams2.getId(), organization.getNotes().get(1).getId());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, null, studyAdminToken1).first();
+        assertEquals(1, organization.getNotes().size());
+        assertEquals(noteCreateParams2.getId(), organization.getNotes().get(0).getId());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, null, normalToken1).first();
+        assertEquals(1, organization.getNotes().size());
+        assertEquals(noteCreateParams2.getId(), organization.getNotes().get(0).getId());
     }
 
     @Test
