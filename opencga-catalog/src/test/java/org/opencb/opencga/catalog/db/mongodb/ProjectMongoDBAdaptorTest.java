@@ -135,7 +135,7 @@ public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
         Project p2 = getProject("myp2");
 
         // Add study
-        catalogStudyDBAdaptor.insert(p1, new Study().setId("study").setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null);
+        catalogStudyDBAdaptor.insert(p1, new Study().setId("study").setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null, null);
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
         Project project = getProject("newpmp");
