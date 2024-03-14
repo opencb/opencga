@@ -85,20 +85,22 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             }
 
-            // Try to copy the BAI file into the BAM file directory
+            // Try to move the BAI file into the BAM file directory
+            boolean moveSuccessful = false;
             Path targetPath = inputPath.getParent().resolve(outputPath.getFileName());
             try {
-                Files.move(outputPath, targetPath);
+                Path movedPath = Files.move(outputPath, targetPath);
+                moveSuccessful = targetPath.equals(movedPath);
             } catch (Exception e) {
-                // Do nothing
-                logger.info("Moving from {} to {}: {}", outputPath, targetPath, e.getMessage());
+                // Log message
+                logger.info("Error moving from {} to {}", outputPath, targetPath, e);
             }
 
-            if (targetPath.toFile().exists()) {
+            if (moveSuccessful) {
                 outputPath = targetPath;
-                logger.info("Alignment index file was copied into the BAM folder: {}", outputPath);
+                logger.info("Alignment index file was moved into the BAM folder: {}", outputPath);
             } else {
-                logger.info("Couldn't copy the alignment index file into the BAM folder. The index file is in the job folder instead: {}",
+                logger.info("Couldn't move the alignment index file into the BAM folder. The index file is in the job folder instead: {}",
                         outputPath);
             }
 
