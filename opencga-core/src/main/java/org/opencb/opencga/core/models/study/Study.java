@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.notes.Note;
 
 import java.net.URI;
 import java.util.*;
@@ -140,6 +141,9 @@ public class Study extends PrivateFields {
             description = FieldConstants.STUDY_EXTERNAL_SOURCES)
     private List<ExternalSource> sources;
 
+    @DataField(id = "notes", description = FieldConstants.STUDY_NOTES_DESCRIPTION)
+    private List<Note> notes;
+
     @DataField(id = "type", indexed = true,
             description = FieldConstants.STUDY_TYPE)
     private StudyType type;
@@ -231,6 +235,7 @@ public class Study extends PrivateFields {
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
         sb.append(", sources=").append(sources);
+        sb.append(", notes=").append(notes);
         sb.append(", type=").append(type);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -369,6 +374,15 @@ public class Study extends PrivateFields {
 
     public Study setInternal(StudyInternal internal) {
         this.internal = internal;
+        return this;
+    }
+
+    public List<Note> getNotes() {
+        return notes;
+    }
+
+    public Study setNotes(List<Note> notes) {
+        this.notes = notes;
         return this;
     }
 

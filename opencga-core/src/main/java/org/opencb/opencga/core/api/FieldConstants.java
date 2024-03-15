@@ -396,6 +396,7 @@ public class FieldConstants {
             + "JOBS, CLINICAL_ANALYSES and DISEASE_PANELS. The value is a List of permission rules ";
     public static final String STUDY_URI = "Study uri";
     public static final String STUDY_EXTERNAL_SOURCES = "A List with related external sources.";
+    public static final String STUDY_NOTES_DESCRIPTION = "Notes of scope=STUDY.";
     public static final String STUDY_TYPE = "Study type description";
 
     //PermissionRule

@@ -959,7 +959,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long startTime = startQuery();
 
         Bson query = new Document("variableSets", new Document("$elemMatch", new Document(PRIVATE_UID, variableSetId)));
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,groups,_acl");
         DataResult<Document> studyDataResult = studyCollection.find(query, qOptions);
 
         if (studyDataResult.getNumResults() == 0) {
@@ -1632,7 +1632,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     private DBIterator<Study> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, clientSession, dbAdaptorFactory, options, studyConverter, null, null);
     }
 
     @Override
@@ -1644,7 +1644,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, clientSession, dbAdaptorFactory, options, null, null, null);
     }
 
     @Override
@@ -1652,7 +1652,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, null, dbAdaptorFactory, options, studyConverter, iteratorFilter, user);
     }
 
     @Override
@@ -1668,20 +1668,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         queryOptions.put(NATIVE_QUERY, true);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
-        return new StudyCatalogMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<Document>(mongoCursor, null, dbAdaptorFactory, options, null, iteratorFilter, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryOptions qOptions = new QueryOptions(options);
-        if (qOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includeList = new ArrayList<>(qOptions.getAsStringList(QueryOptions.INCLUDE));
-            includeList.add("_ownerId");
-            includeList.add("_acl");
-            includeList.add(QueryParams.GROUPS.key());
-            qOptions.put(QueryOptions.INCLUDE, includeList);
-        }
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions,
+                Arrays.asList(AuthorizationMongoDBUtils.PRIVATE_ACL, QueryParams.GROUPS.key()));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
         fixAclProjection(qOptions);
 
@@ -1830,7 +1825,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case GROUP_ID:
                     case GROUP_USER_IDS:
                     case RELEASE:
-                    case COHORTS:
                     case VARIABLE_SET:
                     case VARIABLE_SET_UID:
                     case VARIABLE_SET_ID:

@@ -44,13 +44,16 @@ public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
-        Project p = new Project("project1", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init());
+        Project p = new Project("project1", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init())
+                .setFqn(organizationId + ":project1");
         OpenCGAResult<Project> insert = catalogProjectDBAdaptor.insert(p, null);
         assertEquals(1, insert.getNumInserted());
-        p = new Project("project2", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init());
+        p = new Project("project2", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init())
+                .setFqn(organizationId + ":project2");
         insert = catalogProjectDBAdaptor.insert(p, null);
         assertEquals(1, insert.getNumInserted());
-        p = new Project("project3", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init());
+        p = new Project("project3", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init())
+                .setFqn(organizationId + ":project3");
         insert = catalogProjectDBAdaptor.insert(p, null);
         assertEquals(1, insert.getNumInserted());
 
@@ -159,9 +162,11 @@ public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 
     @Test
     public void cellbaseUpdateTest() throws Exception {
-        catalogProjectDBAdaptor.insert(new Project("myp1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("myp1", "project1", null, null, "Cool", null, 1, ProjectInternal.init())
+                .setFqn(organizationId + ":project1"), null);
         Project p1 = getProject("myp1");
-        catalogProjectDBAdaptor.insert(new Project("myp2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), null);
+        catalogProjectDBAdaptor.insert(new Project("myp2", "project2", null, null, "Cool", null, 1, ProjectInternal.init())
+                .setFqn(organizationId + ":project2"), null);
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.CELLBASE.key(),
                 new CellBaseConfiguration("url", "v")), QueryOptions.empty());

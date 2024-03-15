@@ -439,6 +439,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", OBJECT, ""),
         SOURCES("sources", TEXT_ARRAY, ""),
+        NOTES("notes", OBJECT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -475,8 +476,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
-
-        COHORTS("cohorts", TEXT_ARRAY, ""),
 
         DELETED("deleted", BOOLEAN, ""),
 

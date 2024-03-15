@@ -27,7 +27,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
 
     private final Queue<Document> organizationListBuffer;
     private final NoteMongoDBAdaptor noteMongoDBAdaptor;
-    private MigrationMongoDBAdaptor migrationDBAdaptor;
+    private final MigrationMongoDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
 
@@ -76,7 +76,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
             if (!options.getBoolean(NATIVE_QUERY)) {
                 List<String> migrationFields = Arrays.asList(OrganizationDBAdaptor.QueryParams.INTERNAL.key(),
                         OrganizationDBAdaptor.QueryParams.INTERNAL_MIGRATION_EXECUTIONS.key());
-                if (includeField(migrationFields)) {
+                if (includeField(options, migrationFields)) {
                     List<Document> migrationRuns = migrationDBAdaptor.nativeGet().getResults();
                     Document internal = organizationDocument.get(OrganizationDBAdaptor.QueryParams.INTERNAL.key(), Document.class);
                     if (internal == null) {
@@ -87,7 +87,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
                 }
 
                 List<String> noteField = Collections.singletonList(OrganizationDBAdaptor.QueryParams.NOTES.key());
-                if (includeField(noteField)) {
+                if (includeField(options, noteField)) {
                     Query query = new Query(NoteDBAdaptor.QueryParams.SCOPE.key(), Note.Scope.ORGANIZATION.name());
                     if (!options.getBoolean(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION)) {
                         query.append(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC.name());
@@ -106,28 +106,5 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
 
             organizationListBuffer.add(organizationDocument);
         }
-    }
-
-    private boolean includeField(List<String> fields) {
-        Set<String> includedFields = new HashSet<>(fields);
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
-            for (String include : currentIncludeList) {
-                if (includedFields.contains(include)) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (options.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            for (String exclude : currentExcludeList) {
-                if (includedFields.contains(exclude)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        return true;
     }
 }

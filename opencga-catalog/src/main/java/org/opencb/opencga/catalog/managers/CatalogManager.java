@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -133,8 +134,9 @@ public class CatalogManager implements AutoCloseable {
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
-            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
-                    .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+            QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
+            options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
+            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
             if (organization != null) {
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
