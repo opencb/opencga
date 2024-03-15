@@ -49,7 +49,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
-    public static final String DELETED_NOTES_COLLECTION = "note_deleted";
+    public static final String DELETED_NOTE_COLLECTION = "note_deleted";
     public static final String DELETED_USER_COLLECTION = "user_deleted";
     public static final String DELETED_PROJECT_COLLECTION = "project_deleted";
     public static final String DELETED_STUDY_COLLECTION = "study_deleted";
@@ -90,7 +90,7 @@ public class OrganizationMongoDBAdaptorFactory {
             PANEL_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
-            DELETED_NOTES_COLLECTION,
+            DELETED_NOTE_COLLECTION,
             DELETED_USER_COLLECTION,
             DELETED_PROJECT_COLLECTION,
             DELETED_STUDY_COLLECTION,
@@ -176,7 +176,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
-        MongoDBCollection deletedNotesCollection = mongoDataStore.getCollection(DELETED_NOTES_COLLECTION);
+        MongoDBCollection deletedNotesCollection = mongoDataStore.getCollection(DELETED_NOTE_COLLECTION);
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedProjectCollection = mongoDataStore.getCollection(DELETED_PROJECT_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
@@ -243,7 +243,7 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
         mongoDBCollectionMap.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
 
-        mongoDBCollectionMap.put(DELETED_NOTES_COLLECTION, deletedNotesCollection);
+        mongoDBCollectionMap.put(DELETED_NOTE_COLLECTION, deletedNotesCollection);
         mongoDBCollectionMap.put(DELETED_USER_COLLECTION, deletedUserCollection);
         mongoDBCollectionMap.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         mongoDBCollectionMap.put(DELETED_FILE_COLLECTION, deletedFileCollection);
