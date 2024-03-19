@@ -552,6 +552,14 @@ public final class VariantQueryUtils {
         return variant;
     }
 
+    public static Variant toVariant(String variantStr, boolean normalize) {
+        Variant variant = toVariant(variantStr);
+        if (normalize && variant != null) {
+            return VariantQueryParser.normalizeVariant(variant);
+        }
+        return variant;
+    }
+
     public static String[] splitStudyResource(String value) {
         int idx = value.lastIndexOf(STUDY_RESOURCE_SEPARATOR);
         if (idx <= 0 || idx == value.length() - 1) {

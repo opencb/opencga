@@ -8,7 +8,9 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -858,8 +860,17 @@ public class VariantQueryParser {
                     }
                 }
             }
-
         }
+
+        if (!xrefs.getVariants().isEmpty()) {
+            List<Variant> normalizedVariants = normalizeVariants(xrefs.getVariants());
+            for (Variant normalizedVariant : normalizedVariants) {
+                if (!xrefs.getVariants().contains(normalizedVariant)) {
+                    xrefs.getVariants().add(normalizedVariant);
+                }
+            }
+        }
+
         if (isValidParam(query, ANNOT_GENE_ROLE_IN_CANER_GENES)) {
             List<String> thisGenes = query.getAsStringList(ANNOT_GENE_ROLE_IN_CANER_GENES.key());
             if (thisGenes.size() != 1 || !thisGenes.get(0).equals(NONE)) {
@@ -884,6 +895,21 @@ public class VariantQueryParser {
         xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
 
         return xrefs;
+    }
+
+    public static Variant normalizeVariant(Variant variant) {
+        return normalizeVariants(Collections.singletonList(variant)).get(0);
+    }
+
+    public static List<Variant> normalizeVariants(List<Variant> variants) {
+        VariantNormalizer variantNormalizer = new VariantNormalizer();
+        List<Variant> normalizedVariants;
+        try {
+            normalizedVariants = variantNormalizer.normalize(variants, false);
+        } catch (NonStandardCompliantSampleField e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return normalizedVariants;
     }
 
     public static ParsedQuery<KeyOpValue<String, Float>> parseFreqFilter(Query query, QueryParam queryParam) {
