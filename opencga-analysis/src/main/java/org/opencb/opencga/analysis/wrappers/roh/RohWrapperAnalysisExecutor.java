@@ -1,31 +1,28 @@
 package org.opencb.opencga.analysis.wrappers.roh;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 
 @ToolExecutor(id = RohWrapperAnalysisExecutor.ID,
-        tool = SamtoolsWrapperAnalysis.ID,
+        tool = RohWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public final static String ID = RohWrapperAnalysis.ID + "-local";
+    public static final String ID = RohWrapperAnalysis.ID + "-local";
 
     private String study;
     private Path vcfPath;
@@ -44,17 +41,15 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
     private String homozygDensity;
     private String homozygGap;
 
-    private Path opencgaHome;
-
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() throws ToolException {
-        opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        Path opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
 
+        Path symbolicLink = null;
         try {
             // Build command line to run R script via docker image
-
             String jobDir = "/jobdir";
             String scriptDir = "/scripts";
 
@@ -62,6 +57,21 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve("analysis/" + RohWrapperAnalysis.ID)
                     .toAbsolutePath().toString(), scriptDir));
+
+            // Check if the vcf file is in the job dir
+            if (!getOutDir().toAbsolutePath().toString().equals(vcfPath.getParent().toAbsolutePath().toString())) {
+                // Create symbolic link
+                symbolicLink = Files.createSymbolicLink(getOutDir().resolve(vcfPath.getFileName()), vcfPath);
+                logger.info("The symbolic link to the vcf was created: {}", symbolicLink);
+
+                // Add to the docker input bindings
+                inputBindings.add(new AbstractMap.SimpleEntry<>(vcfPath.getParent().toAbsolutePath().toString(),
+                        vcfPath.getParent().toAbsolutePath().toString()));
+
+                // Finally, update the VCF path with the symbolic link to be used by the docker command line
+                vcfPath = symbolicLink;
+            }
+
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
@@ -79,41 +89,48 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
             if (StringUtils.isNotEmpty(getFilter())) {
                 cli.append("--filter ").append(getFilter());
             }
-//            if (getSkipGenotypeQuality() != null && !getSkipGenotypeQuality()) {
-//            echo "--genotype-quality               INTEGER     GQ (VCF genotype quality annotation field) threshold to filter in variants in the ROH analysis. Default: 40 (GQ>40)."
-//            echo "--skip-genotype-quality                      Flag to not use the GQ (VCF genotype quality annotation field) to filter in variants in the ROH analysis. Default: false"
+            // TODO: manage --genotype-quality and --skip-genotype-quality
+            cli.append(" --skip-genotype-quality ");
             if (getHomozygWindowSnp() != null) {
-                cli.append("--homozyg-window-snp ").append(getHomozygWindowSnp());
+                cli.append(" --homozyg-window-snp ").append(getHomozygWindowSnp());
             }
             if (getHomozygWindowHet() != null) {
-                cli.append("--homozyg-window-het ").append(getHomozygWindowHet());
+                cli.append(" --homozyg-window-het ").append(getHomozygWindowHet());
             }
             if (getHomozygWindowMissing() != null) {
-                cli.append("--homozyg-window-missing ").append(getHomozygWindowMissing());
+                cli.append(" --homozyg-window-missing ").append(getHomozygWindowMissing());
             }
             if (getHomozygWindowThreshold() != null) {
-                cli.append("--homozyg-window-threshold ").append(getHomozygWindowThreshold());
+                cli.append(" --homozyg-window-threshold ").append(getHomozygWindowThreshold());
             }
             if (getHomozygKb() != null) {
-                cli.append("--homozyg-kb ").append(getHomozygKb());
+                cli.append(" --homozyg-kb ").append(getHomozygKb());
             }
             if (getHomozygWindowSnp() != null) {
-                cli.append("--homozyg-snp ").append(getHomozygWindowSnp());
+                cli.append(" --homozyg-snp ").append(getHomozygWindowSnp());
             }
             if (getHomozygHet() != null) {
-                cli.append("--homozyg-het ").append(getHomozygHet());
+                cli.append(" --homozyg-het ").append(getHomozygHet());
             }
             if (getHomozygDensity() != null) {
-                cli.append("--homozyg-density ").append(getHomozygDensity());
+                cli.append(" --homozyg-density ").append(getHomozygDensity());
             }
             if (getHomozygGap() != null) {
-                cli.append("--homozyg-gap ").append(getHomozygGap());
+                cli.append(" --homozyg-gap ").append(getHomozygGap());
             }
 
             // Execute R script in docker
-            DockerUtils.run(getDockerImageName(), inputBindings, outputBinding, cli.toString(), null);
+            DockerUtils.run(getDockerImageName() + ":" + getDockerImageVersion(), inputBindings, outputBinding, cli.toString(), null);
         } catch (Exception e) {
             throw new ToolException(e);
+        } finally {
+            if (symbolicLink != null) {
+                try {
+                    Files.delete(symbolicLink);
+                } catch (IOException e) {
+                    logger.warn("Could not delete the symbolic link {}", symbolicLink, e);
+                }
+            }
         }
     }
 

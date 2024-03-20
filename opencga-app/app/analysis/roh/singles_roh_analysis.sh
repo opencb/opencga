@@ -291,7 +291,7 @@ bcftools view --samples $sample $vcf_bgz | bcftools filter --include "$filters" 
 annotated_vcf_files_prefix="$(echo $annotated_vcf | rev | cut -d "/" -f1 | rev | grep -oP '.*?(?=.vcf)')"
 files_prefix=$annotated_vcf_files_prefix'_chr'$chr
 output_folder_files_prefix=$full_directory_all_results"/"$files_prefix
-plink --vcf $annotated_vcf --make-bed --chr $chr --snps-only --biallelic-only strict --vcf-half-call haploid --freq --out $output_folder_files_prefix 
+plink1.9 --vcf $annotated_vcf --make-bed --chr $chr --snps-only --biallelic-only strict --vcf-half-call haploid --freq --out $output_folder_files_prefix
 
 
 # 3- Calculating regions of homozygosity (ROH).
@@ -318,9 +318,9 @@ plink --vcf $annotated_vcf --make-bed --chr $chr --snps-only --biallelic-only st
 # homozyg_window_het=3
 input_bfiles=$output_folder_files_prefix
 if [[ -n $homozyg_het ]]; then
-   plink --bfile $input_bfiles --homozyg --homozyg-kb $homozyg_kb --homozyg-snp $homozyg_snp --homozyg-het $homozyg_het --homozyg-window-snp $homozyg_window_snp --homozyg-window-missing $homozyg_window_missing --homozyg-window-threshold $homozyg_window_threshold --homozyg-density $homozyg_density --homozyg-gap $homozyg_gap --homozyg-window-het $homozyg_window_het --out $output_folder_files_prefix
+   plink1.9 --bfile $input_bfiles --homozyg --homozyg-kb $homozyg_kb --homozyg-snp $homozyg_snp --homozyg-het $homozyg_het --homozyg-window-snp $homozyg_window_snp --homozyg-window-missing $homozyg_window_missing --homozyg-window-threshold $homozyg_window_threshold --homozyg-density $homozyg_density --homozyg-gap $homozyg_gap --homozyg-window-het $homozyg_window_het --out $output_folder_files_prefix
 else
-   plink --bfile $input_bfiles --homozyg --homozyg-kb $homozyg_kb --homozyg-snp $homozyg_snp --homozyg-window-snp $homozyg_window_snp --homozyg-window-missing $homozyg_window_missing --homozyg-window-threshold $homozyg_window_threshold --homozyg-density $homozyg_density --homozyg-gap $homozyg_gap --homozyg-window-het $homozyg_window_het --out $output_folder_files_prefix
+   plink1.9 --bfile $input_bfiles --homozyg --homozyg-kb $homozyg_kb --homozyg-snp $homozyg_snp --homozyg-window-snp $homozyg_window_snp --homozyg-window-missing $homozyg_window_missing --homozyg-window-threshold $homozyg_window_threshold --homozyg-density $homozyg_density --homozyg-gap $homozyg_gap --homozyg-window-het $homozyg_window_het --out $output_folder_files_prefix
 fi
 
 ############################################################
@@ -329,7 +329,7 @@ fi
 
 # 4- Generating OpenCGA ROH analysis json data model. Content: bcftools and plink parameters used to calculate ROHs.
 bcftools_version="$(bcftools --version | cut -d" " -f2 | awk 'NR==1 {print $0}')"
-plink_version="$(plink --version | cut -d" " -f2)"
+plink_version="$(plink1.9 --version | cut -d" " -f2)"
 roh_json_data_model_opencga_file=$full_directory_all_results"/opencga_roh_analysis_method_data_model.json"
 if [[ -n $homozyg_het ]]; then
    roh_json_data_model_opencga="$(echo "{\"roh\":[{\"methods\":[{\"software\":\"BCFTOOLS\",\"version\":\""$bcftools_version"\",\"params\":{\"FILTER\": \"$vcf_filter\",\"FMT/GQ\":$gq}},{\"software\":\"PLINK\",\"version\":\""$plink_version"\",\"params\":{\"chr\":$chr,\"homozyg\":\"true\",\"homozyg-snp\":"$homozyg_snp",\"homozyg-kb\":"$homozyg_kb",\"homozyg-het\":"$homozyg_het",\"homozyg-density\":"$homozyg_density",\"homozyg-gap\":"$homozyg_gap",\"homozyg-window-snp\":"$homozyg_window_snp",\"homozyg-window-het\":"$homozyg_window_het",\"homozyg-window-missing\":"$homozyg_window_missing",\"homozyg-window-threshold\":"$homozyg_window_threshold"}}]}]}")"
@@ -340,4 +340,4 @@ echo "$roh_json_data_model_opencga" > $roh_json_data_model_opencga_file
 
 # 5- Executing python script to finish completing the OpenCGA ROH analysis json data model with the ROHs results and generating plots for visualising the ROHs results.
 roh_script=$roh_python_script_folder"/roh_opencgadatamodel_visualisation.py"
-python $roh_script -i $full_directory_all_results -p $files_prefix -j "$roh_json_data_model_opencga" -o $full_directory_all_results
+python3 $roh_script -i $full_directory_all_results -p $files_prefix -j "$roh_json_data_model_opencga" -o $full_directory_all_results

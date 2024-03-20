@@ -270,6 +270,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // ROH analysis
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/roh")).toAbsolutePath();
+        Files.copy(Paths.get("../opencga-app/app/analysis").resolve("roh/singles_roh_analysis.sh"),
+                analysisPath.resolve("singles_roh_analysis.sh"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Paths.get("../opencga-app/app/analysis").resolve("roh/roh_opencgadatamodel_visualisation.py"),
+                analysisPath.resolve("roh_opencgadatamodel_visualisation.py"), StandardCopyOption.REPLACE_EXISTING);
+
         return opencgaHome;
     }
 

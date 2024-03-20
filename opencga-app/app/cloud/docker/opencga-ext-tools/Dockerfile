@@ -13,7 +13,8 @@ WORKDIR /opt/opencga/signature.tools.lib
 RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y \
     libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
+    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base python3 python3-pip && \
+    pip3 install numpy matplotlib && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \

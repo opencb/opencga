@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -32,6 +33,9 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +56,6 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(study);
 
         // Check sample
         if (StringUtils.isEmpty(rohParams.getSampleId())) {
@@ -68,6 +71,8 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
+        setUpStorageEngineExecutor(study);
+
         step(getId(), () -> {
             // Get VCF file
             Path vcfPath = null;
@@ -85,11 +90,30 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
                 vcfPath = Paths.get(fileResult.first().getUri().getPath());
             } else {
                 // Export variants to VCF file
-                throw new ToolException("VCF for sample " + rohParams.getSampleId() + " not foud; export not yet implemented");
+                vcfPath = getOutDir().resolve(rohParams.getSampleId() + "." + getJobId() + ".vcf.gz");
+
+                VariantQuery variantQuery = new VariantQuery()
+                        .study(study)
+                        .sample(rohParams.getSampleId())
+                        .includeSampleData("GT")
+                        .unknownGenotype("./.");
+
+                QueryOptions queryOptions = QueryOptions.empty();
+
+                logger.info("Export variants for sample {} to the file {}", rohParams.getSampleId(), vcfPath);
+                logger.info("Export query: {}", query.toJson());
+                logger.info("Export query options: {}", queryOptions.toJson());
+
+                try {
+                    getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null,
+                            variantQuery, queryOptions, token);
+                } catch (StorageEngineException | CatalogException e) {
+                    throw new ToolException(e);
+                }
             }
 
-            // Create the ROH analysis executor
-            RohWrapperAnalysisExecutor executor = new RohWrapperAnalysisExecutor()
+            // Get he ROH analysis executor and execute !!!
+            getToolExecutor(RohWrapperAnalysisExecutor.class)
                     .setSampleId(rohParams.getSampleId())
                     .setChromosome(rohParams.getChromosome())
                     .setVcfPath(vcfPath)
@@ -104,10 +128,8 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
                     .setHomozygSnp(rohParams.getHomozygSnp())
                     .setHomozygHet(rohParams.getHomozygHet())
                     .setHomozygDensity(rohParams.getHomozygDensity())
-                    .setHomozygGap(rohParams.getHomozygGap());
-
-            // Execute
-            executor.execute();
+                    .setHomozygGap(rohParams.getHomozygGap())
+                    .execute();
         });
     }
 }
