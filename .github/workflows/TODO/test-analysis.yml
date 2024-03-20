@@ -34,7 +34,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify surefire-report:report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=zetta-genomics_opencga-enterprise
       - name: Upload result dir
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: workdir
           path: "**/target/site"
@@ -48,7 +48,7 @@ jobs:
         module: ["opencga-enterprise-core", "opencga-enterprise-cvdb"]
     steps:
       - name: Download result dir
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: workdir
       - name: Deploy unit tests web recursively to remote
