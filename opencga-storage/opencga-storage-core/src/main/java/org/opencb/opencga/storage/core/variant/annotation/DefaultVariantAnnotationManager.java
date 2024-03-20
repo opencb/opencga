@@ -52,6 +52,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionsFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -264,6 +266,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                         (System.currentTimeMillis() - start) / 1000.0);
                 return variantAnnotationList;
             };
+
+            List<VariantAnnotatorExtensionTask> extensions = new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(params);
+            for (VariantAnnotatorExtensionTask extension : extensions) {
+                extension.setup(outDir);
+                extension.checkAvailable();
+                annotationTask = annotationTask.then(extension);
+            }
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {

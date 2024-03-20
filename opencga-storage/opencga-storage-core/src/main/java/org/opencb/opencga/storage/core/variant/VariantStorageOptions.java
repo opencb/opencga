@@ -80,6 +80,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
+    ANNOTATOR_EXTENSION_PREFIX("annotator.extension."),
+    ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
+    ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
