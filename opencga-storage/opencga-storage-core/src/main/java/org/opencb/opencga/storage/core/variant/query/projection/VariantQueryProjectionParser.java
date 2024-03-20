@@ -125,14 +125,9 @@ public class VariantQueryProjectionParser {
             for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
                 int studyId = study.getId();
                 List<Integer> cohorts = new LinkedList<>();
-                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
                     cohorts.add(cohort.getId());
                 }
-//                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
-//                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
-//                        cohorts.add(cohort.getId());
-//                    }
-//                });
                 study.setCohorts(cohorts);
             }
         }

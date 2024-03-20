@@ -61,7 +61,7 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
         for (Integer studyId : metadataManager.getStudyIds()) {
             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
-            for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+            for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
                 scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStatsColumn(studyId, cohort.getId()).bytes());
             }
         }
