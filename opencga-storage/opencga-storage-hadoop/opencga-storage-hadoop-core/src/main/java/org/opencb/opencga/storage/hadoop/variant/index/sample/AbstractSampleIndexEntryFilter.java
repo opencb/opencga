@@ -413,6 +413,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
     private boolean filterBtCtTfFields(AnnotationIndexEntry annotationIndexEntry) {
         if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
+            // Missing annotation. Unable to filter
             return true;
         }
         if (annotationIndexEntry.isIntergenic()) {

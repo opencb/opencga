@@ -29,7 +29,8 @@ public class FileRelatedFile {
         PRODUCED_FROM,
         PART_OF_PAIR,
         PEDIGREE,
-        REFERENCE_GENOME
+        REFERENCE_GENOME,
+        ALIGNMENT
     }
 
     public FileRelatedFile() {

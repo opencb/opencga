@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -73,6 +72,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -444,6 +444,151 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         thrown.expectMessage("not found");
         catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
                 new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
+    }
+
+    @Test
+    public void updateClinicalAnalysisReportWithActions() throws CatalogException {
+        ClinicalAnalysis case1 = createDummyEnvironment(true, true).first();
+        assertNull(case1.getReport());
+
+        // Add files
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/file1.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/file2.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/file3.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+
+        ClinicalReport report = new ClinicalReport("title", "overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "logo",
+                "me", "signature", TimeUtils.getTime(), Arrays.asList(
+                new ClinicalComment().setMessage("comment1"),
+                new ClinicalComment().setMessage("comment2")
+        ),
+                Collections.singletonList(new File().setId("data:file1.txt")),
+                Collections.singletonList(new File().setId("data:file2.txt")));
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
+                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
+        assertNotNull(result.first().getReport());
+        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(report.getOverview(), result.first().getReport().getOverview());
+        assertEquals(report.getDate(), result.first().getReport().getDate());
+        assertEquals(report.getLogo(), result.first().getReport().getLogo());
+        assertEquals(report.getSignature(), result.first().getReport().getSignature());
+        assertEquals(report.getSignedBy(), result.first().getReport().getSignedBy());
+        assertEquals(2, result.first().getReport().getComments().size());
+        assertEquals(1, result.first().getReport().getFiles().size());
+        assertEquals(1, result.first().getReport().getSupportingEvidences().size());
+
+        // Add comment
+        // Set files
+        // Remove supporting evidence
+        ObjectMap actionMap = new ObjectMap()
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD)
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.SET)
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        ClinicalReport reportToUpdate = new ClinicalReport()
+                .setComments(Collections.singletonList(new ClinicalComment().setMessage("comment3")))
+                .setFiles(Arrays.asList(
+                        new File().setId("data:file2.txt"),
+                        new File().setId("data:file3.txt")
+                ))
+                .setSupportingEvidences(Collections.singletonList(new File().setId("data:file1.txt")));
+        ClinicalReport reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
+        // Check comments
+        assertEquals(3, reportResult.getComments().size());
+        assertEquals("comment1", reportResult.getComments().get(0).getMessage());
+        assertEquals("comment2", reportResult.getComments().get(1).getMessage());
+        assertEquals("comment3", reportResult.getComments().get(2).getMessage());
+
+        // Check files
+        assertEquals(2, reportResult.getFiles().size());
+        assertTrue(reportResult.getFiles().stream().map(File::getPath).collect(Collectors.toSet()).containsAll(Arrays.asList("data/file2.txt", "data/file3.txt")));
+
+        // Check supporting evidences
+        assertEquals(0, reportResult.getSupportingEvidences().size());
+
+
+        // Remove comment
+        // Remove file
+        // Set supporting evidences
+        actionMap = new ObjectMap()
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE)
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.REMOVE)
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        reportToUpdate = new ClinicalReport()
+                .setComments(Arrays.asList(reportResult.getComments().get(0), reportResult.getComments().get(1)))
+                .setFiles(Collections.singletonList(new File().setId("data:file3.txt")))
+                .setSupportingEvidences(Arrays.asList(
+                        new File().setId("data:file1.txt"),
+                        new File().setId("data:file3.txt")
+                ));
+        ClinicalComment pendingComment = reportResult.getComments().get(2);
+        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
+        // Check comments
+        assertEquals(1, reportResult.getComments().size());
+        assertEquals(pendingComment.getMessage(), reportResult.getComments().get(0).getMessage());
+
+        // Check supporting evidences
+        assertEquals(2, reportResult.getSupportingEvidences().size());
+        assertTrue(reportResult.getSupportingEvidences().stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("data/file1.txt", "data/file3.txt")));
+
+        // Check files
+        assertEquals(1, reportResult.getFiles().size());
+        assertEquals("data/file2.txt", reportResult.getFiles().get(0).getPath());
+
+
+        // Add file
+        // Add supporting evidences
+        actionMap = new ObjectMap()
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.ADD)
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.ADD);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        reportToUpdate = new ClinicalReport()
+                .setFiles(Arrays.asList(
+                        new File().setId("data:file1.txt"),
+                        new File().setId("data:file3.txt")
+                ))
+                .setSupportingEvidences(Collections.singletonList(
+                        new File().setId("data:file2.txt")
+                ));
+        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
+                options, ownerToken).first();
+        // Check comments
+        assertEquals(1, reportResult.getComments().size());
+        assertEquals("comment3", reportResult.getComments().get(0).getMessage());
+
+        // Check files
+        assertEquals(3, reportResult.getFiles().size());
+        assertTrue(reportResult.getFiles().stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("data/file1.txt", "data/file2.txt", "data/file3.txt")));
+
+        // Check supporting evidences
+        assertEquals(3, reportResult.getSupportingEvidences().size());
+        assertTrue(reportResult.getSupportingEvidences().stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("data/file1.txt", "data/file2.txt", "data/file3.txt")));
     }
 
     @Test
@@ -3651,9 +3796,11 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
     @Test
     public void loadClinicalAnalysesTest() throws CatalogException, IOException {
-        String gzFile = getClass().getResource("/biofiles/clinical_analyses.json.gz").getFile();
-        File file = catalogManager.getFileManager().link(studyFqn, new FileLinkParams(gzFile, "", "", "", null, null, null, null,
-                null), false, ownerToken).first();
+        String fileStr = "clinical_analyses.json.gz";
+        File file;
+        try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
+            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, false, ownerToken).first();
+        }
 
         Path filePath = Paths.get(file.getUri());
 

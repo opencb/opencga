@@ -3,6 +3,7 @@ package org.opencb.opencga.core.api;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
 public class FieldConstants {
 
@@ -165,10 +166,18 @@ public class FieldConstants {
 
     //FamilyQualityControl
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship.";
+
+
+    // Individual quality control
+    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
+    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method. Valid values: "
+            + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
     public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on"
             + " the method (currently by coverage ratio).";
     public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness.";
     public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors.";
+
 
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has setted the status.";
