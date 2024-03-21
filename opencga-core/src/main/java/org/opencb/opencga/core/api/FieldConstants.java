@@ -59,6 +59,13 @@ public class FieldConstants {
     public static final String NOTES_VALUE_TYPE_DESCRIPTION = "Type of the value written in the Note.";
     public static final String NOTES_VALUE_DESCRIPTION = "Value stored in the Note.";
 
+    public static final String NOTES_ID_PARAM = "id";
+    public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_STUDY_PARAM = "study";
+    public static final String NOTES_TAGS_PARAM = "tags";
+    public static final String NOTES_USER_ID_PARAM = "userId";
+    public static final String NOTES_VISIBILITY_PARAM = "visibility";
+
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
             + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "

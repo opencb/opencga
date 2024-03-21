@@ -273,7 +273,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), OrganizationTag.ACTIVE.name(), null);
             NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(), Note.Scope.ORGANIZATION,
-                    "", Collections.singletonList(OrganizationTag.ACTIVE.name()), Note.Visibility.PRIVATE, Note.Type.OBJECT, null);
+                    Collections.singletonList(OrganizationTag.ACTIVE.name()), Note.Visibility.PRIVATE, Note.Type.OBJECT, null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
                 Map<String, Object> value = JacksonUtils.getDefaultObjectMapper().readerFor(Map.class).readValue(orgSummaryString);

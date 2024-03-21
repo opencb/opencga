@@ -20,8 +20,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -105,6 +110,78 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the organization to be created.", required = true) OrganizationCreateParams parameters) {
         try {
             OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().create(parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/notes/search")
+    @ApiOperation(value = "Search for notes of scope ORGANIZATION", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+    })
+    public Response noteSearch(
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = FieldConstants.NOTES_USER_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_USER_ID_PARAM) String userId,
+            @ApiParam(value = FieldConstants.NOTES_TAGS_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TAGS_PARAM) String tags,
+            @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
+            @ApiParam(value = FieldConstants.GENERIC_VERSION_DESCRIPTION) @QueryParam("version") String version
+    ) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().search(Note.Scope.ORGANIZATION, query, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/notes/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Add or remove a note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response addRemoveNote(
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "Notes action", allowableValues = "ADD,REMOVE", defaultValue = "ADD") @QueryParam(ParamConstants.ACTION) ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "JSON containing the Note to be updated/removed.", required = true) NoteCreateParams parameters) {
+        try {
+            OpenCGAResult<Note> result;
+            if (action == null || action == AddRemoveAction.ADD) {
+                result = catalogManager.getNotesManager().create(parameters, queryOptions, token);
+            } else {
+                result = catalogManager.getNotesManager().delete(Note.Scope.ORGANIZATION, parameters.getId(), queryOptions, token);
+            }
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/notes/{id}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update a note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response updateNote(
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().update(Note.Scope.ORGANIZATION, noteId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

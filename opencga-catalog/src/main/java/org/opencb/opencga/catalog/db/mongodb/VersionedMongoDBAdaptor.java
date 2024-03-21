@@ -336,7 +336,9 @@ public class VersionedMongoDBAdaptor {
         }
         for (Document document : archiveCollection.find(session, query, QueryOptions.empty()).getResults()) {
             Document internal = document.get("internal", Document.class);
-            internal.put("status", status);
+            if (internal != null) {
+                internal.put("status", status);
+            }
 
             deletedCollection.insert(session, document, QueryOptions.empty());
         }

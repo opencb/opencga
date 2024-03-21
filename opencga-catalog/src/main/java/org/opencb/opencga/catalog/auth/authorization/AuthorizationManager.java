@@ -84,6 +84,8 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
+    void checkUserBelongsToOrganization(String organizationId, String userId) throws CatalogException;
+
     void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException;
 
     void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException;

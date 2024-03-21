@@ -27,12 +27,16 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -545,6 +549,81 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
         return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @GET
+    @Path("/{study}/notes/search")
+    @ApiOperation(value = "Search for notes of scope STUDY", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+    })
+    public Response noteSearch(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = FieldConstants.NOTES_USER_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_USER_ID_PARAM) String userId,
+            @ApiParam(value = FieldConstants.NOTES_TAGS_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TAGS_PARAM) String tags,
+            @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
+            @ApiParam(value = FieldConstants.GENERIC_VERSION_DESCRIPTION) @QueryParam("version") String version
+    ) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().search(studyStr, Note.Scope.STUDY, query, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/notes/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Add or remove a note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response addRemoveNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "Notes action", allowableValues = "ADD,REMOVE", defaultValue = "ADD") @QueryParam(ParamConstants.ACTION) ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "JSON containing the Note to be updated/removed.", required = true) NoteCreateParams parameters) {
+        try {
+            OpenCGAResult<Note> result;
+            if (action == null || action == ParamUtils.AddRemoveAction.ADD) {
+                result = catalogManager.getNotesManager().create(studyStr, parameters, queryOptions, token);
+            } else {
+                result = catalogManager.getNotesManager().delete(studyStr, Note.Scope.STUDY, parameters.getId(), queryOptions, token);
+            }
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/notes/{id}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update a note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response updateNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().update(Note.Scope.STUDY, studyStr, noteId, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     private void fixVariable(Variable variable) {

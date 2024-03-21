@@ -83,6 +83,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkUserBelongsToOrganization(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return;
+        }
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).exists(userId)) {
+            throw new CatalogAuthorizationException("Permission denied. User '" + userId + "' does not belong to the organization.");
+        }
+    }
+
+    @Override
     public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
         if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
