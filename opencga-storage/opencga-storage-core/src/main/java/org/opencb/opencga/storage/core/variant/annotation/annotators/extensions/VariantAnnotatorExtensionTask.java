@@ -15,8 +15,9 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
      *
      * @param output  Output directory where the annotator extension should write the files
      * @return List of URIs of generated files (if any)
+     * @throws Exception if the annotator extension set up fails
      */
-    List<URI> setup(URI output);
+    List<URI> setup(URI output) throws Exception;
 
     /**
      * Check if the annotator extension is available for the given options.

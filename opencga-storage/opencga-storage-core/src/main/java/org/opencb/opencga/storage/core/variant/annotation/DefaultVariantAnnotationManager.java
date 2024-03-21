@@ -295,7 +295,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             throw new VariantAnnotatorException("Error creating annotations", e);
         }
 
