@@ -87,10 +87,6 @@ class Organization(_ParentRestClient):
         PATH: /{apiVersion}/organizations/notes/{id}/delete
 
         :param str id: Note unique identifier. (REQUIRED)
-        :param str include: Fields included in the response, whole JSON path
-            must be provided.
-        :param str exclude: Fields excluded in the response, whole JSON path
-            must be provided.
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """

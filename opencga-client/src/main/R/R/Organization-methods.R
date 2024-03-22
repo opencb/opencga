@@ -23,7 +23,7 @@
 #' | create | /{apiVersion}/organizations/create | include, exclude, includeResult, body[*] |
 #' | createNotes | /{apiVersion}/organizations/notes/create | include, exclude, includeResult, body[*] |
 #' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, uuid, userId, tags, visibility, version |
-#' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | include, exclude, id[*], includeResult |
+#' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
 #' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], includeResult, body[*] |
 #' | info | /{apiVersion}/organizations/{organization}/info | include, exclude, organization[*] |
 #' | update | /{apiVersion}/organizations/{organization}/update | include, exclude, organization[*], includeResult, adminsAction, body[*] |
@@ -34,7 +34,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("organizationClient", "OpencgaR", function(OpencgaR, organization, id, endpointName, params=NULL, ...) {
+setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/organizations/create:
@@ -72,8 +72,6 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, organization, id,
 
         #' @section Endpoint /{apiVersion}/organizations/notes/{id}/delete:
         #' Delete note.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param id Note unique identifier.
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         deleteNotes=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL, subcategory="notes",

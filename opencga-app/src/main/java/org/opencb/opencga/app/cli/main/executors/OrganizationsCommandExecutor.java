@@ -184,8 +184,6 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         OrganizationsCommandOptions.DeleteNotesCommandOptions commandOptions = organizationsCommandOptions.deleteNotesCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("include", commandOptions.include);
-        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
         return openCGAClient.getOrganizationClient().deleteNotes(commandOptions.id, queryParams);

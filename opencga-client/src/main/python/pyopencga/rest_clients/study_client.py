@@ -252,10 +252,6 @@ class Study(_ParentRestClient):
         :param str id: Note unique identifier. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID. (REQUIRED)
-        :param str include: Fields included in the response, whole JSON path
-            must be provided.
-        :param str exclude: Fields excluded in the response, whole JSON path
-            must be provided.
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """

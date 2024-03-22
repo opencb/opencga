@@ -109,8 +109,6 @@ public class OrganizationClient extends AbstractParentClient {
      * Delete note.
      * @param id Note unique identifier.
      * @param params Map containing any of the following optional parameters.
-     *       include: Fields included in the response, whole JSON path must be provided.
-     *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

@@ -173,12 +173,6 @@ public class OrganizationsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String include; 
-    
-        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String exclude; 
-    
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
         public String id; 
     

@@ -435,8 +435,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         StudiesCommandOptions.DeleteNotesCommandOptions commandOptions = studiesCommandOptions.deleteNotesCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("include", commandOptions.include);
-        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
         return openCGAClient.getStudyClient().deleteNotes(commandOptions.study, commandOptions.id, queryParams);

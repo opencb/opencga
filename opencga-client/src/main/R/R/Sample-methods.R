@@ -38,7 +38,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("sampleClient", "OpencgaR", function(OpencgaR, annotationSet, samples, members, sample, endpointName, params=NULL, ...) {
+setMethod("sampleClient", "OpencgaR", function(OpencgaR, samples, sample, members, annotationSet, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/samples/acl/{members}/update:

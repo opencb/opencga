@@ -31,7 +31,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("ga4ghClient", "OpencgaR", function(OpencgaR, file, study, endpointName, params=NULL, ...) {
+setMethod("ga4ghClient", "OpencgaR", function(OpencgaR, study, file, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/ga4gh/reads/search:

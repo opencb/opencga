@@ -31,7 +31,7 @@
 #' | updateGroupsUsers | /{apiVersion}/studies/{study}/groups/{group}/users/update | study[*], group[*], action, body[*] |
 #' | createNotes | /{apiVersion}/studies/{study}/notes/create | include, exclude, study[*], includeResult, body[*] |
 #' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, uuid, userId, tags, visibility, version |
-#' | deleteNotes | /{apiVersion}/studies/{study}/notes/{id}/delete | include, exclude, study[*], id[*], includeResult |
+#' | deleteNotes | /{apiVersion}/studies/{study}/notes/{id}/delete | study[*], id[*], includeResult |
 #' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
 #' | updatePermissionRules | /{apiVersion}/studies/{study}/permissionRules/update | study[*], entity[*], action, body[*] |
@@ -49,7 +49,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("studyClient", "OpencgaR", function(OpencgaR, studies, variableSet, members, study, templateId, id, group, endpointName, params=NULL, ...) {
+setMethod("studyClient", "OpencgaR", function(OpencgaR, id, group, variableSet, study, members, templateId, studies, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/studies/acl/{members}/update:
@@ -180,8 +180,6 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, studies, variableSet, me
 
         #' @section Endpoint /{apiVersion}/studies/{study}/notes/{id}/delete:
         #' Delete note.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param id Note unique identifier.
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
