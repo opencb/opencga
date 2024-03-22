@@ -39,7 +39,7 @@
 #' [*]: Required parameter
 #' @export
 
-setMethod("userClient", "OpencgaR", function(OpencgaR, users, user, filterId, endpointName, params=NULL, ...) {
+setMethod("userClient", "OpencgaR", function(OpencgaR, user, filterId, users, endpointName, params=NULL, ...) {
     switch(endpointName,
 
         #' @section Endpoint /{apiVersion}/users/anonymous:
