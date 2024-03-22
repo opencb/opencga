@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -144,24 +143,18 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/notes/update")
+    @Path("/notes/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add or remove a note", response = Note.class)
+    @ApiOperation(value = "Create a new note", response = Note.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
     })
-    public Response addRemoveNote(
+    public Response createNote(
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "Notes action", allowableValues = "ADD,REMOVE", defaultValue = "ADD") @QueryParam(ParamConstants.ACTION) ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "JSON containing the Note to be updated/removed.", required = true) NoteCreateParams parameters) {
+            @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
         try {
-            OpenCGAResult<Note> result;
-            if (action == null || action == AddRemoveAction.ADD) {
-                result = catalogManager.getNotesManager().create(parameters, queryOptions, token);
-            } else {
-                result = catalogManager.getNotesManager().delete(Note.Scope.ORGANIZATION, parameters.getId(), queryOptions, token);
-            }
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().createOrganizationNote(parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -182,6 +175,24 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
             OpenCGAResult<Note> result = catalogManager.getNotesManager().update(Note.Scope.ORGANIZATION, noteId, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/notes/{id}/delete")
+    @ApiOperation(value = "Delete note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response deleteNote(
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().deleteOrganizationNote(noteId, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

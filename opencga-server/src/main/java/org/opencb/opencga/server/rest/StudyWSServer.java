@@ -529,7 +529,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/templates/{templateId}/delete")
     @ApiOperation(value = "Delete template", response = Boolean.class)
     public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Template id") @PathParam("templateId") String templateId) {
         try {
             return createOkResponse(studyManager.deleteTemplate(studyStr, templateId, token));
@@ -561,7 +561,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
     })
     public Response noteSearch(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
@@ -580,25 +580,19 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{study}/notes/update")
+    @Path("/{study}/notes/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add or remove a note", response = Note.class)
+    @ApiOperation(value = "Create a new note", response = Note.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
     })
-    public Response addRemoveNote(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+    public Response createNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "Notes action", allowableValues = "ADD,REMOVE", defaultValue = "ADD") @QueryParam(ParamConstants.ACTION) ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "JSON containing the Note to be updated/removed.", required = true) NoteCreateParams parameters) {
+            @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
         try {
-            OpenCGAResult<Note> result;
-            if (action == null || action == ParamUtils.AddRemoveAction.ADD) {
-                result = catalogManager.getNotesManager().create(studyStr, parameters, queryOptions, token);
-            } else {
-                result = catalogManager.getNotesManager().delete(studyStr, Note.Scope.STUDY, parameters.getId(), queryOptions, token);
-            }
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().create(studyStr, Note.Scope.STUDY, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -614,12 +608,31 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
     })
     public Response updateNote(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
             OpenCGAResult<Note> result = catalogManager.getNotesManager().update(Note.Scope.STUDY, studyStr, noteId, parameters, queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{study}/notes/{id}/delete")
+    @ApiOperation(value = "Delete note", response = Note.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
+    public Response deleteNote(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult) {
+        try {
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().delete(studyStr, Note.Scope.STUDY, noteId, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

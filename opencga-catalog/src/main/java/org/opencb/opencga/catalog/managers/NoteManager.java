@@ -116,14 +116,16 @@ public class NoteManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Note> create(NoteCreateParams noteCreateParams, QueryOptions options, String token) throws CatalogException {
-        return create(null, noteCreateParams, options, token);
+    public OpenCGAResult<Note> createOrganizationNote(NoteCreateParams noteCreateParams, QueryOptions options, String token)
+            throws CatalogException {
+        return create(null, Note.Scope.ORGANIZATION, noteCreateParams, options, token);
     }
 
-    public OpenCGAResult<Note> create(@Nullable String studyStr, NoteCreateParams noteCreateParams, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Note> create(@Nullable String studyStr, Note.Scope scope, NoteCreateParams noteCreateParams, QueryOptions options,
+                                      String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyStr", studyStr)
+                .append("scope", scope)
                 .append("noteCreateParams", noteCreateParams)
                 .append("options", options)
                 .append("token", token);
@@ -134,7 +136,7 @@ public class NoteManager extends AbstractManager {
         String studyUuid = "";
         try {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
-            Note note = noteCreateParams.toNote(tokenPayload.getUserId());
+            Note note = noteCreateParams.toNote(scope, tokenPayload.getUserId());
 
             // Check permissions to create
             if (note.getScope() == Note.Scope.ORGANIZATION) {
@@ -244,8 +246,8 @@ public class NoteManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Note> delete(Note.Scope scope, String noteId, QueryOptions options, String token) throws CatalogException {
-        return delete(null, scope, noteId, options, token);
+    public OpenCGAResult<Note> deleteOrganizationNote(String noteId, QueryOptions options, String token) throws CatalogException {
+        return delete(null, Note.Scope.ORGANIZATION, noteId, options, token);
     }
 
     public OpenCGAResult<Note> delete(@Nullable String studyStr, Note.Scope scope, String noteId, QueryOptions options, String token)

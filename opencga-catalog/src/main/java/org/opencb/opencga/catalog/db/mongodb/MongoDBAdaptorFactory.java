@@ -272,7 +272,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
                     organizationDBAdaptorFactory.getMongoDataStore().getDatabaseName(), OrganizationTag.ACTIVE.name(), null);
-            NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(), Note.Scope.ORGANIZATION,
+            NoteCreateParams noteCreateParams = new NoteCreateParams(ORGANIZATION_PREFIX + organization.getId(),
                     Collections.singletonList(OrganizationTag.ACTIVE.name()), Note.Visibility.PRIVATE, Note.Type.OBJECT, null);
             try {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
@@ -283,7 +283,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-            Note note = noteCreateParams.toNote(userId);
+            Note note = noteCreateParams.toNote(Note.Scope.ORGANIZATION, userId);
             NoteManager.validateNewNote(note, userId);
 
             // Create new database and indexes

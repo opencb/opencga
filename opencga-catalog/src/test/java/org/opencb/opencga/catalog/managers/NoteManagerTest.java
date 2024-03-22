@@ -27,33 +27,31 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void createOrganizationNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        Note note = catalogManager.getNotesManager().create(noteCreateParams, INCLUDE_RESULT, ownerToken).first();
+        Note note = catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgOwnerUserId, note.getUserId());
 
         noteCreateParams.setId("note2");
-        note = catalogManager.getNotesManager().create(noteCreateParams, INCLUDE_RESULT, orgAdminToken1).first();
+        note = catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, orgAdminToken1).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgAdminUserId1, note.getUserId());
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("denied");
-        catalogManager.getNotesManager().create(noteCreateParams, INCLUDE_RESULT, studyAdminToken1).first();
+        catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, studyAdminToken1).first();
     }
 
     @Test
     public void updateOrganizationNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        Note note = catalogManager.getNotesManager().create(noteCreateParams, INCLUDE_RESULT, ownerToken).first();
+        Note note = catalogManager.getNotesManager().createOrganizationNote(noteCreateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(1, note.getVersion());
 
         NoteUpdateParams noteUpdateParams = new NoteUpdateParams()
@@ -80,19 +78,17 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void getOrganizationNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams1 = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        catalogManager.getNotesManager().create(noteCreateParams1, INCLUDE_RESULT, ownerToken).first();
+        catalogManager.getNotesManager().createOrganizationNote(noteCreateParams1, INCLUDE_RESULT, ownerToken).first();
 
         NoteCreateParams noteCreateParams2 = new NoteCreateParams()
                 .setId("note2")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        catalogManager.getNotesManager().create(noteCreateParams2, INCLUDE_RESULT, ownerToken).first();
+        catalogManager.getNotesManager().createOrganizationNote(noteCreateParams2, INCLUDE_RESULT, ownerToken).first();
 
         Organization organization = catalogManager.getOrganizationManager().get(organizationId, null, ownerToken).first();
         assertEquals(2, organization.getNotes().size());
@@ -136,40 +132,38 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void createStudyNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        assertThrows(CatalogParameterException.class, () -> catalogManager.getNotesManager().create(noteCreateParams, INCLUDE_RESULT, ownerToken));
+        assertThrows(CatalogParameterException.class, () -> catalogManager.getNotesManager().create(null, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, ownerToken));
 
-        Note note = catalogManager.getNotesManager().create(studyFqn, noteCreateParams, INCLUDE_RESULT, ownerToken).first();
+        Note note = catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgOwnerUserId, note.getUserId());
 
         noteCreateParams.setId("note2");
-        note = catalogManager.getNotesManager().create(studyFqn, noteCreateParams, INCLUDE_RESULT, orgAdminToken1).first();
+        note = catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, orgAdminToken1).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(orgAdminUserId1, note.getUserId());
 
         noteCreateParams.setId("note3");
-        note = catalogManager.getNotesManager().create(studyFqn, noteCreateParams, INCLUDE_RESULT, studyAdminToken1).first();
+        note = catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, studyAdminToken1).first();
         assertEquals(noteCreateParams.getId(), note.getId());
         assertEquals(studyAdminUserId1, note.getUserId());
 
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("denied");
-        catalogManager.getNotesManager().create(studyFqn, noteCreateParams, INCLUDE_RESULT, normalToken1).first();
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, normalToken1).first();
     }
 
     @Test
     public void updateStudyNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        Note note = catalogManager.getNotesManager().create(studyFqn, noteCreateParams, INCLUDE_RESULT, ownerToken).first();
+        Note note = catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(1, note.getVersion());
 
         NoteUpdateParams noteUpdateParams = new NoteUpdateParams()
@@ -203,19 +197,17 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void getStudyNoteTest() throws CatalogException {
         NoteCreateParams noteCreateParams1 = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        catalogManager.getNotesManager().create(studyFqn, noteCreateParams1, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams1, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams noteCreateParams2 = new NoteCreateParams()
                 .setId("note2")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("hello");
-        catalogManager.getNotesManager().create(studyFqn, noteCreateParams2, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, noteCreateParams2, QueryOptions.empty(), ownerToken);
 
         Study study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         assertEquals(2, study.getNotes().size());
@@ -261,43 +253,38 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void getNoteTest() throws CatalogException {
         NoteCreateParams study1Note1 = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("study1Note1");
-        catalogManager.getNotesManager().create(studyFqn, study1Note1, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, study1Note1, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams study1Note2 = new NoteCreateParams()
                 .setId("note2")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("study1Note2");
-        catalogManager.getNotesManager().create(studyFqn, study1Note2, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, study1Note2, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams study2Note1 = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("study2Note1");
-        catalogManager.getNotesManager().create(studyFqn2, study2Note1, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn2, Note.Scope.STUDY, study2Note1, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams orgNote1 = new NoteCreateParams()
                 .setId("note1")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("orgNote1");
-        catalogManager.getNotesManager().create(orgNote1, INCLUDE_RESULT, ownerToken);
+        catalogManager.getNotesManager().createOrganizationNote(orgNote1, INCLUDE_RESULT, ownerToken);
 
         NoteCreateParams orgNote2 = new NoteCreateParams()
                 .setId("note2")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("orgNote2");
-        catalogManager.getNotesManager().create(orgNote2, INCLUDE_RESULT, ownerToken);
+        catalogManager.getNotesManager().createOrganizationNote(orgNote2, INCLUDE_RESULT, ownerToken);
 
         Study study = catalogManager.getStudyManager().get(studyFqn, null, ownerToken).first();
         assertEquals(2, study.getNotes().size());
@@ -323,45 +310,40 @@ public class NoteManagerTest extends AbstractManagerTest {
     public void deleteNoteTest() throws CatalogException {
         NoteCreateParams study1Note1 = new NoteCreateParams()
                 .setId("study1Note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("study1Note1");
-        catalogManager.getNotesManager().create(studyFqn, study1Note1, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, study1Note1, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams study1Note2 = new NoteCreateParams()
                 .setId("study1Note2")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("study1Note2");
-        catalogManager.getNotesManager().create(studyFqn, study1Note2, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn, Note.Scope.STUDY, study1Note2, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams study2Note1 = new NoteCreateParams()
                 .setId("study2Note1")
-                .setScope(Note.Scope.STUDY)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("study2Note1");
-        catalogManager.getNotesManager().create(studyFqn2, study2Note1, QueryOptions.empty(), ownerToken);
+        catalogManager.getNotesManager().create(studyFqn2, Note.Scope.STUDY, study2Note1, QueryOptions.empty(), ownerToken);
 
         NoteCreateParams orgNote1 = new NoteCreateParams()
                 .setId("orgNote1")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PRIVATE)
                 .setValueType(Note.Type.STRING)
                 .setValue("orgNote1");
-        catalogManager.getNotesManager().create(orgNote1, INCLUDE_RESULT, ownerToken);
+        catalogManager.getNotesManager().createOrganizationNote(orgNote1, INCLUDE_RESULT, ownerToken);
 
         NoteCreateParams orgNote2 = new NoteCreateParams()
                 .setId("orgNote2")
-                .setScope(Note.Scope.ORGANIZATION)
                 .setVisibility(Note.Visibility.PUBLIC)
                 .setValueType(Note.Type.STRING)
                 .setValue("orgNote2");
-        catalogManager.getNotesManager().create(orgNote2, INCLUDE_RESULT, ownerToken);
+        catalogManager.getNotesManager().createOrganizationNote(orgNote2, INCLUDE_RESULT, ownerToken);
 
-        assertThrows(CatalogException.class, () -> catalogManager.getNotesManager().delete(Note.Scope.ORGANIZATION, study1Note1.getId(), null, ownerToken));
+        assertThrows(CatalogException.class, () -> catalogManager.getNotesManager().deleteOrganizationNote(study1Note1.getId(), null, ownerToken));
         assertThrows(CatalogException.class, () -> catalogManager.getNotesManager().delete(studyFqn, Note.Scope.ORGANIZATION, study1Note1.getId(), null, ownerToken));
 
         OpenCGAResult<Note> result = catalogManager.getNotesManager().search(studyFqn, Note.Scope.STUDY, new Query(NoteDBAdaptor.QueryParams.ID.key(), study1Note1.getId()), QueryOptions.empty(), ownerToken);

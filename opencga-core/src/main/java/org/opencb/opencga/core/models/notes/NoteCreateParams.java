@@ -8,7 +8,6 @@ import java.util.List;
 public class NoteCreateParams {
 
     private String id;
-    private Note.Scope scope;
     private List<String> tags;
     private Note.Visibility visibility;
     private Note.Type valueType;
@@ -17,9 +16,8 @@ public class NoteCreateParams {
     public NoteCreateParams() {
     }
 
-    public NoteCreateParams(String id, Note.Scope scope, List<String> tags, Note.Visibility visibility, Note.Type valueType, Object value) {
+    public NoteCreateParams(String id, List<String> tags, Note.Visibility visibility, Note.Type valueType, Object value) {
         this.id = id;
-        this.scope = scope;
         this.tags = tags;
         this.visibility = visibility;
         this.valueType = valueType;
@@ -30,7 +28,6 @@ public class NoteCreateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("NotesCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", scope=").append(scope);
         sb.append(", tags=").append(tags);
         sb.append(", visibility=").append(visibility);
         sb.append(", valueType=").append(valueType);
@@ -39,7 +36,7 @@ public class NoteCreateParams {
         return sb.toString();
     }
 
-    public Note toNote(String userId) {
+    public Note toNote(Note.Scope scope, String userId) {
         return new Note(id, null, scope, null, tags != null ? tags : Collections.emptyList(), userId, visibility, 1, TimeUtils.getTime(),
                 TimeUtils.getTime(), valueType, value != null ? value : Collections.emptyMap());
     }
@@ -50,15 +47,6 @@ public class NoteCreateParams {
 
     public NoteCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public Note.Scope getScope() {
-        return scope;
-    }
-
-    public NoteCreateParams setScope(Note.Scope scope) {
-        this.scope = scope;
         return this;
     }
 
