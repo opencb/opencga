@@ -11,6 +11,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.util.Arrays;
@@ -74,6 +75,43 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         assertEquals(authOrigin.getExpiration(), organization.getConfiguration().getAuthenticationOrigins().get(0).getExpiration());
         assertEquals(authOrigin.getSecretKey(), organization.getConfiguration().getAuthenticationOrigins().get(0).getSecretKey());
         assertEquals(authOrigin.getAlgorithm(), organization.getConfiguration().getAuthenticationOrigins().get(0).getAlgorithm());
+    }
+
+    @Test
+    public void organizationInfoTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNotNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.INCLUDE, "projects.fqn");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNull(project.getCreationDate());
+        }
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects.name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
     }
 
     @Test

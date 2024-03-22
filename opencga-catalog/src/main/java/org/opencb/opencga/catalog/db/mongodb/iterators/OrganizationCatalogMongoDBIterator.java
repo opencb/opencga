@@ -2,12 +2,16 @@ package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MigrationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.ProjectMongoDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +24,11 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
     private final String user;
 
     private final QueryOptions options;
+    private final QueryOptions projectOptions;
 
     private final Queue<Document> organizationListBuffer;
-    private MigrationMongoDBAdaptor migrationDBAdaptor;
+    private final MigrationMongoDBAdaptor migrationDBAdaptor;
+    private final ProjectMongoDBAdaptor projectMongoDBAdaptor;
 
     private final Logger logger;
 
@@ -33,9 +39,12 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
         super(mongoCursor, clientSession, converter, null);
 
         this.options = options != null ? new QueryOptions(options) : new QueryOptions();
+        this.projectOptions = createInnerQueryOptionsForVersionedEntity(this.options, OrganizationDBAdaptor.QueryParams.PROJECTS.key(),
+                true);
         this.user = user;
 
         this.migrationDBAdaptor = dbAdaptorFactory.getMigrationDBAdaptor();
+        this.projectMongoDBAdaptor = dbAdaptorFactory.getCatalogProjectDBAdaptor();
 
         this.organizationListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(OrganizationCatalogMongoDBIterator.class);
@@ -76,6 +85,16 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
                     organizationDocument.put(OrganizationDBAdaptor.QueryParams.INTERNAL.key(), internal);
                 }
                 internal.put("migrationExecutions", migrationRuns);
+            }
+
+            if (includeField(options, OrganizationDBAdaptor.QueryParams.PROJECTS.key())) {
+                OpenCGAResult<Document> openCGAResult = null;
+                try {
+                    openCGAResult = projectMongoDBAdaptor.nativeGet(clientSession, new Query(), projectOptions);
+                } catch (CatalogDBException e) {
+                    logger.warn("Could not fetch projects for organization.");
+                }
+                organizationDocument.put(OrganizationDBAdaptor.QueryParams.PROJECTS.key(), openCGAResult.getResults());
             }
 
             organizationListBuffer.add(organizationDocument);
