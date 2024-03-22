@@ -31,6 +31,9 @@ import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupCreateParams;
@@ -110,6 +113,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "groups-users-update":
                 queryResponse = updateGroupsUsers();
+                break;
+            case "notes-create":
+                queryResponse = createNotes();
+                break;
+            case "notes-search":
+                queryResponse = searchNotes();
+                break;
+            case "notes-delete":
+                queryResponse = deleteNotes();
+                break;
+            case "notes-update":
+                queryResponse = updateNotes();
                 break;
             case "permissionrules":
                 queryResponse = permissionRules();
@@ -360,6 +375,105 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
     }
 
+    private RestResponse<Note> createNotes() throws Exception {
+        logger.debug("Executing createNotes in Studies command line");
+
+        StudiesCommandOptions.CreateNotesCommandOptions commandOptions = studiesCommandOptions.createNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteCreateParams noteCreateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/notes/create"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteCreateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "valueType",commandOptions.valueType, true);
+
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteCreateParams.class);
+        }
+        return openCGAClient.getStudyClient().createNotes(commandOptions.study, noteCreateParams, queryParams);
+    }
+
+    private RestResponse<Note> searchNotes() throws Exception {
+        logger.debug("Executing searchNotes in Studies command line");
+
+        StudiesCommandOptions.SearchNotesCommandOptions commandOptions = studiesCommandOptions.searchNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
+        queryParams.putIfNotEmpty("version", commandOptions.version);
+
+        return openCGAClient.getStudyClient().searchNotes(commandOptions.study, queryParams);
+    }
+
+    private RestResponse<Note> deleteNotes() throws Exception {
+        logger.debug("Executing deleteNotes in Studies command line");
+
+        StudiesCommandOptions.DeleteNotesCommandOptions commandOptions = studiesCommandOptions.deleteNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+        return openCGAClient.getStudyClient().deleteNotes(commandOptions.study, commandOptions.id, queryParams);
+    }
+
+    private RestResponse<Note> updateNotes() throws Exception {
+        logger.debug("Executing updateNotes in Studies command line");
+
+        StudiesCommandOptions.UpdateNotesCommandOptions commandOptions = studiesCommandOptions.updateNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteUpdateParams noteUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/notes/{id}/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteUpdateParams.class);
+        }
+        return openCGAClient.getStudyClient().updateNotes(commandOptions.study, commandOptions.id, noteUpdateParams, queryParams);
+    }
+
     private RestResponse<PermissionRule> permissionRules() throws Exception {
         logger.debug("Executing permissionRules in Studies command line");
 
@@ -437,14 +551,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing deleteTemplates in Studies command line");
 
         StudiesCommandOptions.DeleteTemplatesCommandOptions commandOptions = studiesCommandOptions.deleteTemplatesCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId, queryParams);
+        return openCGAClient.getStudyClient().deleteTemplates(commandOptions.study, commandOptions.templateId);
     }
 
     private RestResponse<Study> update() throws Exception {

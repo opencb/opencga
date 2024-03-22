@@ -42,6 +42,10 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public GroupsCommandOptions groupsCommandOptions;
         public UpdateGroupsCommandOptions updateGroupsCommandOptions;
         public UpdateGroupsUsersCommandOptions updateGroupsUsersCommandOptions;
+        public CreateNotesCommandOptions createNotesCommandOptions;
+        public SearchNotesCommandOptions searchNotesCommandOptions;
+        public DeleteNotesCommandOptions deleteNotesCommandOptions;
+        public UpdateNotesCommandOptions updateNotesCommandOptions;
         public PermissionRulesCommandOptions permissionRulesCommandOptions;
         public UpdatePermissionRulesCommandOptions updatePermissionRulesCommandOptions;
         public RunTemplatesCommandOptions runTemplatesCommandOptions;
@@ -65,6 +69,10 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.groupsCommandOptions = new GroupsCommandOptions();
         this.updateGroupsCommandOptions = new UpdateGroupsCommandOptions();
         this.updateGroupsUsersCommandOptions = new UpdateGroupsUsersCommandOptions();
+        this.createNotesCommandOptions = new CreateNotesCommandOptions();
+        this.searchNotesCommandOptions = new SearchNotesCommandOptions();
+        this.deleteNotesCommandOptions = new DeleteNotesCommandOptions();
+        this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
         this.permissionRulesCommandOptions = new PermissionRulesCommandOptions();
         this.updatePermissionRulesCommandOptions = new UpdatePermissionRulesCommandOptions();
         this.runTemplatesCommandOptions = new RunTemplatesCommandOptions();
@@ -377,6 +385,143 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"notes-create"}, commandDescription ="Create a new note")
+    public class CreateNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
+        public String visibility;
+    
+        @Parameter(names = {"--value-type"}, description = "Enum param allowed values: OBJECT, ARRAY, STRING, INTEGER, DOUBLE", required = false, arity = 1)
+        public String valueType;
+    
+    }
+
+    @Parameters(commandNames = {"notes-search"}, commandDescription ="Search for notes of scope STUDY")
+    public class SearchNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--user-id"}, description = "User that wrote that Note.", required = false, arity = 1)
+        public String userId; 
+    
+        @Parameter(names = {"--tags"}, description = "Note tags.", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--visibility"}, description = "Visibility of the Note.", required = false, arity = 1)
+        public String visibility; 
+    
+        @Parameter(names = {"--version"}, description = "Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.", required = false, arity = 1)
+        public String version; 
+    
+    }
+
+    @Parameters(commandNames = {"notes-delete"}, commandDescription ="Delete note")
+    public class DeleteNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+    }
+
+    @Parameters(commandNames = {"notes-update"}, commandDescription ="Update a note")
+    public class UpdateNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
+        public String visibility;
+    
+    }
+
     @Parameters(commandNames = {"permissionrules"}, commandDescription ="Fetch permission rules")
     public class PermissionRulesCommandOptions {
     
@@ -432,7 +577,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--template-id"}, description = "Template id", required = true, arity = 1)

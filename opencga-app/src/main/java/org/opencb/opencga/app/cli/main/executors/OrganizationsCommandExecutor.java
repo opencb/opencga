@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.Object;
 import java.util.HashMap;
 import java.util.List;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -14,6 +15,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -57,6 +61,18 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
+                break;
+            case "notes-create":
+                queryResponse = createNotes();
+                break;
+            case "notes-search":
+                queryResponse = searchNotes();
+                break;
+            case "notes-delete":
+                queryResponse = deleteNotes();
+                break;
+            case "notes-update":
+                queryResponse = updateNotes();
                 break;
             case "info":
                 queryResponse = info();
@@ -106,6 +122,105 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), OrganizationCreateParams.class);
         }
         return openCGAClient.getOrganizationClient().create(organizationCreateParams, queryParams);
+    }
+
+    private RestResponse<Note> createNotes() throws Exception {
+        logger.debug("Executing createNotes in Organizations command line");
+
+        OrganizationsCommandOptions.CreateNotesCommandOptions commandOptions = organizationsCommandOptions.createNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteCreateParams noteCreateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/notes/create"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteCreateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id",commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+            putNestedIfNotNull(beanParams, "valueType",commandOptions.valueType, true);
+
+            noteCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteCreateParams.class);
+        }
+        return openCGAClient.getOrganizationClient().createNotes(noteCreateParams, queryParams);
+    }
+
+    private RestResponse<Note> searchNotes() throws Exception {
+        logger.debug("Executing searchNotes in Organizations command line");
+
+        OrganizationsCommandOptions.SearchNotesCommandOptions commandOptions = organizationsCommandOptions.searchNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
+        queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
+        queryParams.putIfNotEmpty("version", commandOptions.version);
+
+        return openCGAClient.getOrganizationClient().searchNotes(queryParams);
+    }
+
+    private RestResponse<Note> deleteNotes() throws Exception {
+        logger.debug("Executing deleteNotes in Organizations command line");
+
+        OrganizationsCommandOptions.DeleteNotesCommandOptions commandOptions = organizationsCommandOptions.deleteNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+        return openCGAClient.getOrganizationClient().deleteNotes(commandOptions.id, queryParams);
+    }
+
+    private RestResponse<Note> updateNotes() throws Exception {
+        logger.debug("Executing updateNotes in Organizations command line");
+
+        OrganizationsCommandOptions.UpdateNotesCommandOptions commandOptions = organizationsCommandOptions.updateNotesCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+
+
+        NoteUpdateParams noteUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Note> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/notes/{id}/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
+            putNestedIfNotNull(beanParams, "visibility",commandOptions.visibility, true);
+
+            noteUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), NoteUpdateParams.class);
+        }
+        return openCGAClient.getOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
     }
 
     private RestResponse<Organization> info() throws Exception {
