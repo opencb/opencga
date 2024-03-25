@@ -1,11 +1,16 @@
 package org.opencb.opencga.core.models.alignment;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class AlignmentIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Alignment index params";
 
+    @DataField(id = "fileId", description = FieldConstants.ALIGNMENT_INDEX_FILE_ID_DESCRIPTION, required = true)
     private String fileId;
+
+    @DataField(id = "overwrite", description = FieldConstants.ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION)
     private boolean overwrite;
 
     public AlignmentIndexParams() {
