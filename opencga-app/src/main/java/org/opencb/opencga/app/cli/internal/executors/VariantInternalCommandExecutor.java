@@ -887,6 +887,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantCommandOptions.internalJobOptions.jobId, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
                 .start();
     }
 
