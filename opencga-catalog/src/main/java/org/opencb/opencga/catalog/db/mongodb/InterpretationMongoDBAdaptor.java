@@ -67,7 +67,7 @@ import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryPar
 import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
-public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
+public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implements InterpretationDBAdaptor {
 
     private final MongoDBCollection interpretationCollection;
     private final MongoDBCollection archiveInterpretationCollection;
@@ -200,7 +200,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 }
 
                 // Update interpretation(s) in ClinicalAnalysis
-                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
+                clinicalDBAdaptor.transactionalUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             case SECONDARY:
                 // Add to secondaryInterpretations array in ClinicalAnalysis
@@ -215,7 +215,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), null);
                 }
 
-                clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
+                clinicalDBAdaptor.transactionalUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList, options);
                 break;
             default:
                 throw new IllegalStateException("Unknown action " + action);
@@ -686,7 +686,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
             if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
                 // Updates to Interpretation data model -> increment version
-                return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+                return versionedMongoDBAdaptor.update(clientSession, bsonQuery, (entrylist) -> {
                     DataResult update = DataResult.empty();
 
                     // Because it will generate a new interpretation version, we set version to +1 so the reference in clinical is also
@@ -785,7 +785,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
         }
 
-        OpenCGAResult update = clinicalDBAdaptor.privateUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList,
+        OpenCGAResult update = clinicalDBAdaptor.transactionalUpdate(clientSession, ca, params, Collections.emptyList(), clinicalAuditList,
                 options);
         if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update interpretation reference in Clinical Analysis to new version");
@@ -878,7 +878,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             clinicalOptions.put(Constants.ACTIONS, actions);
         }
-        clinicalDBAdaptor.privateUpdate(clientSession, clinicalAnalysis, clinicalParams, Collections.emptyList(), clinicalAuditList,
+        clinicalDBAdaptor.transactionalUpdate(clientSession, clinicalAnalysis, clinicalParams, Collections.emptyList(), clinicalAuditList,
                 clinicalOptions);
 
         Query query = new Query()

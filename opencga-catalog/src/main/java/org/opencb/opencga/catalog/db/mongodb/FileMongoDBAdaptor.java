@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -32,16 +34,17 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileCatalogMongoDBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -54,9 +57,9 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -81,21 +84,33 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     private FileConverter fileConverter;
     private int fileSampleLinkThreshold = 5000;
 
+    private final IOManagerFactory ioManagerFactory;
+
+    private enum UpdateAttributeParams {
+        NESTED_PATH_UPDATE,
+        PREVIOUS_FILE_ID,
+        NEW_FILE_ID,
+        SET_SAMPLES,
+        ADDED_SAMPLES,
+        REMOVED_SAMPLES
+    }
+
     /***
      * CatalogMongoFileDBAdaptor constructor.
-     *
-     * @param fileCollection MongoDB connection to the file collection.
+     *  @param fileCollection MongoDB connection to the file collection.
      * @param deletedFileCollection MongoDB connection to the file collection containing the deleted documents.
      * @param configuration Configuration file.
      * @param dbAdaptorFactory Generic dbAdaptorFactory containing all the different collections.
+     * @param ioManagerFactory IOManagerFactory.
      */
     public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory) {
+                              MongoDBAdaptorFactory dbAdaptorFactory, IOManagerFactory ioManagerFactory) {
         super(configuration, LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.deletedFileCollection = deletedFileCollection;
         this.fileConverter = new FileConverter();
+        this.ioManagerFactory = ioManagerFactory;
     }
 
     @Override
@@ -152,14 +167,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
                                 new FileRelatedFile(file, FileRelatedFile.Relation.MULTIPART)
                         ));
-                        privateUpdate(clientSession, virtualFile, params, null, qOptions);
+                        transactionalUpdate(clientSession, virtualFile, params, null, qOptions);
                     }
 
                     // Add multipart file in physical file
                     ObjectMap params = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(
                             new FileRelatedFile(virtualFile, FileRelatedFile.Relation.MULTIPART)
                     ));
-                    privateUpdate(clientSession, file, params, null, qOptions);
+                    transactionalUpdate(clientSession, file, params, null, qOptions);
 
                     return endWrite(tmpStartTime, 1, 1, 0, 0, null);
                 },
@@ -209,19 +224,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
-                UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                        .updateFileReferences(params, sampleUpdateOptions);
                 for (List<Sample> sampleList : sampleListList) {
                     logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
-                    // Update list of fileIds from sample
-                    Query query = new Query()
-                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                            .append(SampleDBAdaptor.QueryParams.UID.key(),
-                                    sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
-                    dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
-                            dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
-                            sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+                    for (Sample sample : sampleList) {
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, sample, params, null,
+                                sampleUpdateOptions);
+                    }
 
                     // Add sample to sampleList
                     samples.addAll(sampleList);
@@ -279,14 +288,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        Bson query = Filters.and(Filters.eq(PRIVATE_STUDY_UID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
-        DataResult<File> fileResults = fileCollection.find(query, fileConverter, null);
-        return endQuery(startTime, fileResults);
-    }
-
-    @Override
     public long getStudyIdByFileId(long fileId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), fileId);
         OpenCGAResult queryResult = nativeGet(query, null);
@@ -331,7 +332,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult update(long fileUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.PATH.key(), QueryParams.SIZE.key(),
+                        QueryParams.STUDY_UID.key()));
         OpenCGAResult<File> fileDataResult = get(fileUid, options);
 
         if (fileDataResult.getNumResults() == 0) {
@@ -339,7 +341,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, fileDataResult.first(), parameters,
+            return runTransaction(clientSession -> transactionalUpdate(clientSession, fileDataResult.first(), parameters,
                     variableSetList, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update file {}: {}", fileDataResult.first().getPath(), e.getMessage(), e);
@@ -360,12 +362,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
         DBIterator<File> iterator = iterator(query, options);
 
-        OpenCGAResult<File> result = OpenCGAResult.empty();
+        OpenCGAResult<File> result = OpenCGAResult.empty(File.class);
 
         while (iterator.hasNext()) {
             File file = iterator.next();
             try {
-                result.append(runTransaction(clientSession -> privateUpdate(clientSession, file, parameters, variableSetList,
+                result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, file, parameters, variableSetList,
                         queryOptions)));
             } catch (CatalogDBException e) {
                 logger.error("Could not update file {}: {}", file.getPath(), e.getMessage(), e);
@@ -376,20 +378,28 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         return result;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, File file, ObjectMap parameters, List<VariableSet> variableSetList,
-                                        QueryOptions queryOptions)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    @Override
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
+                                            List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
+        long studyUid = file.getStudyUid();
+        long fileUid = file.getUid();
 
         Query tmpQuery = new Query()
-                .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
-                .append(QueryParams.UID.key(), file.getUid());
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), fileUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.PATH.key(), QueryParams.URI.key(),
+                        QueryParams.TYPE.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
+        File completeFile = get(clientSession, tmpQuery, options).first();
 
         // We perform the update.
         Bson queryBson = parseQuery(tmpQuery);
-        DataResult result = updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
+        DataResult result = updateAnnotationSets(clientSession, studyUid, fileUid, parameters, variableSetList,
+                queryOptions, false);
 
-        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, file.getStudyUid(), parameters, tmpQuery, queryOptions);
+        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, studyUid, parameters, tmpQuery, queryOptions);
         Document fileUpdate = updateDocument.toFinalUpdateDocument();
 
         if (fileUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -408,38 +418,58 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             // If the size of some of the files have been changed, notify to the correspondent study
             if (parameters.containsKey(QueryParams.SIZE.key())) {
                 long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
-                long difDiskUsage = newDiskUsage - file.getSize();
-                dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
+                long difDiskUsage = newDiskUsage - completeFile.getSize();
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyUid, difDiskUsage);
             }
 
-            updateSampleReferences(clientSession, file, updateDocument);
+            updateSampleReferences(clientSession, completeFile, updateDocument);
+            updateWhenFileIdChanged(clientSession, completeFile, updateDocument, queryOptions);
 
             if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("File " + file.getPath() + " not found");
+                throw new CatalogDBException("File " + completeFile.getPath() + " not found");
             }
             if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, file.getPath(), "File was already updated"));
+                events.add(new Event(Event.Type.WARNING, completeFile.getPath(), "File was already updated"));
             }
-            logger.debug("File {} successfully updated", file.getPath());
+            logger.debug("File {} successfully updated", completeFile.getPath());
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    @Override
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
+            throws CatalogDBException {
+        long tmpStartTime = startQuery();
+
+        Document fileUpdate = updateDocument.toFinalUpdateDocument();
+
+        if (fileUpdate.isEmpty()) {
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
+        logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(), fileUpdate.toBsonDocument());
+
+        DataResult<?> result = fileCollection.update(clientSession, query, fileUpdate, null);
+        logger.debug("{} file(s) successfully updated", result.getNumUpdated());
+
+        return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
+    }
+
     private void updateSampleReferences(ClientSession clientSession, File file, UpdateDocument updateDocument)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (!updateDocument.getAttributes().isEmpty()) {
-            ObjectMap addedSamples = (ObjectMap) updateDocument.getAttributes().getMap("ADDED_SAMPLES");
-            ObjectMap removedSamples = (ObjectMap) updateDocument.getAttributes().getMap("REMOVED_SAMPLES");
-            List<Long> setSamples = updateDocument.getAttributes().getAsLongList("SET_SAMPLES");
+            ObjectMap addedSamples = (ObjectMap) updateDocument.getAttributes().getMap(UpdateAttributeParams.ADDED_SAMPLES.name());
+            ObjectMap removedSamples = (ObjectMap) updateDocument.getAttributes().getMap(UpdateAttributeParams.REMOVED_SAMPLES.name());
+            List<Long> setSamples = updateDocument.getAttributes().getAsLongList(UpdateAttributeParams.SET_SAMPLES.name());
 
-            if (setSamples.isEmpty() && (addedSamples == null || addedSamples.isEmpty())
-                    && (removedSamples == null || removedSamples.isEmpty())) {
-                throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
+            if (CollectionUtils.isEmpty(setSamples) && MapUtils.isEmpty(addedSamples) && MapUtils.isEmpty(removedSamples)) {
+                return;
             }
 
-            Bson sampleBsonQuery = null;
-            UpdateDocument sampleUpdate = null;
+            Bson sampleBsonQuery;
+            UpdateDocument sampleUpdate;
             ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
 
             if (!setSamples.isEmpty()) {
@@ -459,8 +489,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 sampleUpdate = new UpdateDocument();
                 sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
 
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        sampleUpdate);
             }
             if (addedSamples != null && !addedSamples.isEmpty()) {
                 Query query = new Query()
@@ -470,11 +500,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                updateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseAndValidateUpdateParams(clientSession,
+                        file.getStudyUid(), params, query, sampleUpdateOptions);
 
-                sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
-
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        updateDocument);
             }
             if (removedSamples != null && !removedSamples.isEmpty()) {
                 Query query = new Query()
@@ -484,11 +514,66 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.REMOVE.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                updateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseAndValidateUpdateParams(clientSession,
+                        file.getStudyUid(), params, query, sampleUpdateOptions);
 
-                sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery,
+                        updateDocument);
+            }
+        }
+    }
 
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+    private void updateWhenFileIdChanged(ClientSession clientSession, File file, UpdateDocument updateDocument, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        String newFileId = updateDocument.getSet().getString(QueryParams.ID.key());
+        if (StringUtils.isEmpty(newFileId)) {
+            return;
+        }
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
+                .append(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
+        Bson sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
+
+        // Replace the id for the new one
+        UpdateDocument sampleUpdate = new UpdateDocument();
+        sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery, sampleUpdate);
+
+        String skipMoveFileString = "_SKIP_MOVE_FILE";
+        if (file.getType().equals(File.Type.DIRECTORY)) {
+            // We get the files and folders directly under this directory
+            Query tmpQuery = new Query()
+                    .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
+                    .append(QueryParams.DIRECTORY.key(), file.getPath());
+            String newPath = updateDocument.getSet().getString(QueryParams.PATH.key());
+            try (DBIterator<File> iterator = iterator(clientSession, tmpQuery, FileManager.INCLUDE_FILE_URI_PATH)) {
+                while (iterator.hasNext()) {
+                    File tmpFile = iterator.next();
+                    String targetPath = newPath + tmpFile.getName();
+                    if (File.Type.DIRECTORY.equals(tmpFile.getType())) {
+                        targetPath = targetPath + "/";
+                    }
+                    ObjectMap updateMap = new ObjectMap(QueryParams.PATH.key(), targetPath);
+                    QueryOptions queryOptions = new QueryOptions(skipMoveFileString, true);
+                    OpenCGAResult<File> result = transactionalUpdate(clientSession, tmpFile, updateMap, null, queryOptions);
+                    if (result.getNumUpdated() == 0) {
+                        throw new CatalogDBException("Could not update path from '" + tmpFile.getPath() + "' to '" + targetPath + "'");
+                    }
+                }
+            }
+        }
+
+        String newUri = updateDocument.getSet().getString(QueryParams.URI.key());
+        if (file.getUri() != null && StringUtils.isNotEmpty(newUri) && !newUri.equals(file.getUri().toString())
+                && !options.getBoolean(skipMoveFileString)) {
+            // Move just the main folder/file
+            logger.info("Move file from uri '{}' to '{}'", file.getUri(), newUri);
+            try {
+                ioManagerFactory.get(file.getUri()).move(file.getUri(), UriUtils.createUri(newUri));
+            } catch (CatalogIOException | IOException | URISyntaxException e) {
+                throw new CatalogDBException("Could not move file/folder physically", e);
             }
         }
     }
@@ -507,7 +592,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // The file id has been altered !!!
         if (updateDocument.getSet().containsKey(QueryParams.ID.key())) {
             // The current list of samples need to replace the current fileId
-            updateDocument.getAttributes().put("SET_SAMPLES", currentSampleUidList);
+            updateDocument.getAttributes().put(UpdateAttributeParams.SET_SAMPLES.name(), currentSampleUidList);
         } else if (BasicUpdateAction.SET.equals(operation) || BasicUpdateAction.ADD.equals(operation)) {
             // We will see which of the samples are actually new
             List<Long> samplesToAdd = new ArrayList<>();
@@ -519,7 +604,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
 
             if (!samplesToAdd.isEmpty()) {
-                updateDocument.getAttributes().put("ADDED_SAMPLES", new ObjectMap(fileId, samplesToAdd));
+                updateDocument.getAttributes().put(UpdateAttributeParams.ADDED_SAMPLES.name(), new ObjectMap(fileId, samplesToAdd));
             }
 
             if (BasicUpdateAction.SET.equals(operation) && fileDocument.get(PRIVATE_SAMPLES) != null) {
@@ -535,7 +620,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 }
 
                 if (!samplesToRemove.isEmpty()) {
-                    updateDocument.getAttributes().put("REMOVED_SAMPLES", new ObjectMap(fileId, samplesToRemove));
+                    updateDocument.getAttributes().put(UpdateAttributeParams.REMOVED_SAMPLES.name(),
+                            new ObjectMap(fileId, samplesToRemove));
                 }
             }
         } else if (BasicUpdateAction.REMOVE.equals(operation)) {
@@ -549,7 +635,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
 
             if (!samplesToRemove.isEmpty()) {
-                updateDocument.getAttributes().put("REMOVED_SAMPLES", new ObjectMap(fileId, samplesToRemove));
+                updateDocument.getAttributes().put(UpdateAttributeParams.REMOVED_SAMPLES.name(), new ObjectMap(fileId, samplesToRemove));
             }
         }
     }
@@ -560,10 +646,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.PATH.key(), QueryParams.CHECKSUM.key(),
-                QueryParams.JOB_ID.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
         };
-        // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -580,17 +664,79 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         if (parameters.containsKey(QueryParams.PATH.key())) {
-            checkOnlyOneFileMatches(clientSession, query);
+            OpenCGAResult<File> results = get(clientSession, query, FileManager.INCLUDE_FILE_URI_PATH);
+            if (results.getNumResults() > 1) {
+                throw new CatalogDBException("Cannot set same path to multiple files.");
+            }
+            File currentFile = results.first();
 
-            // Check the path is not in use
-            Query pathQuery = new Query(QueryParams.PATH.key(), parameters.getString(QueryParams.PATH.key()));
-            if (count(clientSession, pathQuery).getNumMatches() > 0) {
-                throw new CatalogDBException("Path " + parameters.getString(QueryParams.PATH.key()) + " already in use");
+            // Check desired path is not in use by other file
+            String desiredPath = parameters.getString(QueryParams.PATH.key());
+            desiredPath = FileUtils.fixPath(desiredPath, currentFile.getType());
+            document.getSet().put(QueryParams.PATH.key(), desiredPath);
+
+            if (desiredPath.equals(currentFile.getPath())) {
+                throw new CatalogDBException("Nothing to do. The path of the file was already '" + desiredPath + "'.");
+            }
+            if (StringUtils.isEmpty(desiredPath)) {
+                throw new CatalogDBException("Cannot rename root folder.");
+            }
+            Query tmpQuery = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyUid)
+                    .append(QueryParams.PATH.key(), desiredPath);
+            OpenCGAResult<Long> countResult = count(clientSession, tmpQuery);
+            if (countResult.getNumMatches() > 0) {
+                throw new CatalogDBException("There already exists another file under path '" + desiredPath + "'.");
             }
 
-            // We also update the ID replacing the / for :
-            String path = parameters.getString(QueryParams.PATH.key());
-            document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
+            // Look for parent folder to check a few things more
+            List<String> pathList = FileUtils.calculateAllPossiblePaths(desiredPath);
+            tmpQuery = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyUid)
+                    .append(QueryParams.PATH.key(), pathList);
+            OpenCGAResult<File> parentFiles = get(clientSession, tmpQuery, FileManager.INCLUDE_FILE_URI_PATH);
+            if (parentFiles.getNumResults() + 1 < pathList.size()) {
+                Set<String> presentFolders = parentFiles.getResults().stream().map(File::getPath).collect(Collectors.toSet());
+                String missingFolders = pathList.stream().filter(p -> !presentFolders.contains(p)).collect(Collectors.joining(", "));
+                throw new CatalogDBException("Can't move file to path '" + desiredPath + "'. Please, create missing parent folders: "
+                        + missingFolders);
+            }
+
+            File desiredParentFolder = parentFiles.first();
+            for (File tmpParentFile : parentFiles.getResults()) {
+                // Look for the closest parentFolder
+                if (tmpParentFile.getPath().length() > desiredParentFolder.getPath().length()) {
+                    desiredParentFolder = tmpParentFile;
+                }
+            }
+
+            boolean changeUri = true;
+            if (desiredParentFolder.isExternal() && !currentFile.isExternal()) {
+                throw new CatalogDBException("Cannot move file to path '" + desiredPath + "'. The folder '" + desiredParentFolder.getPath()
+                        + "' is linked to the external physical uri '" + desiredParentFolder.getUri() + "' so OpenCGA can't move"
+                        + " anything there.");
+            } else if (desiredParentFolder.isExternal() && currentFile.isExternal()) {
+                changeUri = false;
+            }
+
+            if (changeUri) {
+                URI fileUri = null;
+                try {
+                    fileUri = FileUtils.getFileUri(desiredPath, desiredParentFolder, currentFile.getType());
+                } catch (URISyntaxException e) {
+                    throw new CatalogDBException("Could not update file.", e);
+                }
+                document.getSet().put(QueryParams.URI.key(), fileUri.toString());
+            }
+
+            String name = FileUtils.getFileName(desiredPath);
+            String newFileId = FileUtils.getFileId(desiredPath);
+            document.getSet().put(QueryParams.ID.key(), newFileId);
+            document.getSet().put(QueryParams.NAME.key(), name);
+            document.getSet().put(REVERSE_NAME, StringUtils.reverse(name));
+
+            document.getAttributes().put(UpdateAttributeParams.PREVIOUS_FILE_ID.name(), currentFile.getId());
+            document.getAttributes().put(UpdateAttributeParams.NEW_FILE_ID.name(), newFileId);
         }
 
         // Check if the tags exist.
@@ -720,6 +866,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            FileStatus fileStatus = new FileStatus(parameters.getString(QueryParams.INTERNAL_STATUS_ID.key()));
+            Document fileStatusDoc = getMongoDBDocument(fileStatus, QueryParams.INTERNAL_STATUS.key());
+            document.getSet().put(QueryParams.INTERNAL_STATUS.key(), fileStatusDoc);
+        }
+
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
             if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
@@ -732,20 +884,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return document;
-    }
-
-    private File checkOnlyOneFileMatches(ClientSession clientSession, Query query)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query tmpQuery = new Query(query);
-
-        OpenCGAResult<File> fileResult = get(clientSession, tmpQuery, new QueryOptions());
-        if (fileResult.getNumResults() == 0) {
-            throw new CatalogDBException("Update file: No file found to be updated");
-        }
-        if (fileResult.getNumResults() > 1) {
-            throw CatalogDBException.cannotUpdateMultipleEntries(QueryParams.ID.key(), "file");
-        }
-        return fileResult.first();
     }
 
     @Override
@@ -947,55 +1085,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 //    }
 
     @Override
-    public OpenCGAResult rename(long fileUid, String filePath, String fileUri, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        checkId(fileUid);
-
-        Path path = Paths.get(filePath);
-        String fileName = path.getFileName().toString();
-
-        Document fileDoc = nativeGet(new Query(QueryParams.UID.key(), fileUid), null).getResults().get(0);
-        File file = fileConverter.convertToDataModelType(fileDoc, options);
-
-        if (file.getType().equals(File.Type.DIRECTORY)) {
-            filePath += filePath.endsWith("/") ? "" : "/";
-        }
-
-        long studyId = (long) fileDoc.get(PRIVATE_STUDY_UID);
-        long collisionFileId = getId(studyId, filePath);
-        if (collisionFileId >= 0) {
-            throw new CatalogDBException("Can not rename: " + filePath + " already exists");
-        }
-
-        if (file.getType().equals(File.Type.DIRECTORY)) {  // recursive over the files inside folder
-            OpenCGAResult<File> allFilesInFolder = getAllFilesInFolder(studyId, file.getPath(), null);
-            String oldPath = file.getPath();
-            URI uri = file.getUri();
-            String oldUri = uri != null ? uri.toString() : "";
-            for (File subFile : allFilesInFolder.getResults()) {
-                String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
-                String replacedUri = subFile.getUri().toString().replaceFirst(oldUri, fileUri);
-                rename(subFile.getUid(), replacedPath, replacedUri, null); // first part of the path in the subfiles 3
-            }
-        }
-
-        String fileId = StringUtils.replace(filePath, "/", ":");
-
-        Document query = new Document(PRIVATE_UID, fileUid);
-        Document set = new Document("$set", new Document()
-                .append(QueryParams.ID.key(), fileId)
-                .append(QueryParams.NAME.key(), fileName)
-                .append(REVERSE_NAME, StringUtils.reverse(fileName))
-                .append(QueryParams.PATH.key(), filePath)
-                .append(QueryParams.URI.key(), fileUri));
-        DataResult result = fileCollection.update(query, set, null);
-        if (result.getNumUpdated() == 0) {
-            throw CatalogDBException.uidNotFound("File", fileUid);
-        }
-        return new OpenCGAResult(result);
-    }
-
-    @Override
     public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
@@ -1068,7 +1157,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         return nativeGet(null, query, options);
     }
 
-    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
@@ -1077,12 +1166,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         return nativeGet(null, studyUid, query, options, user);
     }
 
-    public OpenCGAResult nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {

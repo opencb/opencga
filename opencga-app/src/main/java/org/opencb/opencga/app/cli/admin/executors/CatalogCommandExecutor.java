@@ -136,7 +136,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             if (catalogManager.existsCatalogDB()) {
                 result.put("installed", true);
 
-                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
                 MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
                 Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
 

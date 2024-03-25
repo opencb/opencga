@@ -50,7 +50,7 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
+        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(), catalogManager.getIoManagerFactory());
         ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
         this.batchExecutor = executorFactory.getExecutor();
     }

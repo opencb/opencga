@@ -65,7 +65,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor {
+public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBAdaptor {
 
     private final MongoDBCollection userCollection;
     private final MongoDBCollection deletedUserCollection;

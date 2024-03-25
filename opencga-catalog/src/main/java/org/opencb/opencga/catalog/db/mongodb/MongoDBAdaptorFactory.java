@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
@@ -140,6 +141,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     );
 
     static final String METADATA_OBJECT_ID = "METADATA";
+    private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
     private final String database;
@@ -165,7 +167,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private Logger logger;
 
-    public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
+    public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory) throws CatalogDBException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -188,6 +190,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         this.configuration = mongoDBConfiguration;
         this.database = getCatalogDatabase(catalogConfiguration.getDatabasePrefix());
+        this.ioManagerFactory = ioManagerFactory;
 
         logger = LoggerFactory.getLogger(this.getClass());
         connect(catalogConfiguration);
@@ -422,7 +425,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         collections.put(AUDIT_COLLECTION, auditCollection);
 
-        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
+        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this, ioManagerFactory);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection,
                 catalogConfiguration, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, individualArchivedCollection, deletedIndividualCollection,

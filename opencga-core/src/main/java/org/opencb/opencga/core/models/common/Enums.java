@@ -168,6 +168,7 @@ public final class Enums {
         GREP,
         TREE,
         DOWNLOAD_AND_REGISTER,
+        MOVE,
         MOVE_AND_REGISTER,
 
         VISIT,
