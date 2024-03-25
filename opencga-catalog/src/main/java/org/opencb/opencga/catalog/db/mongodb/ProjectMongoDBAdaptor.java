@@ -556,8 +556,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return nativeGet(null, query, options, user);
+    }
+
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -595,11 +600,16 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return nativeIterator(null, query, options, user);
+    }
+
+    public DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
-        return new ProjectCatalogMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory, options, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
+        return new ProjectCatalogMongoDBIterator<>(mongoCursor, clientSession, null, dbAdaptorFactory, options, user);
     }
 
 //    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)

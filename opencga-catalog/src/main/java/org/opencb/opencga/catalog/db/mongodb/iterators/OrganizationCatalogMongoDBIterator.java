@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -10,6 +11,7 @@ import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MigrationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.ProjectMongoDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -90,9 +92,13 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
             if (includeField(options, OrganizationDBAdaptor.QueryParams.PROJECTS.key())) {
                 OpenCGAResult<Document> openCGAResult = null;
                 try {
-                    openCGAResult = projectMongoDBAdaptor.nativeGet(clientSession, new Query(), projectOptions);
-                } catch (CatalogDBException e) {
-                    logger.warn("Could not fetch projects for organization.");
+                    if (StringUtils.isNotEmpty(user)) {
+                        openCGAResult = projectMongoDBAdaptor.nativeGet(clientSession, new Query(), projectOptions, user);
+                    } else {
+                        openCGAResult = projectMongoDBAdaptor.nativeGet(clientSession, new Query(), projectOptions);
+                    }
+                } catch (CatalogDBException | CatalogAuthorizationException e) {
+                    logger.warn("Could not fetch projects for organization.", e);
                 }
                 organizationDocument.put(OrganizationDBAdaptor.QueryParams.PROJECTS.key(), openCGAResult.getResults());
             }

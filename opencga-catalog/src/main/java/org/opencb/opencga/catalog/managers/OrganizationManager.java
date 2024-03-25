@@ -131,7 +131,7 @@ public class OrganizationManager extends AbstractManager {
 
         OpenCGAResult<Organization> queryResult;
         try {
-            queryResult = getOrganizationDBAdaptor(organizationId).get(options);
+            queryResult = getOrganizationDBAdaptor(organizationId).get(userId, options);
         } catch (CatalogException e) {
             auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

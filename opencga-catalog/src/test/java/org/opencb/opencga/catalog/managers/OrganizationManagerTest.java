@@ -78,7 +78,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void organizationInfoTest() throws CatalogException {
+    public void organizationInfoIncludeProjectsTest() throws CatalogException {
         Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
         assertEquals(3, organization.getProjects().size());
         for (Project project : organization.getProjects()) {
@@ -112,6 +112,28 @@ public class OrganizationManagerTest extends AbstractManagerTest {
             assertNull(project.getName());
             assertNotNull(project.getCreationDate());
         }
+    }
+
+    @Test
+    public void organizationInfoProjectsAuthTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), orgAdminToken1).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), studyAdminToken1).first();
+        assertEquals(2, organization.getProjects().size());
+        assertArrayEquals(Arrays.asList(projectFqn1, projectFqn2).toArray(),
+                organization.getProjects().stream().map(Project::getFqn).toArray());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), normalToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), noAccessToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
     }
 
     @Test
