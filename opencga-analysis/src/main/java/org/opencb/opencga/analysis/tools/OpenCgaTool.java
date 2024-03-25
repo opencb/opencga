@@ -317,9 +317,6 @@ public abstract class OpenCgaTool {
      * @throws Exception if the parameters are not correct
      */
     protected void check() throws Exception {
-        if (StringUtils.isEmpty(jobId)) {
-            throw new IllegalArgumentException("Missing job ID");
-        }
     }
 
     /**

@@ -54,6 +54,10 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         super.check();
 
         // Sanity check
+        if (StringUtils.isEmpty(getJobId())) {
+            throw new ToolException("Missing job ID");
+        }
+
         if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study when computing alignment coverage");
         }

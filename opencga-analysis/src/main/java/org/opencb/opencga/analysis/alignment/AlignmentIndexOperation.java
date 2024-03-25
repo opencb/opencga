@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
@@ -51,6 +52,15 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
     @Override
     protected void check() throws Exception {
         super.check();
+
+        // Sanity check
+        if (StringUtils.isEmpty(getJobId())) {
+            throw new ToolException("Missing job ID");
+        }
+
+        if (StringUtils.isEmpty(getStudy())) {
+            throw new ToolException("Missing study when computing alignment index");
+        }
 
         OpenCGAResult<File> fileResult;
         try {
