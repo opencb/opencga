@@ -54,6 +54,10 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
         super.check();
 
         // Sanity check
+        if (StringUtils.isEmpty(getJobId())) {
+            throw new ToolException("Missing job ID");
+        }
+
         if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study when computing alignment coverage");
         }
@@ -168,20 +172,22 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
                         + ") was not create, please, check log files.");
             }
 
-            // Try to copy the BW file into the BAM file directory
+            // Try to move the BW file into the BAM file directory
+            boolean moveSuccessful = false;
             Path targetPath = Paths.get(bamCatalogFile.getUri()).getParent().resolve(bwPath.getFileName());
             try {
-                Files.move(bwPath, targetPath);
+                Path movedPath = Files.move(bwPath, targetPath);
+                moveSuccessful = targetPath.equals(movedPath);
             } catch (Exception e) {
-                // Do nothing
-                logger.info("Moving from {} to {}: {}", bwPath, targetPath, e.getMessage());
+                // Log message
+                logger.info("Error moving the coverage file into the BAM folder {} to {}", bwPath, targetPath, e);
             }
 
-            if (targetPath.toFile().exists()) {
+            if (moveSuccessful) {
                 bwPath = targetPath;
-                logger.info("Coverage file was copied into the BAM folder: {}", bwPath);
+                logger.info("Coverage file was moved into the BAM folder: {}", bwPath);
             } else {
-                logger.info("Couldn't copy the coverage file into the BAM folder. The coverage file is in the job folder instead: {}",
+                logger.info("Couldn't move the coverage file into the BAM folder. The coverage file is in the job folder instead: {}",
                         bwPath);
             }
 

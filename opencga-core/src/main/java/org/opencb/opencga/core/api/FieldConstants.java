@@ -485,6 +485,16 @@ public class FieldConstants {
     public static final String VARIANT_STATS_DESCRIPTION_DESCRIPTION = "Variant stats description.";
     public static final String VARIANT_STATS_QUERY_DESCRIPTION = "Variant stats query in JSON format.";
 
+    // Alignment index parameter descriptions
+    public static final String ALIGNMENT_INDEX_FILE_ID_DESCRIPTION = "File ID, (i.e., BAM/CRAM file ID).";
+    public static final String ALIGNMENT_INDEX_OVERWRITE_DESCRIPTION = "Flag to force indexing.";
+
+    // Coverage index parameter descriptions
+    public static final String COVERAGE_INDEX_BAM_FILE_ID_DESCRIPTION = "BAM file ID.";
+    public static final String COVERAGE_INDEX_BAI_FILE_ID_DESCRIPTION = "BAI file ID.";
+    public static final String COVERAGE_INDEX_OVERWRITE_DESCRIPTION = "Window size (i.e., the size of the bins, in bases, for the output"
+        + " of the BIGWIG file).";
+
     // Alignment QC analysis (asample-qc-run)
     public static final String ALIGNMENT_QC_BAM_FILE_DESCRIPTION = "ID for the BAM file to process.";
     public static final String ALIGNMENT_QC_SKIP_DESCRIPTION = "To skip any alignment QC metrics use the following keywords (separated by"

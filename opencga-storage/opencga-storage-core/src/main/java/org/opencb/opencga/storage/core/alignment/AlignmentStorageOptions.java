@@ -1,11 +1,11 @@
 package org.opencb.opencga.storage.core.alignment;
 
-import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.ConfigurationOption;
 
 public enum AlignmentStorageOptions implements ConfigurationOption {
 
-    BIG_WIG_WINDOWS_SIZE("bigWigWindowsSize", BamManager.DEFAULT_WINDOW_SIZE);
+    BIG_WIG_WINDOWS_SIZE("bigWigWindowsSize", ParamConstants.COVERAGE_WINDOW_SIZE_DEFAULT);
 
     private final String key;
     private final Object value;
