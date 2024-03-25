@@ -57,7 +57,8 @@ function printTestUsage() {
   echo ""
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
-  echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
+  echo "     -t     --task                STRING         Task that we are testing and that will serve as a reference for checkouts"
+  echo "     -l     --level               STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
   echo "     -f     --fail-never          FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
   echo "     -p     --publish             FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
@@ -86,45 +87,82 @@ function error() {
 }
 
 function calculate_branch() {
-  ## This is opencga-enterprise
-  local CURRENT_BRANCH="$(git branch --show-current)"
-  ## If opencga-enterprise branch name is main, develop or TASK-XYZ then we return the same name.
-  ## Otherwise, we calculate the dependency branch from the dependency version.
-  if [[ "$CURRENT_BRANCH" != "release"* ]]; then
-    echo "$CURRENT_BRANCH"
+
+  local EXISTS=""
+  log "TASK_REFERENCE vale $TASK_REFERENCE"
+  if [[ -n $TASK_REFERENCE ]]; then
+    local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
+  fi
+  if [[ -n $EXISTS ]]; then
+    log "Entrando en el if con $EXISTS"
+    echo $TASK_REFERENCE
   else
-    local VERSION=$(echo "$1" | cut -d "-" -f 1)
-    local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-    local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-    local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-    local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-    if [ -z "$HOTFIX" ]; then
-      echo "release-$MAJOR.$MINOR.x"
+    local TMP_DIR=$(pwd)
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR"
+    ## This is opencga-enterprise
+    local CURRENT_BRANCH="$(git branch --show-current)"
+    cd "$TMP_DIR"
+    ## If opencga-enterprise branch name is main, develop then we return the same name.
+    ## Otherwise, we calculate the dependency branch from the dependency version.
+    if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+      if [[ "$PATCH" == "0" ]]; then
+        echo "develop"
+      elif [ -z "$HOTFIX" ]; then
+        echo "release-$MAJOR.$MINOR.x"
+      else
+        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      fi
+    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+      if [ -z "$HOTFIX" ]; then
+        echo "release-$MAJOR.$MINOR.x"
+      else
+        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      fi
     else
-      echo "release-$MAJOR.$MINOR.$PATCH.x"
+      echo "$CURRENT_BRANCH"
     fi
   fi
 }
 
-function install_dependency() {
+function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
-  local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
-  echo "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
   local TEMP_DIR="$(mktemp -d "--suffix=opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
+  git clone https://github.com/opencb/"$REPO".git
   if [ -d "./$REPO" ]; then
-    cd "$REPO" || exit 2
-    log "Branch name $BRANCH_NAME already exists."
-    mvn clean install -T 2 -DskipTests || (error "The $REPO branch $BRANCH_NAME compilation process has failed!"; exit 1)
-    log "$REPO Compilation Successful!!!"
+      cd "$REPO" || exit 2
+      local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
    if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
     else
       log "The $REPO branch $BRANCH_NAME doesn't exist we use the version $REPO_VERSION from maven repo"
+    fi
+  fi
+
+  echo "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
+  git checkout "$BRANCH_NAME"
+  if [ "$COMMAND" == "test" ];then
+    if [ "$SKIP_TESTS" == "true" ]; then
+      log "Skipping test compiling $REPO branch $BRANCH_NAME."
+      mvn clean install -T 2 -DskipTests || (error "The $REPO branch $BRANCH_NAME compilation process has failed!"; exit 1)
+      log "$REPO Compilation Successful!!!"
+    else
+      log "Testing $REPO branch $BRANCH_NAME."
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip || (error "Testing $REPO branch $BRANCH_NAME ERROR" && exit 1)
+      log "$REPO branch $BRANCH_NAME Test Successful!!!"
     fi
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -161,6 +199,7 @@ SKIP_OPENCGA_BUILD=false
 SKIP_TESTS=false
 TESTS_DIR="$PWD/tests"
 LOG_FILE=""
+TASK_REFERENCE=""
 
 ## 2. Parse and validate CLI options
 COMMAND=${1:-}
@@ -208,8 +247,13 @@ while [[ $# -gt 0 ]]; do
     PUBLISH="true"
     shift # past argument
     ;;
-  -t | --tags )
+  -l | --level )
     TEST_TAG="$value"
+    shift # past argument
+    shift # past value
+    ;;
+  -t | --task )
+    TASK_REFERENCE="$value"
     shift # past argument
     shift # past value
     ;;
@@ -302,6 +346,8 @@ function validate() {
     exit 1
   fi
 
+
+
   ## Validate opencga-storage-hadoop
   mvn enforcer:enforce -q \
       --file "${OPENCGA_HOME_DIR}/pom.xml" \
@@ -314,13 +360,13 @@ function prepareBranches() {
   ## Only if you pass the parameter: --prepare-branch
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
-    install_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
+    manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
-    install_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
+    manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
-    install_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
+    manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   fi
 }
 
