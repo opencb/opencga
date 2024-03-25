@@ -360,7 +360,7 @@ function build_opencga_enterprise() {
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga enterprise tests"
     else
-      mvn install -B verify surefire-report:report \
+      mvn -B verify surefire-report:report \
         -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
         "${FAIL_NEVER}" \
