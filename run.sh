@@ -62,6 +62,7 @@ function printTestUsage() {
   echo "     -f     --fail-never          FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
   echo "     -p     --publish             FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
+  echo "     -d     --docker              FLAG           Publish dockers of OpenCGA and OpenCGA-enterprise."
   echo "     -s     --skip-tests          FLAG           Publish the results on a reports server without rerunning the test."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
@@ -69,6 +70,7 @@ function printTestUsage() {
 }
 
 function log() {
+
     if [[ "$#" -gt 0 ]]; then
       echo "$@" | log
       return
@@ -89,7 +91,6 @@ function error() {
 function calculate_branch() {
 
   local EXISTS=""
-  log "TASK_REFERENCE vale $TASK_REFERENCE"
   if [[ -n $TASK_REFERENCE ]]; then
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
@@ -151,8 +152,8 @@ function manage_dependency() {
       log "The $REPO branch $BRANCH_NAME doesn't exist we use the version $REPO_VERSION from maven repo"
     fi
   fi
-
-  echo "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
+  log "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
+  log_summary "$REPO $REPO_VERSION $BRANCH_NAME"
   git checkout "$BRANCH_NAME"
   if [ "$COMMAND" == "test" ];then
     if [ "$SKIP_TESTS" == "true" ]; then
@@ -184,6 +185,21 @@ function validateTags() {
 
 }
 
+
+LOG_SUMMARY=""
+
+function log_summary() {
+  if [ -n "$LOG_SUMMARY" ]; then
+    LOG_SUMMARY="$LOG_SUMMARY""\n"
+  fi
+  LOG_SUMMARY="$LOG_SUMMARY""$@"
+}
+function print_log_summary() {
+  echo "=========================="
+  echo -e "$LOG_SUMMARY"
+  echo "=========================="
+}
+
 ###################################
 ####### Script starts here  #######
 ###################################
@@ -200,6 +216,7 @@ SKIP_TESTS=false
 TESTS_DIR="$PWD/tests"
 LOG_FILE=""
 TASK_REFERENCE=""
+DOCKER=""
 
 ## 2. Parse and validate CLI options
 COMMAND=${1:-}
@@ -244,10 +261,14 @@ while [[ $# -gt 0 ]]; do
     shift # past value
     ;;
   -p | --publish )
-    PUBLISH="true"
-    shift # past argument
-    ;;
-  -l | --level )
+      PUBLISH="true"
+      shift # past argument
+      ;;
+  -d | --docker )
+      DOCKER="true"
+      shift # past argument
+      ;;
+    -l | --level )
     TEST_TAG="$value"
     shift # past argument
     shift # past value
@@ -346,7 +367,18 @@ function validate() {
     exit 1
   fi
 
+  local CURRENT_BRANCH="$(git branch --show-current)"
+  log "CURRENT_BRANCH $CURRENT_BRANCH"
+  log "TASK_REFERENCE $TASK_REFERENCE"
 
+  if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ -n $TASK_REFERENCE ]]; then
+      if [[ "$CURRENT_BRANCH" != "$TASK_REFERENCE" ]]; then
+      log "If the opencga-enterprise branch is a TASK branch, the name must be the same as the reference branch."
+      exit 1
+      fi
+    fi
+  fi
 
   ## Validate opencga-storage-hadoop
   mvn enforcer:enforce -q \
@@ -418,18 +450,44 @@ function build_opencga_enterprise() {
 
 function publish() {
   if [ "$PUBLISH" == "true" ];then
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
     export AZCOPY_AUTO_LOGIN_TYPE="SPN"
     export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
     export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
     azcopy login --service-principal
-    BRANCH_FOLDER=$(git branch --show-current)
+    if [[ -n $TASK_REFERENCE ]]; then
+      BRANCH_FOLDER=$TASK_REFERENCE
+    else
+      BRANCH_FOLDER=$(git branch --show-current)
+    fi
     VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
     COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
     azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
   fi
 }
 
+function publish_docker() {
+  if [ "$DOCKER" == "true" ];then
+    cd "$OPENCGA_HOME_DIR" || exit 2
+    TAG=""
+    if [[ -n $TASK_REFERENCE ]]; then
+    	TAG=$TASK_REFERENCE
+    else
+      TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+    fi
+    python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "$TAG"
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    if [[ -n $TASK_REFERENCE ]]; then
+      TAG=$TASK_REFERENCE
+    else
+      TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+    fi
+    python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
+  fi
+}
 
 validate
 
@@ -440,3 +498,7 @@ build_opencb_opencga
 build_opencga_enterprise
 
 publish
+
+publish_docker
+
+print_log_summary
