@@ -1333,6 +1333,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(0, variant.getStudies().get(0).getFiles().size());
     }
 
+    @Test
+    public void testSampleDataUnnormalized() throws Exception {
+        // Check unnormalized queries
+        Variant variant = variantStorageEngine.getSampleData("1:10352:T:TA", study1, new QueryOptions()).first();
+        assertEquals("1:10353:-:A", variant.toString());
+        System.out.println("variant = " + variant.toJson());
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(4, variant.getStudies().get(0).getSamples().size());
+        assertEquals(4, variant.getStudies().get(0).getFiles().size());
+    }
 
     @Test
     public void testCount() throws StorageEngineException {

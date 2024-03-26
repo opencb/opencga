@@ -26,8 +26,8 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -64,7 +64,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
         final Variant variant;
         if (VariantQueryUtils.isVariantId(variantStr)) {
-            variant = new Variant(variantStr);
+            variant = VariantQueryUtils.toVariant(variantStr, true);
         } else {
             variant = cellBaseUtils.getVariant(variantStr);
         }
