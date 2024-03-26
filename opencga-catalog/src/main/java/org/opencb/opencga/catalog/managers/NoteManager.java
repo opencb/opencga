@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -9,6 +10,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
@@ -28,7 +30,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 
 public class NoteManager extends AbstractManager {
@@ -60,52 +61,77 @@ public class NoteManager extends AbstractManager {
         return result;
     }
 
-    public OpenCGAResult<Note> search(Note.Scope scope, Query query, QueryOptions options, String token) throws CatalogException {
-        return search(null, scope, query, options, token);
-    }
-
-    public OpenCGAResult<Note> search(@Nullable String studyStr, Note.Scope scope, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Note> searchOrganizationNote(Query query, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("scope", scope)
                 .append("query", query)
                 .append("options", options)
                 .append("token", token);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
-        String studyId = studyStr != null ? studyStr : "";
-        String studyUuid = "";
         try {
-            query = ParamUtils.defaultObject(query, Query::new);
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-            // Check permissions to create
-            if (scope == Note.Scope.ORGANIZATION) {
-                organizationId = tokenPayload.getOrganization();
-                authorizationManager.checkUserBelongsToOrganization(organizationId, tokenPayload.getUserId());
+            Query queryCopy = ParamUtils.defaultObject(query, Query::new);
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
 
-                if (!authorizationManager.isOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId())) {
-                    // Only show public notes
-                    query.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
+            if (!authorizationManager.isOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId())) {
+                String visibility = queryCopy.getString(NoteDBAdaptor.QueryParams.VISIBILITY.key());
+                String scope = queryCopy.getString(NoteDBAdaptor.QueryParams.SCOPE.key());
+                if (StringUtils.isNotEmpty(visibility) && !Note.Visibility.PUBLIC.name().equals(visibility)) {
+                    throw new CatalogAuthorizationException("User '" + tokenPayload.getUserId() + "' is only authorised to see "
+                            + Note.Visibility.PUBLIC + " organization notes.");
                 }
-            } else if (scope == Note.Scope.STUDY) {
-                CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-                organizationId = studyFqn.getOrganizationId();
-                Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-                studyId = study.getId();
-                studyUuid = study.getUuid();
-                authorizationManager.checkCanViewStudy(organizationId, study.getUid(), tokenPayload.getUserId());
-
-                if (!authorizationManager.isStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId())) {
-                    // Only show public notes
-                    query.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
+                if (StringUtils.isNotEmpty(scope) && !Note.Scope.ORGANIZATION.name().equals(scope)) {
+                    throw new CatalogAuthorizationException("User '" + tokenPayload.getUserId() + "' is only authorised to see "
+                            + "organization notes of scope '" + Note.Scope.ORGANIZATION + "' from this method.");
                 }
-            } else {
-                throw CatalogParameterException.isNull(NoteDBAdaptor.QueryParams.SCOPE.key());
+                queryCopy.put(NoteDBAdaptor.QueryParams.SCOPE.key(), Note.Scope.ORGANIZATION);
+                queryCopy.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
             }
 
-            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(query, options);
+            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
+            auditManager.auditSearch(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (Exception e) {
+            auditManager.auditSearch(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note search", e.getMessage())));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Note> searchStudyNote(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String studyId = "";
+        String studyUuid = "";
+        try {
+            Query queryCopy = ParamUtils.defaultObject(query, Query::new);
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            organizationId = studyFqn.getOrganizationId();
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            authorizationManager.checkCanViewStudy(organizationId, study.getUid(), tokenPayload.getUserId());
+            studyId = study.getId();
+            studyUuid = study.getUuid();
+            queryCopy.put(NoteDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            if (!authorizationManager.isStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId())) {
+                String visibility = queryCopy.getString(NoteDBAdaptor.QueryParams.VISIBILITY.key());
+                if (StringUtils.isNotEmpty(visibility) && !Note.Visibility.PUBLIC.name().equals(visibility)) {
+                    throw new CatalogAuthorizationException("User '" + tokenPayload.getUserId() + "' is only authorised to see "
+                            + Note.Visibility.PUBLIC + " study notes.");
+                }
+                queryCopy.put(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC);
+            }
+
+            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(queryCopy, optionsCopy);
             auditManager.auditSearch(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
@@ -118,14 +144,34 @@ public class NoteManager extends AbstractManager {
 
     public OpenCGAResult<Note> createOrganizationNote(NoteCreateParams noteCreateParams, QueryOptions options, String token)
             throws CatalogException {
-        return create(null, Note.Scope.ORGANIZATION, noteCreateParams, options, token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("noteCreateParams", noteCreateParams)
+                .append("options", options)
+                .append("token", token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        try {
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+            Note note = noteCreateParams.toNote(Note.Scope.ORGANIZATION, tokenPayload.getUserId());
+
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+
+            OpenCGAResult<Note> insert = create(note, optionsCopy, tokenPayload);
+            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(), "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return insert;
+        } catch (Exception e) {
+            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteCreateParams.getId(), "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note create", e.getMessage())));
+            throw e;
+        }
     }
 
-    public OpenCGAResult<Note> create(@Nullable String studyStr, Note.Scope scope, NoteCreateParams noteCreateParams, QueryOptions options,
-                                      String token) throws CatalogException {
+    public OpenCGAResult<Note> createStudyNote(String studyStr, NoteCreateParams noteCreateParams, QueryOptions options, String token)
+            throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
-                .append("scope", scope)
+                .append("study", studyStr)
                 .append("noteCreateParams", noteCreateParams)
                 .append("options", options)
                 .append("token", token);
@@ -135,58 +181,80 @@ public class NoteManager extends AbstractManager {
         String studyId = studyStr;
         String studyUuid = "";
         try {
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-            Note note = noteCreateParams.toNote(scope, tokenPayload.getUserId());
+            ParamUtils.checkParameter(studyStr, "study");
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+            Note note = noteCreateParams.toNote(Note.Scope.STUDY, tokenPayload.getUserId());
 
-            // Check permissions to create
-            if (note.getScope() == Note.Scope.ORGANIZATION) {
-                authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
-            } else if (note.getScope() == Note.Scope.STUDY) {
-                ParamUtils.checkParameter(studyStr, "study");
-                CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-                Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-                // Set study fqn and uid
-                note.setStudy(study.getFqn());
-                note.setStudyUid(study.getUid());
-                studyId = study.getFqn();
-                studyUuid = study.getUuid();
-                authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
-            } else {
-                throw CatalogParameterException.isNull(NoteDBAdaptor.QueryParams.SCOPE.key());
-            }
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            // Set study fqn and uid
+            note.setStudy(study.getFqn());
+            note.setStudyUid(study.getUid());
+            studyId = study.getFqn();
+            studyUuid = study.getUuid();
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
 
-            validateNewNote(note, tokenPayload.getUserId());
-            OpenCGAResult<Note> insert = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).insert(note);
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch created note
-                Query query = new Query(NoteDBAdaptor.QueryParams.UID.key(), note.getUid());
-                OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(query, options);
-                insert.setResults(result.getResults());
-            }
-
-            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(),
-                    studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            OpenCGAResult<Note> insert = create(note, optionsCopy, tokenPayload);
+            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(), studyId,
+                    studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (Exception e) {
-            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteCreateParams.getId(), "",
-                    studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                            new Error(0, "Note create", e.getMessage())));
+            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteCreateParams.getId(), "", studyId,
+                    studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note create",
+                            e.getMessage())));
             throw e;
         }
     }
 
-    public OpenCGAResult<Note> update(Note.Scope scope, String noteId, NoteUpdateParams noteUpdateParams, QueryOptions options,
-                                      String token) throws CatalogException {
-        return update(scope, null, noteId, noteUpdateParams, options, token);
+    private OpenCGAResult<Note> create(Note note, QueryOptions options, JwtPayload tokenPayload) throws CatalogException {
+        String organizationId = tokenPayload.getOrganization();
+        validateNewNote(note, tokenPayload.getUserId());
+        OpenCGAResult<Note> insert = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).insert(note);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch created note
+            Query query = new Query(NoteDBAdaptor.QueryParams.UID.key(), note.getUid());
+            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(query, options);
+            insert.setResults(result.getResults());
+        }
+        return insert;
     }
 
-    public OpenCGAResult<Note> update(Note.Scope scope, @Nullable String studyStr, String noteStr, NoteUpdateParams noteUpdateParams,
-                                      QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Note> updateOrganizationNote(String noteStr, NoteUpdateParams noteUpdateParams, QueryOptions options,
+                                                      String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("scope", scope)
+                .append("noteId", noteStr)
+                .append("update", noteUpdateParams)
+                .append("options", options)
+                .append("token", token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String noteId = noteStr;
+        String noteUuid = "";
+        try {
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+            Note note = internalGet(organizationId, -1L, noteStr).first();
+            noteId = note.getId();
+            noteUuid = note.getUuid();
+
+            OpenCGAResult<Note> update = update(note.getUid(), noteUpdateParams, optionsCopy, tokenPayload);
+            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, noteUuid, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return update;
+        } catch (Exception e) {
+            auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, noteUuid, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note update", e.getMessage())));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Note> updateStudyNote(String studyStr, String noteStr, NoteUpdateParams noteUpdateParams, QueryOptions options,
+                                               String token) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
                 .append("studyStr", studyStr)
                 .append("noteId", noteStr)
-                .append("note", noteUpdateParams)
+                .append("update", noteUpdateParams)
                 .append("options", options)
                 .append("token", token);
 
@@ -197,45 +265,20 @@ public class NoteManager extends AbstractManager {
         String studyId = "";
         String studyUuid = "";
         try {
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-            long studyUid = -1L;
-            if (scope == Note.Scope.STUDY) {
-                ParamUtils.checkParameter(studyStr, "study");
-                CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-                Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-                studyUid = study.getUid();
-                studyId = study.getFqn();
-                studyUuid = study.getUuid();
-                authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
-            } else if (scope == Note.Scope.ORGANIZATION) {
-                authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
-            } else {
-                throw CatalogParameterException.isNull(NoteDBAdaptor.QueryParams.SCOPE.key());
-            }
-            Note note = internalGet(organizationId, studyUid, noteStr).first();
+            ParamUtils.checkParameter(studyStr, "study");
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            studyId = study.getFqn();
+            studyUuid = study.getUuid();
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
+
+            Note note = internalGet(organizationId, study.getUid(), noteStr).first();
             noteId = note.getId();
             noteUuid = note.getUuid();
-            studyId = note.getStudy();
 
-            ObjectMap updateMap;
-            try {
-                updateMap = noteUpdateParams != null ? noteUpdateParams.getUpdateMap() : null;
-            } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse NoteUpdateParams object: " + e.getMessage(), e);
-            }
-
-            // Write who's performing the update
-            updateMap.put(NoteDBAdaptor.QueryParams.USER_ID.key(), tokenPayload.getUserId(organizationId));
-
-            OpenCGAResult<Note> update = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).update(note.getUid(),
-                    updateMap, QueryOptions.empty());
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch updated note
-                OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(note.getUid(),
-                        options);
-                update.setResults(result.getResults());
-            }
-
+            OpenCGAResult<Note> update = update(note.getUid(), noteUpdateParams, optionsCopy, tokenPayload);
             auditManager.auditUpdate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, noteUuid, studyId, studyUuid,
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return update;
@@ -246,15 +289,59 @@ public class NoteManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Note> deleteOrganizationNote(String noteId, QueryOptions options, String token) throws CatalogException {
-        return delete(null, Note.Scope.ORGANIZATION, noteId, options, token);
+    private OpenCGAResult<Note> update(long noteUid, NoteUpdateParams noteUpdateParams, QueryOptions options, JwtPayload tokenPayload)
+            throws CatalogException {
+        ObjectMap updateMap;
+        try {
+            updateMap = noteUpdateParams != null ? noteUpdateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse NoteUpdateParams object: " + e.getMessage(), e);
+        }
+        String organizationId = tokenPayload.getOrganization();
+
+        // Write who's performing the update
+        updateMap.put(NoteDBAdaptor.QueryParams.USER_ID.key(), tokenPayload.getUserId());
+
+        OpenCGAResult<Note> update = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).update(noteUid, updateMap,
+                QueryOptions.empty());
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated note
+            OpenCGAResult<Note> result = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).get(noteUid, options);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
-    public OpenCGAResult<Note> delete(@Nullable String studyStr, Note.Scope scope, String noteId, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<Note> deleteOrganizationNote(String noteId, QueryOptions options, String token) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
+                .append("noteId", noteId)
+                .append("options", options)
+                .append("token", token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        try {
+            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+
+            ParamUtils.checkParameter(noteId, "note id");
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            Note note = internalGet(organizationId, -1L, noteId).first();
+
+            OpenCGAResult<Note> delete = delete(note, optionsCopy, tokenPayload);
+            auditManager.auditDelete(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(), "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return delete;
+        } catch (Exception e) {
+            auditManager.auditDelete(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note delete", e.getMessage())));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Note> deleteStudyNote(String studyStr, String noteId, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyStr", studyStr)
-                .append("scope", scope)
                 .append("noteId", noteId)
                 .append("options", options)
                 .append("token", token);
@@ -264,45 +351,39 @@ public class NoteManager extends AbstractManager {
         String studyId = studyStr;
         String studyUuid = "";
         try {
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-            long studyUid = -1;
+            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            // Check permissions to delete note
-            if (scope == Note.Scope.ORGANIZATION) {
-                authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
-            } else if (scope == Note.Scope.STUDY) {
-                ParamUtils.checkParameter(studyStr, "study");
-                CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-                organizationId = studyFqn.getOrganizationId();
+            ParamUtils.checkParameter(studyStr, "study");
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            organizationId = studyFqn.getOrganizationId();
 
-                Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-                // Set study fqn and uid
-                studyId = study.getFqn();
-                studyUuid = study.getUuid();
-                studyUid = study.getUid();
-                authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
-            } else {
-                throw CatalogParameterException.isNull(NoteDBAdaptor.QueryParams.SCOPE.key());
-            }
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            // Set study fqn and uid
+            studyId = study.getFqn();
+            studyUuid = study.getUuid();
+            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
+
             ParamUtils.checkParameter(noteId, "note id");
-            ParamUtils.checkObj(scope, "scope");
 
-            Note note = internalGet(organizationId, studyUid, noteId).first();
-            OpenCGAResult<Note> delete = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(organizationId).delete(note);
+            Note note = internalGet(organizationId, study.getUid(), noteId).first();
 
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                delete.setResults(Collections.singletonList(note));
-            }
-
+            OpenCGAResult<Note> delete = delete(note, optionsCopy, tokenPayload);
             auditManager.auditDelete(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(),
-                    note.getStudy(), "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return delete;
         } catch (Exception e) {
-            auditManager.auditDelete(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, "",
-                    studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                            new Error(0, "Note delete", e.getMessage())));
+            auditManager.auditDelete(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, noteId, "", studyId, studyUuid,
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Note delete", e.getMessage())));
             throw e;
         }
+    }
+
+    private OpenCGAResult<Note> delete(Note note, QueryOptions options, JwtPayload jwtPayload) throws CatalogException {
+        OpenCGAResult<Note> delete = catalogDBAdaptorFactory.getCatalogNoteDBAdaptor(jwtPayload.getOrganization()).delete(note);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            delete.setResults(Collections.singletonList(note));
+        }
+        return delete;
     }
 
     public static void validateNewNote(Note note, String userId) throws CatalogParameterException {

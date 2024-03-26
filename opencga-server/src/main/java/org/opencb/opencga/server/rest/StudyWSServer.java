@@ -572,7 +572,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = FieldConstants.GENERIC_VERSION_DESCRIPTION) @QueryParam("version") String version
     ) {
         try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().search(studyStr, Note.Scope.STUDY, query, queryOptions, token);
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().searchStudyNote(studyStr, query, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -592,7 +592,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note to be added.", required = true) NoteCreateParams parameters) {
         try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().create(studyStr, Note.Scope.STUDY, parameters, queryOptions, token);
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().createStudyNote(studyStr, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -613,7 +613,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the Note fields to be updated.", required = true) NoteUpdateParams parameters) {
         try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().update(Note.Scope.STUDY, studyStr, noteId, parameters, queryOptions, token);
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().updateStudyNote(studyStr, noteId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -628,7 +628,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @PathParam(FieldConstants.NOTES_ID_PARAM) String noteId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult) {
         try {
-            OpenCGAResult<Note> result = catalogManager.getNotesManager().delete(studyStr, Note.Scope.STUDY, noteId, queryOptions, token);
+            OpenCGAResult<Note> result = catalogManager.getNotesManager().deleteStudyNote(studyStr, noteId, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
