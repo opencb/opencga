@@ -95,6 +95,7 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
                     QueryOptions noteOptions = createInnerQueryOptionsForVersionedEntity(options,
                             StudyDBAdaptor.QueryParams.NOTES.key(), true);
+                    noteOptions.put(QueryOptions.LIMIT, 1000);
                     try {
                         OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
                         previousDocument.put(StudyDBAdaptor.QueryParams.NOTES.key(), result.getResults());

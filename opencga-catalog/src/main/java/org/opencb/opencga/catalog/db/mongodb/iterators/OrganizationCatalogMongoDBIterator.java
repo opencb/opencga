@@ -95,6 +95,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
 
                     QueryOptions noteOptions = createInnerQueryOptionsForVersionedEntity(options,
                             OrganizationDBAdaptor.QueryParams.NOTES.key(), true);
+                    noteOptions.put(QueryOptions.LIMIT, 1000);
                     try {
                         OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
                         organizationDocument.put(OrganizationDBAdaptor.QueryParams.NOTES.key(), result.getResults());
