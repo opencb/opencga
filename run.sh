@@ -430,7 +430,7 @@ function build_opencga_enterprise() {
 
   if [ "$COMMAND" == "build" ];then
     mvn clean install -DskipTests -T 2 \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga.build.dir="${OPENCGA_ENTERPRISE_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
         -Dopencga.war.name=opencga \
         || (error "Opencga enterprise compilation ERROR" && exit 1)
@@ -439,7 +439,7 @@ function build_opencga_enterprise() {
       log "-- Skipping opencga enterprise tests"
     else
       mvn install -B verify surefire-report:report \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga.build.dir="${OPENCGA_ENTERPRISE_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
         ${FAIL_NEVER} \
         || (error "Opencga enterprise tests ERROR" && exit 1)

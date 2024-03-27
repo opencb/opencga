@@ -34,7 +34,6 @@ public class EnterpriseConfigurationTest {
         Files.copy(resourcePath, enterprisePath);
         assertEquals(Boolean.TRUE, enterprisePath.toFile().exists());
         System.out.println(enterprisePath.toAbsolutePath());
-
         EnterpriseConfiguration config = EnterpriseConfiguration.load(opencgaHome);
         System.out.println(config);
     }
