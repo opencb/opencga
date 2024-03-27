@@ -180,6 +180,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void refreshTokenTest() throws Exception {
+        String refreshToken = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getRefreshToken();
+        AuthenticationResponse authenticationResponse = catalogManager.getUserManager().refreshToken(refreshToken);
+        assertNotNull(authenticationResponse);
+        assertNotNull(authenticationResponse.getToken());
+    }
+
+    @Test
     public void anonymousUserLoginTest() throws CatalogException {
         AuthenticationResponse authResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
         assertNotNull(authResponse.getToken());
