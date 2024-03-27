@@ -817,12 +817,13 @@ public class UserManager extends AbstractManager {
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
-     * @param organizationId Organization id.
      * @param token          active token.
      * @return a new AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public AuthenticationResponse refreshToken(String organizationId, String token) throws CatalogException {
+    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+        JwtPayload payload = new JwtPayload(token);
+        String organizationId = payload.getOrganization();
         AuthenticationResponse response = null;
         CatalogAuthenticationException exception = null;
         String userId = "";
