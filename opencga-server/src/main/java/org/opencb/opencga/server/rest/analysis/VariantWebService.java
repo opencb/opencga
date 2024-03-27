@@ -60,6 +60,7 @@ import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.roh.RohWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -73,6 +74,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
+import org.opencb.opencga.core.models.alignment.RohWrapperParams;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
@@ -598,6 +600,18 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(ExomiserWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/roh/run")
+    @ApiOperation(value = RohWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response rohRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = RohWrapperParams.DESCRIPTION, required = true) RohWrapperParams params) {
+        return submitJob(RohWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
 
     @Deprecated
     @GET
