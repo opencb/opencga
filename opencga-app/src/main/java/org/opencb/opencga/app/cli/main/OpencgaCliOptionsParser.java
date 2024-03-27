@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-03-12 OpenCB
+* Copyright 2015-2024-03-27 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -90,6 +90,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("plink-run", analysisVariantCommandOptions.runPlinkCommandOptions);
         analysisVariantSubCommands.addCommand("query", analysisVariantCommandOptions.queryCommandOptions);
         analysisVariantSubCommands.addCommand("relatedness-run", analysisVariantCommandOptions.runRelatednessCommandOptions);
+        analysisVariantSubCommands.addCommand("roh-run", analysisVariantCommandOptions.runRohCommandOptions);
         analysisVariantSubCommands.addCommand("rvtests-run", analysisVariantCommandOptions.runRvtestsCommandOptions);
         analysisVariantSubCommands.addCommand("sample-aggregation-stats", analysisVariantCommandOptions.aggregationStatsSampleCommandOptions);
         analysisVariantSubCommands.addCommand("sample-eligibility-run", analysisVariantCommandOptions.runSampleEligibilityCommandOptions);

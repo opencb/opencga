@@ -24,6 +24,7 @@ import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.alignment.RohWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
@@ -176,6 +177,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "relatedness-run":
                 queryResponse = runRelatedness();
+                break;
+            case "roh-run":
+                queryResponse = runRoh();
                 break;
             case "rvtests-run":
                 queryResponse = runRvtests();
@@ -1340,6 +1344,56 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), RelatednessAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runRoh() throws Exception {
+        logger.debug("Executing runRoh in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunRohCommandOptions commandOptions = analysisVariantCommandOptions.runRohCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        RohWrapperParams rohWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/roh/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            rohWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RohWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
+            putNestedIfNotEmpty(beanParams, "chromosome",commandOptions.chromosome, true);
+            putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
+            putNestedIfNotNull(beanParams, "genotypeQuality",commandOptions.genotypeQuality, true);
+            putNestedIfNotNull(beanParams, "skipGenotypeQuality",commandOptions.skipGenotypeQuality, true);
+            putNestedIfNotNull(beanParams, "homozygWindowSnp",commandOptions.homozygWindowSnp, true);
+            putNestedIfNotNull(beanParams, "homozygWindowHet",commandOptions.homozygWindowHet, true);
+            putNestedIfNotNull(beanParams, "homozygWindowMissing",commandOptions.homozygWindowMissing, true);
+            putNestedIfNotNull(beanParams, "homozygWindowThreshold",commandOptions.homozygWindowThreshold, true);
+            putNestedIfNotNull(beanParams, "homozygKb",commandOptions.homozygKb, true);
+            putNestedIfNotNull(beanParams, "homozygSnp",commandOptions.homozygSnp, true);
+            putNestedIfNotNull(beanParams, "homozygHet",commandOptions.homozygHet, true);
+            putNestedIfNotEmpty(beanParams, "homozygDensity",commandOptions.homozygDensity, true);
+            putNestedIfNotEmpty(beanParams, "homozygGap",commandOptions.homozygGap, true);
+            putNestedIfNotEmpty(beanParams, "outdir",commandOptions.outdir, true);
+
+            rohWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), RohWrapperParams.class);
+        }
+        return openCGAClient.getVariantClient().runRoh(rohWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runRvtests() throws Exception {

@@ -36,7 +36,7 @@ public class RohWrapperParams extends ToolParams {
     private Integer homozygWindowMissing;
 
     @DataField(id = "homozygWindowThreshold", description = FieldConstants.ROH_HOMOZYG_WINDOW_THRESHOLD_DESCRIPTION, defaultValue = "0.05")
-    private Float homozygWindowThreshold;
+    private Double homozygWindowThreshold;
 
     @DataField(id = "homozygKb", description = FieldConstants.ROH_HOMOZYG_KB_DESCRIPTION, defaultValue = "1000")
     private Integer homozygKb;
@@ -44,7 +44,7 @@ public class RohWrapperParams extends ToolParams {
     @DataField(id = "homozygSnp", description = FieldConstants.ROH_HOMOZYG_SNP_DESCRIPTION, defaultValue = "100")
     private Integer homozygSnp;
 
-    @DataField(id = "homozygHet", description = FieldConstants.ROH_HOMOZYG_HET_DESCRIPTION, defaultValue = "unlimited")
+    @DataField(id = "homozygHet", description = FieldConstants.ROH_HOMOZYG_HET_DESCRIPTION, defaultValue = "-1")
     private Integer homozygHet;
 
     @DataField(id = "homozygDensity", description = FieldConstants.ROH_HOMOZYG_DENSITY_DESCRIPTION, defaultValue = "50")
@@ -60,7 +60,7 @@ public class RohWrapperParams extends ToolParams {
     }
 
     public RohWrapperParams(String sampleId, String chromosome, String filter, Integer genotypeQuality, Boolean skipGenotypeQuality,
-                            Integer homozygWindowSnp, Integer homozygWindowHet, Integer homozygWindowMissing, Float homozygWindowThreshold,
+                            Integer homozygWindowSnp, Integer homozygWindowHet, Integer homozygWindowMissing, Double homozygWindowThreshold,
                             Integer homozygKb, Integer homozygSnp, Integer homozygHet, String homozygDensity, String homozygGap,
                             String outdir) {
         this.sampleId = sampleId;
@@ -174,11 +174,11 @@ public class RohWrapperParams extends ToolParams {
         return this;
     }
 
-    public Float getHomozygWindowThreshold() {
+    public Double getHomozygWindowThreshold() {
         return homozygWindowThreshold;
     }
 
-    public RohWrapperParams setHomozygWindowThreshold(Float homozygWindowThreshold) {
+    public RohWrapperParams setHomozygWindowThreshold(Double homozygWindowThreshold) {
         this.homozygWindowThreshold = homozygWindowThreshold;
         return this;
     }

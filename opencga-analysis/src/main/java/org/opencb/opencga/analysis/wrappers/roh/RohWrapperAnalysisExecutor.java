@@ -34,7 +34,7 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
     private Integer homozygWindowSnp;
     private Integer homozygWindowHet;
     private Integer homozygWindowMissing;
-    private Float homozygWindowThreshold;
+    private Double homozygWindowThreshold;
     private Integer homozygKb;
     private Integer homozygSnp;
     private Integer homozygHet;
@@ -110,7 +110,11 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
                 cli.append(" --homozyg-snp ").append(getHomozygWindowSnp());
             }
             if (getHomozygHet() != null) {
-                cli.append(" --homozyg-het ").append(getHomozygHet());
+                if (getHomozygHet() == -1) {
+                    cli.append(" --homozyg-het unlimited");
+                } else {
+                    cli.append(" --homozyg-het ").append(getHomozygHet());
+                }
             }
             if (getHomozygDensity() != null) {
                 cli.append(" --homozyg-density ").append(getHomozygDensity());
@@ -224,11 +228,11 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         return this;
     }
 
-    public Float getHomozygWindowThreshold() {
+    public Double getHomozygWindowThreshold() {
         return homozygWindowThreshold;
     }
 
-    public RohWrapperAnalysisExecutor setHomozygWindowThreshold(Float homozygWindowThreshold) {
+    public RohWrapperAnalysisExecutor setHomozygWindowThreshold(Double homozygWindowThreshold) {
         this.homozygWindowThreshold = homozygWindowThreshold;
         return this;
     }

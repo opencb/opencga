@@ -526,7 +526,7 @@ public class FieldConstants {
             + " Default: 1000";
     public static final String ROH_HOMOZYG_SNP_DESCRIPTION = "Plink's parameter to set the minimum number of snps in a ROH. Default: 100";
     public static final String ROH_HOMOZYG_HET_DESCRIPTION = "Plink's parameter to set the maximum number of heterozygous calls in a ROH."
-            + " Default: unlimited.";
+            + " Default: -1 that means 'unlimited'.";
     public static final String ROH_HOMOZYG_DENSITY_DESCRIPTION = "Plink's parameter to set the maximum inverse ROH density (kb/SNP)."
             + " Minimum ROH density: 1 SNP per X kb. Default: 50";
     public static final String ROH_HOMOZYG_GAP_DESCRIPTION = "Plink's parameter to set the maximum gap length in kb between two"
