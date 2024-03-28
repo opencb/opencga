@@ -71,13 +71,13 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     @Test
     public void createStudyWithSameIdInDifferentProject() throws CatalogException {
         Project project = getProject(project1);
-        OpenCGAResult<Study> create = catalogStudyDBAdaptor.insert(project, getMinimalStudyInstance(project1, "studyId"), null);
+        OpenCGAResult<Study> create = catalogStudyDBAdaptor.insert(project, getMinimalStudyInstance(project1, "studyId"), null, null);
         assertEquals(1, create.getNumInserted());
         Study ph1 = getStudy(project.getUid(), "studyId");
         assertNotNull(ph1);
 
         project = getProject(project2);
-        create = catalogStudyDBAdaptor.insert(project, getMinimalStudyInstance(project2, "studyId"), null);
+        create = catalogStudyDBAdaptor.insert(project, getMinimalStudyInstance(project2, "studyId"), null, null);
         assertEquals(1, create.getNumInserted());
         ph1 = getStudy(project.getUid(), "studyId");
         assertNotNull(ph1);

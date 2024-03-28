@@ -24,17 +24,10 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.notes.Note;
 
 import java.net.URI;
 import java.util.*;
@@ -69,7 +62,7 @@ public class Study extends PrivateFields {
             description = FieldConstants.PROJECT_FQN)
     private String name;
 
-    @DataField(id = "name", indexed = true,
+    @DataField(id = "alias", indexed = true,
             description = FieldConstants.STUDY_ALIAS)
     private String alias;
 
@@ -123,79 +116,6 @@ public class Study extends PrivateFields {
     private List<Group> groups;
 
     /**
-     * A List with related files.
-     *
-     * @apiNote
-     */
-
-    @DataField(id = "files",
-            description = FieldConstants.STUDY_FILES)
-    private List<File> files;
-
-    /**
-     * A List with related jobs.
-     *
-     * @apiNote
-     */
-    @DataField(id = "jobs",
-            description = FieldConstants.STUDY_JOBS)
-    private List<Job> jobs;
-
-    /**
-     * A List with related individuals.
-     *
-     * @apiNote
-     */
-    @DataField(id = "individuals",
-            description = FieldConstants.STUDY_INDIVIDUALS)
-    private List<Individual> individuals;
-
-    /**
-     * A List with related families.
-     *
-     * @apiNote
-     */
-    @DataField(id = "families",
-            description = FieldConstants.STUDY_FAMILIES)
-    private List<Family> families;
-
-    /**
-     * A List with related samples.
-     *
-     * @apiNote
-     */
-    @DataField(id = "samples",
-            description = FieldConstants.STUDY_SAMPLES)
-    private List<Sample> samples;
-
-    /**
-     * A List with related cohorts.
-     *
-     * @apiNote
-     */
-    @DataField(id = "cohorts",
-            description = FieldConstants.STUDY_COHORTS)
-    private List<Cohort> cohorts;
-
-    /**
-     * A List with related panels.
-     *
-     * @apiNote
-     */
-    @DataField(id = "panels",
-            description = FieldConstants.STUDY_PANELS)
-    private List<Panel> panels;
-
-    /**
-     * A List with related clinicalAnalyses.
-     *
-     * @apiNote
-     */
-    @DataField(id = "clinicalAnalyses",
-            description = FieldConstants.STUDY_ANALYSES)
-    private List<ClinicalAnalysis> clinicalAnalyses;
-
-    /**
      * A List with related variableSets.
      *
      * @apiNote
@@ -220,6 +140,9 @@ public class Study extends PrivateFields {
     @DataField(id = "sources", indexed = true,
             description = FieldConstants.STUDY_EXTERNAL_SOURCES)
     private List<ExternalSource> sources;
+
+    @DataField(id = "notes", description = FieldConstants.STUDY_NOTES_DESCRIPTION)
+    private List<Note> notes;
 
     @DataField(id = "type", indexed = true,
             description = FieldConstants.STUDY_TYPE)
@@ -264,17 +187,14 @@ public class Study extends PrivateFields {
 
     public Study(String name, String alias, String description, StudyType type, StudyInternal internal, URI uri, int release) {
         this(alias, name, alias, TimeUtils.getTime(), TimeUtils.getTime(), description, type, new LinkedList<>(), null, 0,
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new HashMap<>(), uri, release,
-                new Status(), internal, new LinkedList<>(), new HashMap<>());
+                new LinkedList<>(), new LinkedList<>(), new HashMap<>(), uri, release, new Status(), internal, new LinkedList<>(),
+                new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String modificationDate, String description, StudyType type,
-                 List<ExternalSource> sources, StudyNotification notification, long size, List<Group> groups, List<File> files,
-                 List<Job> jobs, List<Individual> individuals, List<Family> families, List<Sample> samples, List<Cohort> cohorts,
-                 List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
-                 List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
-                 Status status, StudyInternal internal, List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
+                 List<ExternalSource> sources, StudyNotification notification, long size, List<Group> groups,List<VariableSet> variableSets,
+                 Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release, Status status, StudyInternal internal,
+                 List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -285,14 +205,6 @@ public class Study extends PrivateFields {
         this.notification = notification;
         this.size = size;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
-        this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
-        this.families = ObjectUtils.defaultIfNull(families, new ArrayList<>());
-        this.jobs = ObjectUtils.defaultIfNull(jobs, new ArrayList<>());
-        this.individuals = ObjectUtils.defaultIfNull(individuals, new ArrayList<>());
-        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
-        this.cohorts = ObjectUtils.defaultIfNull(cohorts, new ArrayList<>());
-        this.panels = ObjectUtils.defaultIfNull(panels, new ArrayList<>());
-        this.clinicalAnalyses = ObjectUtils.defaultIfNull(clinicalAnalyses, new ArrayList<>());
         this.sources = sources;
         this.internal = internal;
         this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
@@ -318,19 +230,12 @@ public class Study extends PrivateFields {
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", notification=").append(notification);
         sb.append(", groups=").append(groups);
-        sb.append(", files=").append(files);
-        sb.append(", jobs=").append(jobs);
-        sb.append(", individuals=").append(individuals);
-        sb.append(", families=").append(families);
-        sb.append(", samples=").append(samples);
-        sb.append(", cohorts=").append(cohorts);
-        sb.append(", panels=").append(panels);
-        sb.append(", clinicalAnalyses=").append(clinicalAnalyses);
         sb.append(", variableSets=").append(variableSets);
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
         sb.append(", sources=").append(sources);
+        sb.append(", notes=").append(notes);
         sb.append(", type=").append(type);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -454,78 +359,6 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public List<File> getFiles() {
-        return files;
-    }
-
-    public Study setFiles(List<File> files) {
-        this.files = files;
-        return this;
-    }
-
-    public List<Job> getJobs() {
-        return jobs;
-    }
-
-    public Study setJobs(List<Job> jobs) {
-        this.jobs = jobs;
-        return this;
-    }
-
-    public List<Individual> getIndividuals() {
-        return individuals;
-    }
-
-    public Study setIndividuals(List<Individual> individuals) {
-        this.individuals = individuals;
-        return this;
-    }
-
-    public List<Family> getFamilies() {
-        return families;
-    }
-
-    public Study setFamilies(List<Family> families) {
-        this.families = families;
-        return this;
-    }
-
-    public List<Sample> getSamples() {
-        return samples;
-    }
-
-    public Study setSamples(List<Sample> samples) {
-        this.samples = samples;
-        return this;
-    }
-
-    public List<Cohort> getCohorts() {
-        return cohorts;
-    }
-
-    public Study setCohorts(List<Cohort> cohorts) {
-        this.cohorts = cohorts;
-        return this;
-    }
-
-    public List<org.opencb.opencga.core.models.panel.Panel> getPanels() {
-        return panels;
-    }
-
-    public Study setPanels(List<org.opencb.opencga.core.models.panel.Panel> panels) {
-        this.panels = panels;
-        return this;
-    }
-
-    public List<ClinicalAnalysis> getClinicalAnalyses() {
-        return clinicalAnalyses;
-    }
-
-    public Study setClinicalAnalyses(List<ClinicalAnalysis> clinicalAnalyses) {
-        this.clinicalAnalyses = clinicalAnalyses;
-        return this;
-    }
-
     public List<VariableSet> getVariableSets() {
         return variableSets;
     }
@@ -541,6 +374,15 @@ public class Study extends PrivateFields {
 
     public Study setInternal(StudyInternal internal) {
         this.internal = internal;
+        return this;
+    }
+
+    public List<Note> getNotes() {
+        return notes;
+    }
+
+    public Study setNotes(List<Note> notes) {
+        this.notes = notes;
         return this;
     }
 

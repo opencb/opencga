@@ -25,10 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
@@ -183,6 +180,29 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
         }
 
         return queryOptions;
+    }
+
+    protected boolean includeField(QueryOptions options, List<String> fields) {
+        Set<String> includedFields = new HashSet<>(fields);
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
+            for (String include : currentIncludeList) {
+                if (includedFields.contains(include)) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            for (String exclude : currentExcludeList) {
+                if (includedFields.contains(exclude)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return true;
     }
 
 }

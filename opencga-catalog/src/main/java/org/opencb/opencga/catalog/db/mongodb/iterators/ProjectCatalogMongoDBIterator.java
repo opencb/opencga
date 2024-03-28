@@ -47,7 +47,7 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
         this.options = options != null ? new QueryOptions(options) : new QueryOptions();
         this.includeStudyInfo = includeStudyInfo();
         this.studyQueryOptions = createInnerQueryOptionsForVersionedEntity(this.options, ProjectDBAdaptor.QueryParams.STUDIES.key(), false);
-        this.studyQueryOptions = MongoDBAdaptor.filterQueryOptions(this.studyQueryOptions,
+        this.studyQueryOptions = MongoDBAdaptor.filterQueryOptionsToIncludeKeys(this.studyQueryOptions,
                 Collections.singletonList(MongoDBAdaptor.PRIVATE_PROJECT));
 
         this.user = user;

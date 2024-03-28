@@ -88,7 +88,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     void deleteOrganization(Organization organization) throws CatalogDBException;
 
-    NotesDBAdaptor getCatalogSettingsDBAdaptor(String organization) throws CatalogDBException;
+    NoteDBAdaptor getCatalogNoteDBAdaptor(String organization) throws CatalogDBException;
 
     OrganizationDBAdaptor getCatalogOrganizationDBAdaptor(String organization) throws CatalogDBException;
 

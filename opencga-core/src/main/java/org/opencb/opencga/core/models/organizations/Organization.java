@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.organizations;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.List;
@@ -38,6 +39,9 @@ public class Organization {
     @DataField(id = "projects", description = FieldConstants.ORGANIZATION_PROJECTS_DESCRIPTION)
     private List<Project> projects;
 
+    @DataField(id = "notes", description = FieldConstants.ORGANIZATION_NOTES_DESCRIPTION)
+    private List<Note> notes;
+
     @DataField(id = "configuration", description = FieldConstants.ORGANIZATION_CONFIGURATION_DESCRIPTION)
     private OrganizationConfiguration configuration;
 
@@ -68,14 +72,15 @@ public class Organization {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Organization{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", owner='").append(owner).append('\'');
         sb.append(", admins=").append(admins);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", projects=").append(projects);
+        sb.append(", notes=").append(notes);
         sb.append(", configuration=").append(configuration);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
@@ -152,6 +157,15 @@ public class Organization {
 
     public Organization setProjects(List<Project> projects) {
         this.projects = projects;
+        return this;
+    }
+
+    public List<Note> getNotes() {
+        return notes;
+    }
+
+    public Organization setNotes(List<Note> notes) {
+        this.notes = notes;
         return this;
     }
 

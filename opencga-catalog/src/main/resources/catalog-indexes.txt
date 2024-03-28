@@ -1,8 +1,18 @@
+{"collections": ["note", "note_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["note", "note_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["note", "note_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+
+{"collections": ["project"], "fields": {"id": 1}, "options": {"unique": true}}
+{"collections": ["project"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["project"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["project"], "fields": {"fqn": 1}, "options": {"unique": true}}
+
 {"collections": ["user"], "fields": {"id": 1}, "options": {"unique": true}}
-{"collections": ["user"], "fields": {"projects.uid": 1, "id": 1}, "options": {"unique": true}}
-{"collections": ["user"], "fields": {"projects.uuid": 1, "id": 1}, "options": {"unique": true}}
-{"collections": ["user"], "fields": {"projects.fqn": 1, "id": 1}, "options": {"unique": true}}
-{"collections": ["user"], "fields": {"projects.id": 1, "id": 1}, "options": {"unique": true}}
 
 {"collections": ["study"], "fields": {"uid": 1}, "options": {"unique": true}}
 {"collections": ["study"], "fields": {"uuid": 1}, "options": {"unique": true}}
