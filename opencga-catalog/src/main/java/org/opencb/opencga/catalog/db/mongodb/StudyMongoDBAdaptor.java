@@ -1845,8 +1845,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         // Flag indicating whether and OR between ID and ALIAS has been performed and already added to the andBsonList object
         boolean idOrAliasFlag = false;
@@ -1875,14 +1873,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);

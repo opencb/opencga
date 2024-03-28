@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptor
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -185,9 +186,8 @@ public class CatalogManager implements AutoCloseable {
     public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isOpencgaAdministrator(payload)
-                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw new CatalogException("Operation only allowed for the organization owner or admins");
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
 
         if (params == null || params.isEmpty()) {
@@ -309,9 +309,8 @@ public class CatalogManager implements AutoCloseable {
     public void installIndexes(String organizationId, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isOpencgaAdministrator(payload)
-                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw new CatalogException("Operation only allowed for the organization owner or admins");
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
 
         catalogDBAdaptorFactory.createIndexes(organizationId);

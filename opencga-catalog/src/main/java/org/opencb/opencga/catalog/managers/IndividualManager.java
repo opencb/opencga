@@ -597,7 +597,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.INDIVIDUAL, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -688,7 +688,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.INDIVIDUAL, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

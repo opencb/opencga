@@ -1312,7 +1312,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
