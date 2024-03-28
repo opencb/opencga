@@ -14,44 +14,33 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class VariantSampleDeleteParams extends ToolParams {
+public class VariantFileDeleteParams extends ToolParams {
 
-    public static final String DESCRIPTION = "Variant delete sample params";
+    public static final String DESCRIPTION = "Variant delete file params";
 
-    public VariantSampleDeleteParams() {
+    public VariantFileDeleteParams() {
     }
 
-    public VariantSampleDeleteParams(List<String> sample, boolean force, boolean resume) {
-        this.sample = sample;
-        this.force = force;
+    public VariantFileDeleteParams(List<String> file, boolean resume) {
+        this.file = file;
         this.resume = resume;
     }
 
-    private List<String> sample;
-    private boolean force;
+    private List<String> file;
     private boolean resume;
 
-    public List<String> getSample() {
-        return sample;
+    public List<String> getFile() {
+        return file;
     }
 
-    public VariantSampleDeleteParams setSample(List<String> sample) {
-        this.sample = sample;
-        return this;
-    }
-
-    public boolean isForce() {
-        return force;
-    }
-
-    public VariantSampleDeleteParams setForce(boolean force) {
-        this.force = force;
+    public VariantFileDeleteParams setFile(List<String> file) {
+        this.file = file;
         return this;
     }
 
@@ -59,7 +48,7 @@ public class VariantSampleDeleteParams extends ToolParams {
         return resume;
     }
 
-    public VariantSampleDeleteParams setResume(boolean resume) {
+    public VariantFileDeleteParams setResume(boolean resume) {
         this.resume = resume;
         return this;
     }
