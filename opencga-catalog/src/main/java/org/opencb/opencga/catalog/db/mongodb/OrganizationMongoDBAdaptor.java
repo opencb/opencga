@@ -98,9 +98,22 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     @Override
-    public OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException {
-        return get(null, options);
+    public OpenCGAResult<Organization> get(String user, QueryOptions options) throws CatalogDBException {
+        return get(null, user, options);
     }
+
+    @Override
+    public OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException {
+        return get(null, null, options);
+    }
+
+    OpenCGAResult<Organization> get(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        try (DBIterator<Organization> dbIterator = iterator(clientSession, user, options)) {
+            return endQuery(startTime, dbIterator);
+        }
+    }
+
 
     @Override
     public OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
@@ -234,13 +247,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return document;
     }
 
-    OpenCGAResult<Organization> get(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        try (DBIterator<Organization> dbIterator = iterator(clientSession, options)) {
-            return endQuery(startTime, dbIterator);
-        }
-    }
-
     @Override
     public OpenCGAResult<Organization> delete(Organization organization) throws CatalogDBException {
         return null;
@@ -248,12 +254,12 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     @Override
     public DBIterator<Organization> iterator(QueryOptions options) throws CatalogDBException {
-        return iterator(null, options);
+        return iterator(null, null, options);
     }
 
-    public DBIterator<Organization> iterator(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Organization> iterator(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
-        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {
@@ -269,7 +275,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     public List<String> getOwnerAndAdmins(ClientSession clientSession) throws CatalogDBException {
-        Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        Organization organization = get(clientSession, null, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
         List<String> members = new ArrayList<>(organization.getAdmins().size() + 1);
         if (StringUtils.isNotEmpty(organization.getOwner())) {
             members.add(organization.getOwner());
