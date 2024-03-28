@@ -640,10 +640,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             // Only organization owners or administrators can run tools with scope organization
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, user);
         } else {
-            long studyUid = catalogManager.getStudyManager().get(job.getStudy().getId(), new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.UID.key()), token).first().getUid();
-            if (authorizationManager.isAtLeastStudyAdministrator(organizationId, studyUid, user)) {
-                // Study and organization administrators can run tools with scope study or project
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, user)) {
+                // Organization administrators can run tools with scope study or project
                 return;
             }
 
