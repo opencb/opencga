@@ -649,6 +649,45 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void changeNameTest() throws CatalogException {
+        // Link VCF file. This VCF file will automatically create sample NA19600
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "data/", "", "", null, null, null, null, null), true, token);
+
+        Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), "variant-test-file.vcf.gz");
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key());
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(4, sampleResult.getNumResults());
+        for (Sample sample : sampleResult.getResults()) {
+            assertEquals(1, sample.getFileIds().size());
+            assertEquals("data:variant-test-file.vcf.gz", sample.getFileIds().get(0));
+            assertEquals(1, sample.getVersion());
+        }
+
+        // Rename file
+        FileUpdateParams updateParams = new FileUpdateParams().setName("variant_test.vcf.gz");
+        catalogManager.getFileManager().update(studyFqn, "variant-test-file.vcf.gz", updateParams, null, token);
+
+        assertThrows("not found", CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "variant-test-file.vcf.gz", null, token));
+        File file = catalogManager.getFileManager().get(studyFqn, updateParams.getName(), FileManager.INCLUDE_FILE_URI_PATH, token).first();
+        assertEquals("data:" + updateParams.getName(), file.getId());
+        assertEquals("data/" + updateParams.getName(), file.getPath());
+        assertEquals(updateParams.getName(), file.getName());
+
+        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(0, sampleResult.getNumResults());
+
+        query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), updateParams.getName());
+        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(4, sampleResult.getNumResults());
+        for (Sample sample : sampleResult.getResults()) {
+            assertEquals(1, sample.getFileIds().size());
+            assertEquals("data:" + updateParams.getName(), sample.getFileIds().get(0));
+            assertEquals(2, sample.getVersion());
+        }
+    }
+
+    @Test
     public void testAssociateSamples() throws CatalogException, URISyntaxException {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
