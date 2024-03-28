@@ -31,7 +31,7 @@ import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryP
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterObjectParams;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
 
-public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdaptor {
+public class NotesMongoDBAdaptor extends CatalogMongoDBAdaptor implements NotesDBAdaptor {
 
     private final MongoDBCollection notesCollection;
     private final MongoDBCollection archiveNotesCollection;
@@ -148,7 +148,7 @@ public class NotesMongoDBAdaptor extends MongoDBAdaptor implements NotesDBAdapto
 
         Query tmpQuery = new Query(QueryParams.UID.key(), notesUid);
         Bson bsonQuery = parseQuery(tmpQuery);
-        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, (entrylist) -> {
             UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
             Document notesUpdate = updateParams.toFinalUpdateDocument();
 

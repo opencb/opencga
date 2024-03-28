@@ -33,7 +33,6 @@ public class ExecutionResult {
             description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
-
     @DataField(id = "executor", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_EXECUTION_INFO)
     private ExecutorInfo executor;
@@ -49,7 +48,6 @@ public class ExecutionResult {
     @DataField(id = "status", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_STATUS)
     private Status status;
-
 
     @DataField(id = "externalFiles", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_EXTERNAL_FILES)

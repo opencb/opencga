@@ -25,9 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -60,19 +58,6 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     OpenCGAResult<T> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    OpenCGAResult nativeGet(Query query, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Objects.requireNonNull(queries);
-        List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     OpenCGAResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

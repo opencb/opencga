@@ -575,6 +575,27 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{file}/move")
+    @ApiOperation(value = "Move file to a different path", response = File.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response move(
+            @ApiParam(value = "File id, UUID or name.") @PathParam(value = "file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileMoveParams moveParams) {
+        try {
+            DataResult<File> queryResult = fileManager.move(studyStr, fileIdStr, moveParams.getPath(), queryOptions, token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }

@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -65,7 +66,7 @@ public class OrganizationMigration extends MigrationTool {
 
     private MigrationStatus checkAndInit() throws CatalogException {
         this.oldDatabase = configuration.getDatabasePrefix() + "_catalog";
-        this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory());
         this.oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
 
         MongoCollection<Document> userCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);

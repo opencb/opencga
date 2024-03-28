@@ -1570,7 +1570,8 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(variableSet.getUid(), variable, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(study.getUid(),
+                    variableSet.getUid(), variable, userId);
             auditManager.audit(organizationId, userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(),
                     "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1603,7 +1604,8 @@ public class StudyManager extends AbstractManager {
 
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(study.getUid(),
+                    variableSet.getUid(), variableId, userId);
             auditManager.audit(organizationId, userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

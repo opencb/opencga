@@ -178,19 +178,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         return queryResults;
     }
 
-    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
-
     OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
-
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
