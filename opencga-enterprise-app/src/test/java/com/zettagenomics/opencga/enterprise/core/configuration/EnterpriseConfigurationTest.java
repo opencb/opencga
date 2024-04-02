@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 
 public class EnterpriseConfigurationTest {
-/*
+
     @Test
     public void testLoadingConfigString() throws IOException {
         InputStream is = EnterpriseConfigurationTest.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");
@@ -36,5 +36,5 @@ public class EnterpriseConfigurationTest {
         System.out.println(enterprisePath.toAbsolutePath());
         EnterpriseConfiguration config = EnterpriseConfiguration.load(opencgaHome);
         System.out.println(config);
-    }*/
+    }
 }
