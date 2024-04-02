@@ -1842,13 +1842,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        @Parameter(names = {"--sample"}, description = FieldConstants.SAMPLE_ID_DESCRIPTION, required = true)
         public String sample;
 
-        @Parameter(names = {"--analysis-mode"}, description = "Analysis mode, valid values: SINGLE or FAMILY")
+        @Parameter(names = {"--clinical-analysis-type"}, description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION)
         public String clinicalAnalysisType = ClinicalAnalysis.Type.SINGLE.name();
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"-o", "--outdir"}, description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
         public String outdir;
     }
 }

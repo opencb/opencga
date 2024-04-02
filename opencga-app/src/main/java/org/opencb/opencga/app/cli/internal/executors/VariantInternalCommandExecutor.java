@@ -1018,7 +1018,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new ExomiserWrapperParams(
                 cliOptions.sample,
-                ClinicalAnalysis.Type.valueOf(cliOptions.clinicalAnalysisType),
+                cliOptions.clinicalAnalysisType,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

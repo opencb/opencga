@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
@@ -7,14 +9,20 @@ import java.util.Map;
 public class ExomiserWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser parameters";
 
+    @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION)
     private String sample;
-    private ClinicalAnalysis.Type clinicalAnalysisType;
+
+    @DataField(id = "clinicalAnalysisType", description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_TYPE_DESCRIPTION,
+            defaultValue = "SINGLE")
+    private String clinicalAnalysisType;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public ExomiserWrapperParams() {
     }
 
-    public ExomiserWrapperParams(String sample, ClinicalAnalysis.Type clinicalAnalysisType, String outdir) {
+    public ExomiserWrapperParams(String sample, String clinicalAnalysisType, String outdir) {
         this.sample = sample;
         this.clinicalAnalysisType = clinicalAnalysisType;
         this.outdir = outdir;
@@ -39,11 +47,11 @@ public class ExomiserWrapperParams extends ToolParams {
         return this;
     }
 
-    public ClinicalAnalysis.Type getClinicalAnalysisType() {
+    public String getClinicalAnalysisType() {
         return clinicalAnalysisType;
     }
 
-    public ExomiserWrapperParams setClinicalAnalysisType(ClinicalAnalysis.Type clinicalAnalysisType) {
+    public ExomiserWrapperParams setClinicalAnalysisType(String clinicalAnalysisType) {
         this.clinicalAnalysisType = clinicalAnalysisType;
         return this;
     }
