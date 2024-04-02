@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
@@ -23,6 +24,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -34,6 +36,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
@@ -44,6 +47,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
 @Category(MediumTests.class)
 public class AbstractClinicalManagerTest extends GenericTest {
@@ -56,8 +61,10 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String PROBAND_ID2 = "manuel_individual";
 
     public final static String CA_ID3 = "clinical-analysis-3";
+    public final static String PROBAND_ID3 = "HG005";
 
     public final static String CA_ID4 = "clinical-analysis-4";
+    public final static String PROBAND_ID4 = "HG105";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -147,7 +154,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setFather(hg006Individual)
                 .setMother(hg007Individual)
                 .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG005")));
+                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID3)));
 
         Individual hg004Individual =  new Individual().setId("HG004_individual")
                 .setFather(hg006Individual)
@@ -197,7 +204,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setFather(hg106Individual)
                 .setMother(hg107Individual)
                 .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG105")));
+                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID4)));
 
         Individual hg104Individual =  new Individual().setId("HG104_individual")
                 .setFather(hg106Individual)
@@ -226,6 +233,10 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogUploadFile("/biofiles/HG105.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG106.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG107.1k.vcf.gz");
+
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(INCLUDE, "id"), token);
+        Assert.assertEquals(12, sampleResult.getNumResults());
     }
 
     private void catalogUploadFile(String path) throws IOException, CatalogException {

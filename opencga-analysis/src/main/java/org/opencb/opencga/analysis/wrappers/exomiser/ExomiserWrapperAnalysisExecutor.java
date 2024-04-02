@@ -196,7 +196,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("{}: Docker command line: {}", ID, sb);
+        String msg = DOCKER_CLI_MSG + sb;
+        logger.info(msg);
+        addWarning(msg);
         runCommandLine(sb.toString());
     }
 

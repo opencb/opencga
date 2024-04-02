@@ -191,7 +191,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
         // Prepare variant query
         List<String> sampleIds = new ArrayList<>();
-        if (clinicalAnalysis.getFamily() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+        if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY && clinicalAnalysis.getFamily() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                 Individual individual = IndividualQcUtils.getIndividualById(studyId, member.getId(), getCatalogManager(), getToken());
                 if (CollectionUtils.isNotEmpty(individual.getSamples())) {
