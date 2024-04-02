@@ -52,6 +52,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(study)
                     .setSampleId(analysisParams.getSample())
+                    .setSampleId(analysisParams.getSample())
                     .execute();
         });
     }

@@ -68,6 +68,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String studyId;
     private String clinicalAnalysisId;
     private String sampleId;
+    private ClinicalAnalysis.Type clinicalAnalysisType;
 
     private ClinicalAnalysis clinicalAnalysis;
 
@@ -116,6 +117,14 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
+        if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY) {
+            clinicalAnalysisType = ClinicalAnalysis.Type.FAMILY;
+        } else {
+            clinicalAnalysisType = ClinicalAnalysis.Type.SINGLE;
+        }
+        logger.info("The clinical analysis type is {}, so the Exomiser will be run in mode {}", clinicalAnalysis.getType(),
+                clinicalAnalysisType);
+
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
     }
@@ -128,6 +137,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setSampleId(sampleId)
+                    .setClinicalAnalysisType(clinicalAnalysisType)
                     .execute();
 
             saveInterpretation(studyId, clinicalAnalysis);

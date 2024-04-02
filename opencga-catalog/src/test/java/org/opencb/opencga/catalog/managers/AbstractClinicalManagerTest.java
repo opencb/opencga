@@ -56,7 +56,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String PROBAND_ID2 = "manuel_individual";
 
     public final static String CA_ID3 = "clinical-analysis-3";
-    public final static String PROBAND_ID3 = "HG005_individual";
+
+    public final static String CA_ID4 = "clinical-analysis-4";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -127,7 +128,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogUploadFile("/biofiles/exomiser.vcf.gz");
 
         //---------------------------------------------------------------------
-        // Chinese trio (clinicalAnalysis3)
+        // Chinese trio: FAMILY (clinicalAnalysis3)
         //---------------------------------------------------------------------
 
         Individual hg006Individual =  new Individual().setId("HG006_individual")
@@ -154,14 +155,14 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setSex(SexOntologyTermAnnotation.initFemale())
                 .setSamples(Collections.singletonList(new Sample().setId("HG004")));
 
-        Family chineseFamily = new Family("chinese_family", "chinese_family", null, null,
+        Family chineseFamily = new Family("chinese_trio_family", "chinese_trio_family", null, null,
                 Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
                 Collections.emptyMap());
         catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
         auxClinicalAnalysis = new ClinicalAnalysis()
                 .setId(CA_ID3)
-                .setDescription("My description - exomiser - trio")
+                .setDescription("My description - exomiser - trio - family")
                 .setType(ClinicalAnalysis.Type.FAMILY)
                 .setDueDate("20180510100000")
                 .setDisorder(getDisorder())
@@ -175,6 +176,56 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
         catalogUploadFile("/biofiles/HG007.1k.vcf.gz");
+
+        //---------------------------------------------------------------------
+        // Chinese trio: SINGLE (clinicalAnalysis4)
+        //---------------------------------------------------------------------
+
+        Individual hg106Individual =  new Individual().setId("HG106_individual")
+                .setPhenotypes(Collections.emptyList())
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG106")));
+
+        Individual hg107Individual =  new Individual().setId("HG107_individual")
+                .setPhenotypes(Collections.emptyList())
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG107")));
+
+        Individual hg105Individual =  new Individual().setId("HG105_individual")
+                .setDisorders(Collections.singletonList(getDisorder()))
+                .setPhenotypes(getPhenotypes())
+                .setFather(hg106Individual)
+                .setMother(hg107Individual)
+                .setSex(SexOntologyTermAnnotation.initMale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG105")));
+
+        Individual hg104Individual =  new Individual().setId("HG104_individual")
+                .setFather(hg106Individual)
+                .setMother(hg107Individual)
+                .setSex(SexOntologyTermAnnotation.initFemale())
+                .setSamples(Collections.singletonList(new Sample().setId("HG104")));
+
+        Family chineseSingle = new Family("chinese_trio_single", "chinese_trio_single", null, null,
+                Arrays.asList(hg105Individual, hg106Individual, hg107Individual, hg104Individual), "", 4, Collections.emptyList(),
+                Collections.emptyMap());
+        catalogManager.getFamilyManager().create(studyFqn, chineseSingle, QueryOptions.empty(), token).first();
+
+        auxClinicalAnalysis = new ClinicalAnalysis()
+                .setId(CA_ID4)
+                .setDescription("My description - exomiser - trio - single")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setDueDate("20180510100000")
+                .setDisorder(getDisorder())
+                .setProband(hg105Individual)
+                .setFamily(chineseSingle);
+
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+                .first();
+
+        catalogUploadFile("/biofiles/HG104.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG105.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG106.1k.vcf.gz");
+        catalogUploadFile("/biofiles/HG107.1k.vcf.gz");
     }
 
     private void catalogUploadFile(String path) throws IOException, CatalogException {

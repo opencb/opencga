@@ -71,7 +71,7 @@ public class ExomiserInterpretationAnalysisTest  {
     }
 
     @Test
-    public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
+    public void singleSingleExomiserAnalysis() throws IOException, CatalogException, ToolException {
         assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
 
         prepareExomiserData();
@@ -98,11 +98,11 @@ public class ExomiserInterpretationAnalysisTest  {
     }
 
     @Test
-    public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
+    public void trioFamilyExomiserAnalysis() throws IOException, CatalogException, ToolException {
         assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
 
         prepareExomiserData();
-        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_family"));
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_family"));
 
         ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
@@ -119,6 +119,33 @@ public class ExomiserInterpretationAnalysisTest  {
         // Refresh clinical analysis
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
+        assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
+        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
+        System.out.println("results at out dir = " + outDir.toAbsolutePath());
+    }
+
+    @Test
+    public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException {
+        assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
+
+        prepareExomiserData();
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_single"));
+
+        ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID4, QueryOptions.empty(), clinicalTest.token).first();
+        assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
+
+        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
+
+        exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        exomiser.setStudyId(clinicalTest.studyFqn)
+                .setClinicalAnalysisId(clinicalTest.CA_ID4);
+
+        ExecutionResult result = exomiser.start();
+
+        // Refresh clinical analysis
+        clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
+                .get(clinicalTest.studyFqn, clinicalTest.CA_ID4, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
         assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
         System.out.println("results at out dir = " + outDir.toAbsolutePath());

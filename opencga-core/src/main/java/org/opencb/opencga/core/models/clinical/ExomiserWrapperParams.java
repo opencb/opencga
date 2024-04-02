@@ -8,13 +8,15 @@ public class ExomiserWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser parameters";
 
     private String sample;
+    private ClinicalAnalysis.Type clinicalAnalysisType;
     private String outdir;
 
     public ExomiserWrapperParams() {
     }
 
-    public ExomiserWrapperParams(String sample, String outdir) {
+    public ExomiserWrapperParams(String sample, ClinicalAnalysis.Type clinicalAnalysisType, String outdir) {
         this.sample = sample;
+        this.clinicalAnalysisType = clinicalAnalysisType;
         this.outdir = outdir;
     }
 
@@ -22,6 +24,7 @@ public class ExomiserWrapperParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ExomiserWrapperParams{");
         sb.append("sample='").append(sample).append('\'');
+        sb.append(", clinicalAnalysisType=").append(clinicalAnalysisType);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -33,6 +36,15 @@ public class ExomiserWrapperParams extends ToolParams {
 
     public ExomiserWrapperParams setSample(String sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public ClinicalAnalysis.Type getClinicalAnalysisType() {
+        return clinicalAnalysisType;
+    }
+
+    public ExomiserWrapperParams setClinicalAnalysisType(ClinicalAnalysis.Type clinicalAnalysisType) {
+        this.clinicalAnalysisType = clinicalAnalysisType;
         return this;
     }
 
