@@ -138,18 +138,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             }
             if (catalogManager.existsCatalogDB()) {
                 result.put("installed", true);
-
-//                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
-//                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(OrganizationMongoDBAdaptorFactory.METADATA_COLLECTION);
-//                Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
-//
-//                result.put("creationDate", metaDocument.get("creationDate"));
-//                result.put("version", metaDocument.get("version"));
-//                result.put("versionNumeric", version);
-//                result.put("release", release);
             } else {
                 String oldDatabase = configuration.getDatabasePrefix() + "_catalog";
-                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
                 MongoDataStore oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
                 try {
                     if (oldDatastore.getCollectionNames().contains("metadata")) {

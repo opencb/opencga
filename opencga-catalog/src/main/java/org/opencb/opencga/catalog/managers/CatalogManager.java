@@ -104,13 +104,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void init() throws CatalogException {
+        logger.debug("CatalogManager configureIOManager");
+        configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
-        logger.debug("CatalogManager configureIOManager");
-        configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
     }

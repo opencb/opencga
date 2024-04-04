@@ -1603,7 +1603,7 @@ public class FileManager extends AnnotationSetManager<File> {
         boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
         auditManager.initAuditBatch(operationUuid);
-        OpenCGAResult<File> result = OpenCGAResult.empty();
+        OpenCGAResult<File> result = OpenCGAResult.empty(File.class);
         for (String id : fileIds) {
             String fileId = id;
             String fileUuid = "";
@@ -2293,13 +2293,6 @@ public class FileManager extends AnnotationSetManager<File> {
                     SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
         }
 
-        //Name must be changed with "rename".
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getName())) {
-            logger.info("Rename file using update method!");
-            rename(study.getFqn(), file.getPath(), updateParams.getName(), token);
-            parameters.remove(FileDBAdaptor.QueryParams.NAME.key());
-        }
-
         checkUpdateAnnotations(organizationId, study, file, parameters, options, VariableSet.AnnotableDataModels.FILE,
                 getFileDBAdaptor(organizationId), userId);
 
@@ -2360,12 +2353,6 @@ public class FileManager extends AnnotationSetManager<File> {
                         userId, false);
             }
 
-            //Name must be changed with "rename".
-            if (parameters.containsKey(FileDBAdaptor.QueryParams.NAME.key())) {
-                logger.info("Rename file using update method!");
-                rename(studyStr, file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.NAME.key()), token);
-            }
-
             OpenCGAResult<File> queryResult = unsafeUpdate(organizationId, study, file, parameters, options, userId);
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2394,6 +2381,61 @@ public class FileManager extends AnnotationSetManager<File> {
 
         getFileDBAdaptor(organizationId).update(file.getUid(), parameters, study.getVariableSets(), options);
         return getFileDBAdaptor(organizationId).get(file.getUid(), options);
+    }
+
+    public OpenCGAResult<File> move(String studyStr, String entryStr, String targetPathStr, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("file", entryStr)
+                .append("target", targetPathStr)
+                .append("options", options)
+                .append("token", token);
+
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
+        String fileId = entryStr;
+        String fileUuid = "";
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
+            studyId = study.getId();
+            studyUuid = study.getUuid();
+
+            File file = internalGet(organizationId, study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+            fileId = file.getId();
+            fileUuid = file.getUuid();
+            // Check user has write permissions on file/folder
+            authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+
+            OpenCGAResult<File> parents = getParents(organizationId, study.getUid(), targetPathStr, false, INCLUDE_FILE_IDS);
+            // Check user can write in target path
+            File parentFolder = parents.first();
+            authorizationManager.checkFilePermission(organizationId, study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
+
+            ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.PATH.key(), targetPathStr);
+            OpenCGAResult<File> update = getFileDBAdaptor(organizationId)
+                    .update(file.getUid(), parameters, Collections.emptyList(), QueryOptions.empty());
+
+            auditManager.audit(organizationId, userId, Enums.Action.MOVE, Enums.Resource.FILE, file.getId(), file.getUuid(), studyId,
+                    studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated file
+                OpenCGAResult<File> result = getFileDBAdaptor(organizationId).get(study.getUid(),
+                        new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), options, userId);
+                update.setResults(result.getResults());
+            }
+            return update;
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, Enums.Action.MOVE, Enums.Resource.FILE, fileId, fileUuid, studyId, studyUuid,
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, fileId, e.getMessage())));
+            throw e;
+        }
     }
 
     public OpenCGAResult<File> link(String studyStr, FileLinkParams params, boolean parents, String token) throws CatalogException {
@@ -2496,71 +2538,6 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult queryResult = getFileDBAdaptor(organizationId).groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
-    }
-
-    OpenCGAResult<File> rename(String studyStr, String fileStr, String newName, String sessionId) throws CatalogException {
-        ParamUtils.checkFileName(newName, "name");
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
-
-        File file = internalGet(organizationId, study.getUid(), fileStr, EXCLUDE_FILE_ATTRIBUTES, userId).first();
-        authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
-
-        if (file.getName().equals(newName)) {
-            OpenCGAResult result = OpenCGAResult.empty();
-            result.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, newName, "File already had that name.")));
-            return result;
-        }
-
-        if (isRootFolder(file)) {
-            throw new CatalogException("Can not rename root folder");
-        }
-
-        String oldPath = file.getPath();
-        Path parent = Paths.get(oldPath).getParent();
-        String newPath;
-        if (parent == null) {
-            newPath = newName;
-        } else {
-            newPath = parent.resolve(newName).toString();
-        }
-
-        IOManager ioManager = null;
-        try {
-            ioManager = ioManagerFactory.get(file.getUri());
-        } catch (IOException e) {
-            throw CatalogIOException.ioManagerException(file.getUri(), e);
-        }
-        URI oldUri = file.getUri();
-        URI newUri = Paths.get(oldUri).getParent().resolve(newName).toUri();
-//        URI studyUri = file.getUri();
-        boolean isExternal = file.isExternal(); //If the file URI is not null, the file is external located.
-
-        switch (file.getType()) {
-            case DIRECTORY:
-                if (!isExternal) {  //Only rename non external files
-                    // TODO? check if something in the subtree is not READY?
-                    if (ioManager.exists(oldUri)) {
-                        ioManager.rename(oldUri, newUri);   // io.move() 1
-                    }
-                }
-                getFileDBAdaptor(organizationId).rename(file.getUid(), newPath, newUri.toString(), null);
-                break;
-            case FILE:
-                if (!isExternal) {  //Only rename non external files
-                    ioManager.rename(oldUri, newUri);
-                }
-                getFileDBAdaptor(organizationId).rename(file.getUid(), newPath, newUri.toString(), null);
-                break;
-            default:
-                throw new CatalogException("Unknown file type " + file.getType());
-        }
-
-        return getFileDBAdaptor(organizationId).get(file.getUid(), QueryOptions.empty());
     }
 
     public OpenCGAResult<FileContent> grep(String studyId, String fileId, String pattern, boolean ignoreCase, int numLines, String token)
@@ -2980,7 +2957,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = tokenPayload.getUserId(organizationId);
         Study study = studyManager.resolveId(studyStr, userId, organizationId);
 
-        List<String> paths = calculateAllPossiblePaths(path);
+        List<String> paths = org.opencb.opencga.catalog.managers.FileUtils.calculateAllPossiblePaths(path);
 
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), paths);
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -3034,23 +3011,6 @@ public class FileManager extends AnnotationSetManager<File> {
         return fileListCopy;
     }
 
-    private List<String> calculateAllPossiblePaths(String filePath) {
-        String path = "";
-        String[] split = filePath.split("/");
-        List<String> paths = new ArrayList<>(split.length + 1);
-        paths.add("");  //Add study root folder
-        //Add intermediate folders
-        //Do not add the last split, could be a file or a folder..
-        //Depending on this, it could end with '/' or not.
-        for (int i = 0; i < split.length - 1; i++) {
-            String f = split[i];
-            path = path + f + "/";
-            paths.add(path);
-        }
-        paths.add(filePath); //Add the file path
-        return paths;
-    }
-
     //FIXME: This should use org.opencb.opencga.storage.core.variant.io.VariantReaderUtils
     private String getMainVariantFile(String name) {
         if (name.endsWith(".variants.avro.gz") || name.endsWith(".variants.proto.gz") || name.endsWith(".variants.json.gz")) {
@@ -3076,7 +3036,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     private OpenCGAResult<File> getParents(String organizationId, long studyUid, String filePath, boolean rootFirst, QueryOptions options)
             throws CatalogException {
-        List<String> paths = calculateAllPossiblePaths(filePath);
+        List<String> paths = org.opencb.opencga.catalog.managers.FileUtils.calculateAllPossiblePaths(filePath);
 
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), paths);
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);

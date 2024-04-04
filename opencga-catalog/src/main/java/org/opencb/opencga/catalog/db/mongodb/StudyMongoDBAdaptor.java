@@ -72,7 +72,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdaptor {
+public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDBCollection studyCollection;
     private final MongoDBCollection deletedStudyCollection;
@@ -859,8 +859,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getId());
 
@@ -872,11 +872,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw CatalogDBException.updateError("VariableSet", variableSetId);
         }
         if (variable.isRequired()) {
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
         }
 
         return new OpenCGAResult<>(result);
@@ -935,8 +936,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
 
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
@@ -952,11 +953,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Remove all the annotations from that field
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getClinicalAnalysisDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
 
         return new OpenCGAResult<>(result);
     }
@@ -1230,7 +1232,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     private void deleteAllAnnotationSetsByVariableSet(ClientSession session, long studyUid, VariableSet variableSet)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<VariableSet.AnnotableDataModels> entities = variableSet.getEntities();
         if (CollectionUtils.isEmpty(entities)) {
             entities = new ArrayList<>(EnumSet.allOf(VariableSet.AnnotableDataModels.class));
