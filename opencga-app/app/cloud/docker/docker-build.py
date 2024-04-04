@@ -177,9 +177,9 @@ else:
     # Get hadoop_flavour from JAR library file name
     hadoop_flavour = None
     for file in os.listdir(build_folder + "/libs/"):
-        if (file.startswith("opencga-storage-hadoop-deps")):
+        if (file.startswith("opencga-storage-hadoop-lib-") and file.endswith(".jar")):
             if hadoop_flavour is not None:
-                exit("Error. Multiple libs/opencga-storage-hadoop-deps*.jar found")
+                exit("Error. Multiple libs/opencga-storage-hadoop-lib*.jar found")
             hadoop_flavour = file.split("-")[4]
 
     # Create docker tag
