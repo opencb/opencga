@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileStatus;
@@ -36,11 +37,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -462,5 +463,134 @@ public class FileUtils {
         }
         return null;
     }
+
+    /**
+     * Depending on the type of the file, it will correct the path string so it always has the same format.
+     *
+     * @param path RAW path string.
+     * @param type FILE, DIRECTORY
+     * @return the path containing a trailing / if necessary, etc.
+     */
+    public static String fixPath(String path, File.Type type) {
+        String finalPath = path;
+        if (finalPath.startsWith("/")) {
+            finalPath = finalPath.substring(1);
+        }
+        switch (type) {
+            case DIRECTORY:
+                if (StringUtils.isEmpty(finalPath)) {
+                    // Root folder is represented as an empty string
+                    return finalPath;
+                }
+                if (!finalPath.endsWith("/")) {
+                    finalPath = finalPath + "/";
+                }
+                return finalPath;
+            case FILE:
+            case VIRTUAL:
+            default:
+                if (finalPath.endsWith("/")) {
+                    throw new IllegalArgumentException("File of type '" + type + "' cannot have a trailing /: '" + path + "'");
+                }
+                return finalPath;
+        }
+    }
+
+    /**
+     * Get parent path of any Catalog path using OpenCGA's format.
+     * Example:
+     * "a/b/c.txt"   ---->    "a/b/"
+     * "a/b/c/"   ---->    "a/b/"
+     * "p.txt"   ---->    ""
+     * @param strPath Path to the file or folder.
+     * @return the path of the parent folder.
+     */
+    public static String getParentPath(String strPath) {
+        Path path = Paths.get(strPath);
+        Path parent = path.getParent();
+        if (parent != null) {
+            return parent + "/";
+        } else {
+            return "";
+        }
+    }
+
+    /**
+     * Given a path, it will return all the possible parent paths.
+     * Example:
+     * "a/b/c.txt"   ----    ["", "a/", "a/b/", "a/b/c.txt"]
+     * "a/b/c/"   ----    ["", "a/", "a/b/", "a/b/c/"]
+     * "p.txt"   ----    ["", "p.txt"]
+     * ""   ----    [""]
+     * @param filePath Path provided.
+     * @return A list containing all the parent paths including {@param filePath}.
+     */
+    public static List<String> calculateAllPossiblePaths(String filePath) {
+        if (StringUtils.isEmpty(filePath) || "/".equals(filePath)) {
+            return Collections.singletonList("");
+        }
+        StringBuilder pathBuilder = new StringBuilder();
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
+            pathBuilder = new StringBuilder(pathBuilder.toString()).append(f).append("/");
+            paths.add(pathBuilder.toString());
+        }
+        paths.add(filePath); //Add the file path
+        return paths;
+    }
+
+    /**
+     * Calculate the corresponding URI for the {@param path}.
+     *
+     * @param path Path to which we need to associate the URI.
+     * @param parentFolder File corresponding to the folder under which the path will live.
+     * @param type File type.
+     * @return the corresponding URI for the path.
+     * @throws URISyntaxException if the uriStr is incorrect.
+     */
+    public static URI getFileUri(String path, File parentFolder, File.Type type) throws URISyntaxException {
+        //Relative path to the existing parent
+        String relativePath = Paths.get(parentFolder.getPath()).relativize(Paths.get(path)).toString();
+        if (path.endsWith("/") && !relativePath.endsWith("/")) {
+            relativePath += "/";
+        }
+
+        String uriStr = Paths.get(parentFolder.getUri().getPath()).resolve(relativePath).toString();
+
+        if (type.equals(File.Type.DIRECTORY)) {
+            return UriUtils.createDirectoryUri(uriStr);
+        } else {
+            return UriUtils.createUri(uriStr);
+        }
+    }
+
+    /**
+     * Get the filename given the path {@param path}.
+     * @param path Path of the file.
+     * @return the file or directory name.
+     */
+    public static String getFileName(String path) {
+        if (StringUtils.isEmpty(path)) {
+            return ".";
+        }
+        return Paths.get(path).getFileName().toString();
+    }
+
+    /**
+     * Get the file id corresponding to the file {@param path}.
+     *
+     * @param path File path.
+     * @return File id.
+     */
+    public static String getFileId(String path) {
+        return StringUtils.replace(path, "/", ":");
+    }
+
 
 }

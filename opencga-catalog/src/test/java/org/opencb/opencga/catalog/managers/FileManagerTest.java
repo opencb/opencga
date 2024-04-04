@@ -31,7 +31,10 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -62,7 +65,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 
 /**
@@ -649,42 +653,131 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void changeNameTest() throws CatalogException {
-        // Link VCF file. This VCF file will automatically create sample NA19600
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "data/", "", "", null, null, null, null, null), true, token);
+    public void testMoveFiles() throws CatalogException {
+        // Generate data set
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.DIRECTORY).setPath("A/B/C/D/"), true, token);
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.FILE).setPath("A/B/C/hello.txt").setContent("test"), false, token);
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.FILE).setPath("A/B/C/hello2.txt").setContent("test"), false, token);
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.FILE).setPath("A/B/C/D/hello.txt").setContent("test"), false, token);
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.FILE).setPath("A/B/C/D/hello2.txt").setContent("test"), false, token);
+        catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setType(File.Type.FILE).setPath("A/B/C/D/hello3.txt").setContent("test"), false, token);
 
-        Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), "variant-test-file.vcf.gz");
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key());
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
-        assertEquals(4, sampleResult.getNumResults());
-        for (Sample sample : sampleResult.getResults()) {
-            assertEquals(1, sample.getFileIds().size());
-            assertEquals("data:variant-test-file.vcf.gz", sample.getFileIds().get(0));
-            assertEquals(1, sample.getVersion());
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sam1"), QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sam2"), QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sam3"), QueryOptions.empty(), token);
+
+        Map<Long, File> fileMap = new HashMap<>();
+        File file = catalogManager.getFileManager().update(studyFqn, "A/B/C/hello.txt", new FileUpdateParams().setSampleIds(Arrays.asList("sam1", "sam3")), INCLUDE_RESULT, token).first();
+        fileMap.put(file.getUid(), file);
+        file = catalogManager.getFileManager().update(studyFqn, "A/B/C/hello2.txt", new FileUpdateParams().setSampleIds(Collections.singletonList("sam1")), INCLUDE_RESULT, token).first();
+        fileMap.put(file.getUid(), file);
+        file = catalogManager.getFileManager().update(studyFqn, "A/B/C/D/hello.txt", new FileUpdateParams().setSampleIds(Arrays.asList("sam2", "sam3")), INCLUDE_RESULT, token).first();
+        fileMap.put(file.getUid(), file);
+        file = catalogManager.getFileManager().update(studyFqn, "A/B/C/D/hello2.txt", new FileUpdateParams().setSampleIds(Collections.singletonList("sam2")), INCLUDE_RESULT, token).first();
+        fileMap.put(file.getUid(), file);
+        file = catalogManager.getFileManager().update(studyFqn, "A/B/C/D/hello3.txt", new FileUpdateParams().setSampleIds(Collections.singletonList("sam3")), INCLUDE_RESULT, token).first();
+        fileMap.put(file.getUid(), file);
+
+        Map<String, Integer> sampleVersionMap = new HashMap<>();
+        sampleVersionMap.put("sam1", 3);
+        sampleVersionMap.put("sam2", 3);
+        sampleVersionMap.put("sam3", 4);
+
+        OpenCGAResult<Sample> sampleResults = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("sam1", "sam2", "sam3"), QueryOptions.empty(), token);
+        assertEquals(3, sampleResults.getNumResults());
+        for (Sample sample : sampleResults.getResults()) {
+            assertEquals(sampleVersionMap.get(sample.getId()).intValue(), sample.getVersion());
+            List<String> fileList = new ArrayList<>();
+            for (File tmpFile : fileMap.values()) {
+                if (tmpFile.getSampleIds().contains(sample.getId())) {
+                    fileList.add(tmpFile.getId());
+                }
+            }
+            assertArrayEquals(fileList.toArray(), sample.getFileIds().toArray());
         }
+
+        // Expected path after moving (not yet moved)
+        CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, Arrays.asList("A/C/D", "A/C/hello.txt", "A/C/hello2.txt", "A/C/D/hello.txt", "A/C/D/hello2.txt", "A/C/D/hello3.txt"), FileManager.INCLUDE_FILE_URI_PATH, token));
+        assertTrue(catalogException.getMessage().contains("not found"));
+
+        // Path before moving
+        OpenCGAResult<File> beforeResult = catalogManager.getFileManager().get(studyFqn, Arrays.asList("A/B/C/D/", "A/B/C/hello.txt", "A/B/C/hello2.txt", "A/B/C/D/hello.txt", "A/B/C/D/hello2.txt", "A/B/C/D/hello3.txt"), QueryOptions.empty(), token);
+        assertEquals(6, beforeResult.getNumResults());
+        for (File tmpFile : beforeResult.getResults()) {
+            assertNotNull(tmpFile.getUri());
+            assertTrue(Files.exists(Paths.get(tmpFile.getUri())));
+            if (fileMap.containsKey(tmpFile.getUid())) {
+                File ffile = fileMap.get(tmpFile.getUid());
+                System.out.println("Checking samples for file '" + tmpFile.getPath() + "'");
+                assertEquals(ffile.getSampleIds().size(), tmpFile.getSampleIds().size());
+                assertArrayEquals(ffile.getSampleIds().toArray(), tmpFile.getSampleIds().toArray());
+            }
+        }
+
+        // Move folder
+        catalogManager.getFileManager().move(studyFqn, "A/B/C/", "A/C/", QueryOptions.empty(), token);
+
+        // Path before moving
+        catalogException = assertThrows(CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, Arrays.asList("A/B/C/D/", "A/B/C/hello.txt", "A/B/C/hello2.txt", "A/B/C/D/hello.txt", "A/B/C/D/hello2.txt", "A/B/C/D/hello3.txt"), FileManager.INCLUDE_FILE_URI_PATH, token));
+        assertTrue(catalogException.getMessage().contains("not found"));
+
+        Map<Long, File> afterMoveFileMap = new HashMap<>();
+
+        // Path after moving
+        OpenCGAResult<File> afterResult = catalogManager.getFileManager().get(studyFqn, Arrays.asList("A/C/D/", "A/C/hello.txt", "A/C/hello2.txt", "A/C/D/hello.txt", "A/C/D/hello2.txt", "A/C/D/hello3.txt"), QueryOptions.empty(), token);
+        assertEquals(6, afterResult.getNumResults());
+        for (int i = 0; i < afterResult.getResults().size(); i++) {
+            File beforeMoving = beforeResult.getResults().get(i);
+            File afterMoving = afterResult.getResults().get(i);
+            assertNotNull(afterMoving.getUri());
+            assertNotEquals("Found same URI. File/folder should have been moved", afterMoving.getUri(), beforeMoving.getUri());
+            assertTrue(Files.exists(Paths.get(afterMoving.getUri())));
+            assertTrue(Files.notExists(Paths.get(beforeMoving.getUri())));
+
+            if (fileMap.containsKey(afterMoving.getUid())) {
+                File ffile = fileMap.get(afterMoving.getUid());
+                System.out.println("Checking samples for file '" + afterMoving.getPath() + "'");
+                assertEquals(ffile.getSampleIds().size(), afterMoving.getSampleIds().size());
+                assertArrayEquals(ffile.getSampleIds().toArray(), afterMoving.getSampleIds().toArray());
+                afterMoveFileMap.put(afterMoving.getUid(), afterMoving);
+            }
+        }
+
+        // Check modifications in sample
+        sampleResults = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("sam1", "sam2", "sam3"), QueryOptions.empty(), token);
+        assertEquals(3, sampleResults.getNumResults());
+        for (Sample sample : sampleResults.getResults()) {
+            assertEquals(sampleVersionMap.get(sample.getId()).intValue() + 1, sample.getVersion());
+            List<String> fileList = new ArrayList<>();
+            for (File tmpFile : afterMoveFileMap.values()) {
+                if (tmpFile.getSampleIds().contains(sample.getId())) {
+                    fileList.add(tmpFile.getId());
+                }
+            }
+            assertArrayEquals(fileList.toArray(), sample.getFileIds().toArray());
+        }
+
+        // Attempt to move folder to folder in use
+        CatalogDBException catalogDBException = assertThrows(CatalogDBException.class, () -> catalogManager.getFileManager().move(studyFqn, "A/C/", "A/B/", QueryOptions.empty(), token));
+        assertTrue(catalogDBException.getMessage().contains("exists"));
 
         // Rename file
-        FileUpdateParams updateParams = new FileUpdateParams().setName("variant_test.vcf.gz");
-        catalogManager.getFileManager().update(studyFqn, "variant-test-file.vcf.gz", updateParams, null, token);
+        catalogManager.getFileManager().move(studyFqn, "A/C/D/hello3.txt", "A/C/D/otherName.txt", QueryOptions.empty(), token);
+        assertThrows(CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "A/C/D/hello3.txt", QueryOptions.empty(), token));
+        file = catalogManager.getFileManager().get(studyFqn, "A/C/D/otherName.txt", QueryOptions.empty(), token).first();
+        assertTrue(file.getId().endsWith(":otherName.txt"));
+        assertTrue(file.getPath().endsWith("/otherName.txt"));
+        assertTrue(file.getUri().toString().endsWith("/otherName.txt"));
+        assertEquals("otherName.txt", file.getName());
+        assertTrue(Files.exists(Paths.get(file.getUri())));
+        // Check samples
+        assertEquals(1, file.getSampleIds().size());
+        assertTrue(file.getSampleIds().contains("sam3"));
 
-        assertThrows("not found", CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "variant-test-file.vcf.gz", null, token));
-        File file = catalogManager.getFileManager().get(studyFqn, updateParams.getName(), FileManager.INCLUDE_FILE_URI_PATH, token).first();
-        assertEquals("data:" + updateParams.getName(), file.getId());
-        assertEquals("data/" + updateParams.getName(), file.getPath());
-        assertEquals(updateParams.getName(), file.getName());
-
-        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
-        assertEquals(0, sampleResult.getNumResults());
-
-        query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), updateParams.getName());
-        sampleResult = catalogManager.getSampleManager().search(studyFqn, query, options, token);
-        assertEquals(4, sampleResult.getNumResults());
-        for (Sample sample : sampleResult.getResults()) {
-            assertEquals(1, sample.getFileIds().size());
-            assertEquals("data:" + updateParams.getName(), sample.getFileIds().get(0));
-            assertEquals(2, sample.getVersion());
-        }
+        Sample sample3 = catalogManager.getSampleManager().get(studyFqn, "sam3", QueryOptions.empty(), token).first();
+        assertEquals(6, sample3.getVersion());
+        assertEquals(3, sample3.getFileIds().size());
+        assertTrue(sample3.getFileIds().contains(file.getId()));
     }
 
     @Test
@@ -1395,44 +1488,6 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void renameFileTest() throws CatalogException {
-        DataResult<File> queryResult1 = fileManager.create(studyFqn, new FileCreateParams()
-                        .setPath("data/file.txt")
-                        .setType(File.Type.FILE)
-                        .setContent(RandomStringUtils.randomAlphanumeric(200)),
-                true, token);
-        assertEquals(1, queryResult1.getNumResults());
-
-        DataResult<File> queryResult = fileManager.create(studyFqn, new FileCreateParams()
-                        .setPath("data/nested/folder/file2.txt")
-                        .setType(File.Type.FILE)
-                        .setContent(RandomStringUtils.randomAlphanumeric(200)),
-                true, token);
-        assertEquals(1, queryResult.getNumResults());
-
-        fileManager.rename(studyFqn, "data/nested/", "nested2", token);
-        Set<String> paths = fileManager.search(studyFqn, new Query(), new QueryOptions(), token)
-                .getResults()
-                .stream().map(File::getPath).collect(Collectors.toSet());
-
-        assertTrue(paths.contains("data/nested2/"));
-        assertFalse(paths.contains("data/nested/"));
-        assertTrue(paths.contains("data/nested2/folder/"));
-        assertTrue(paths.contains("data/nested2/folder/file2.txt"));
-        assertTrue(paths.contains("data/file.txt"));
-
-        fileManager.rename(studyFqn, "data/", "Data", token);
-        paths = fileManager.search(studyFqn, new Query(), new QueryOptions(), token).getResults()
-                .stream().map(File::getPath).collect(Collectors.toSet());
-
-        assertTrue(paths.contains("Data/"));
-        assertTrue(paths.contains("Data/file.txt"));
-        assertTrue(paths.contains("Data/nested2/"));
-        assertTrue(paths.contains("Data/nested2/folder/"));
-        assertTrue(paths.contains("Data/nested2/folder/file2.txt"));
-    }
-
-    @Test
     public void getFileIdByString() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, ParamUtils.AclAction.ADD, token);
@@ -1453,28 +1508,6 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fileId = fileManager.get(studyFqn, "/", FileManager.INCLUDE_FILE_IDS, token).first().getUid();
         System.out.println(fileId);
-    }
-
-    @Test
-    public void renameFileEmptyName() throws CatalogException {
-        thrown.expect(CatalogParameterException.class);
-        thrown.expectMessage(containsString("null or empty"));
-        fileManager.rename(studyFqn, "data/", "", token);
-    }
-
-    @Test
-    public void renameFileSlashInName() throws CatalogException {
-        thrown.expect(CatalogParameterException.class);
-        fileManager.rename(studyFqn, "data/", "my/folder", token);
-    }
-
-    @Test
-    public void renameFileAlreadyExists() throws CatalogException {
-        fileManager.createFolder(studyFqn, "analysis/", false, "", new QueryOptions(),
-                token);
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("already exists");
-        fileManager.rename(studyFqn, "data/", "analysis", token);
     }
 
     @Test
