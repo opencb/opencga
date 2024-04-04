@@ -20,6 +20,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
@@ -37,6 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -86,14 +88,21 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
             } catch (CatalogException e) {
                 throw new ToolException(e);
             }
+            boolean requireExport = true;
             if (fileResult.getNumResults() == 1) {
                 vcfPath = Paths.get(fileResult.first().getUri().getPath());
-            } else {
+                if (Files.exists(vcfPath) && vcfPath.toFile().canRead()) {
+                    requireExport = false;
+                }
+            }
+
+            if (requireExport) {
                 // Export variants to VCF file
                 vcfPath = getOutDir().resolve(rohParams.getSampleId() + "." + getJobId() + ".vcf.gz");
 
                 VariantQuery variantQuery = new VariantQuery()
                         .study(study)
+                        .region(rohParams.getChromosome())
                         .sample(rohParams.getSampleId())
                         .includeSampleData("GT")
                         .unknownGenotype("./.");
@@ -101,7 +110,7 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
                 QueryOptions queryOptions = QueryOptions.empty();
 
                 logger.info("Export variants for sample {} to the file {}", rohParams.getSampleId(), vcfPath);
-                logger.info("Export query: {}", query.toJson());
+                logger.info("Export query: {}", variantQuery.toJson());
                 logger.info("Export query options: {}", queryOptions.toJson());
 
                 try {
@@ -113,13 +122,19 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
             }
 
             // Get he ROH analysis executor and execute !!!
+            boolean skipGenotypeQuality;
+            if (requireExport || rohParams.getSkipGenotypeQuality() == null) {
+                skipGenotypeQuality = true;
+            } else {
+                skipGenotypeQuality = rohParams.getSkipGenotypeQuality();
+            }
             getToolExecutor(RohWrapperAnalysisExecutor.class)
                     .setSampleId(rohParams.getSampleId())
                     .setChromosome(rohParams.getChromosome())
                     .setVcfPath(vcfPath)
                     .setFilter(rohParams.getFilter())
                     .setGenotypeQuality(rohParams.getGenotypeQuality())
-                    .setSkipGenotypeQuality(rohParams.getSkipGenotypeQuality())
+                    .setSkipGenotypeQuality(skipGenotypeQuality)
                     .setHomozygWindowSnp(rohParams.getHomozygWindowSnp())
                     .setHomozygWindowHet(rohParams.getHomozygWindowHet())
                     .setHomozygWindowMissing(rohParams.getHomozygWindowMissing())

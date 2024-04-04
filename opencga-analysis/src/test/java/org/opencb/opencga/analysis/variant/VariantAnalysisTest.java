@@ -249,14 +249,9 @@ public class VariantAnalysisTest {
             SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
             catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
-            // Cancer (SV)
+            // ROH study (VCF)
             file = opencga.createFile(ROH_STUDY, "variant-test-roh.vcf.gz", token);
             variantStorageManager.index(ROH_STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
-
-            updateParams = new SampleUpdateParams().setSomatic(true);
-            catalogManager.getSampleManager().update(ROH_STUDY, roh_sample, updateParams, null, token);
-
-
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -320,11 +315,11 @@ public class VariantAnalysisTest {
                         samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
         assertEquals(2, individual.getSamples().size());
 
-        // roh
+        // ROH study
         catalogManager.getStudyManager().create(projectId, ROH_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
         sample = new Sample().setId(roh_sample).setSomatic(true);
         individual = catalogManager.getIndividualManager()
-                .create(CANCER_STUDY, new Individual(roh_sample, roh_sample, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                .create(ROH_STUDY, new Individual(roh_sample, roh_sample, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                         Collections.singletonList(sample), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
         assertEquals(1, individual.getSamples().size());
     }
@@ -1149,26 +1144,40 @@ public class VariantAnalysisTest {
     public void testRohUsingVcf() throws IOException, ToolException {
         Path rohOutDir = Paths.get(opencga.createTmpOutdir("_roh_vcf"));
 
-        // SNV fitting
         RohWrapperParams params = new RohWrapperParams();
         params.setSampleId(roh_sample);
         params.setChromosome("1");
 
-        toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, ROH_STUDY), rohOutDir, null, token);
+        String jobId = "job-roh-vcf";
+        toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, ROH_STUDY), rohOutDir, jobId, token);
         System.out.println("rohOutDir = " + rohOutDir.toAbsolutePath());
+        Assert.assertTrue(rohOutDir.resolve(RohWrapperAnalysis.ID + ".result.json").toFile().exists());
     }
 
     @Test
-    public void testRohUsingExport() throws IOException, ToolException {
+    public void testRohUsingExport() throws IOException, ToolException, CatalogException {
         Path rohOutDir = Paths.get(opencga.createTmpOutdir("_roh_export"));
 
-        // SNV fitting
+        String fileId = catalogManager.getSampleManager().get(ROH_STUDY, roh_sample, QueryOptions.empty(), token).first().getFileIds().get(0);
+        File file = catalogManager.getFileManager().get(ROH_STUDY, fileId, QueryOptions.empty(), token).first();
+        Path path = Paths.get(file.getUri());
+        Path newPath = Paths.get(path.toAbsolutePath() + ".BACKUP");
+        if (!path.toFile().renameTo(newPath.toFile())) {
+            throw new IOException("Unable to rename from " + path + " to " + newPath);
+        }
+
         RohWrapperParams params = new RohWrapperParams();
-        params.setSampleId(son);
+        params.setSampleId(roh_sample);
         params.setChromosome("1");
 
-        toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), rohOutDir, null, token);
+        String jobId = "job-roh-export";
+        toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, ROH_STUDY), rohOutDir, jobId, token);
         System.out.println("rohOutDir = " + rohOutDir.toAbsolutePath());
+        Assert.assertTrue(rohOutDir.resolve(RohWrapperAnalysis.ID + ".result.json").toFile().exists());
+        Assert.assertTrue(rohOutDir.resolve(roh_sample + "." + jobId + ".vcf.gz").toFile().exists());
+
+        // Back
+        newPath.toFile().renameTo(path.toFile());
     }
 
     //-------------------------------------------------------------------------
