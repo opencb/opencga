@@ -89,11 +89,12 @@ public class RohWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
             if (StringUtils.isNotEmpty(getFilter())) {
                 cli.append("--filter ").append(getFilter());
             }
-            // TODO: manage --genotype-quality and --skip-genotype-quality
             if (skipGenotypeQuality) {
                 cli.append(" --skip-genotype-quality ");
             } else {
-                cli.append(" --genotype-quality ").append(genotypeQuality);
+                if (getGenotypeQuality() != null) {
+                    cli.append(" --genotype-quality ").append(genotypeQuality);
+                }
             }
             if (getHomozygWindowSnp() != null) {
                 cli.append(" --homozyg-window-snp ").append(getHomozygWindowSnp());

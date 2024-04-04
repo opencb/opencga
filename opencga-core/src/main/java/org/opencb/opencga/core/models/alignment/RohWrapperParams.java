@@ -14,6 +14,9 @@ public class RohWrapperParams extends ToolParams {
     @DataField(id = "sampleId", description = FieldConstants.ROH_SAMPLE_ID_DESCRIPTION, required = true)
     private String sampleId;
 
+    @DataField(id = "fileId", description = FieldConstants.ROH_FILE_ID_DESCRIPTION)
+    private String fileId;
+
     @DataField(id = "chromosome", description = FieldConstants.ROH_CHROMOSOME_DESCRIPTION, required = true)
     private String chromosome;
 
@@ -59,11 +62,12 @@ public class RohWrapperParams extends ToolParams {
     public RohWrapperParams() {
     }
 
-    public RohWrapperParams(String sampleId, String chromosome, String filter, Integer genotypeQuality, Boolean skipGenotypeQuality,
-                            Integer homozygWindowSnp, Integer homozygWindowHet, Integer homozygWindowMissing, Double homozygWindowThreshold,
-                            Integer homozygKb, Integer homozygSnp, Integer homozygHet, String homozygDensity, String homozygGap,
-                            String outdir) {
+    public RohWrapperParams(String sampleId, String fileId, String chromosome, String filter, Integer genotypeQuality,
+                            Boolean skipGenotypeQuality, Integer homozygWindowSnp, Integer homozygWindowHet, Integer homozygWindowMissing,
+                            Double homozygWindowThreshold, Integer homozygKb, Integer homozygSnp, Integer homozygHet, String homozygDensity,
+                            String homozygGap, String outdir) {
         this.sampleId = sampleId;
+        this.fileId = fileId;
         this.chromosome = chromosome;
         this.filter = filter;
         this.genotypeQuality = genotypeQuality;
@@ -84,6 +88,7 @@ public class RohWrapperParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("RohWrapperParams{");
         sb.append("sampleId='").append(sampleId).append('\'');
+        sb.append(", fileId='").append(fileId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", filter='").append(filter).append('\'');
         sb.append(", genotypeQuality=").append(genotypeQuality);
@@ -108,6 +113,15 @@ public class RohWrapperParams extends ToolParams {
 
     public RohWrapperParams setSampleId(String sampleId) {
         this.sampleId = sampleId;
+        return this;
+    }
+
+    public String getFileId() {
+        return fileId;
+    }
+
+    public RohWrapperParams setFileId(String fileId) {
+        this.fileId = fileId;
         return this;
     }
 

@@ -15,7 +15,7 @@ Help()
    echo "-s, --sample-name                STRING      Sample to analyse. [REQUIRED]"
    echo "-c, --chromosome                 INTEGER     Chromosome to analyse. [REQUIRED]"
    echo "-o, --output-folder-dir          STRING      Full path or relative path to the desired output folder directory. Default: Current directory"
-   echo "--output-folder-name             STRING      Output folder name. Default: samplename_chr_roh_results_pipeline_timestamp"
+   echo "--output-folder-name             STRING      Output folder name. Default: samplename_chr_roh_results_pipeline"
    echo "--filter                         STRING      FILTER (VCF FILTER annotation field) category to filter in variants in the ROH analysis. Default: PASS."
    echo "--genotype-quality               INTEGER     GQ (VCF genotype quality annotation field) threshold to filter in variants in the ROH analysis. Default: 40 (GQ>40)."
    echo "--skip-genotype-quality                      Flag to not use the GQ (VCF genotype quality annotation field) to filter in variants in the ROH analysis. Default: false"
@@ -241,7 +241,7 @@ fi
 
 if [[ -z $output_folder_name ]]; then
    timestamp=$(date +%d%m%Y_%H%M%S)
-   output_folder_name=$sample"_chr"$chr"_roh_results_pipeline_"$timestamp
+   output_folder_name=$sample"_chr"$chr"_roh_results_pipeline"
 fi
 
 if ! zgrep "#CHROM" $input_vcf | grep -q $sample; then 

@@ -78,21 +78,32 @@ public class RohWrapperAnalysis extends OpenCgaToolScopeStudy {
         step(getId(), () -> {
             // Get VCF file
             Path vcfPath = null;
+            boolean requireExport = true;
 
             // Get file
-            OpenCGAResult<File> fileResult;
-            Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.VCF)
-                    .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), rohParams.getSampleId());
-            try {
-                fileResult = getCatalogManager().getFileManager().search(study, query, QueryOptions.empty(), token);
-            } catch (CatalogException e) {
-                throw new ToolException(e);
-            }
-            boolean requireExport = true;
-            if (fileResult.getNumResults() == 1) {
-                vcfPath = Paths.get(fileResult.first().getUri().getPath());
-                if (Files.exists(vcfPath) && vcfPath.toFile().canRead()) {
+            if (StringUtils.isNotEmpty(rohParams.getFileId())) {
+                OpenCGAResult<File> fileResult;
+                Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.VCF)
+                        .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), rohParams.getSampleId());
+                try {
+                    fileResult = getCatalogManager().getFileManager().search(study, query, QueryOptions.empty(), token);
+                } catch (CatalogException e) {
+                    throw new ToolException(e);
+                }
+                boolean found = false;
+                for (File file : fileResult.getResults()) {
+                    if (file.getId().equals(rohParams.getFileId())) {
+                        vcfPath = Paths.get(fileResult.first().getUri().getPath());
+                        if (Files.exists(vcfPath) && vcfPath.toFile().canRead()) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (found) {
                     requireExport = false;
+                } else {
+                    logger.info("VCF file ID {} not found, so variant export will be performed for ROH analysis", rohParams.getFileId());
                 }
             }
 

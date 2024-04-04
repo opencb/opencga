@@ -1141,30 +1141,27 @@ public class VariantAnalysisTest {
     }
 
     @Test
-    public void testRohUsingVcf() throws IOException, ToolException {
+    public void testRohUsingVcf() throws IOException, ToolException, CatalogException {
         Path rohOutDir = Paths.get(opencga.createTmpOutdir("_roh_vcf"));
+
+        String fileId = catalogManager.getSampleManager().get(ROH_STUDY, roh_sample, QueryOptions.empty(), token).first().getFileIds().get(0);
+        File file = catalogManager.getFileManager().get(ROH_STUDY, fileId, QueryOptions.empty(), token).first();
 
         RohWrapperParams params = new RohWrapperParams();
         params.setSampleId(roh_sample);
+        params.setFileId(file.getId());
         params.setChromosome("1");
 
         String jobId = "job-roh-vcf";
         toolRunner.execute(RohWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, ROH_STUDY), rohOutDir, jobId, token);
         System.out.println("rohOutDir = " + rohOutDir.toAbsolutePath());
         Assert.assertTrue(rohOutDir.resolve(RohWrapperAnalysis.ID + ".result.json").toFile().exists());
+        Assert.assertFalse(rohOutDir.resolve(roh_sample + "." + jobId + ".vcf.gz").toFile().exists());
     }
 
     @Test
     public void testRohUsingExport() throws IOException, ToolException, CatalogException {
         Path rohOutDir = Paths.get(opencga.createTmpOutdir("_roh_export"));
-
-        String fileId = catalogManager.getSampleManager().get(ROH_STUDY, roh_sample, QueryOptions.empty(), token).first().getFileIds().get(0);
-        File file = catalogManager.getFileManager().get(ROH_STUDY, fileId, QueryOptions.empty(), token).first();
-        Path path = Paths.get(file.getUri());
-        Path newPath = Paths.get(path.toAbsolutePath() + ".BACKUP");
-        if (!path.toFile().renameTo(newPath.toFile())) {
-            throw new IOException("Unable to rename from " + path + " to " + newPath);
-        }
 
         RohWrapperParams params = new RohWrapperParams();
         params.setSampleId(roh_sample);
@@ -1175,9 +1172,6 @@ public class VariantAnalysisTest {
         System.out.println("rohOutDir = " + rohOutDir.toAbsolutePath());
         Assert.assertTrue(rohOutDir.resolve(RohWrapperAnalysis.ID + ".result.json").toFile().exists());
         Assert.assertTrue(rohOutDir.resolve(roh_sample + "." + jobId + ".vcf.gz").toFile().exists());
-
-        // Back
-        newPath.toFile().renameTo(path.toFile());
     }
 
     //-------------------------------------------------------------------------

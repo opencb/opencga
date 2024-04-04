@@ -507,6 +507,8 @@ public class FieldConstants {
 
     // ROH analysis
     public static final String ROH_SAMPLE_ID_DESCRIPTION = "Sample to analyse";
+    public static final String ROH_FILE_ID_DESCRIPTION = "VCF file ID specifying the source of variants. If no VCF file ID is provided,"
+            + " the variants will be exported from the OpenCGA storage";
     public static final String ROH_CHROMOSOME_DESCRIPTION = "Chromosome to analyse";
     public static final String ROH_FILTER_DESCRIPTION = "FILTER (VCF FILTER annotation field) category to filter in variants in the ROH"
             + " analysis. Default: PASS.";
