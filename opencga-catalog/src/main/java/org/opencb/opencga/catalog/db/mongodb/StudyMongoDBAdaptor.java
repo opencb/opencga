@@ -487,6 +487,19 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         return new OpenCGAResult<>(result);
     }
 
+    void addUsersToAdminsAndMembersGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("List of 'members' is missing or empty.");
+        }
+
+        Document query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+
+        query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.MEMBERS_GROUP);
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
     @Override
     public OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (CollectionUtils.isEmpty(members)) {
@@ -501,6 +514,18 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         if (update.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+        return new OpenCGAResult<>(update);
+    }
+
+    OpenCGAResult<Group> removeUsersFromAdminsGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("Unable to remove members from group. List of members is empty.");
+        }
+
+        Document query = new Document()
+                .append(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Bson pull = Updates.pullAll("groups.$.userIds", members);
+        DataResult update = studyCollection.update(clientSession, query, pull, new QueryOptions(MongoDBCollection.MULTI, true));
         return new OpenCGAResult<>(update);
     }
 
@@ -1847,8 +1872,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         // Flag indicating whether and OR between ID and ALIAS has been performed and already added to the andBsonList object
         boolean idOrAliasFlag = false;
@@ -1877,14 +1900,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);

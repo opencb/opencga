@@ -814,8 +814,6 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

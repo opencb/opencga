@@ -1625,13 +1625,6 @@ public class FileManagerTest extends AbstractManagerTest {
 //    }
 
     @Test
-    public void testSearchFileFail1() throws CatalogException {
-        thrown.expect(CatalogDBException.class);
-        fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.NATTRIBUTES.key() + ".numValue", "==NotANumber"), null,
-                ownerToken);
-    }
-
-    @Test
     public void testGetFileParents1() throws CatalogException {
         DataResult<File> fileParents = fileManager.getParents(studyFqn, "data/test/folder/", true, QueryOptions.empty(), ownerToken);
         assertEquals(4, fileParents.getNumResults());

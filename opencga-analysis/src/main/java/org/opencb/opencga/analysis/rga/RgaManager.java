@@ -154,7 +154,7 @@ public class RgaManager implements AutoCloseable {
         try {
             AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
             long studyId = studyObject.getUid();
-            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can index", e.getCause());
@@ -244,7 +244,7 @@ public class RgaManager implements AutoCloseable {
         try {
             AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
             long studyId = study.getUid();
-            authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can generate the auxiliary RGA collection", e.getCause());
@@ -456,7 +456,7 @@ public class RgaManager implements AutoCloseable {
 
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -503,7 +503,7 @@ public class RgaManager implements AutoCloseable {
 
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -666,7 +666,7 @@ public class RgaManager implements AutoCloseable {
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         long studyId = study.getUid();
-        Boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // Get number of matches
@@ -809,7 +809,7 @@ public class RgaManager implements AutoCloseable {
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         long studyId = study.getUid();
-        Boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         ResourceIds resourceIds;
@@ -1787,7 +1787,7 @@ public class RgaManager implements AutoCloseable {
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         long studyId = study.getUid();
-        boolean isOwnerOrAdmin = authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
 
         Preprocess preprocessResult = new Preprocess();
         preprocessResult.setUserId(userId);
