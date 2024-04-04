@@ -1374,6 +1374,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sampleId",commandOptions.sampleId, true);
+            putNestedIfNotEmpty(beanParams, "fileId",commandOptions.fileId, true);
             putNestedIfNotEmpty(beanParams, "chromosome",commandOptions.chromosome, true);
             putNestedIfNotEmpty(beanParams, "filter",commandOptions.filter, true);
             putNestedIfNotNull(beanParams, "genotypeQuality",commandOptions.genotypeQuality, true);

@@ -1890,6 +1890,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--sample-id"}, description = "Sample to analyse", required = false, arity = 1)
         public String sampleId;
     
+        @Parameter(names = {"--file-id"}, description = "VCF file ID specifying the source of variants. If no VCF file ID is provided, the variants will be exported from the OpenCGA storage", required = false, arity = 1)
+        public String fileId;
+    
         @Parameter(names = {"--chromosome"}, description = "Chromosome to analyse", required = false, arity = 1)
         public String chromosome;
     
