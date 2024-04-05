@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -23,7 +24,8 @@ public class NoteMigration extends MigrationTool {
     
     @Override
     protected void run() throws Exception {
-        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        IOManagerFactory ioManagerFactory = new IOManagerFactory();
+        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         // First migrate to add the new values
         MongoCollection<Document> collection = getMongoCollection(ParamConstants.ADMIN_ORGANIZATION, "notes");
         Bson query = Filters.exists(NoteDBAdaptor.QueryParams.STUDY_UID.key(), false);
@@ -37,7 +39,7 @@ public class NoteMigration extends MigrationTool {
         renameNoteCollection();
 
         dbAdaptorFactory.close();
-        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         // We run it a second time because the first time it will only rename the "opencga" org as OpenCGA will not be able to know
         // which other organizations are present in the installation (trying to fetch the information from "note" instead of old "notes")
         renameNoteCollection();
