@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -77,7 +78,7 @@ public class AuditMongoDBAdaptorTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        auditDbAdaptor = new MongoDBAdaptorFactory(configuration).getCatalogAuditDbAdaptor();
+        auditDbAdaptor = new MongoDBAdaptorFactory(configuration, new IOManagerFactory()).getCatalogAuditDbAdaptor();
     }
 
     @Test
