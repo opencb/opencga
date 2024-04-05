@@ -249,7 +249,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String clinicalAnalysisId = result.first().getId();
 
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, result.first(), parameters, variableSetList,
+            return runTransaction(clientSession -> transactionalUpdate(clientSession, result.first(), parameters, variableSetList,
                     clinicalAuditList, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
@@ -275,14 +275,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         throw new NotImplementedException("Use other update method passing the ClinicalAuditList");
     }
 
-    OpenCGAResult privateUpdate(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
-                                List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    OpenCGAResult transactionalUpdate(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
+                                      List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         String clinicalAnalysisId = clinical.getId();
         long clinicalAnalysisUid = clinical.getUid();
 
-        DataResult<?> result = updateAnnotationSets(clientSession, clinicalAnalysisUid, parameters, variableSetList, queryOptions, false);
+        DataResult<?> result = updateAnnotationSets(clientSession, clinical.getStudyUid(), clinicalAnalysisUid, parameters, variableSetList,
+                queryOptions, false);
 
         // Perform the update
         Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
@@ -336,6 +337,42 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    @Override
+    OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, ClinicalAnalysis entry, ObjectMap parameters,
+                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        throw new NotImplementedException("Please call to the other transactionalUpdate method passing the ClinicalAudit list");
+    }
+
+    @Override
+    OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query,
+                                                        UpdateDocument updateDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+
+        Document updateOperation = updateDocument.toFinalUpdateDocument();
+        if (!updateOperation.isEmpty()) {
+            logger.debug("Update clinical analysis. Query: {}, Update: {}", query.toBsonDocument(), updateDocument);
+            DataResult<?> update = clinicalCollection.update(clientSession, query, updateOperation, null);
+
+            if (updateDocument.getSet().getBoolean(LOCKED.key(), false)) {
+                // Propagate locked value to Interpretations
+                logger.debug("Propagating case lock to all the Interpretations");
+                MongoDBIterator<ClinicalAnalysis> iterator = clinicalCollection.iterator(clientSession, query, null, clinicalConverter,
+                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+                while (iterator.hasNext()) {
+                    ClinicalAnalysis clinical = iterator.next();
+                    dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical, true);
+                }
+            }
+
+            logger.debug("{} clinical analyses successfully updated", update.getNumUpdated());
+            return endWrite(tmpStartTime, update.getNumMatches(), update.getNumUpdated(), Collections.emptyList());
+        } else {
+            throw new CatalogDBException("Nothing to update");
+        }
     }
 
     UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, Query query,
@@ -1166,8 +1203,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 }
 
                 ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), familyCopy);
-                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().privateUpdate(clientSession, clinicalAnalysis,
-                        params, Collections.emptyList(), null, QueryOptions.empty());
+                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().transactionalUpdate(clientSession,
+                        clinicalAnalysis, params, Collections.emptyList(), null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {
                     throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
                             + "family version of '" + family.getId() + "'");
@@ -1224,7 +1261,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             actionMap.put(PANELS.key(), ParamUtils.BasicUpdateAction.SET);
             QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
             ObjectMap params = new ObjectMap(PANELS.key(), panelList);
-            privateUpdate(clientSession, clinicalAnalysis, params, Collections.emptyList(), null, updateOptions);
+            transactionalUpdate(clientSession, clinicalAnalysis, params, Collections.emptyList(), null, updateOptions);
 
             // Update references from Interpretations
             dbAdaptorFactory.getInterpretationDBAdaptor().updateInterpretationPanelReferences(clientSession, clinicalAnalysis, panel);

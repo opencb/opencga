@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
-public class NoteMongoDBAdaptor extends MongoDBAdaptor implements NoteDBAdaptor {
+public class NoteMongoDBAdaptor extends CatalogMongoDBAdaptor implements NoteDBAdaptor {
 
     private final MongoDBCollection noteCollection;
     private final MongoDBCollection archiveNoteCollection;

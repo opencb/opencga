@@ -65,7 +65,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor {
+public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBAdaptor {
 
     private final MongoDBCollection userCollection;
     private final MongoDBCollection deletedUserCollection;
@@ -644,8 +644,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -662,14 +660,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status

@@ -78,6 +78,14 @@ public class CatalogAuthorizationException extends CatalogException {
                 + " cannot " + permission + " any " + resource + ".");
     }
 
+    public static CatalogAuthorizationException notOrganizationOwner() {
+        return notOrganizationOwner("perform this action");
+    }
+
+    public static CatalogAuthorizationException notOrganizationOwner(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the organization owner can " + action);
+    }
+
     public static CatalogAuthorizationException notOrganizationOwnerOrAdmin() {
         return notOrganizationOwnerOrAdmin("perform this action");
     }

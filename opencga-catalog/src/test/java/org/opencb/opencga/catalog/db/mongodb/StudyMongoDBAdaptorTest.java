@@ -112,9 +112,10 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     }
 
     @Test
-    public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
+    public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         DataResult<VariableSet> variableSetDataResult = createExampleVariableSet("VARSET_1", false);
-        DataResult result = catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetDataResult.first().getUid(), "NAME", orgAdminUserId1);
+        DataResult result = catalogStudyDBAdaptor.removeFieldFromVariableSet(5L, variableSetDataResult.first().getUid(), "NAME",
+                orgAdminUserId1);
         assertEquals(1, result.getNumUpdated());
 
         VariableSet variableSet = catalogStudyDBAdaptor.getVariableSet(variableSetDataResult.first().getUid(), QueryOptions.empty()).first();
@@ -164,12 +165,12 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
+    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         DataResult<VariableSet> varset1 = createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap());
-        DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(varset1.first().getUid(), variable, orgAdminUserId1);
+        DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(5L, varset1.first().getUid(), variable, orgAdminUserId1);
         assertEquals(1, result.getNumUpdated());
 
         DataResult<VariableSet> queryResult = catalogStudyDBAdaptor.getVariableSet(varset1.first().getUid(), QueryOptions.empty());
@@ -181,7 +182,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
         // We try to insert the same one again.
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("already exist");
-        catalogStudyDBAdaptor.addFieldToVariableSet(varset1.first().getUid(), variable, orgAdminUserId1);
+        catalogStudyDBAdaptor.addFieldToVariableSet(5L, varset1.first().getUid(), variable, orgAdminUserId1);
     }
 
     /**
@@ -190,12 +191,12 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
      * @throws CatalogDBException
      */
     @Test
-    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException {
+    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
-        catalogStudyDBAdaptor.addFieldToVariableSet(2L, variable, orgAdminUserId1);
+        catalogStudyDBAdaptor.addFieldToVariableSet(5L, 2L, variable, orgAdminUserId1);
     }
 
     @Test

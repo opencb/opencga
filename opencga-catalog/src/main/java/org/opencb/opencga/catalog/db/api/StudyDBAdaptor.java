@@ -84,19 +84,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         return queryResults;
     }
 
-    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
-
     OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
-
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -391,14 +380,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    OpenCGAResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     OpenCGAResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     OpenCGAResult<VariableSet> getVariableSet(long variableSetUid, QueryOptions options) throws CatalogDBException;
 
@@ -463,8 +452,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         PROJECT_UUID("projectUuid", TEXT, ""),
         ADDITIONAL_INFO("additionalInfo", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),

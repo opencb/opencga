@@ -132,7 +132,7 @@ public class OrganizationManager extends AbstractManager {
         OpenCGAResult<Organization> queryResult;
         try {
             QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
-            boolean isOrgAdmin = authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId);
+            boolean isOrgAdmin = authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             queryOptions.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, isOrgAdmin);
             queryResult = getOrganizationDBAdaptor(organizationId).get(queryOptions);
         } catch (CatalogException e) {
@@ -238,6 +238,11 @@ public class OrganizationManager extends AbstractManager {
         OpenCGAResult<Organization> result = OpenCGAResult.empty(Organization.class);
         try {
             ParamUtils.checkObj(updateParams, "OrganizationUpdateParams");
+            if (StringUtils.isNotEmpty(updateParams.getOwner()) || CollectionUtils.isNotEmpty(updateParams.getAdmins())) {
+                authorizationManager.checkIsAtLeastOrganizationOwner(organizationId, userId);
+            } else {
+                authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            }
 
             OpenCGAResult<Organization> internalResult = get(organizationId, INCLUDE_ORGANIZATION_ADMINS, token);
             if (internalResult.getNumResults() == 0) {

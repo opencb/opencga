@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.NoteManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -51,6 +52,7 @@ import java.util.*;
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
+    private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration mongoDbConfiguration;
     private final Configuration configuration;
@@ -67,7 +69,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private final Logger logger;
 
-    public MongoDBAdaptorFactory(Configuration catalogConfiguration) throws CatalogDBException {
+    public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory) throws CatalogDBException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -90,7 +92,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         this.mongoDbConfiguration = mongoDBConfiguration;
         this.configuration = catalogConfiguration;
-//        this.database = getAdminCatalogDatabase(catalogConfiguration.getDatabasePrefix());
+        this.ioManagerFactory = ioManagerFactory;
 
         logger = LoggerFactory.getLogger(this.getClass());
         connect(catalogConfiguration);
@@ -207,7 +209,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private OrganizationMongoDBAdaptorFactory configureOrganizationMongoDBAdaptorFactory(String organizationId, Configuration configuration)
             throws CatalogDBException {
-        return new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
+        return new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration, ioManagerFactory);
     }
 
     public OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
@@ -230,7 +232,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     if (organizationSummary.getId().equals(organizationId)) {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
-                                new OrganizationMongoDBAdaptorFactory(mongoManager, mongoDbConfiguration, organizationId, configuration);
+                                new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration,
+                                        ioManagerFactory);
                         organizationDBAdaptorMap.put(organizationId, organizationMongoDBAdaptorFactory);
                         return organizationMongoDBAdaptorFactory;
                     }
@@ -266,8 +269,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         try {
             // Create organization
-            OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(mongoManager,
-                    mongoDbConfiguration, organization.getId(), configuration);
+            OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(organization.getId(),
+                    mongoManager, mongoDbConfiguration, configuration, ioManagerFactory);
             organizationDBAdaptorMap.put(organization.getId(), organizationDBAdaptorFactory);
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),

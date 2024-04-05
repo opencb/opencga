@@ -73,7 +73,7 @@ public class NoteManager extends AbstractManager {
             Query queryCopy = ParamUtils.defaultObject(query, Query::new);
             QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            if (!authorizationManager.isOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId())) {
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId())) {
                 String visibility = queryCopy.getString(NoteDBAdaptor.QueryParams.VISIBILITY.key());
                 String scope = queryCopy.getString(NoteDBAdaptor.QueryParams.SCOPE.key());
                 if (StringUtils.isNotEmpty(visibility) && !Note.Visibility.PUBLIC.name().equals(visibility)) {
@@ -122,7 +122,7 @@ public class NoteManager extends AbstractManager {
             studyUuid = study.getUuid();
             queryCopy.put(NoteDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            if (!authorizationManager.isStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId())) {
+            if (!authorizationManager.isAtLeastStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId())) {
                 String visibility = queryCopy.getString(NoteDBAdaptor.QueryParams.VISIBILITY.key());
                 if (StringUtils.isNotEmpty(visibility) && !Note.Visibility.PUBLIC.name().equals(visibility)) {
                     throw new CatalogAuthorizationException("User '" + tokenPayload.getUserId() + "' is only authorised to see "
@@ -155,7 +155,7 @@ public class NoteManager extends AbstractManager {
             QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
             Note note = noteCreateParams.toNote(Note.Scope.ORGANIZATION, tokenPayload.getUserId());
 
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
 
             OpenCGAResult<Note> insert = create(note, optionsCopy, tokenPayload);
             auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(), "", "",
@@ -192,7 +192,7 @@ public class NoteManager extends AbstractManager {
             note.setStudyUid(study.getUid());
             studyId = study.getFqn();
             studyUuid = study.getUuid();
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
 
             OpenCGAResult<Note> insert = create(note, optionsCopy, tokenPayload);
             auditManager.auditCreate(organizationId, tokenPayload.getUserId(), Enums.Resource.NOTE, note.getId(), note.getUuid(), studyId,
@@ -233,7 +233,7 @@ public class NoteManager extends AbstractManager {
         String noteUuid = "";
         try {
             QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
             Note note = internalGet(organizationId, -1L, noteStr).first();
             noteId = note.getId();
             noteUuid = note.getUuid();
@@ -272,7 +272,7 @@ public class NoteManager extends AbstractManager {
             Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
             studyId = study.getFqn();
             studyUuid = study.getUuid();
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
 
             Note note = internalGet(organizationId, study.getUid(), noteStr).first();
             noteId = note.getId();
@@ -321,7 +321,7 @@ public class NoteManager extends AbstractManager {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = tokenPayload.getOrganization();
         try {
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId());
 
             ParamUtils.checkParameter(noteId, "note id");
             QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -361,7 +361,7 @@ public class NoteManager extends AbstractManager {
             // Set study fqn and uid
             studyId = study.getFqn();
             studyUuid = study.getUuid();
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), tokenPayload.getUserId());
 
             ParamUtils.checkParameter(noteId, "note id");
 

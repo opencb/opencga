@@ -54,7 +54,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by imedina on 08/01/16.
  */
-public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
+public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements ProjectDBAdaptor {
 
     private final MongoDBCollection projectCollection;
     private final MongoDBCollection deletedProjectCollection;
@@ -542,7 +542,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             return endQuery(startTime, dbIterator);
@@ -814,8 +814,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

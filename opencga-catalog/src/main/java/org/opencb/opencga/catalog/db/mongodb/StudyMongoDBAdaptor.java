@@ -72,7 +72,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdaptor {
+public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDBCollection studyCollection;
     private final MongoDBCollection deletedStudyCollection;
@@ -447,6 +447,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(result);
     }
 
+    void addUsersToAdminsAndMembersGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("List of 'members' is missing or empty.");
+        }
+
+        Document query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+
+        query = new Document(QueryParams.GROUP_ID.key(), ParamConstants.MEMBERS_GROUP);
+        studyCollection.update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
     @Override
     public OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (CollectionUtils.isEmpty(members)) {
@@ -461,6 +474,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (update.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+        return new OpenCGAResult<>(update);
+    }
+
+    OpenCGAResult<Group> removeUsersFromAdminsGroup(ClientSession clientSession, List<String> members) throws CatalogDBException {
+        if (CollectionUtils.isEmpty(members)) {
+            throw new CatalogDBException("Unable to remove members from group. List of members is empty.");
+        }
+
+        Document query = new Document()
+                .append(QueryParams.GROUP_ID.key(), ParamConstants.ADMINS_GROUP);
+        Bson pull = Updates.pullAll("groups.$.userIds", members);
+        DataResult update = studyCollection.update(clientSession, query, pull, new QueryOptions(MongoDBCollection.MULTI, true));
         return new OpenCGAResult<>(update);
     }
 
@@ -794,8 +819,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getId());
 
@@ -807,11 +832,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw CatalogDBException.updateError("VariableSet", variableSetId);
         }
         if (variable.isRequired()) {
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(variableSetId, variable);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().addVariableToAnnotations(studyUid, variableSetId, variable);
         }
 
         return new OpenCGAResult<>(result);
@@ -870,8 +896,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
 
         OpenCGAResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
@@ -887,11 +913,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Remove all the annotations from that field
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(variableSetId, name);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
+        dbAdaptorFactory.getClinicalAnalysisDBAdaptor().removeAnnotationField(studyUid, variableSetId, name);
 
         return new OpenCGAResult<>(result);
     }
@@ -1165,7 +1192,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     private void deleteAllAnnotationSetsByVariableSet(ClientSession session, long studyUid, VariableSet variableSet)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<VariableSet.AnnotableDataModels> entities = variableSet.getEntities();
         if (CollectionUtils.isEmpty(entities)) {
             entities = new ArrayList<>(EnumSet.allOf(VariableSet.AnnotableDataModels.class));
@@ -1737,8 +1764,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         // Flag indicating whether and OR between ID and ALIAS has been performed and already added to the andBsonList object
         boolean idOrAliasFlag = false;
@@ -1767,14 +1792,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
