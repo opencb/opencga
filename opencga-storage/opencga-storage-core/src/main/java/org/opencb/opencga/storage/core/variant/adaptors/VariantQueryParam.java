@@ -215,7 +215,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String ANNOT_XREF_DESCR
             = "List of any external reference, these can be genes, proteins or variants. "
-            + "Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...";
+            + "Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...";
     public static final VariantQueryParam ANNOT_XREF = new VariantQueryParam("xref", TEXT_ARRAY, ANNOT_XREF_DESCR);
 
     public static final String GENE_DESCR

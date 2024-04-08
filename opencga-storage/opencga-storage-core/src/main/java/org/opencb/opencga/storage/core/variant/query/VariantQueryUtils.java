@@ -467,6 +467,17 @@ public final class VariantQueryUtils {
     }
 
     /**
+     * Determines if the given value is a HGVS.
+     *
+     * @param value Value to check
+     * @return If is a known accession
+     */
+    public static boolean isHGVS(String value) {
+        // Check regex ':[cnpg].'
+        return value.contains(":c.") || value.contains(":n.") || value.contains(":p.") || value.contains(":g.");
+    }
+
+    /**
      * Determines if the given value is a known clinical accession or not.
      * <p>
      * ClinVar accession starts with 'VCV', 'RCV' or 'SCV'

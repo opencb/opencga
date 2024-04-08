@@ -851,7 +851,7 @@ public class VariantQueryParser {
                 if (variant != null) {
                     xrefs.getVariants().add(variant);
                 } else {
-                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
+                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value) || isHGVS(value)) {
                         xrefs.getOtherXrefs().add(value);
                     } else {
                         genes.add(value);

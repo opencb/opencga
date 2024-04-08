@@ -133,7 +133,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
 //    }
 
     protected int getLimit(QueryOptions options) {
-        return options.getInt(QueryOptions.LIMIT);
+        return options.getInt(QueryOptions.LIMIT, -1);
     }
 
     protected int getSkip(QueryOptions options) {
