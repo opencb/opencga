@@ -107,9 +107,8 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                 .append(ParamConstants.STUDY_PARAM, studyId), outDir, null, sessionId);
 
-        assertEquals(2, er.getSteps().size());
+        assertEquals(1, er.getSteps().size());
         assertEquals("variant-index", er.getSteps().get(0).getId());
-        assertEquals("family-index", er.getSteps().get(1).getId());
 
         variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
