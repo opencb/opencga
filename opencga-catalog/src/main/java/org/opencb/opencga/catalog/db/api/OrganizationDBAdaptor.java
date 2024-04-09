@@ -27,6 +27,8 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         INTERNAL_MIGRATION_EXECUTIONS("internal.migrationExecutions", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
         CONFIGURATION_AUTHENTICATION_ORIGINS("configuration.authenticationOrigins", OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS_OPTIONS("configuration.authenticationOrigins.options", OBJECT, ""),
+        CONFIGURATION_TOKEN("configuration.token", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),

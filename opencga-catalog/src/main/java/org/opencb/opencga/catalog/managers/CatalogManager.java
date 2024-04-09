@@ -38,14 +38,10 @@ import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
@@ -268,13 +264,8 @@ public class CatalogManager implements AutoCloseable {
         catalogIOManager.createDefaultOpenCGAFolders();
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
-                Collections.singletonList(new AuthenticationOrigin()
-                        .setId(CatalogAuthenticationManager.INTERNAL)
-                        .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                        .setAlgorithm(algorithm)
-                        .setExpiration(3600L)
-                        .setSecretKey(secretKey)),
-                new Optimizations());
+                Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
+                new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);

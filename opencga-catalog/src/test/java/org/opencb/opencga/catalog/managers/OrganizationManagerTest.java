@@ -17,6 +17,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -42,7 +43,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     @Test
     public void ensureAuthOriginCannotBeRemovedTest() throws CatalogException {
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.emptyList(), null));
+                Collections.emptyList(), null, new TokenConfiguration()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
         catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken);
@@ -50,10 +51,10 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void avoidDuplicatedOPENCGAAuthOriginTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
-        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
+        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null));
+                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
@@ -62,11 +63,11 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void avoidDuplicatedAuthOriginIdTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
-        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
+        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         authOrigin2.setType(AuthenticationOrigin.AuthenticationType.LDAP);
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null));
+                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("origin id");
@@ -75,16 +76,13 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateAuthOriginTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.singletonList(authOrigin), null));
+                Collections.singletonList(authOrigin), null, new TokenConfiguration()));
 
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
         assertEquals(authOrigin.getType(), organization.getConfiguration().getAuthenticationOrigins().get(0).getType());
-        assertEquals(authOrigin.getExpiration(), organization.getConfiguration().getAuthenticationOrigins().get(0).getExpiration());
-        assertEquals(authOrigin.getSecretKey(), organization.getConfiguration().getAuthenticationOrigins().get(0).getSecretKey());
-        assertEquals(authOrigin.getAlgorithm(), organization.getConfiguration().getAuthenticationOrigins().get(0).getAlgorithm());
     }
 
     @Test
@@ -198,6 +196,26 @@ public class OrganizationManagerTest extends AbstractManagerTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void secretKeyIsAlwaysHiddenTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, null, ownerToken).first();
+        assertNotNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIGURATION.key());
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, OrganizationDBAdaptor.QueryParams.NAME.key());
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
     }
 
 }

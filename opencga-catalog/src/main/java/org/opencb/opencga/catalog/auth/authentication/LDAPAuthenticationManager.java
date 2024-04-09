@@ -66,7 +66,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String host;
     private boolean ldaps;
 
-    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
+    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String algorithm, String secretKeyString, long expiration) {
         super(expiration);
         this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
         this.host = authenticationOrigin.getHost();
@@ -107,8 +107,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         logger.info("Init LDAP AuthenticationManager. Host: {}, env:{}", host, envToStringRedacted(getDefaultEnv()));
 
-        Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
-        this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.valueOf(algorithm);
+        Key secretKey = this.converStringToKeyObject(secretKeyString, signatureAlgorithm.getJcaName());
+        this.jwtManager = new JwtManager(signatureAlgorithm.getValue(), secretKey);
     }
 
     protected static String envToStringRedacted(Hashtable<String, Object> env) {

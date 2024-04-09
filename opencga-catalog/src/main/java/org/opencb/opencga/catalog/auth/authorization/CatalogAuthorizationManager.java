@@ -83,12 +83,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogException {
+    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogAuthorizationException {
         if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         }
-        // Check user belongs to organization
-        dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        checkUserExists(organizationId, userId);
     }
 
     @Override
@@ -218,11 +217,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException {
+    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogAuthorizationException {
         if (ParamConstants.ADMIN_ORGANIZATION.equals(organization) || userId.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
             // Check user exists in ADMIN ORGANIZATION
             String user = userId.replace(ParamConstants.ADMIN_ORGANIZATION + ":", "");
-            dbAdaptorFactory.getCatalogUserDBAdaptor(ParamConstants.ADMIN_ORGANIZATION).checkId(user);
+            checkUserExists(ParamConstants.ADMIN_ORGANIZATION, user);
             return true;
         }
         return false;
@@ -1011,6 +1010,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
+    private void checkUserExists(String organizationId, String userId) throws CatalogAuthorizationException {
+        try {
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("User '" + userId + "' not authorized to see Org '" + organizationId + "'.", e);
+        }
+    }
 
     /**
      * Retrieves the groupId where the members belongs to.
