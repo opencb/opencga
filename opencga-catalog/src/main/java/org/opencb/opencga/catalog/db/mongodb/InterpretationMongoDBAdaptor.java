@@ -946,8 +946,8 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
             qOptions = new QueryOptions();
         }
 
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
-                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(),
+                QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,

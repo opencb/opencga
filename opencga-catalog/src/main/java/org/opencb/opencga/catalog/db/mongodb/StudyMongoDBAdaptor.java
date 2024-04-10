@@ -29,7 +29,10 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyCatalogMongoDBIterator;
@@ -43,13 +46,10 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -89,7 +89,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         this.variableSetConverter = new VariableSetConverter();
     }
 
-    static Document getDocumentUpdateParams(ObjectMap parameters) {
+    static Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document studyParameters = new Document();
 
         String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
@@ -198,13 +198,13 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 //    }
 
     @Override
-    public OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Study> insert(Project project, Study study, List<File> files, QueryOptions options) throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting study insert transaction for study id '{}'", study.getId());
 
-                insert(clientSession, project, study);
+                insert(clientSession, project, study, files);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
@@ -213,7 +213,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         }
     }
 
-    Study insert(ClientSession clientSession, Project project, Study study)
+    Study insert(ClientSession clientSession, Project project, Study study, List<File> files)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (project.getUid() < 0) {
             throw CatalogDBException.uidNotFound("Project", project.getUid());
@@ -234,22 +234,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         if (StringUtils.isEmpty(study.getUuid())) {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
-
-        //Empty nested fields
-        List<File> files = study.getFiles();
-        study.setFiles(Collections.emptyList());
-
-        List<Job> jobs = study.getJobs();
-        study.setJobs(Collections.emptyList());
-
-        List<Cohort> cohorts = study.getCohorts();
-        study.setCohorts(Collections.emptyList());
-
-        List<org.opencb.opencga.core.models.panel.Panel> panels = study.getPanels();
-        study.setPanels(Collections.emptyList());
-
-        List<Family> families = study.getFamilies();
-        study.setFamilies(Collections.emptyList());
 
         study.setFqn(project.getFqn() + ":" + study.getId());
 
@@ -286,30 +270,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             for (File file : files) {
                 dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
                         Collections.emptyList(), Collections.emptyList());
-            }
-        }
-
-        if (jobs != null) {
-            for (Job job : jobs) {
-                dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
-            }
-        }
-
-        if (cohorts != null) {
-            for (Cohort cohort : cohorts) {
-                dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
-            }
-        }
-
-        if (panels != null) {
-            for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
-                dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
-            }
-        }
-
-        if (families != null) {
-            for (Family family : families) {
-                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
             }
         }
 
@@ -1026,7 +986,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         long startTime = startQuery();
 
         Bson query = new Document("variableSets", new Document("$elemMatch", new Document(PRIVATE_UID, variableSetId)));
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,groups,_acl");
         DataResult<Document> studyDataResult = studyCollection.find(query, qOptions);
 
         if (studyDataResult.getNumResults() == 0) {
@@ -1312,59 +1272,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 }
                 msg += "]";
                 throw new CatalogDBException(msg);
-            }
-        }
-    }
-
-    /*
-     * Helper methods
-     ********************/
-
-    private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
-        try {
-            joinFields(study, options, null);
-        } catch (CatalogAuthorizationException | CatalogParameterException e) {
-            throw new CatalogDBException(e);
-        }
-    }
-
-    private void joinFields(Study study, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        long studyId = study.getUid();
-        if (studyId <= 0 || options == null) {
-            return;
-        }
-
-        if (options.getBoolean("includeFiles")) {
-            if (StringUtils.isEmpty(user)) {
-                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResults());
-            } else {
-                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(studyId, query, options, user).getResults());
-            }
-        }
-        if (options.getBoolean("includeJobs")) {
-            if (StringUtils.isEmpty(user)) {
-                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResults());
-            } else {
-                Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(studyId, query, options, user).getResults());
-            }
-        }
-        if (options.getBoolean("includeSamples")) {
-            if (StringUtils.isEmpty(user)) {
-                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResults());
-            } else {
-                Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(studyId, query, options, user).getResults());
-            }
-        }
-        if (options.getBoolean("includeIndividuals")) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-            if (StringUtils.isEmpty(user)) {
-                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options).getResults());
-            } else {
-                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(studyId, query, options, user).getResults());
             }
         }
     }
@@ -1705,28 +1612,18 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     OpenCGAResult<Study> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        OpenCGAResult<Study> studyDataResult;
         try (DBIterator<Study> dbIterator = iterator(clientSession, query, options)) {
-            studyDataResult = endQuery(startTime, dbIterator);
+            return endQuery(startTime, dbIterator);
         }
-        for (Study study : studyDataResult.getResults()) {
-            joinFields(study, options);
-        }
-        return studyDataResult;
     }
 
     @Override
     public OpenCGAResult<Study> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        OpenCGAResult<Study> studyDataResult;
         try (DBIterator<Study> dbIterator = iterator(query, options, user)) {
-            studyDataResult = endQuery(startTime, dbIterator);
+            return endQuery(startTime, dbIterator);
         }
-        for (Study study : studyDataResult.getResults()) {
-            joinFields(study, options, user);
-        }
-        return studyDataResult;
     }
 
     @Override
@@ -1762,7 +1659,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     private DBIterator<Study> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, clientSession, dbAdaptorFactory, options, studyConverter, null, null);
     }
 
     @Override
@@ -1774,7 +1671,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, clientSession, dbAdaptorFactory, options, null, null, null);
     }
 
     @Override
@@ -1782,7 +1679,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             throws CatalogDBException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
-        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, null, dbAdaptorFactory, options, studyConverter, iteratorFilter, user);
     }
 
     @Override
@@ -1798,20 +1695,15 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         queryOptions.put(NATIVE_QUERY, true);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(dbAdaptorFactory.getOrganizationId(), d, user);
-        return new StudyCatalogMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<Document>(mongoCursor, null, dbAdaptorFactory, options, null, iteratorFilter, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryOptions qOptions = new QueryOptions(options);
-        if (qOptions.containsKey(QueryOptions.INCLUDE)) {
-            List<String> includeList = new ArrayList<>(qOptions.getAsStringList(QueryOptions.INCLUDE));
-            includeList.add("_ownerId");
-            includeList.add("_acl");
-            includeList.add(QueryParams.GROUPS.key());
-            qOptions.put(QueryOptions.INCLUDE, includeList);
-        }
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions,
+                Arrays.asList(AuthorizationMongoDBUtils.PRIVATE_ACL, QueryParams.GROUPS.key()));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
         fixAclProjection(qOptions);
 
@@ -1950,7 +1842,6 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                     case GROUP_ID:
                     case GROUP_USER_IDS:
                     case RELEASE:
-                    case COHORTS:
                     case VARIABLE_SET:
                     case VARIABLE_SET_UID:
                     case VARIABLE_SET_ID:

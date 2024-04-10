@@ -1277,7 +1277,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fixAclProjection(options);
 
         // type must always be there when relatedFiles is included
-        options = filterQueryOptions(options, Collections.singletonList(QueryParams.TYPE.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Collections.singletonList(QueryParams.TYPE.key()));
 
         return options;
     }

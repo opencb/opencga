@@ -88,7 +88,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
         // Check user belongs to organization
-        dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).exists(userId)) {
+            throw new CatalogAuthorizationException("Permission denied. User '" + userId + "' does not belong to the organization.");
+        }
     }
 
     @Override
@@ -266,7 +268,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
         Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
-        return organization.getOwner().equals(userId) || organization.getAdmins().contains(userId);
+        return userId.equals(organization.getOwner()) || organization.getAdmins().contains(userId);
     }
 
     @Override

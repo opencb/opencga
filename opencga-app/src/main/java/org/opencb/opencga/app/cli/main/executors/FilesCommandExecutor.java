@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.file.FileLinkInternalParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
+import org.opencb.opencga.core.models.file.FileMoveParams;
 import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
@@ -148,6 +149,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "image":
                 queryResponse = image();
+                break;
+            case "move":
+                queryResponse = move();
                 break;
             case "refresh":
                 queryResponse = refresh();
@@ -656,12 +660,10 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FileUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name",commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description",commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate",commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate",commandOptions.modificationDate, true);
             putNestedIfNotNull(beanParams, "sampleIds",commandOptions.sampleIds, true);
-            putNestedIfNotEmpty(beanParams, "checksum",commandOptions.checksum, true);
             putNestedIfNotNull(beanParams, "format",commandOptions.format, true);
             putNestedIfNotNull(beanParams, "bioformat",commandOptions.bioformat, true);
             putNestedIfNotEmpty(beanParams, "software.name",commandOptions.softwareName, true);
@@ -683,7 +685,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "experiment.description",commandOptions.experimentDescription, true);
             putNestedIfNotNull(beanParams, "experiment.attributes",commandOptions.experimentAttributes, true);
             putNestedIfNotNull(beanParams, "tags",commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "size",commandOptions.size, true);
             putNestedIfNotEmpty(beanParams, "status.id",commandOptions.statusId, true);
             putNestedIfNotEmpty(beanParams, "status.name",commandOptions.statusName, true);
             putNestedIfNotEmpty(beanParams, "status.description",commandOptions.statusDescription, true);
@@ -783,6 +784,40 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getFileClient().image(commandOptions.file, queryParams);
+    }
+
+    private RestResponse<File> move() throws Exception {
+        logger.debug("Executing move in Files command line");
+
+        FilesCommandOptions.MoveCommandOptions commandOptions = filesCommandOptions.moveCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        FileMoveParams fileMoveParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{file}/move"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            fileMoveParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileMoveParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "path",commandOptions.path, true);
+
+            fileMoveParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), FileMoveParams.class);
+        }
+        return openCGAClient.getFileClient().move(commandOptions.file, fileMoveParams, queryParams);
     }
 
     private RestResponse<File> refresh() throws Exception {

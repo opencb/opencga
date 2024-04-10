@@ -245,6 +245,10 @@ public abstract class MigrationTool {
         return dbAdaptorFactory.getMongoDataStore(organizationId).getDb().getCollection(collectionName);
     }
 
+    protected final MongoCollection<Document> getMongoCollection(String organization, String collectionName) throws CatalogDBException {
+        return dbAdaptorFactory.getMongoDataStore(organization).getDb().getCollection(collectionName);
+    }
+
     protected <T> Document convertToDocument(T value) {
         return converter.convertToStorageType(value);
     }

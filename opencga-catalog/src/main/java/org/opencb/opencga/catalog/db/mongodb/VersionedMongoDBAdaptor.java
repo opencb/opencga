@@ -97,7 +97,7 @@ public class VersionedMongoDBAdaptor {
     }
 
     public interface VersionedModelExecution<T> {
-        T execute(List<Document> entries) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+        T execute(List<Document> entryList) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
     public interface NonVersionedModelExecution<T> {
@@ -125,7 +125,13 @@ public class VersionedMongoDBAdaptor {
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(session, sourceQuery, update, null, null);
+        return update(session, sourceQuery, Collections.emptyList(), update, Collections.emptyList(), null, null);
+    }
+
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> includeFields,
+                           VersionedModelExecution<OpenCGAResult<E>> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, includeFields, update, Collections.emptyList(), null, null);
     }
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update,
@@ -346,7 +352,9 @@ public class VersionedMongoDBAdaptor {
         }
         for (Document document : archiveCollection.find(session, query, QueryOptions.empty()).getResults()) {
             Document internal = document.get("internal", Document.class);
-            internal.put("status", status);
+            if (internal != null) {
+                internal.put("status", status);
+            }
 
             deletedCollection.insert(session, document, QueryOptions.empty());
         }

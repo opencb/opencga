@@ -268,7 +268,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) {
+    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
@@ -717,7 +717,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
                             .collect(Collectors.toList()));
         }
 
-        options = filterQueryOptions(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
 
         // 0. Check if the user is the owner or one of the organization admins
         boolean isOwnerOrAdmin = dbAdaptorFactory.getCatalogOrganizationDBAdaptor().isOwnerOrAdmin(clientSession, user);
@@ -766,7 +766,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         Bson bsonQuery = parseQuery(query);
 
         // Check include
-        QueryOptions qOptions = filterQueryOptions(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+        QueryOptions qOptions = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
 
         MongoDBCollection collection = getQueryCollection(query, projectCollection, null, deletedProjectCollection);
         logger.debug("Project query: {}", bsonQuery.toBsonDocument());
