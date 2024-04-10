@@ -1,10 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.hamcrest.Matcher;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.*;
@@ -25,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,11 +47,15 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
     private DBAdaptorVariantQueryExecutor dbQueryExecutor;
     private List<VariantQueryExecutor> variantQueryExecutors;
 
+    @ClassRule
+    public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
+
     @Before
     public void setUp() throws Exception {
 
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        solr.configure(variantStorageEngine);
         if (!fileIndexed) {
             studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
@@ -94,6 +96,9 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             variantStorageEngine.calculateStats(studyMetadata.getName(),
                     new ArrayList<>(cohorts.keySet()), options);
 
+            solr.configure(variantStorageEngine);
+            variantStorageEngine.secondaryIndex();
+            Assert.assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
 
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
@@ -134,6 +139,21 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 with("Cosmic", EvidenceEntry::getId, is("COSV60260399"))))));
         matchers.put("ENST00000341832.11(ENSG00000248333):c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
                  is("ENST00000341832.11(ENSG00000248333):c.356-1170A>G")))));
+        matchers.put("VSP_039324", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("Features", ProteinVariantAnnotation::getFeatures,
+                                        hasItem(with("id", ProteinFeature::getId, is("VSP_039324")))))))));
+        matchers.put("VAR_081776", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("Features", ProteinVariantAnnotation::getFeatures,
+                                        hasItem(with("id", ProteinFeature::getId, is("VAR_081776")))))))));
+        matchers.put("PRO_0000211180", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("Features", ProteinVariantAnnotation::getFeatures,
+                                        hasItem(with("id", ProteinFeature::getId, is("PRO_0000211180")))))))));
 
         for (Map.Entry<String, Matcher<Variant>> entry : matchers.entrySet()) {
             testQuery(new VariantQuery().xref(entry.getKey()), new QueryOptions(), entry.getValue());
@@ -159,17 +179,6 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                                 .sample(samples),
                         new QueryOptions(), entry.getValue());
             }
-//            Variant v = result.first();
-//
-//            for (SampleEntry sample : v.getStudies().get(0).getSamples()) {
-//                if (GenotypeClass.MAIN_ALT.test(sample.getData().get(0))) {
-//                    testQuery(new VariantQuery().xref(entry.getKey())
-//                                    .study(studyMetadata.getName())
-//                                    .includeSampleId(true)
-//                                    .sample(sample.getSampleId()),
-//                            new QueryOptions(), entry.getValue());
-//                }
-//            }
         }
     }
 
@@ -177,8 +186,15 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         logger.info("");
         logger.info("");
         logger.info("####################################################");
-        logger.info("########## Testing query " + query.toJson());
+        logger.info("########## TEST QUERY :" + query.toJson());
         logger.info("####################################################");
+        logger.info("## Allowed VariantQueryExecutors:");
+        for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
+            if (variantQueryExecutor.canUseThisExecutor(query, options)) {
+                logger.info("## - " + variantQueryExecutor.getClass().getSimpleName());
+            }
+        }
+        logger.info("## Using DBAdaptorVariantQueryExecutor for expected results");
         Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(query, options));
 
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
@@ -187,6 +203,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         VariantQueryResult<Variant> unfilteredResult = null;
         VariantQueryResult<Variant> result = null;
         if (matcher != null) {
+            logger.info("## Unfiltered query for comparison");
             Query emptyQuery = new Query();
             List<String> fileNames = new LinkedList<>();
             List<String> sampleNames = new LinkedList<>();
@@ -225,11 +242,14 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
 
         for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
             if (variantQueryExecutor.canUseThisExecutor(query, options)) {
-                logger.info("##########################");
-                logger.info("########## Testing " + variantQueryExecutor.getClass().getSimpleName() + " with query " + query.toJson());
+                logger.info("");
+                logger.info("###################");
+                logger.info("### Testing " + variantQueryExecutor.getClass().getSimpleName());
                 result = variantQueryExecutor.get(new Query(variantQuery.getQuery()), new QueryOptions(options));
-                logger.info("########## Num results : " + result.getNumResults());
-                logger.info("##########################");
+                logger.info("### Num results : " + result.getNumResults());
+                logger.info("###################");
+                expected.getResults().sort(Comparator.comparing(Variant::toString));
+                result.getResults().sort(Comparator.comparing(Variant::toString));
                 Assert.assertEquals(expected.getResults(), result.getResults());
 
                 assertThat(result, numResults(gt(0)));

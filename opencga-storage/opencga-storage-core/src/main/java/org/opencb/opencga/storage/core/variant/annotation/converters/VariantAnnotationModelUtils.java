@@ -14,7 +14,6 @@ public class VariantAnnotationModelUtils {
      * Includes:
      * - annotation.id
      * - annotation.xrefs.id
-     * - annotation.cytoband.chromosome + cytoband.name
      * - annotation.hgvs
      * - annotation.consequenceTypes.geneName
      * - annotation.consequenceTypes.geneId
@@ -47,13 +46,6 @@ public class VariantAnnotationModelUtils {
                 if (xref != null) {
                     xrefs.add(xref.getId());
                 }
-            }
-        }
-
-        if (variantAnnotation.getCytoband() != null) {
-            for (Cytoband cytoband : variantAnnotation.getCytoband()) {
-                // TODO: Why do we need to add the chromosome name?
-                xrefs.add(cytoband.getChromosome() + cytoband.getName());
             }
         }
 

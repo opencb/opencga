@@ -41,7 +41,7 @@ public final class VariantQueryParam implements QueryParam {
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
     public static final String ID_DESCR
-            = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T";
+            = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T";
     public static final VariantQueryParam ID = new VariantQueryParam("id", TEXT_ARRAY, ID_DESCR);
 
     public static final String REGION_DESCR
