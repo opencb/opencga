@@ -265,7 +265,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
         Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
-        return organization.getOwner().equals(userId) || organization.getAdmins().contains(userId);
+        return userId.equals(organization.getOwner()) || organization.getAdmins().contains(userId);
     }
 
     @Override

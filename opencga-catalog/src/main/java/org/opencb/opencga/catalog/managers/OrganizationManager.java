@@ -131,10 +131,12 @@ public class OrganizationManager extends AbstractManager {
 
         OpenCGAResult<Organization> queryResult;
         try {
-            ParamUtils.checkParameter(organizationId, "organization id");
             authorizationManager.checkCanViewOrganization(organizationId, userId);
-            QueryOptions optionsCopy = ParamUtils.defaultObject(options, QueryOptions::new);
-            queryResult = getOrganizationDBAdaptor(organizationId).get(optionsCopy);
+            ParamUtils.checkParameter(organizationId, "organization id");
+            QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
+            boolean isOrgAdmin = authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            queryOptions.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, isOrgAdmin);
+            queryResult = getOrganizationDBAdaptor(organizationId).get(queryOptions);
             privatizeResults(queryResult);
         } catch (CatalogException e) {
             auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,

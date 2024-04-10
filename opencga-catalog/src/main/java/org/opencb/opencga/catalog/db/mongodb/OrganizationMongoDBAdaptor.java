@@ -318,7 +318,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     public DBIterator<Organization> iterator(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
-        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {
@@ -328,7 +328,11 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions,
+                OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
+            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
+        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }

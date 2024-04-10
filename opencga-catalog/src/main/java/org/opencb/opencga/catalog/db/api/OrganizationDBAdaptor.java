@@ -16,6 +16,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface OrganizationDBAdaptor extends Iterable<Organization> {
 
+    String IS_ORGANIZATION_ADMIN_OPTION = "isOrgAdmin";
+
     enum QueryParams implements QueryParam {
         UID("uid", LONG, ""),
         ID("id", STRING, ""),
@@ -32,6 +34,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),
+        NOTES("notes", OBJECT, ""),
         ATTRIBUTES("attributes", OBJECT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
