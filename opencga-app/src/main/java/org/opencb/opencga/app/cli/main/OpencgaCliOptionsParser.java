@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-03-22 OpenCB
+* Copyright 2015-2024-04-10 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -341,6 +341,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
         filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("move", filesCommandOptions.moveCommandOptions);
         filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
         filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);

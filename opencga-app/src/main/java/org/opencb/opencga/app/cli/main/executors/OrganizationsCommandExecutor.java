@@ -169,10 +169,11 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("scope", commandOptions.scope);
+        queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
         queryParams.putIfNotEmpty("tags", commandOptions.tags);
-        queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
         queryParams.putIfNotEmpty("version", commandOptions.version);
 
         return openCGAClient.getOrganizationClient().searchNotes(queryParams);

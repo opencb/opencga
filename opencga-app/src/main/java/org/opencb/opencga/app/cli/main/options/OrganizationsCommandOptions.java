@@ -150,6 +150,12 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
         public String id; 
     
+        @Parameter(names = {"--scope"}, description = "Scope of the Note.", required = false, arity = 1)
+        public String scope; 
+    
+        @Parameter(names = {"--visibility"}, description = "Visibility of the Note.", required = false, arity = 1)
+        public String visibility; 
+    
         @Parameter(names = {"--uuid"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
         public String uuid; 
     
@@ -158,9 +164,6 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "Note tags.", required = false, arity = 1)
         public String tags; 
-    
-        @Parameter(names = {"--visibility"}, description = "Visibility of the Note.", required = false, arity = 1)
-        public String visibility; 
     
         @Parameter(names = {"--version"}, description = "Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.", required = false, arity = 1)
         public String version; 
