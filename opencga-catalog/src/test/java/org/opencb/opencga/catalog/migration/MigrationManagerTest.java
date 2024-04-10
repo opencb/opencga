@@ -134,7 +134,8 @@ public class MigrationManagerTest extends AbstractManagerTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
+        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
+                catalogManager.getIoManagerFactory())) {
             for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
                 mongoDBAdaptorFactory.getMongoDataStore(organizationId)
                         .getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION)

@@ -65,7 +65,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor {
+public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBAdaptor {
 
     private final MongoDBCollection userCollection;
     private final MongoDBCollection deletedUserCollection;
@@ -302,13 +302,14 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
-        QueryOptions userOptions = filterQueryOptions(options, Collections.singletonList(ID));
+        QueryOptions userOptions = filterQueryOptionsToIncludeKeys(options, Collections.singletonList(ID));
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
         if (includeProjects(options)) {
             QueryOptions sharedProjectOptions = extractNestedOptions(options, PROJECTS.key());
-            sharedProjectOptions = filterQueryOptions(sharedProjectOptions, Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(),
-                    "studies." + StudyDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
+            sharedProjectOptions = filterQueryOptionsToIncludeKeys(sharedProjectOptions,
+                    Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.FQN.key(),
+                            "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
             extractSharedProjects(userDataResult, sharedProjectOptions);
         }
 

@@ -373,10 +373,6 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void validateCatalogFqn(CatalogFqn catalogFqn) {
-
-    }
-
     private OpenCGAResult<Study> getStudy(String organizationId, long projectUid, String studyUuid, QueryOptions options)
             throws CatalogDBException {
         Query query = new Query()
@@ -443,12 +439,6 @@ public class StudyManager extends AbstractManager {
             study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
-            study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
-            study.setCohorts(ParamUtils.defaultObject(study.getCohorts(), ArrayList::new));
-            study.setFamilies(ParamUtils.defaultObject(study.getFamilies(), ArrayList::new));
-            study.setPanels(ParamUtils.defaultObject(study.getPanels(), ArrayList::new));
-            study.setSamples(ParamUtils.defaultObject(study.getSamples(), ArrayList::new));
-            study.setIndividuals(ParamUtils.defaultObject(study.getIndividuals(), ArrayList::new));
             study.setVariableSets(ParamUtils.defaultObject(study.getVariableSets(), ArrayList::new));
 
             LinkedList<File> files = new LinkedList<>();
@@ -470,11 +460,10 @@ public class StudyManager extends AbstractManager {
                     new Group(MEMBERS, new ArrayList<>(users)),
                     new Group(ADMINS, new ArrayList<>(users))
             );
-            study.setFiles(files);
             study.setGroups(groups);
 
             /* CreateStudy */
-            getStudyDBAdaptor(organizationId).insert(project, study, options);
+            getStudyDBAdaptor(organizationId).insert(project, study, files, options);
             OpenCGAResult<Study> result = getStudy(organizationId, projectUid, study.getUuid(), options);
             study = result.getResults().get(0);
 
@@ -1570,7 +1559,8 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(variableSet.getUid(), variable, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).addFieldToVariableSet(study.getUid(),
+                    variableSet.getUid(), variable, userId);
             auditManager.audit(organizationId, userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(),
                     "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1603,7 +1593,8 @@ public class StudyManager extends AbstractManager {
 
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(organizationId, study.getUid(), userId);
-            OpenCGAResult result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
+            OpenCGAResult<VariableSet> result = getStudyDBAdaptor(organizationId).removeFieldFromVariableSet(study.getUid(),
+                    variableSet.getUid(), variableId, userId);
             auditManager.audit(organizationId, userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

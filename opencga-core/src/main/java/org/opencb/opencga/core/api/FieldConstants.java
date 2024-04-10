@@ -44,10 +44,28 @@ public class FieldConstants {
     public static final String ORGANIZATION_OWNER_DESCRIPTION = "Owner of the organization.";
     public static final String ORGANIZATION_ADMINS_DESCRIPTION = "Administrative users of the organization.";
     public static final String ORGANIZATION_PROJECTS_DESCRIPTION = "Projects the organization holds.";
+    public static final String ORGANIZATION_NOTES_DESCRIPTION = "Notes of organization scope.";
 //    public static final String ORGANIZATION_AUTHENTICATION_ORIGINS_DESCRIPTION = "Authentication origins used by the organization. This "
 //            + "contains all the configuration necessary to be able to communicate with the external authentication origins.";
     public static final String ORGANIZATION_CONFIGURATION_DESCRIPTION = "Organization configuration information.";
     public static final String ORGANIZATION_INTERNAL_DESCRIPTION = "Organization internal information.";
+
+    // Notes
+    public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";
+    public static final String NOTES_SCOPE_DESCRIPTION = "Scope of the Note.";
+    public static final String NOTES_STUDY_DESCRIPTION = "Study FQN if the Note scope is STUDY.";
+    public static final String NOTES_TAGS_DESCRIPTION = "Note tags.";
+    public static final String NOTES_USER_ID_DESCRIPTION = "User that wrote that Note.";
+    public static final String NOTES_VISIBILITY_DESCRIPTION = "Visibility of the Note.";
+    public static final String NOTES_VALUE_TYPE_DESCRIPTION = "Type of the value written in the Note.";
+    public static final String NOTES_VALUE_DESCRIPTION = "Value stored in the Note.";
+
+    public static final String NOTES_ID_PARAM = "id";
+    public static final String NOTES_SCOPE_PARAM = "scope";
+    public static final String NOTES_STUDY_PARAM = "study";
+    public static final String NOTES_TAGS_PARAM = "tags";
+    public static final String NOTES_USER_ID_PARAM = "userId";
+    public static final String NOTES_VISIBILITY_PARAM = "visibility";
 
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
@@ -394,6 +412,7 @@ public class FieldConstants {
             + "JOBS, CLINICAL_ANALYSES and DISEASE_PANELS. The value is a List of permission rules ";
     public static final String STUDY_URI = "Study uri";
     public static final String STUDY_EXTERNAL_SOURCES = "A List with related external sources.";
+    public static final String STUDY_NOTES_DESCRIPTION = "Notes of scope=STUDY.";
     public static final String STUDY_TYPE = "Study type description";
 
     //PermissionRule

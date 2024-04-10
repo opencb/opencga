@@ -83,6 +83,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return;
+        }
+        // Check user belongs to organization
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).exists(userId)) {
+            throw new CatalogAuthorizationException("Permission denied. User '" + userId + "' does not belong to the organization.");
+        }
+    }
+
+    @Override
     public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
         if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
@@ -227,10 +238,27 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkIsAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (!isAtLeastOrganizationOwner(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwner();
+        }
+    }
+
+    @Override
     public void checkIsAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
         if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
+    }
+
+    @Override
+    public boolean isAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return true;
+        }
+        OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
+        Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        return organization.getOwner().equals(userId);
     }
 
     @Override
@@ -240,7 +268,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
         Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
-        return organization.getOwner().equals(userId) || organization.getAdmins().contains(userId);
+        return userId.equals(organization.getOwner()) || organization.getAdmins().contains(userId);
     }
 
     @Override
