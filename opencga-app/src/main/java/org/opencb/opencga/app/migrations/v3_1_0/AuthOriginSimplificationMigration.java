@@ -16,9 +16,9 @@ import org.opencb.opencga.core.common.PasswordUtils;
 
 import java.util.List;
 
-@Migration(id = "add_organizations", description = "Add new Organization layer #TASK-4389", version = "3.0.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20231212)
-public class AuthOriginSimplificationMigrations extends MigrationTool {
+@Migration(id = "hide_secret_key", description = "Hide secret key #TASK-5923", version = "3.1.0",
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240410)
+public class AuthOriginSimplificationMigration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
@@ -53,6 +53,12 @@ public class AuthOriginSimplificationMigrations extends MigrationTool {
                         Updates.set("configuration", configuration)));
             }
         });
+
+        // Change authOrigin id from all "internal" users
+        getMongoCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION)
+                .updateMany(
+                        new Document("account.authentication.id", "internal"),
+                        Updates.set("account.authentication.id", "OPENCGA"));
     }
 
 }
