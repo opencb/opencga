@@ -51,6 +51,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -75,23 +76,23 @@ public class  AbstractManagerTest extends GenericTest {
     public static Path mongoDumpFolder;
 
     protected CatalogManager catalogManager;
-    protected String organizationId = "test";
+    protected final static String organizationId = "test";
     protected String opencgaToken;
-    protected String orgOwnerUserId = "owner";
+    protected final static String orgOwnerUserId = "owner";
     protected String ownerToken;
-    protected String orgAdminUserId1 = "orgAdminUser1";
+    protected final static String orgAdminUserId1 = "orgAdminUser1";
     protected String orgAdminToken1;
-    protected String orgAdminUserId2 = "orgAdminUser2";
+    protected final static String orgAdminUserId2 = "orgAdminUser2";
     protected String orgAdminToken2;
-    protected String studyAdminUserId1 = "studyAdminUser1";
+    protected final static String studyAdminUserId1 = "studyAdminUser1";
     protected String studyAdminToken1;
-    protected String normalUserId1 = "normalUser1";
+    protected final static String normalUserId1 = "normalUser1";
     protected String normalToken1;
-    protected String normalUserId2 = "normalUser2";
+    protected final static String normalUserId2 = "normalUser2";
     protected String normalToken2;
-    protected String normalUserId3 = "normalUser3";
+    protected final static String normalUserId3 = "normalUser3";
     protected String normalToken3;
-    protected String noAccessUserId1 = "noAccessUserId1";
+    protected final static String noAccessUserId1 = "noAccessUserId1";
     protected String noAccessToken1;
 
     protected String restrictedGroup = "@restrictedGroup"; // normalUserId2, normalUserId3
@@ -181,7 +182,7 @@ public class  AbstractManagerTest extends GenericTest {
         setUpCatalogManager(catalogManager);
     }
 
-    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
         if (!firstExecutionFinished) {
             createDummyData(catalogManager);
             MongoBackupUtils.dump(catalogManager, catalogManagerResource.getOpencgaHome());

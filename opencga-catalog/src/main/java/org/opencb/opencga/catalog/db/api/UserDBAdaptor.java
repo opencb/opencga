@@ -126,8 +126,6 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         SIZE("size", INTEGER_ARRAY, ""),
         QUOTA("quota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),
 

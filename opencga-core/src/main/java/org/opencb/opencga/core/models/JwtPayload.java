@@ -10,15 +10,12 @@ import java.util.Date;
 
 public class JwtPayload {
 
-    private String userId;
-    private String organization;
-    private String issuer;        // Issuer of the JWT token.
-    private Date issuedAt;        // Time when the JWT was issued.
-    private Date expirationTime;  // Expiration time of the JWT.
-    private String token;
-
-    public JwtPayload() {
-    }
+    private final String userId;
+    private final String organization;
+    private final String issuer;        // Issuer of the JWT token.
+    private final Date issuedAt;        // Time when the JWT was issued.
+    private final Date expirationTime;  // Expiration time of the JWT.
+    private final String token;
 
     public JwtPayload(String userId, String organization, String issuer, Date issuedAt, Date expirationTime, String token) {
         this.token = token;
@@ -62,11 +59,15 @@ public class JwtPayload {
             if (claimsMap.containsKey("iat")) {
                 long iat = 1000L * claimsMap.getLong("iat");
                 this.issuedAt = new Date(iat);
+            } else {
+                this.issuedAt = null;
             }
 
             if (claimsMap.containsKey("exp")) {
                 long exp = 1000L * claimsMap.getLong("exp");
                 this.expirationTime = new Date(exp);
+            } else {
+                this.expirationTime = null;
             }
         }
     }

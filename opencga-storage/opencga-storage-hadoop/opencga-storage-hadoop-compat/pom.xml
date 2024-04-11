@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -31,6 +31,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>opencga-storage-hadoop-compat-api</module>
         <module>opencga-storage-hadoop-compat-hbase2.0</module>
         <module>opencga-storage-hadoop-compat-hbase2.2</module>
         <module>opencga-storage-hadoop-compat-hbase2.4</module>

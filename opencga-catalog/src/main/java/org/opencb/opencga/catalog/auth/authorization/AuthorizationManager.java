@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -84,6 +83,8 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyPermissions.Permissions.class);
     }
 
+    void checkCanViewOrganization(String organizationId, String userId) throws CatalogException;
+
     void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException;
 
     void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException;
@@ -134,26 +135,44 @@ public interface AuthorizationManager {
     void checkIsOpencgaAdministrator(String organization, String userId, String action) throws CatalogException;
 
     /**
+     * Check if the given user is the organization owner.
+     * If the user is not the owner, it will throw an exception.
+     *
+     * @param organizationId    Organization id
+     * @param userId            User id
+     * @throws CatalogException CatalogException
+     */
+    void checkIsAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException;
+
+    /**
      * Check if the given user is the owner of the organization or if it is an admin.
-     * It does not include the opencga admins.
      * If the user is not the owner or an admin, it will throw an exception.
      *
      * @param organizationId    Organization id
      * @param userId            User id
      * @throws CatalogException CatalogException
      */
-    void checkIsOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException;
+    void checkIsAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException;
 
     /**
-     * Check if the given user is the owner of the organization or if it is an admin.
-     * It does not include opencga admins.
+     * Check if the given user is the organization owner or one of the Opencga administrators.
      *
      * @param organization Organization
      * @param userId User id
-     * @return true if the user is the owner or an admin of the organization
-     * @throws CatalogDBException CatalogDBException
+     * @return true if the user is the organization owner or one of the Opencga administrators.
+     * @throws CatalogException CatalogDBException
      */
-    boolean isOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogDBException;
+    boolean isAtLeastOrganizationOwner(String organization, String userId) throws CatalogException;
+
+    /**
+     * Check if the given user is the owner or one of the admins of the organization or one of the Opencga administrators.
+     *
+     * @param organization Organization
+     * @param userId User id
+     * @return true if the user is the owner or an admin of the organization or one of the Opencga administrators.
+     * @throws CatalogException CatalogDBException
+     */
+    boolean isAtLeastOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogException;
 
     /**
      * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
@@ -166,7 +185,7 @@ public interface AuthorizationManager {
      * @return true if the user is part of the admins group of the study
      * @throws CatalogException CatalogException
      */
-    boolean isStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
+    boolean isAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
 
     /**
      * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
@@ -179,7 +198,7 @@ public interface AuthorizationManager {
      * @param userId       User id
      * @throws CatalogException CatalogException
      */
-    void checkIsStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
+    void checkIsAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
 
     void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException;

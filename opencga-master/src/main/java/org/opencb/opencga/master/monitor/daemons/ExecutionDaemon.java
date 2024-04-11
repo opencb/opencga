@@ -611,7 +611,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();
-        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String userToken = catalogManager.getUserManager().getNonExpiringToken(organizationId, user, null, token);
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(userToken);
 
         if (storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
             // Hard check. Within READ_ONLY mode, if the tool is an operation on variant, rga or alignment, we forbid it.
@@ -637,13 +638,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "run tools with scope '" + Tool.Scope.GLOBAL + "'");
         } else if (tool.scope() == Tool.Scope.ORGANIZATION) {
             // Only organization owners or administrators can run tools with scope organization
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, user);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, user);
         } else {
-            long studyUid = catalogManager.getStudyManager().get(job.getStudy().getId(), new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.UID.key()), token).first().getUid();
-            if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)
-                    || authorizationManager.isStudyAdministrator(organizationId, studyUid, user)) {
-                // Study and organization administrators can run tools with scope study or project
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, user)) {
+                // Organization administrators can run tools with scope study or project
                 return;
             }
 

@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -21,6 +22,7 @@ import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.organizations.Organization;
@@ -137,7 +139,10 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         List<Event> events = new ArrayList<>();
         logger.debug("Update organization. Query: {}, Update: {}", queryBson.toBsonDocument(), organizationUpdate.toBsonDocument());
 
+        // Update study admins need to be before because we need to fetch the previous owner/admins in case of an update on these fields.
+        updateStudyAdmins(clientSession, parameters, queryOptions);
         DataResult<?> updateResult = organizationCollection.update(clientSession, queryBson, organizationUpdate, null);
+
 
         if (updateResult.getNumMatches() == 0) {
             throw new CatalogDBException("Organization not found");
@@ -151,6 +156,61 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    private void updateStudyAdmins(ClientSession clientSession, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+        if (!parameters.containsKey(QueryParams.OWNER.key()) && !parameters.containsKey(QueryParams.ADMINS.key())) {
+            return;
+        }
+
+        Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+
+        if (parameters.containsKey(QueryParams.OWNER.key())) {
+            // Owner has changed
+            String newOwner = parameters.getString(QueryParams.OWNER.key());
+            // Only do changes if the owner actually changes
+            if (!newOwner.equals(organization.getOwner())) {
+                if (!organization.getAdmins().contains(organization.getOwner())) {
+                    // Remove Owner from all @admins groups
+                    logger.info("Removing old owner '{}' from all '{}' groups", organization.getOwner(), ParamConstants.ADMINS_GROUP);
+                    dbAdaptorFactory.getCatalogStudyDBAdaptor().removeUsersFromAdminsGroup(clientSession,
+                            Collections.singletonList(organization.getOwner()));
+                }
+                // Add new owner to @admins group
+                logger.info("Adding new owner '{}' to all '{}' groups", newOwner, ParamConstants.ADMINS_GROUP);
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().addUsersToAdminsAndMembersGroup(clientSession,
+                        Collections.singletonList(newOwner));
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.ADMINS.key())) {
+            List<String> admins = parameters.getAsStringList(QueryParams.ADMINS.key());
+            if (CollectionUtils.isNotEmpty(admins)) {
+                Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+                ParamUtils.AddRemoveAction operation = ParamUtils.AddRemoveAction.from(actionMap, QueryParams.ADMINS.key(),
+                        ParamUtils.AddRemoveAction.ADD);
+
+                switch (operation) {
+                    case ADD:
+                        // Add new admins to @admins group
+                        logger.info("Adding new admins '{}' to all '{}' groups", admins, ParamConstants.ADMINS_GROUP);
+                        dbAdaptorFactory.getCatalogStudyDBAdaptor().addUsersToAdminsAndMembersGroup(clientSession, admins);
+                        break;
+                    case REMOVE:
+                        // Fetch current organization owner
+                        String newOwner = parameters.getString(QueryParams.OWNER.key());
+                        String owner = StringUtils.isNotEmpty(newOwner) ? newOwner : organization.getOwner();
+
+                        // Remove organization owner in case is one of the removed admins
+                        admins = admins.stream().filter(a -> !owner.equals(a)).collect(Collectors.toList());
+                        logger.info("Removing old admins '{}' from all '{}' groups", admins, ParamConstants.ADMINS_GROUP);
+                        dbAdaptorFactory.getCatalogStudyDBAdaptor().removeUsersFromAdminsGroup(clientSession, admins);
+                        break;
+                    default:
+                        throw new CatalogDBException("Unexpected " + QueryParams.ADMINS.key() + " action");
+                }
+            }
+        }
+    }
+
     private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogParameterException, CatalogDBException {
         checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.OWNER.key(),
@@ -159,9 +219,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
         UpdateDocument document = new UpdateDocument();
 
-        String[] acceptedParams = {
-                QueryParams.NAME.key(), QueryParams.OWNER.key(),
-        };
+        String[] acceptedParams = { QueryParams.NAME.key() };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedObjectParams = { QueryParams.CONFIGURATION.key() };
@@ -174,6 +232,13 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                     new Query(UserDBAdaptor.QueryParams.ID.key(), owner));
             if (count.getNumMatches() == 0) {
                 throw new CatalogDBException("Could not update owner. User not found.");
+            }
+            // Fetch current owner
+            Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+            if (owner.equals(organization.getOwner())) {
+                logger.warn("Organization owner is already '{}'.", owner);
+            } else {
+                document.getSet().put(QueryParams.OWNER.key(), owner);
             }
         }
 
@@ -253,7 +318,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     public DBIterator<Organization> iterator(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
-        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {
@@ -263,7 +328,11 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions,
+                OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
+            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
+        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }

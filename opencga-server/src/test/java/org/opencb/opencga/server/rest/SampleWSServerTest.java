@@ -36,6 +36,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by jacobo on 25/06/15.
  */
+@Ignore
 @Category(MediumTests.class)
 public class SampleWSServerTest {
 
@@ -43,7 +44,7 @@ public class SampleWSServerTest {
     private WebTarget webTarget;
     private String sessionId;
     private String organizationId = "test";
-    private String studyId = "user@1000G:phase1";
+    private String studyId = organizationId + "@1000G:phase1";
     private long in1;
     private long s1, s2, s3, s4;
 

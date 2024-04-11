@@ -54,7 +54,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by imedina on 08/01/16.
  */
-public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
+public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements ProjectDBAdaptor {
 
     private final MongoDBCollection projectCollection;
     private final MongoDBCollection deletedProjectCollection;
@@ -268,7 +268,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) {
+    UpdateDocument getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
@@ -542,7 +542,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             return endQuery(startTime, dbIterator);
@@ -717,7 +717,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                             .collect(Collectors.toList()));
         }
 
-        options = filterQueryOptions(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.ID.key(), QueryParams.FQN.key()));
 
         // 0. Check if the user is the owner or one of the organization admins
         boolean isOwnerOrAdmin = dbAdaptorFactory.getCatalogOrganizationDBAdaptor().isOwnerOrAdmin(clientSession, user);
@@ -766,7 +766,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson bsonQuery = parseQuery(query);
 
         // Check include
-        QueryOptions qOptions = filterQueryOptions(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
+        QueryOptions qOptions = filterQueryOptionsToIncludeKeys(options, Arrays.asList(QueryParams.UID.key(), QueryParams.FQN.key()));
 
         MongoDBCollection collection = getQueryCollection(query, projectCollection, null, deletedProjectCollection);
         logger.debug("Project query: {}", bsonQuery.toBsonDocument());
@@ -814,8 +814,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

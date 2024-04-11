@@ -5,12 +5,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -21,6 +23,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE;
 
+@Category(MediumTests.class)
 public class VariantAnnotatorByApiKeyTest {
 
     private StorageConfiguration storageConfiguration;
@@ -35,11 +38,11 @@ public class VariantAnnotatorByApiKeyTest {
         String url = "https://uk.ws.zettagenomics.com/cellbase/";
         storageConfiguration.getCellbase().setUrl(url);
         storageConfiguration.getCellbase().setDataRelease("3");
-        storageConfiguration.getCellbase().setVersion("v5.4");
+        storageConfiguration.getCellbase().setVersion("v5.8");
         storageConfiguration.getCellbase().setApiKey(null);
 
         CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
-        Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.4"));
+        Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.8"));
 
         projectMetadata = new ProjectMetadata("hsapiens", "grch38", "3", 1, null, null, null);
     }
