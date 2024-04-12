@@ -121,7 +121,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_SAMPLE_ID_DESCR
             = "Include sampleId on each result";
-    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", TEXT_ARRAY, INCLUDE_SAMPLE_ID_DESCR);
+    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", BOOLEAN, INCLUDE_SAMPLE_ID_DESCR);
 
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
