@@ -26,6 +26,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
@@ -138,7 +139,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
-        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
             dbAdaptorFactory.deleteCatalogDB();
         }
 

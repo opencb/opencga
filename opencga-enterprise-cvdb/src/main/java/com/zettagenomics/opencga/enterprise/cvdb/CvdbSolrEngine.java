@@ -163,7 +163,7 @@ public class CvdbSolrEngine {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectId, jwtPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = jwtPayload.getUserId(organizationId);
-        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
         CvdbIndexResult result = new CvdbIndexResult();
 
@@ -196,7 +196,7 @@ public class CvdbSolrEngine {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = jwtPayload.getUserId(organizationId);
-        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
         // Start time
         StopWatch stopWatch = StopWatch.createStarted();
@@ -250,7 +250,7 @@ public class CvdbSolrEngine {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = jwtPayload.getUserId(organizationId);
-        catalogManager.getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
         // Build caId-userId map, i.e., Map<Clinical Analysis ID, List<User ID>>
         Map<String, List<String>> caIdUserIdsMap = new HashMap<>();
