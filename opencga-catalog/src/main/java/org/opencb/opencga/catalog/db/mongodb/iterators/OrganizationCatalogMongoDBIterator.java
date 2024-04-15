@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.ProjectMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogRuntimeException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -83,6 +84,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
     private void fetchNextBatch() {
         if (mongoCursor.hasNext()) {
             Document organizationDocument = mongoCursor.next();
+            String orgId = organizationDocument.getString(OrganizationDBAdaptor.QueryParams.ID.key());
 
             if (!options.getBoolean(NATIVE_QUERY)) {
                 List<String> migrationFields = Arrays.asList(OrganizationDBAdaptor.QueryParams.INTERNAL.key(),
@@ -111,7 +113,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
                         OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
                         organizationDocument.put(OrganizationDBAdaptor.QueryParams.NOTES.key(), result.getResults());
                     } catch (CatalogDBException e) {
-                        logger.warn("Could not obtain the organization notes", e);
+                        throw CatalogRuntimeException.internalException(e, "Could not fetch notes for organization '" + orgId + "'.");
                     }
                 }
 
@@ -124,10 +126,12 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
                         } else {
                             openCGAResult = projectMongoDBAdaptor.nativeGet(clientSession, new Query(), projectOptions);
                         }
-                    } catch (CatalogDBException | CatalogAuthorizationException e) {
+                        organizationDocument.put(OrganizationDBAdaptor.QueryParams.PROJECTS.key(), openCGAResult.getResults());
+                    } catch (CatalogAuthorizationException e) {
                         logger.warn("Could not fetch projects for organization.", e);
+                    } catch (CatalogDBException | RuntimeException e) {
+                        throw CatalogRuntimeException.internalException(e, "Could not fetch projects for organization '" + orgId + "'.");
                     }
-                    organizationDocument.put(OrganizationDBAdaptor.QueryParams.PROJECTS.key(), openCGAResult.getResults());
                 }
             }
 
