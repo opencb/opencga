@@ -128,7 +128,7 @@ public class OrganizationCatalogMongoDBIterator<E> extends CatalogMongoDBIterato
                         }
                         organizationDocument.put(OrganizationDBAdaptor.QueryParams.PROJECTS.key(), openCGAResult.getResults());
                     } catch (CatalogAuthorizationException e) {
-                        logger.warn("Could not fetch projects for organization.", e);
+                        logger.warn("Could not fetch projects for organization '{}'.", orgId, e);
                     } catch (CatalogDBException | RuntimeException e) {
                         throw CatalogRuntimeException.internalException(e, "Could not fetch projects for organization '" + orgId + "'.");
                     }
