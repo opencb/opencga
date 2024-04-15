@@ -415,7 +415,7 @@ function build_opencb_opencga() {
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga tests"
     else
-      mvn install surefire-report:report \
+      mvn clean install surefire-report:report \
         ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
         -Dcheckstyle.skip \
         || (error "Opencga tests ERROR" && exit 1)
@@ -430,7 +430,7 @@ function build_opencga_enterprise() {
 
   if [ "$COMMAND" == "build" ];then
     mvn clean install -DskipTests -T 2 \
-        -Dopencga.build.dir="${OPENCGA_ENTERPRISE_HOME_DIR}/build/" \
+        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
         -Dopencga.war.name=opencga \
         || (error "Opencga enterprise compilation ERROR" && exit 1)
@@ -438,7 +438,7 @@ function build_opencga_enterprise() {
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga enterprise tests"
     else
-      mvn -B verify surefire-report:report \
+      mvn clean install -B verify surefire-report:report \
         -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
         ${FAIL_NEVER} \
