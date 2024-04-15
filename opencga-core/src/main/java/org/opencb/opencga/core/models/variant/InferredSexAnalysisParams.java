@@ -16,14 +16,22 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
 public class InferredSexAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Inferred sex analysis params";
+
+    @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION)
     private String individual;
+
+    @DataField(id = "sample", description = FieldConstants.INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION)
     private String sample;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public InferredSexAnalysisParams() {

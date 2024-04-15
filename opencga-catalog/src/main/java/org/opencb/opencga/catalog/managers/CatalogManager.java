@@ -26,7 +26,9 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -75,7 +77,7 @@ public class CatalogManager implements AutoCloseable {
     private AuthenticationFactory authenticationFactory;
 
     private AdminManager adminManager;
-    private NotesManager notesManager;
+    private NoteManager noteManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -103,13 +105,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void init() throws CatalogException {
+        logger.debug("CatalogManager configureIOManager");
+        configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
-        logger.debug("CatalogManager configureIOManager");
-        configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
     }
@@ -133,8 +135,9 @@ public class CatalogManager implements AutoCloseable {
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
-            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
-                    .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+            QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
+            options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
+            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
             if (organization != null) {
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
@@ -143,7 +146,7 @@ public class CatalogManager implements AutoCloseable {
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
-        notesManager = new NotesManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        noteManager = new NoteManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 authenticationFactory, configuration);
@@ -185,9 +188,8 @@ public class CatalogManager implements AutoCloseable {
     public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isOpencgaAdministrator(payload)
-                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw new CatalogException("Operation only allowed for the organization owner or admins");
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
 
         if (params == null || params.isEmpty()) {
@@ -309,9 +311,8 @@ public class CatalogManager implements AutoCloseable {
     public void installIndexes(String organizationId, String token) throws CatalogException {
         JwtPayload payload = userManager.validateToken(token);
         String userId = payload.getUserId();
-        if (!authorizationManager.isOpencgaAdministrator(payload)
-                || !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw new CatalogException("Operation only allowed for the organization owner or admins");
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
 
         catalogDBAdaptorFactory.createIndexes(organizationId);
@@ -382,8 +383,8 @@ public class CatalogManager implements AutoCloseable {
         return adminManager;
     }
 
-    public NotesManager getNotesManager() {
-        return notesManager;
+    public NoteManager getNotesManager() {
+        return noteManager;
     }
 
     public OrganizationManager getOrganizationManager() {

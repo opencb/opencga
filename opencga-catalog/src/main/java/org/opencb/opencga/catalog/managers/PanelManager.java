@@ -727,7 +727,7 @@ public class PanelManager extends ResourceManager<Panel> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -817,7 +817,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

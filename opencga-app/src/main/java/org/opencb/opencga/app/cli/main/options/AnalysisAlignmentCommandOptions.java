@@ -142,14 +142,14 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
-        public String file;
+        @Parameter(names = {"--bam-file-id"}, description = "The body web service bamFileId parameter", required = false, arity = 1)
+        public String bamFileId;
+    
+        @Parameter(names = {"--bai-file-id"}, description = "The body web service baiFileId parameter", required = false, arity = 1)
+        public String baiFileId;
     
         @Parameter(names = {"--window-size"}, description = "The body web service windowSize parameter", required = false, arity = 1)
         public Integer windowSize;
-    
-        @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, help = true, arity = 0)
-        public boolean overwrite = false;
     
     }
 
