@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -53,6 +54,7 @@ public class VariantQueryProjectionParser {
 
     public VariantQueryProjection parseVariantQueryProjection(Query query, QueryOptions options) {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
+        List<Event> events = new ArrayList<>();
         List<Integer> includeStudies = getIncludeStudies(query, options, metadataManager, includeFields);
 
         Map<Integer, VariantQueryProjection.StudyVariantQueryProjection> studies = new HashMap<>(includeStudies.size());
@@ -133,12 +135,16 @@ public class VariantQueryProjectionParser {
                 List<Integer> cohorts = new LinkedList<>();
                 for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
                     cohorts.add(cohort.getId());
+                    if (cohort.isInvalid()) {
+                        events.add(new Event(Event.Type.WARNING, "Cohort '" + cohort.getName() + "' has outdated variant stats"));
+                    }
                 }
                 study.setCohorts(cohorts);
             }
         }
 
-        return new VariantQueryProjection(includeFields, studies, numTotalSamples != numSamples, numSamples, numTotalSamples);
+        return new VariantQueryProjection(includeFields, studies, numTotalSamples != numSamples, numSamples, numTotalSamples)
+                .setEvents(events);
     }
 
     public static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {

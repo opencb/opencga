@@ -24,6 +24,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -76,7 +77,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
             setNumTotalSamples(numTotalSamples);
         }
         if (variantQuery != null) {
-            addSamplesMetadataIfRequested((VariantQueryResult<?>) this, variantQuery);
+            addSamplesMetadataIfRequested(variantQuery);
         }
     }
 
@@ -96,7 +97,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     public VariantQueryResult(DataResult<T> dataResult, ParsedVariantQuery variantQuery) {
         this(dataResult, dataResult.getResults());
         if (variantQuery != null) {
-            addSamplesMetadataIfRequested((VariantQueryResult<?>) this, variantQuery);
+            addSamplesMetadataIfRequested(variantQuery);
         }
     }
 
@@ -127,8 +128,21 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         this(dataResult, (ParsedVariantQuery) null);
     }
 
-    private static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(VariantQueryResult<T> result, ParsedVariantQuery query) {
+    private void addSamplesMetadataIfRequested(ParsedVariantQuery query) {
         VariantQueryProjection projection = query.getProjection();
+
+        if (!query.getEvents().isEmpty()) {
+            if (getEvents() == null) {
+                setEvents(new ArrayList<>());
+            }
+            getEvents().addAll(query.getEvents());
+        }
+        if (!projection.getEvents().isEmpty()) {
+            if (getEvents() == null) {
+                setEvents(new ArrayList<>());
+            }
+            getEvents().addAll(projection.getEvents());
+        }
 
         int numTotalSamples = projection.getNumTotalSamples();
         int numSamples = projection.getNumSamples();
@@ -139,15 +153,14 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                 VariantQueryProjectionParser.skipAndLimitSamples(query.getQuery(), samplesMetadata);
                 numSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
             }
-            return result.setNumSamples(numSamples)
-                    .setNumTotalSamples(numTotalSamples)
-                    .setSamples(samplesMetadata);
+            setNumSamples(numSamples);
+            setNumTotalSamples(numTotalSamples);
+            setSamples(samplesMetadata);
         } else {
             if (numTotalSamples >= 0 && numSamples >= 0) {
-                return result.setNumSamples(numSamples)
-                        .setNumTotalSamples(numTotalSamples);
+                setNumSamples(numSamples);
+                setNumTotalSamples(numTotalSamples);
             }
-            return result;
         }
     }
 

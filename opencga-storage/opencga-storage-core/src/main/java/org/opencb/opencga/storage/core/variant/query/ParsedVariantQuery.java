@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -23,6 +24,8 @@ public class ParsedVariantQuery {
     private QueryOptions inputOptions;
     private Query query;
     private boolean optimized = false;
+
+    private List<Event> events = new ArrayList<>();
 
     private VariantQueryProjection projection;
 
@@ -93,6 +96,15 @@ public class ParsedVariantQuery {
 
     public ParsedVariantQuery setOptimized(boolean optimized) {
         this.optimized = optimized;
+        return this;
+    }
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public ParsedVariantQuery setEvents(List<Event> events) {
+        this.events = events;
         return this;
     }
 

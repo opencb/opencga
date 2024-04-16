@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
 import com.google.common.collect.Iterables;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
@@ -21,6 +22,7 @@ public final class VariantQueryProjection {
     private final int numSamples;
     private final int numTotalSamples;
 
+    private List<Event> events = new ArrayList<>();
 
     public VariantQueryProjection(StudyMetadata studyMetadata, List<Integer> samples, List<Integer> files) {
         this.fields = VariantField.getIncludeFields(null);
@@ -84,6 +86,15 @@ public final class VariantQueryProjection {
     @Deprecated
     public Map<Integer, List<Integer>> getFiles() {
         return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getId(), s -> s.files));
+    }
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public VariantQueryProjection setEvents(List<Event> events) {
+        this.events = events;
+        return this;
     }
 
     public static class StudyVariantQueryProjection {
