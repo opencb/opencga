@@ -52,6 +52,101 @@ import java.util.*;
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
+
+    public static final String USER_COLLECTION = "user";
+    public static final String STUDY_COLLECTION = "study";
+    public static final String FILE_COLLECTION = "file";
+    public static final String JOB_COLLECTION = "job";
+    public static final String SAMPLE_COLLECTION = "sample";
+    public static final String INDIVIDUAL_COLLECTION = "individual";
+    public static final String COHORT_COLLECTION = "cohort";
+    public static final String FAMILY_COLLECTION = "family";
+    public static final String PANEL_COLLECTION = "panel";
+    public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
+    public static final String INTERPRETATION_COLLECTION = "interpretation";
+
+    public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
+    public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
+    public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
+    public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
+    public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
+
+    @Deprecated
+    public static final String OLD_DELETED_USER_COLLECTION = "deleted_user";
+    @Deprecated
+    public static final String OLD_DELETED_STUDY_COLLECTION = "deleted_study";
+    @Deprecated
+    public static final String OLD_DELETED_FILE_COLLECTION = "deleted_file";
+    @Deprecated
+    public static final String OLD_DELETED_JOB_COLLECTION = "deleted_job";
+    @Deprecated
+    public static final String OLD_DELETED_SAMPLE_COLLECTION = "deleted_sample";
+    @Deprecated
+    public static final String OLD_DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
+    @Deprecated
+    public static final String OLD_DELETED_COHORT_COLLECTION = "deleted_cohort";
+    @Deprecated
+    public static final String OLD_DELETED_FAMILY_COLLECTION = "deleted_family";
+    @Deprecated
+    public static final String OLD_DELETED_PANEL_COLLECTION = "deleted_panel";
+    @Deprecated
+    public static final String OLD_DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
+    @Deprecated
+    public static final String OLD_DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+
+    public static final String DELETED_USER_COLLECTION = "user_deleted";
+    public static final String DELETED_STUDY_COLLECTION = "study_deleted";
+    public static final String DELETED_FILE_COLLECTION = "file_deleted";
+    public static final String DELETED_JOB_COLLECTION = "job_deleted";
+    public static final String DELETED_SAMPLE_COLLECTION = "sample_deleted";
+    public static final String DELETED_INDIVIDUAL_COLLECTION = "individual_deleted";
+    public static final String DELETED_COHORT_COLLECTION = "cohort_deleted";
+    public static final String DELETED_FAMILY_COLLECTION = "family_deleted";
+    public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
+    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
+    public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
+
+    public static final String METADATA_COLLECTION = "metadata";
+    public static final String MIGRATION_COLLECTION = "migration";
+    public static final String AUDIT_COLLECTION = "audit";
+
+    public static final List<String> COLLECTIONS_LIST = Arrays.asList(
+            USER_COLLECTION,
+            STUDY_COLLECTION,
+            FILE_COLLECTION,
+            JOB_COLLECTION,
+            SAMPLE_COLLECTION,
+            INDIVIDUAL_COLLECTION,
+            COHORT_COLLECTION,
+            PANEL_COLLECTION,
+            FAMILY_COLLECTION,
+            CLINICAL_ANALYSIS_COLLECTION,
+            INTERPRETATION_COLLECTION,
+
+            SAMPLE_ARCHIVE_COLLECTION,
+            INDIVIDUAL_ARCHIVE_COLLECTION,
+            FAMILY_ARCHIVE_COLLECTION,
+            PANEL_ARCHIVE_COLLECTION,
+            INTERPRETATION_ARCHIVE_COLLECTION,
+
+            DELETED_USER_COLLECTION,
+            DELETED_STUDY_COLLECTION,
+            DELETED_FILE_COLLECTION,
+            DELETED_JOB_COLLECTION,
+            DELETED_SAMPLE_COLLECTION,
+            DELETED_INDIVIDUAL_COLLECTION,
+            DELETED_COHORT_COLLECTION,
+            DELETED_PANEL_COLLECTION,
+            DELETED_FAMILY_COLLECTION,
+            DELETED_CLINICAL_ANALYSIS_COLLECTION,
+            DELETED_INTERPRETATION_COLLECTION,
+
+            MIGRATION_COLLECTION,
+            METADATA_COLLECTION,
+            AUDIT_COLLECTION
+    );
+
+    static final String METADATA_OBJECT_ID = "METADATA";
     private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration mongoDbConfiguration;

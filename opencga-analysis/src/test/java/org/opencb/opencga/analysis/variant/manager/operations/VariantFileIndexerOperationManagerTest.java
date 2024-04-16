@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;

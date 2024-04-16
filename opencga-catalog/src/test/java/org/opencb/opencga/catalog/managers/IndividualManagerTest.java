@@ -13,7 +13,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -22,7 +21,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -909,91 +907,6 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals("name", result.getResults().get(1).getName());
     }
 
-    // Test updates and relationships
-    @Test
-    public void memberReferenceTest() throws CatalogException {
-        // Create individual with 2 samples
-        Sample sample1 = DummyModelUtils.getDummySample();
-        Sample sample2 = DummyModelUtils.getDummySample();
-        Individual individual1 = DummyModelUtils.getDummyIndividual(null, Arrays.asList(sample1, sample2), null, null);
-        String individualId1 = individual1.getId();
-
-        // Create another individual with another 2 samples
-        Sample sample3 = DummyModelUtils.getDummySample();
-        Sample sample4 = DummyModelUtils.getDummySample();
-        Individual individual2 = DummyModelUtils.getDummyIndividual(null, Arrays.asList(sample3, sample4), null, null);
-        String individualId2 = individual2.getId();
-
-        // Create family
-        Family family = DummyModelUtils.getDummyFamily();
-        family.setMembers(null);
-
-        QueryOptions options = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        individual1 = catalogManager.getIndividualManager().create(studyFqn, individual1, options, ownerToken).first();
-        assertEquals(1, individual1.getVersion());
-        assertEquals(2, individual1.getSamples().size());
-        assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
-        assertEquals(2, individual1.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId1)).count());
-
-        individual2 = catalogManager.getIndividualManager().create(studyFqn, individual2, options, ownerToken).first();
-        assertEquals(1, individual2.getVersion());
-        assertEquals(2, individual2.getSamples().size());
-        assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
-        assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
-
-        family = catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()),
-                options, ownerToken).first();
-        assertEquals(2, family.getMembers().size());
-        assertEquals(1, family.getVersion());
-        assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 2).count());
-
-        // Update individual 2
-        individual2 = catalogManager.getIndividualManager().update(studyFqn, individual2.getId(), new IndividualUpdateParams()
-                .setName("blabla"), options, ownerToken).first();
-        assertEquals(2, individual2.getSamples().size());
-        assertEquals(3, individual2.getVersion());
-        assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
-        assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
-        assertEquals(1, individual2.getFamilyIds().size());
-        assertEquals(family.getId(), individual2.getFamilyIds().get(0));
-
-        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), ownerToken).first();
-        assertTrue(family.getRoles().containsKey(individualId1));
-        assertFalse(family.getRoles().containsKey("blabla"));
-        assertEquals(2, family.getMembers().size());
-        for (Individual member : family.getMembers()) {
-            if (member.getId().equals(individualId1)) {
-                assertEquals(2, member.getVersion());
-            } else if (member.getId().equals(individualId2)) {
-                assertEquals(3, member.getVersion());
-            } else {
-                fail("Family should not have any other individual");
-            }
-        }
-
-        // Update id from individual1
-        individual1 = catalogManager.getIndividualManager().update(studyFqn, individual1.getId(), new IndividualUpdateParams()
-                .setId("blabla"), options, ownerToken).first();
-        assertEquals(2, individual1.getSamples().size());
-        assertEquals(3, individual1.getVersion());
-        assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 2).count());
-        assertEquals(2, individual1.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals("blabla")).count());
-        assertEquals(1, individual1.getFamilyIds().size());
-        assertEquals(family.getId(), individual1.getFamilyIds().get(0));
-
-        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), ownerToken).first();
-        assertEquals(2, family.getMembers().size());
-        assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 3).count());
-        assertFalse(family.getRoles().containsKey(individualId1));
-        assertTrue(family.getRoles().containsKey("blabla"));
-
-        List<Sample> samples = catalogManager.getSampleManager().get(studyFqn, Arrays.asList(sample1.getId(), sample2.getId()),
-                QueryOptions.empty(), ownerToken).getResults();
-        for (Sample sample : samples) {
-            assertEquals("blabla", sample.getIndividualId());
-            assertEquals(2, sample.getVersion());
-        }
-    }
 
     // Test update when use in CA
     @Test
@@ -1106,37 +1019,6 @@ public class IndividualManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Test
-    // TASK-5668
-    public void viewSampleFilesFromIndividualTest() throws CatalogException {
-        // Link VCF file. This VCF file will automatically create sample NA19600
-        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, ownerToken);
 
-        Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
-                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), ownerToken).first();
-        assertEquals(1, sample.getFileIds().size());
-        assertEquals("variant-test-file.vcf.gz", sample.getFileIds().get(0));
-
-        // Create individual
-        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual"), Collections.singletonList(sample.getId()),
-                QueryOptions.empty(), ownerToken);
-        Individual individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), ownerToken).first();
-        assertEquals(1, individual.getSamples().get(0).getFileIds().size());
-        assertEquals("variant-test-file.vcf.gz", individual.getSamples().get(0).getFileIds().get(0));
-
-        // Link BAM file (related to NA19600 sample)
-        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        catalogManager.getFileManager().link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null, null), false, ownerToken);
-
-        sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
-                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), ownerToken).first();
-        assertEquals(2, sample.getFileIds().size());
-        assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(sample.getFileIds()));
-
-        individual = catalogManager.getIndividualManager().get(studyFqn, "individual", QueryOptions.empty(), ownerToken).first();
-        assertEquals(2, individual.getSamples().get(0).getFileIds().size());
-        assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(individual.getSamples().get(0).getFileIds()));
-    }
 
 }

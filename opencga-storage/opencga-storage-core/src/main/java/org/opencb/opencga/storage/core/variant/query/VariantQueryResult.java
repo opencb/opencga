@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.response;
+package org.opencb.opencga.storage.core.variant.query;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE_METADATA;
 
 /**
  * Created on 07/02/17.
@@ -45,25 +51,19 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     private static final String APPROXIMATE_COUNT = "approximateCount";
     private static final String APPROXIMATE_COUNT_SAMPLING_SIZE = "approximateCountSamplingSize";
 
-    public VariantQueryResult() {
+    protected VariantQueryResult() {
     }
 
-    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result) {
-        this(time, numResults, numMatches, events, result, null, null, null, null, null);
-    }
-
-    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result,
-                              Map<String, List<String>> samples, String source) {
-        this(time, numResults, numMatches, events, result, samples, source, null, null, null);
+    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result, String source,
+                              ParsedVariantQuery variantQuery) {
+        this(time, numResults, numMatches, events, result, source, null, null, null, variantQuery);
     }
 
     public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result,
-                              Map<String, List<String>> samples, String source, Boolean approximateCount,
-                              Integer approximateCountSamplingSize, Integer numTotalSamples) {
+                              String source, Boolean approximateCount, Integer approximateCountSamplingSize, Integer numTotalSamples,
+                              ParsedVariantQuery variantQuery) {
         super((int) time, events, numResults, result, numMatches);
-        if (samples != null) {
-            setSamples(samples);
-        }
+
         if (source != null) {
             setSource(source);
         }
@@ -73,15 +73,15 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         if (approximateCountSamplingSize != null) {
             setApproximateCountSamplingSize(approximateCountSamplingSize);
         }
-        if (samples != null) {
-            setNumSamples(samples.values().stream().mapToInt(List::size).sum());
-        }
         if (numTotalSamples != null) {
             setNumTotalSamples(numTotalSamples);
         }
+        if (variantQuery != null) {
+            addSamplesMetadataIfRequested(variantQuery);
+        }
     }
 
-    public VariantQueryResult(DataResult<T> dataResult) {
+    private VariantQueryResult(DataResult<?> dataResult, List<T> results) {
         super(dataResult.getTime(),
                 dataResult.getEvents(),
                 dataResult.getNumMatches(),
@@ -90,26 +90,77 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                 dataResult.getNumDeleted(),
                 dataResult.getNumErrors(),
                 dataResult.getAttributes());
-        setResults(dataResult.getResults());
-        setNumResults(dataResult.getNumResults());
+        setResults(results);
+        setNumResults(results.size());
     }
 
-    public VariantQueryResult(DataResult<T> queryResult, Map<String, List<String>> samples) {
-        this(queryResult, samples, null);
+    public VariantQueryResult(DataResult<T> dataResult, ParsedVariantQuery variantQuery) {
+        this(dataResult, dataResult.getResults());
+        if (variantQuery != null) {
+            addSamplesMetadataIfRequested(variantQuery);
+        }
     }
 
-    public VariantQueryResult(DataResult<T> dataResult, Map<String, List<String>> samples, String source) {
-        this(dataResult);
-        setSamples(samples);
-        if (getNumMatches() >= 0) {
-            setApproximateCount(false);
+    public VariantQueryResult(VariantQueryResult<?> dataResult, List<T> results) {
+        this((DataResult<?>) dataResult, results);
+    }
+
+    public VariantQueryResult(DataResult<T> dataResult, String source, ParsedVariantQuery variantQuery) {
+        this(dataResult, variantQuery);
+        setSource(source);
+    }
+
+    /*
+     * @deprecated Missing ParsedVariantQuery.
+     * Use {@link #VariantQueryResult(long, int, long, List, List, String, Boolean, Integer, Integer, ParsedVariantQuery)}
+     */
+    @Deprecated
+    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result, String source) {
+        this(time, numResults, numMatches, events, result, source, null, null, null, (ParsedVariantQuery) null);
+    }
+
+    /*
+     * @deprecated Missing ParsedVariantQuery.
+     * Use {@link #VariantQueryResult(DataResult, ParsedVariantQuery)}
+     */
+    @Deprecated
+    public VariantQueryResult(DataResult<T> dataResult) {
+        this(dataResult, (ParsedVariantQuery) null);
+    }
+
+    private void addSamplesMetadataIfRequested(ParsedVariantQuery query) {
+        VariantQueryProjection projection = query.getProjection();
+
+        if (!query.getEvents().isEmpty()) {
+            if (getEvents() == null) {
+                setEvents(new ArrayList<>());
+            }
+            getEvents().addAll(query.getEvents());
         }
-        if (samples != null) {
-            this.setNumSamples(samples.values().stream().mapToInt(List::size).sum());
-            this.setNumTotalSamples(getNumSamples());
+        if (!projection.getEvents().isEmpty()) {
+            if (getEvents() == null) {
+                setEvents(new ArrayList<>());
+            }
+            getEvents().addAll(projection.getEvents());
         }
-        if (source != null) {
-            this.setSource(source);
+
+        int numTotalSamples = projection.getNumTotalSamples();
+        int numSamples = projection.getNumSamples();
+        if (query.getInputQuery().getBoolean(SAMPLE_METADATA.key(), false)) {
+            Map<String, List<String>> samplesMetadata = query.getProjection().getSampleNames();
+            if (numTotalSamples < 0 && numSamples < 0) {
+                numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
+                VariantQueryProjectionParser.skipAndLimitSamples(query.getQuery(), samplesMetadata);
+                numSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
+            }
+            setNumSamples(numSamples);
+            setNumTotalSamples(numTotalSamples);
+            setSamples(samplesMetadata);
+        } else {
+            if (numTotalSamples >= 0 && numSamples >= 0) {
+                setNumSamples(numSamples);
+                setNumTotalSamples(numTotalSamples);
+            }
         }
     }
 
@@ -173,7 +224,9 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     }
 
     public Integer getApproximateCountSamplingSize() {
-        return getAttributes().containsKey(APPROXIMATE_COUNT_SAMPLING_SIZE) ? getAttributes().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE) : null;
+        return getAttributes().containsKey(APPROXIMATE_COUNT_SAMPLING_SIZE)
+                ? getAttributes().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE)
+                : null;
     }
 
     public VariantQueryResult<T> setApproximateCountSamplingSize(Integer approximateCountSamplingSize) {

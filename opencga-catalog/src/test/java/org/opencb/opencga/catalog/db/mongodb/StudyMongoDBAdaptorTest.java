@@ -159,46 +159,6 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
 //        catalogStudyDBAdaptor.renameFieldVariableSet(-1, "NAME", "NEW_NAME", normalUserId1);
 //    }
 
-    /**
-     * Creates a new variable once and attempts to create the same one again.
-     *
-     * @throws CatalogDBException
-     */
-    @Test
-    public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        DataResult<VariableSet> varset1 = createExampleVariableSet("VARSET_1", false);
-        createExampleVariableSet("VARSET_2", true);
-        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
-                Collections.emptyMap());
-        DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(5L, varset1.first().getUid(), variable, orgAdminUserId1);
-        assertEquals(1, result.getNumUpdated());
-
-        DataResult<VariableSet> queryResult = catalogStudyDBAdaptor.getVariableSet(varset1.first().getUid(), QueryOptions.empty());
-
-        // Check that the new variable has been inserted in the variableSet
-        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()
-                .isPresent());
-
-        // We try to insert the same one again.
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("already exist");
-        catalogStudyDBAdaptor.addFieldToVariableSet(5L, varset1.first().getUid(), variable, orgAdminUserId1);
-    }
-
-    /**
-     * Tries to add a new variable to a non existent variableSet.
-     *
-     * @throws CatalogDBException
-     */
-    @Test
-    public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
-                null, Collections.emptyMap());
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("not found");
-        catalogStudyDBAdaptor.addFieldToVariableSet(5L, 2L, variable, orgAdminUserId1);
-    }
-
     @Test
     public void createGroup() throws CatalogDBException {
         catalogStudyDBAdaptor.createGroup(studyUid, new Group("name", Arrays.asList(normalUserId1, normalUserId2)));

@@ -142,6 +142,7 @@ public class VersionedMongoDBAdaptor {
                 postVersionIncrementExecution);
     }
 
+
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> fieldsToInclude,
                          VersionedModelExecution<OpenCGAResult<E>> update, PostVersionIncrementIterator<E> postVersionIncrementIterator,
                          ReferenceModelExecution<E> postVersionIncrementExecution)
@@ -160,7 +161,7 @@ public class VersionedMongoDBAdaptor {
 
         // 1. Increment version
         // 1.1 Only increase version of those documents not already increased by same transaction id
-        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, PRIVATE_TRANSACTION_ID));
+        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION, PRIVATE_TRANSACTION_ID));
         if (fieldsToInclude != null) {
             includeFields.addAll(fieldsToInclude);
         }
@@ -171,6 +172,8 @@ public class VersionedMongoDBAdaptor {
         try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
+                entryList.add(result);
+
                 entryList.add(result);
 
                 long uid = result.get(PRIVATE_UID, Number.class).longValue();

@@ -93,6 +93,7 @@ public class ParamConstants {
 
     public static final String CATEGORY = "category";
     public static final String CATEGORY_DESCRIPTION = "Category corresponding to the id's provided.";
+    public static final String RESUME_DESCRIPTION = "Resume a previously failed index operation";
 
     // ---------------------------------------------
     public static final String FORCE = "force";

@@ -551,7 +551,7 @@ public class SampleIndexQueryParser {
         return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study,
                 sampleGenotypeQuery, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
-                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation);
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation, query);
     }
 
     private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {

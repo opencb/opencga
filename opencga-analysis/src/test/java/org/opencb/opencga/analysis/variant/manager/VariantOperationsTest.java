@@ -47,16 +47,12 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -369,12 +365,25 @@ public class VariantOperationsTest {
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
 
+        try {
+            toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+                    new VariantSecondarySampleIndexParams()
+                            .setFamilyIndex(true)
+                            .setSample(Arrays.asList(mother)),
+                    Paths.get(opencga.createTmpOutdir()), "index", token);
+            fail("Expected to fail");
+        } catch (ToolException e) {
+            assertEquals("Exception from step 'familyIndex'", e.getMessage());
+            assertEquals("No trios found for samples [" + mother + "]", e.getCause().getMessage());
+        }
+
         // Run family index. The family index status should be READY on offspring
-        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
+        ExecutionResult result = toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, STUDY,
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(ParamConstants.ALL)),
                 Paths.get(opencga.createTmpOutdir()), "index", token);
+        assertEquals(0, result.getEvents().size());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();

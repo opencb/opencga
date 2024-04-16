@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.core.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -29,6 +32,67 @@ import java.util.*;
  */
 @Category(ShortTests.class)
 public class ConfigurationTest {
+
+    @Test
+    public void test() {
+        String path1 = "a/b/c.txt";
+        String path2 = "a/b/c/";
+        String path3 = "p.txt";
+
+        System.out.println(path1 + "   ----    " + getParentPath(path1));
+        System.out.println(path2 + "   ----    " + getParentPath(path2));
+        System.out.println(path3 + "   ----    " + getParentPath(path3));
+
+        System.out.println(path1 + "   ----    " + calculateAllPossiblePaths(path1));
+        System.out.println(path2 + "   ----    " + calculateAllPossiblePaths(path2));
+        System.out.println(path3 + "   ----    " + calculateAllPossiblePaths(path3));
+        System.out.println("''   ----    " + calculateAllPossiblePaths(""));
+
+        System.out.println(path1 + "   ----    " + getFileName(path1));
+        System.out.println(path2 + "   ----    " + getFileName(path2));
+        System.out.println(path3 + "   ----    " + getFileName(path3));
+        System.out.println("''   ----    " + getFileName(""));
+
+    }
+
+    String getParentPath(String strPath) {
+        Path path = Paths.get(strPath);
+        Path parent = path.getParent();
+        if (parent != null) {
+            return parent.toString() + "/";
+        } else {
+            return "";
+        }
+    }
+
+    String getFileName(String strPath) {
+        if (StringUtils.isEmpty(strPath)) {
+            return ".";
+        }
+        return Paths.get(strPath).getFileName().toString();
+    }
+
+    public static List<String> calculateAllPossiblePaths(String filePath) {
+        if (StringUtils.isEmpty(filePath) || "/".equals(filePath)) {
+            return Collections.singletonList("");
+        }
+        StringBuilder pathBuilder = new StringBuilder();
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
+            System.out.println(f);
+            pathBuilder = new StringBuilder(pathBuilder.toString()).append(f).append("/");
+            paths.add(pathBuilder.toString());
+        }
+        paths.add(filePath); //Add the file path
+        return paths;
+    }
+
 
     @Test
     public void testDefault() {

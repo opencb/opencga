@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -116,7 +117,7 @@ public class VariantSqlQueryParser {
 
     @Deprecated
     public String parse(Query query, QueryOptions options) {
-        VariantQueryParser parser = new VariantQueryParser(null, metadataManager);
+        VariantQueryParser parser = new HadoopVariantQueryParser(null, metadataManager);
         ParsedVariantQuery variantQuery = parser.parseQuery(query, options, true);
         return parse(variantQuery, options);
     }

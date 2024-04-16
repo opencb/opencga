@@ -50,6 +50,10 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.REGION.key(), value);
         return this;
     }
+    public VariantQuery region(String... value) {
+        put(VariantQueryParam.REGION.key(), Arrays.asList(value));
+        return this;
+    }
     public VariantQuery region(Region... value) {
         put(VariantQueryParam.REGION.key(), Arrays.asList(value));
         return this;

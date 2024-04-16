@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -53,6 +54,7 @@ public class VariantQueryProjectionParser {
 
     public VariantQueryProjection parseVariantQueryProjection(Query query, QueryOptions options) {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
+        List<Event> events = new ArrayList<>();
         List<Integer> includeStudies = getIncludeStudies(query, options, metadataManager, includeFields);
 
         Map<Integer, VariantQueryProjection.StudyVariantQueryProjection> studies = new HashMap<>(includeStudies.size());
@@ -69,7 +71,13 @@ public class VariantQueryProjectionParser {
 
         Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
-            study.setSamples(sampleIdsMap.get(study.getId()));
+            List<Integer> sampleIds = sampleIdsMap.get(study.getId());
+            study.setSamples(sampleIds);
+            List<String> sampleNames = new ArrayList<>(sampleIds.size());
+            for (Integer sampleId : sampleIds) {
+                sampleNames.add(metadataManager.getSampleName(study.getId(), sampleId));
+            }
+            study.setSampleNames(sampleNames);
         }
         int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
         skipAndLimitSamples(query, sampleIdsMap);
@@ -125,19 +133,18 @@ public class VariantQueryProjectionParser {
             for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
                 int studyId = study.getId();
                 List<Integer> cohorts = new LinkedList<>();
-                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
                     cohorts.add(cohort.getId());
+                    if (cohort.isInvalid()) {
+                        events.add(new Event(Event.Type.WARNING, "Cohort '" + cohort.getName() + "' has outdated variant stats"));
+                    }
                 }
-//                metadataManager.cohortIterator(studyId).forEachRemaining(cohort -> {
-//                    if (cohort.isReady()/* || cohort.isInvalid()*/) {
-//                        cohorts.add(cohort.getId());
-//                    }
-//                });
                 study.setCohorts(cohorts);
             }
         }
 
-        return new VariantQueryProjection(includeFields, studies, numTotalSamples != numSamples, numSamples, numTotalSamples);
+        return new VariantQueryProjection(includeFields, studies, numTotalSamples != numSamples, numSamples, numTotalSamples)
+                .setEvents(events);
     }
 
     public static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {
@@ -483,6 +490,10 @@ public class VariantQueryProjectionParser {
         return getIncludeSamplePartialStatus(query, fields) != null || getIncludeFilePartialStatus(query, fields) != null;
     }
 
+    /*
+     * @deprecated use VariantQueryProjection.getSampleNames()
+     */
+    @Deprecated
     public static Map<String, List<String>> getIncludeSampleNames(Query query, QueryOptions options,
                                                                   VariantStorageMetadataManager metadataManager) {
         if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {

@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 

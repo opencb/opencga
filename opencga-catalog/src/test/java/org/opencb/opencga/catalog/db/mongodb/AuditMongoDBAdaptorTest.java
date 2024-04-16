@@ -16,11 +16,20 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -32,6 +41,45 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
  */
 @Category(MediumTests.class)
 public class AuditMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
+
+    private AuditDBAdaptor auditDbAdaptor;
+
+    @Before
+    public void beforeClass() throws Exception {
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
+                .openStream());
+
+        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
+                configuration.getCatalog().getDatabase().getHosts().get(0).split(":")[0], 27017);
+
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .build();
+
+//        String database = catalogConfiguration.getDatabase().getDatabase();
+        String database;
+        if(StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
+            if (!configuration.getDatabasePrefix().endsWith("_")) {
+                database = configuration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = configuration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_test_catalog";
+        }
+
+        /**
+         * Database is cleared before each execution
+         */
+//        clearDB(dataStoreServerAddress, mongoCredentials);
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
+        MongoDataStore db = mongoManager.get(database);
+        db.getDb().drop();
+
+        auditDbAdaptor = new MongoDBAdaptorFactory(configuration, new IOManagerFactory()).getCatalogAuditDbAdaptor(organizationId);
+    }
 
     @Test
     public void testInsertAuditRecord() throws Exception {
