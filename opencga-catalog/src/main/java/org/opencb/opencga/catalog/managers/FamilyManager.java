@@ -492,7 +492,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -598,7 +598,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1401,7 +1401,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      */
     private List<Individual> autoCompleteFamilyMembers(String organizationId, Study study, Family family, List<String> members,
                                                        String userId) throws CatalogException {
-        if (family.getMembers() != null && !family.getMembers().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
             List<Individual> memberList = new ArrayList<>();
             // Check the user can create new individuals
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId,
@@ -1416,12 +1416,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setMembers(memberList);
         }
 
-        if (members != null && !members.isEmpty()) {
-            // We remove any possible duplicate
-            ArrayList<String> deduplicatedMemberIds = new ArrayList<>(new HashSet<>(members));
+        if (CollectionUtils.isNotEmpty(members)) {
+            // We check for possible duplicates
+            Set<String> memberSet = new HashSet<>();
+            for (String member : members) {
+                boolean unique = memberSet.add(member);
+                if (!unique) {
+                    throw new CatalogException("Duplicated member '" + member + "' passed.");
+                }
+            }
 
             InternalGetDataResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(organizationId,
-                    study.getUid(), deduplicatedMemberIds, IndividualManager.INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES, userId, false);
+                    study.getUid(), members, IndividualManager.INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES, userId, false);
 
             return individualDataResult.getResults();
         }

@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -46,10 +46,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-solr</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.biodata</groupId>
@@ -113,11 +109,6 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
@@ -194,11 +185,6 @@
             <artifactId>htsjdk</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
             <scope>test</scope>
@@ -230,11 +216,6 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-test-framework</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

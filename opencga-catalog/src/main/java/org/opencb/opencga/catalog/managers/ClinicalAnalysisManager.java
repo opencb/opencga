@@ -1696,6 +1696,94 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         return update;
     }
 
+    public OpenCGAResult<ClinicalReport> updateReport(String studyStr, String clinicalAnalysisId, ClinicalReport report,
+                                                        QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("report", report)
+                .append("options", options)
+                .append("token", token);
+
+        String caseId = clinicalAnalysisId;
+        String caseUuid = "";
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        String studyId = studyFqn.getStudyId();
+        String studyUuid = studyFqn.getStudyUuid();
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+            ClinicalAnalysis clinicalAnalysis = internalGet(organizationId, study.getUid(), clinicalAnalysisId, INCLUDE_CLINICAL_IDS,
+                    userId).first();
+            authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
+                    ClinicalAnalysisPermissions.WRITE);
+            caseId = clinicalAnalysis.getId();
+            caseUuid = clinicalAnalysis.getUuid();
+
+            ObjectMap updateMap;
+            try {
+                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(report));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse report object: " + e.getMessage(), e);
+            }
+
+            Map<String, Object> actionMap = options.getMap(ParamConstants.ACTION, new HashMap<>());
+            if (report.getComments() != null) {
+                ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction
+                        .from(actionMap, ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+                if (basicOperation != ParamUtils.AddRemoveReplaceAction.ADD) {
+                    for (ClinicalComment comment : report.getComments()) {
+                        comment.setDate(TimeUtils.getTime());
+                        comment.setAuthor(userId);
+                    }
+                }
+                updateMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), report.getComments());
+            }
+            if (CollectionUtils.isNotEmpty(report.getFiles())) {
+                List<File> files = obtainFiles(organizationId, study, userId, report.getFiles());
+                updateMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), files, false);
+            }
+            if (CollectionUtils.isNotEmpty(report.getSupportingEvidences())) {
+                List<File> files = obtainFiles(organizationId, study, userId, report.getSupportingEvidences());
+                updateMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), files, false);
+            }
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
+                    "Update ClinicalAnalysis '" + clinicalAnalysis.getId() + "' report.", TimeUtils.getTime());
+
+            // Add custom key to ensure it is properly updated
+            updateMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.REPORT_UPDATE.key(), updateMap);
+            OpenCGAResult<ClinicalAnalysis> update = getClinicalAnalysisDBAdaptor(organizationId)
+                    .update(clinicalAnalysis.getUid(), updateMap, null, Collections.singletonList(clinicalAudit), options);
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, caseId, caseUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated clinical analysis
+                OpenCGAResult<ClinicalAnalysis> result = getClinicalAnalysisDBAdaptor(organizationId).get(study.getUid(),
+                        new Query(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid()), options, userId);
+                update.setResults(result.getResults());
+            }
+            List<ClinicalReport> reportList = new ArrayList<>(update.getResults().size());
+            if (update.getNumResults() > 0) {
+                for (ClinicalAnalysis result : update.getResults()) {
+                    reportList.add(result.getReport());
+                }
+            }
+            return new OpenCGAResult<>(update.getTime(), update.getEvents(), update.getNumResults(), reportList,
+                    update.getNumMatches(), update.getNumInserted(), update.getNumUpdated(), update.getNumDeleted(),
+                    update.getNumErrors(), update.getAttributes(), update.getFederationNode());
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, caseId, caseUuid, studyId, studyUuid,
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     /**
      * Sort the family members in the following order: proband, father, mother, others.
      *
@@ -2032,7 +2120,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -2157,7 +2245,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -2517,7 +2605,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 .append("token", token);
 
         try {
-            authorizationManager.checkIsStudyAdministrator(organizationId, study.getUid(), userId);
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
             ParamUtils.checkObj(clinicalConfiguration, "ClinicalConfiguration");
             ParamUtils.checkObj(clinicalConfiguration.getFlags(), "flags");
             ParamUtils.checkObj(clinicalConfiguration.getPriorities(), "priorities");

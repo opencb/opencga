@@ -56,8 +56,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         DESCRIPTION("description", TEXT, ""),
         EXPECTED_SIZE("expectedSize", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

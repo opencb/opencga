@@ -66,8 +66,8 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         if (!loaded) {
             HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
             variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-            variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
-            variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
+            variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
+            variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
             variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
             variantStorageEngine.reloadCellbaseConfiguration();
             URI outputUri = newOutputUri();

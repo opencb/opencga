@@ -375,11 +375,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("DESCRIPTION", Study::getDescription)
                 .addColumnNumber("#GROUPS", s -> s.getGroups().size())
                 .addColumnNumber("SIZE", Study::getSize)
-                .addColumnNumber("#FILES", s -> s.getFiles().size())
-                .addColumnNumber("#SAMPLES", s -> s.getSamples().size())
-                .addColumnNumber("#COHORTS", s -> s.getCohorts().size())
-                .addColumnNumber("#INDIVIDUALS", s -> s.getIndividuals().size())
-                .addColumnNumber("#JOBS", s -> s.getJobs().size())
                 .addColumnNumber("#VARIABLE_SETS", s -> s.getVariableSets().size())
                 .addColumn("STATUS", s -> s.getInternal().getStatus().getId());
 

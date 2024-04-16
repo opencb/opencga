@@ -31,6 +31,8 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -64,7 +66,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     public CatalogManager catalogManager;
-    protected String organizationId;
+    protected final String organizationId = "test";
     public String token;
     public String studyFqn;
     public Family family;
@@ -81,7 +83,13 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
+        // Create new organization, owner and admins
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), catalogManagerResource.getAdminToken());
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, organizationId, null, catalogManagerResource.getAdminToken());
+
+        catalogManager.getOrganizationManager().update(organizationId,
+                new OrganizationUpdateParams().setOwner("user"),
+                null, catalogManagerResource.getAdminToken());
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
 

@@ -67,6 +67,7 @@ public class AnalysisClinicalCommandOptions {
         public DeleteInterpretationCommandOptions deleteInterpretationCommandOptions;
         public RevertInterpretationCommandOptions revertInterpretationCommandOptions;
         public UpdateInterpretationCommandOptions updateInterpretationCommandOptions;
+        public UpdateReportCommandOptions updateReportCommandOptions;
 
 
     public AnalysisClinicalCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -107,6 +108,7 @@ public class AnalysisClinicalCommandOptions {
         this.deleteInterpretationCommandOptions = new DeleteInterpretationCommandOptions();
         this.revertInterpretationCommandOptions = new RevertInterpretationCommandOptions();
         this.updateInterpretationCommandOptions = new UpdateInterpretationCommandOptions();
+        this.updateReportCommandOptions = new UpdateReportCommandOptions();
     
     }
     
@@ -2305,6 +2307,65 @@ public class AnalysisClinicalCommandOptions {
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
+    @Parameters(commandNames = {"report-update"}, commandDescription ="Update clinical analysis report")
+    public class UpdateReportCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = true, arity = 1)
+        public String clinicalAnalysis; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--supporting-evidences-action"}, description = "Action to be performed if the array of supporting evidences is being updated.", required = false, arity = 1)
+        public String supportingEvidencesAction = "ADD"; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
+        public String title;
+    
+        @Parameter(names = {"--overview"}, description = "Report overview.", required = false, arity = 1)
+        public String overview;
+    
+        @Parameter(names = {"--discussion-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String discussionAuthor;
+    
+        @Parameter(names = {"--discussion-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String discussionDate;
+    
+        @Parameter(names = {"--discussion-text"}, description = "The body web service text parameter", required = false, arity = 1)
+        public String discussionText;
+    
+        @Parameter(names = {"--logo"}, description = "Report logo.", required = false, arity = 1)
+        public String logo;
+    
+        @Parameter(names = {"--signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
+        public String signedBy;
+    
+        @Parameter(names = {"--signature"}, description = "Report signature.", required = false, arity = 1)
+        public String signature;
+    
+        @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
+        public String date;
     
     }
 

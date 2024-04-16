@@ -156,10 +156,14 @@ public class ClinicalAnalysisConverter extends AnnotableConverter<ClinicalAnalys
         }
     }
 
-    public void validateFilesToUpdate(Document document) {
-        List<Document> files = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
+    public void validateFilesToUpdate(Document document, String key) {
+        List<Document> files = (List) document.get(key);
         List<Document> reducedFiles = getReducedFileDocuments(files);
-        document.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), reducedFiles);
+        document.put(key, reducedFiles);
+    }
+
+    public void validateFilesToUpdate(Document document) {
+        validateFilesToUpdate(document, ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
     }
 
     private static List<Document> getReducedFileDocuments(List<Document> files) {

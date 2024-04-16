@@ -87,6 +87,9 @@ public class MetaCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--model"}, description = "Model description", required = false, arity = 1)
+        public String model; 
+    
     }
 
     @Parameters(commandNames = {"ping"}, commandDescription ="Ping Opencga webservices.")

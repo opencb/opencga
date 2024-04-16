@@ -165,7 +165,7 @@ public class ProjectManager extends AbstractManager {
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
             project = projectCreateParams.toProject();
             validateProjectForCreation(organizationId, project);
@@ -552,8 +552,7 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException, IOException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("import data");
         }
 
@@ -672,8 +671,7 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 
@@ -860,8 +858,7 @@ public class ProjectManager extends AbstractManager {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        if (!authorizationManager.isOpencgaAdministrator(organizationId, userId)
-                && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("export data");
         }
 
