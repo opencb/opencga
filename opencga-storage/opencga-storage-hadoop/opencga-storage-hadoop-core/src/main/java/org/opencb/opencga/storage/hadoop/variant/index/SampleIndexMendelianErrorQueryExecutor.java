@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
@@ -43,7 +44,7 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
     }
 
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator, SampleIndexQuery sampleIndexQuery) {
+    protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator, SampleIndexQuery sampleIndexQuery) {
 
         List<Trio> trios = new ArrayList<>(sampleIndexQuery.getMendelianErrorSet().size());
         int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
@@ -65,7 +66,7 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
             trios.add(new Trio(null, father, mother, sampleMetadata.getName()));
         }
 
-        Object object = super.getOrIterator(query, options, iterator, sampleIndexQuery);
+        Object object = super.getOrIterator(variantQuery, iterator, sampleIndexQuery);
 
         if (iterator) {
             VariantDBIterator variantIterator = (VariantDBIterator) object;

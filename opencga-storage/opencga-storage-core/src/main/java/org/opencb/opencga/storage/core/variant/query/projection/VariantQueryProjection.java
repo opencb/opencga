@@ -77,6 +77,10 @@ public final class VariantQueryProjection {
         return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getId(), s -> s.samples));
     }
 
+    public Map<String, List<String>> getSampleNames() {
+        return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getName(), s -> s.sampleNames));
+    }
+
     @Deprecated
     public Map<Integer, List<Integer>> getFiles() {
         return studies.values().stream().collect(Collectors.toMap(s -> s.studyMetadata.getId(), s -> s.files));
@@ -85,6 +89,7 @@ public final class VariantQueryProjection {
     public static class StudyVariantQueryProjection {
         private StudyMetadata studyMetadata;
         private List<Integer> samples = Collections.emptyList();
+        private List<String> sampleNames = Collections.emptyList();
         private Map<Integer, List<Integer>> multiFileSampleFiles = Collections.emptyMap();
         private Set<Integer> multiFileSamples = Collections.emptySet();
         private List<Integer> files = Collections.emptyList();
@@ -126,6 +131,15 @@ public final class VariantQueryProjection {
 
         public StudyVariantQueryProjection setSamples(List<Integer> samples) {
             this.samples = samples;
+            return this;
+        }
+
+        public List<String> getSampleNames() {
+            return sampleNames;
+        }
+
+        public StudyVariantQueryProjection setSampleNames(List<String> sampleNames) {
+            this.sampleNames = sampleNames;
             return this;
         }
 

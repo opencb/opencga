@@ -33,7 +33,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -45,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -52,6 +52,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseResultSetIterator;
@@ -221,33 +222,29 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query) {
 
         List<Variant> variants = new LinkedList<>();
-        VariantDBIterator iterator = iterator(query, options);
+        VariantDBIterator iterator = iterator(query);
+        QueryOptions options = new QueryOptions(query.getInputOptions());
         iterator.forEachRemaining(variants::add);
         long numTotalResults;
 
-        if (options == null) {
-            numTotalResults = variants.size();
-        } else {
-            if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
-                if (options.getBoolean(QueryOptions.COUNT, false)) {
-                    numTotalResults = count(query).first();
-                } else {
-                    numTotalResults = -1;
-                }
+        if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
+            if (options.getBoolean(QueryOptions.COUNT, false)) {
+                numTotalResults = count(query).first();
             } else {
-                // There are no limit. Do not count.
-                numTotalResults = variants.size();
+                numTotalResults = -1;
             }
+        } else {
+            // There are no limit. Do not count.
+            numTotalResults = variants.size();
         }
 
-        VariantQueryResult<Variant> result = new VariantQueryResult<>(iterator.getTime(TimeUnit.MILLISECONDS), variants.size(),
-                numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+        return new VariantQueryResult<>(iterator.getTime(TimeUnit.MILLISECONDS), variants.size(),
+                numTotalResults, null, variants, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, query)
                 .setFetchTime(iterator.getTimeFetching(TimeUnit.MILLISECONDS))
                 .setConvertTime(iterator.getTimeConverting(TimeUnit.MILLISECONDS));
-        return addSamplesMetadataIfRequested(result, query.getQuery(), options, getMetadataManager());
     }
 
     @Override
@@ -334,7 +331,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
         } else {
@@ -385,7 +383,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private VariantHBaseResultSetIterator phoenixIterator(ParsedVariantQuery variantQuery, QueryOptions options,
                                                           HBaseVariantConverterConfiguration converterConfiguration) {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        new VariantQueryParser(null, metadataManager).optimize(variantQuery);
+        new HadoopVariantQueryParser(null, metadataManager).optimize(variantQuery);
 
         logger.debug("Table name = " + variantTable);
         logger.info("Query : " + VariantQueryUtils.printQuery(variantQuery.getQuery()));
@@ -679,7 +677,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         VariantQueryIteratorCustomSplit(Iterator<?> variants, Query query, int batchSize, QueryOptions options) {
             super(variants, query, batchSize);
-            parser = new VariantQueryParser(null, getMetadataManager());
+            parser = new HadoopVariantQueryParser(null, getMetadataManager());
             variantQuery = parser.parseQuery(query, options);
             cts = sizeOrOne(variantQuery.getConsequenceTypes());
             bts = sizeOrOne(variantQuery.getBiotypes());

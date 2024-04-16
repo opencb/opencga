@@ -69,7 +69,13 @@ public class VariantQueryProjectionParser {
 
         Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
-            study.setSamples(sampleIdsMap.get(study.getId()));
+            List<Integer> sampleIds = sampleIdsMap.get(study.getId());
+            study.setSamples(sampleIds);
+            List<String> sampleNames = new ArrayList<>(sampleIds.size());
+            for (Integer sampleId : sampleIds) {
+                sampleNames.add(metadataManager.getSampleName(study.getId(), sampleId));
+            }
+            study.setSampleNames(sampleNames);
         }
         int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
         skipAndLimitSamples(query, sampleIdsMap);
@@ -478,6 +484,10 @@ public class VariantQueryProjectionParser {
         return getIncludeSamplePartialStatus(query, fields) != null || getIncludeFilePartialStatus(query, fields) != null;
     }
 
+    /*
+     * @deprecated use VariantQueryProjection.getSampleNames()
+     */
+    @Deprecated
     public static Map<String, List<String>> getIncludeSampleNames(Query query, QueryOptions options,
                                                                   VariantStorageMetadataManager metadataManager) {
         if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {

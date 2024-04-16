@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -157,12 +158,26 @@ public class VariantQueryParser {
         }
 
         ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(query), new QueryOptions(options));
+        int limit = options.getInt(QueryOptions.LIMIT, -1);
+        variantQuery.setLimit(limit == -1 ? null : limit);
+        variantQuery.setSkip(options.getInt(QueryOptions.SKIP, 0));
+        variantQuery.setCount(options.getBoolean(QueryOptions.COUNT, false));
+        variantQuery.setApproximateCountSamplingSize(options.getInt(
+                VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
+                VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
 
         if (!skipPreProcess) {
             query = preProcessQuery(query, options);
         }
         variantQuery.setQuery(query);
         variantQuery.setProjection(projectionParser.parseVariantQueryProjection(query, options));
+
+        List<Region> geneRegions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
+        variantQuery.setGeneRegions(geneRegions == null ? Collections.emptyList() : geneRegions);
+        List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
+        variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
+        variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
+        variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
 
         ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
@@ -685,13 +700,8 @@ public class VariantQueryParser {
                 }
             }
             if (!isValidParam(query, INCLUDE_SAMPLE) || selectVariantElements.getSamplePagination()) {
-                List<String> includeSample = selectVariantElements.getSamples()
-                        .entrySet()
-                        .stream()
-                        .flatMap(e -> e.getValue()
-                                .stream()
-                                .map(s -> metadataManager.getSampleName(e.getKey(), s)))
-                        .collect(Collectors.toList());
+                List<String> includeSample = selectVariantElements.getSampleNames().values()
+                        .stream().flatMap(Collection::stream).collect(Collectors.toList());
                 if (includeSample.isEmpty()) {
                     query.put(INCLUDE_SAMPLE.key(), NONE);
                 } else {

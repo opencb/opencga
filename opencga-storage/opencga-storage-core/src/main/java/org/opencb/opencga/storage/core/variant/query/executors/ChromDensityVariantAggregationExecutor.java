@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
@@ -144,7 +144,7 @@ public class ChromDensityVariantAggregationExecutor extends VariantAggregationEx
                 regionBuckets.size(),
                 regionBuckets);
         return new VariantQueryResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, numMatches, Collections.emptyList(),
-                Collections.singletonList(field), null, null);
+                Collections.singletonList(field), null);
     }
 
     private VariantQueryException invalidNestedField(String nestedFieldName) {
