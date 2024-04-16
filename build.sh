@@ -113,7 +113,7 @@ function validateTags() {
   for i in "${my_array[@]}"
   do
     if [ "$i" != "runShortTests" ] && [ "$i" != "runMediumTests" ] && [ "$i" != "runLongTests" ];then
-      echo "Level of test must be a combination of runShortTests,runMediumTests,runLongTests without spaces"
+      echo "The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
       exit 1
     fi
   done
@@ -146,9 +146,9 @@ function printUsage() {
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
   echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ..."
-  echo "     -T 	  --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
+  echo "     -T     --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
   echo "     -l     --test-level          STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -t 	  --test 				        FLAG			     Execute the Xetabase tests by default only buid"
+  echo "     -t     --test                FLAG           Execute the Xetabase tests by default only buid"
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
@@ -209,6 +209,10 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       ;;
     -l | --test-level )
+      if [ -z "$value" ];  then
+            echo "Test level is empty. The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
+            exit 1
+      fi
     TEST_TAG="$value"
     COMMAND="test"
     shift # past argument
@@ -259,6 +263,7 @@ if [ "$DEBUG" == "true" ];then
 fi
 
 function validate() {
+
   validateTags "$TEST_TAG"
 
   ## Validate opencga home dir
