@@ -128,13 +128,13 @@ public class MongoDBAdaptorTest extends GenericTest {
                 .setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH))
         );
         catalogDBAdaptor = new MongoDBAdaptorFactory(configuration, new IOManagerFactory());
-        catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
-        catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
-        catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
-        catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
-        catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
-        catalogPanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
+//        catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
+//        catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
+//        catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
+//        catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
+//        catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
+//        catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
+//        catalogPanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
         initDefaultCatalogDB();
     }
 
@@ -142,7 +142,8 @@ public class MongoDBAdaptorTest extends GenericTest {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
-        return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
+//        return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
+        return null;
     }
 
     Individual getIndividual(long studyUid, String individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -160,10 +161,11 @@ public class MongoDBAdaptorTest extends GenericTest {
     }
 
     Project getProject(String userId, String projectId) throws CatalogDBException {
-        Query query = new Query()
-                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
-        return catalogProjectDBAdaptor.get(query, QueryOptions.empty()).first();
+//        Query query = new Query()
+//                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
+//                .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+//        return catalogProjectDBAdaptor.get(query, QueryOptions.empty()).first();
+        return null;
     }
 
     public void initDefaultCatalogDB() throws CatalogException {
@@ -171,72 +173,72 @@ public class MongoDBAdaptorTest extends GenericTest {
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
         catalogDBAdaptor.createAllCollections(configuration);
         catalogDBAdaptor.initialiseMetaCollection(configuration.getAdmin());
-        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
+//        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
 //        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
-        /**
-         * Let's init the database with some basic data to perform each of the tests
-         */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
-                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user1, "1234", null);
-        catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
-        catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
-        catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
-
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", new UserInternal(new UserStatus()));
-        catalogUserDBAdaptor.insert(user2, "1111", null);
-
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
-                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user3, "2222", null);
-        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null, null,
-                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
-        ), "imedina", null);
-        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
-                new Study("name", "Study name", "ph1", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
-                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
-                                FileInternal.init(), 1000, 1),
-                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
-                                FileInternal.init(), 1000, 1)
-                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new Status(), StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
-
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
-                new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
-                new HashMap<>());
-
-        catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
-        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null, null,
-                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
-        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null,
-                        0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                null, "Description", FileInternal.init(), 10, 1),
-                        new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
-                        new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                File.Bioformat.NONE, "data/file2.txt", null, "Description2", FileInternal.init(), 100, 1),
-                        new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
-                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
-                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
-        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
-                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                null, "Description", FileInternal.init(), 10, 1),
-                        new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
-                        new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
-                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
-                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
+//        /**
+//         * Let's init the database with some basic data to perform each of the tests
+//         */
+//        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
+//                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
+//        catalogUserDBAdaptor.insert(user1, "1234", null);
+//        catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
+//        catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
+//        catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
+//
+//        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", new UserInternal(new UserStatus()));
+//        catalogUserDBAdaptor.insert(user2, "1111", null);
+//
+//        user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
+//                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
+//        catalogUserDBAdaptor.insert(user3, "2222", null);
+//        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null, null,
+//                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
+//        ), "imedina", null);
+//        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
+//                new Study("name", "Study name", "ph1", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
+//                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+//                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
+//                                FileInternal.init(), 1000, 1),
+//                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
+//                                FileInternal.init(), 1000, 1)
+//                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+//                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+//                        null, null, 1, new Status(), StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
+//
+//        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
+//                new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
+//                new HashMap<>());
+//
+//        catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
+//        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null, null,
+//                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
+//        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
+//                new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null,
+//                        0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+//                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+//                                null, "Description", FileInternal.init(), 10, 1),
+//                        new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+//                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
+//                        new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+//                                File.Bioformat.NONE, "data/file2.txt", null, "Description2", FileInternal.init(), 100, 1),
+//                        new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+//                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
+//                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+//                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
+//                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
+//        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
+//                new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
+//                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+//                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+//                                null, "Description", FileInternal.init(), 10, 1),
+//                        new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+//                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
+//                        new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+//                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
+//                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+//                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
+//                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);

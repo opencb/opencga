@@ -2439,51 +2439,53 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<File> move(String studyStr, String entryStr, String targetPathStr, QueryOptions options, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("file", entryStr)
-                .append("target", targetPathStr)
-                .append("options", options)
-                .append("token", token);
-
-        String fileId = entryStr;
-        String fileUuid = "";
-        try {
-            File file = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
-            fileId = file.getId();
-            fileUuid = file.getUuid();
-            // Check user has write permissions on file/folder
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
-
-            OpenCGAResult<File> parents = getParents(study.getUid(), targetPathStr, false, INCLUDE_FILE_IDS);
-            // Check user can write in target path
-            File parentFolder = parents.first();
-            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
-
-            ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.PATH.key(), targetPathStr);
-            OpenCGAResult<File> update = fileDBAdaptor.update(file.getUid(), parameters, Collections.emptyList(), QueryOptions.empty());
-
-            auditManager.audit(userId, Enums.Action.MOVE, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch updated file
-                OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(),
-                        new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), options, userId);
-                update.setResults(result.getResults());
-            }
-            return update;
-        } catch (Exception e) {
-            auditManager.audit(userId, Enums.Action.MOVE, Enums.Resource.FILE, fileId, fileUuid, study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, fileId, e.getMessage())));
-            throw e;
-        }
-    }
+//    public OpenCGAResult<File> move(String studyStr, String entryStr, String targetPathStr, QueryOptions options, String token)
+//            throws CatalogException {
+//        String userId = userManager.getUserId(token);
+//        Study study = studyManager.resolveId(studyStr, userId);
+//
+//        ObjectMap auditParams = new ObjectMap()
+//                .append("study", studyStr)
+//                .append("file", entryStr)
+//                .append("target", targetPathStr)
+//                .append("options", options)
+//                .append("token", token);
+//
+//        String fileId = entryStr;
+//        String fileUuid = "";
+//        try {
+//            File file = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+//            fileId = file.getId();
+//            fileUuid = file.getUuid();
+//            // Check user has write permissions on file/folder
+//            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+//
+//            OpenCGAResult<File> parents = getParents(study.getUid(), targetPathStr, false, INCLUDE_FILE_IDS);
+//            // Check user can write in target path
+//            File parentFolder = parents.first();
+//            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FilePermissions.WRITE);
+//
+//            ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.PATH.key(), targetPathStr);
+//            OpenCGAResult<File> update = fileDBAdaptor.update(file.getUid(), parameters, Collections.emptyList(), QueryOptions.empty());
+//
+//            auditManager.audit(userId, Enums.Action.MOVE, Enums.Resource.FILE, file.getId(), file.getUuid(),
+//            study.getId(), study.getUuid(),
+//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+//
+//            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+//                // Fetch updated file
+//                OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(),
+//                        new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), options, userId);
+//                update.setResults(result.getResults());
+//            }
+//            return update;
+//        } catch (Exception e) {
+//            auditManager.audit(userId, Enums.Action.MOVE, Enums.Resource.FILE, fileId, fileUuid, study.getId(), study.getUuid(),
+//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, fileId, e.getMessage())));
+//            throw e;
+//        }
+//        throw new RuntimeException("Unimplemented");
+//    }
 
     public OpenCGAResult<File> link(String studyStr, FileLinkParams params, boolean parents, String token) throws CatalogException {
         // We make two attempts to link to ensure the behaviour remains even if it is being called at the same time link from different
