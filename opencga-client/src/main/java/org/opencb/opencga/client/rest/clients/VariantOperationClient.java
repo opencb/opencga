@@ -35,14 +35,14 @@ import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleI
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
-import org.opencb.opencga.core.models.variant.VariantConfigureParams;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
-import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
-import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantConfigureParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantPruneParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 

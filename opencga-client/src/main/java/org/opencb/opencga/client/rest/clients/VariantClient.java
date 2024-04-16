@@ -53,7 +53,7 @@ import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
 

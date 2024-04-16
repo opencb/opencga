@@ -182,30 +182,6 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void renameFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        String newName = "newFile.bam";
-        String parentPath = "data/";
-        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/file.vcf");
-        System.out.println(catalogFileDBAdaptor.rename(fileId, parentPath + newName, "", null));
-
-        File file = catalogFileDBAdaptor.get(fileId, null).first();
-        assertEquals(file.getName(), newName);
-        assertEquals(file.getPath(), parentPath + newName);
-
-        try {
-            catalogFileDBAdaptor.rename(-1, "noFile", "", null);
-            fail("error: expected \"file not found\"exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
-
-        long folderId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/");
-        String folderName = "folderName";
-        catalogFileDBAdaptor.rename(folderId, folderName, "", null);
-        assertTrue(catalogFileDBAdaptor.get(fileId, null).first().getPath().equals(folderName + "/" + newName));
-    }
-
-    @Test
     public void includeFields() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(7,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));

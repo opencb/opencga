@@ -16,14 +16,20 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
 public class VariantAggregateFamilyParams extends ToolParams {
     public static final String DESCRIPTION = "Variant aggregate family params.";
+
+    @DataField(description = "Samples within the same study to aggregate")
     private List<String> samples;
+    @DataField(description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?")
     private String gapsGenotype;
+    @DataField(description = ParamConstants.RESUME_DESCRIPTION)
     private boolean resume;
 
     public VariantAggregateFamilyParams() {
