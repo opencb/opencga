@@ -68,7 +68,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -408,7 +407,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             List<Trio> trios = new LinkedList<>();
-            List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
@@ -425,7 +423,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
-                    .flatMap(t->t.toList().stream())
+                    .flatMap(t -> t.toList().stream())
                     .collect(Collectors.toList()), token);
             return dataResult;
         });
@@ -441,11 +439,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             Collection<String> thisSamples = samples;
+            boolean allSamples;
             if (CollectionUtils.size(thisSamples) == 1 && thisSamples.iterator().next().equals(ParamConstants.ALL)) {
                 thisSamples = getIndexedSamples(study, token);
+                allSamples = true;
+            } else {
+                allSamples = false;
             }
 
             List<Trio> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
+            if (trios.isEmpty()) {
+                String msg;
+                if (thisSamples.size() > 6) {
+                    msg = "No trios found for " + thisSamples.size() + " samples";
+                } else {
+                    msg = "No trios found for samples " + thisSamples;
+                }
+                if (allSamples) {
+                    logger.info(msg);
+                    return new DataResult<>(0, Collections.singletonList(new Event(Event.Type.INFO, msg)), 0, Collections.emptyList(), 0);
+                } else {
+                    throw new StorageEngineException(msg);
+                }
+            }
             DataResult<Trio> dataResult = engine.familyIndex(study, trios, params);
             getSynchronizer(engine).synchronizeCatalogSamplesFromStorage(study, trios.stream()
                     .flatMap(t -> t.toList().stream())
