@@ -29,10 +29,13 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.organizations.*;
+import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class OrganizationManager extends AbstractManager {
@@ -304,6 +307,69 @@ public class OrganizationManager extends AbstractManager {
             throw e;
         }
         return result;
+    }
+
+    public OpenCGAResult<User> updateUser(@Nullable String organizationId, String userId, OrganizationUserUpdateParams updateParams,
+                                          QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("userId", userId)
+                .append("updateParams", updateParams)
+                .append("options", options)
+                .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        try {
+            String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(organizationId));
+            ParamUtils.checkObj(updateParams, "OrganizationUserUpdateParams");
+            getUserDBAdaptor(organizationId).checkId(userId);
+
+            if (StringUtils.isNotEmpty(updateParams.getEmail())) {
+                ParamUtils.checkEmail(updateParams.getEmail());
+            }
+            if (updateParams.getQuota() != null) {
+                if (updateParams.getQuota().getDiskUsage() < 0) {
+                    throw new CatalogException("Disk usage cannot be negative");
+                }
+                if (updateParams.getQuota().getCpuUsage() < 0) {
+                    throw new CatalogException("CPU usage cannot be negative");
+                }
+                if (updateParams.getQuota().getMaxDisk() < 0) {
+                    throw new CatalogException("Max disk cannot be negative");
+                }
+                if (updateParams.getQuota().getMaxCpu() < 0) {
+                    throw new CatalogException("Max CPU cannot be negative");
+                }
+            }
+            if (updateParams.getAccount() != null && StringUtils.isNotEmpty(updateParams.getAccount().getExpirationDate())) {
+                ParamUtils.checkDateIsNotExpired(updateParams.getAccount().getExpirationDate(), "expirationDate");
+            }
+
+            ObjectMap updateMap;
+            try {
+                updateMap = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse OrganizationUserUpdateParams object: " + e.getMessage(), e);
+            }
+            OpenCGAResult<User> updateResult = getUserDBAdaptor(myOrganizationId).update(userId, updateMap);
+            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(organizationId), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated user
+                OpenCGAResult<User> result = getUserDBAdaptor(organizationId).get(userId, options);
+                updateResult.setResults(result.getResults());
+            }
+
+            return updateResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(organizationId), Enums.Resource.USER, userId, "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     private void validateOrganizationForCreation(Organization organization, String userId) throws CatalogParameterException {

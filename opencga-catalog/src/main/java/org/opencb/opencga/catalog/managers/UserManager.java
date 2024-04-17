@@ -590,7 +590,7 @@ public class UserManager extends AbstractManager {
 
             userId = getValidUserId(userId, payload);
             for (String s : parameters.keySet()) {
-                if (!s.matches("name|email|organization|attributes")) {
+                if (!s.matches("name|email")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }

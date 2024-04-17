@@ -441,9 +441,12 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             userParameters.put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             userParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
+        if (parameters.containsKey(ACCOUNT_EXPIRATION_DATE.key())) {
+            userParameters.put(ACCOUNT_EXPIRATION_DATE.key(), parameters.get(ACCOUNT_EXPIRATION_DATE.key()));
+        }
 
-        final String[] acceptedLongParams = {QueryParams.QUOTA.key(), QueryParams.SIZE.key()};
-        filterLongParams(parameters, userParameters, acceptedLongParams);
+        final String[] acceptedObjectParams = {QueryParams.QUOTA.key()};
+        filterObjectParams(parameters, userParameters, acceptedObjectParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, userParameters, acceptedMapParams);
@@ -671,8 +674,6 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     case EMAIL:
                     case ORGANIZATION:
                     case INTERNAL_STATUS_DATE:
-                    case SIZE:
-                    case QUOTA:
                     case ACCOUNT_AUTHENTICATION_ID:
                     case ACCOUNT_CREATION_DATE:
                     case TOOL_ID:

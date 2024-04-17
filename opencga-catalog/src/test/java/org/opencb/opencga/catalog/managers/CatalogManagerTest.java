@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -59,6 +60,7 @@ import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -70,6 +72,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Category(MediumTests.class)
 public class CatalogManagerTest extends AbstractManagerTest {
@@ -222,6 +225,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogAuthenticationException.class);
         thrown.expectMessage("not found");
         catalogManager.getUserManager().loginAnonymous(org2);
+    }
+
+    @Test
+    public void updateUserTest() throws JsonProcessingException, CatalogException {
+        UserUpdateParams userUpdateParams = new UserUpdateParams()
+                .setName("newName")
+                .setEmail("mail@mail.com");
+        ObjectMap updateParams = new ObjectMap(getUpdateObjectMapper().writeValueAsString(userUpdateParams));
+        User user = catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, normalToken1).first();
+        assertEquals(userUpdateParams.getName(), user.getName());
+        assertEquals(userUpdateParams.getEmail(), user.getEmail());
+
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, normalToken2));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, opencgaToken));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, ownerToken));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, orgAdminToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, studyAdminToken1));
+
+        userUpdateParams = new UserUpdateParams()
+                .setEmail("notAnEmail");
+        ObjectMap updateParams2 = new ObjectMap(getUpdateObjectMapper().writeValueAsString(userUpdateParams));
+        assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams2, INCLUDE_RESULT, normalToken1));
     }
 
     @Test

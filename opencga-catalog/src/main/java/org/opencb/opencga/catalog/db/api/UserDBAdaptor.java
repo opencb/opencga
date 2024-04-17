@@ -123,8 +123,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         ACCOUNT("account", TEXT_ARRAY, ""),
         ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""),
         ACCOUNT_CREATION_DATE("account.creationDate", TEXT, ""),
-        SIZE("size", INTEGER_ARRAY, ""),
-        QUOTA("quota", INTEGER_ARRAY, ""),
+        ACCOUNT_EXPIRATION_DATE("account.expirationDate", TEXT, ""),
+        QUOTA("quota", OBJECT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
         PROJECTS("projects", TEXT_ARRAY, ""),
