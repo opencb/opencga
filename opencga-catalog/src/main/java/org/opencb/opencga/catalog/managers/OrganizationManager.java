@@ -134,7 +134,7 @@ public class OrganizationManager extends AbstractManager {
             QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
             boolean isOrgAdmin = authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             queryOptions.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, isOrgAdmin);
-            queryResult = getOrganizationDBAdaptor(organizationId).get(queryOptions);
+            queryResult = getOrganizationDBAdaptor(organizationId).get(userId, queryOptions);
         } catch (CatalogException e) {
             auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

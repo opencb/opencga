@@ -95,9 +95,9 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
     OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-//
-//    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
-//
+
+    OpenCGAResult<Organization> get(String userId, QueryOptions options) throws CatalogDBException;
+
     OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException;
 //
 //    OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;
