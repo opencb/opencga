@@ -216,20 +216,24 @@ public class VariantQuery extends Query {
         return getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key());
     }
 
-    public VariantQuery sampleLimit(String value) {
+    public VariantQuery sampleLimit(int value) {
         put(VariantQueryParam.SAMPLE_LIMIT.key(), value);
         return this;
     }
-    public String sampleLimit() {
-        return getString(VariantQueryParam.SAMPLE_LIMIT.key());
+    public int sampleLimit() {
+        return getInt(VariantQueryParam.SAMPLE_LIMIT.key());
     }
 
     public VariantQuery sampleSkip(String value) {
         put(VariantQueryParam.SAMPLE_SKIP.key(), value);
         return this;
     }
-    public String sampleSkip() {
-        return getString(VariantQueryParam.SAMPLE_SKIP.key());
+    public VariantQuery sampleSkip(int value) {
+        put(VariantQueryParam.SAMPLE_SKIP.key(), value);
+        return this;
+    }
+    public int sampleSkip() {
+        return getInt(VariantQueryParam.SAMPLE_SKIP.key());
     }
 
     public VariantQuery file(String value) {
@@ -627,12 +631,12 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.RELEASE.key(), value);
         return this;
     }
-    public VariantQuery release(int value) {
+    public VariantQuery release(Integer value) {
         put(VariantQueryParam.RELEASE.key(), value);
         return this;
     }
-    public String release() {
-        return getString(VariantQueryParam.RELEASE.key());
+    public Integer release() {
+        return getInt(VariantQueryParam.RELEASE.key());
     }
 
     @Override

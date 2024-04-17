@@ -1029,10 +1029,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
         try {
-            Query query = preProcessQuery(originalQuery, options);
-            ParsedVariantQuery parsedVariantQuery = getVariantQueryParser().parseQuery(query, options, true);
-            parsedVariantQuery.setInputQuery(originalQuery);
-            return parsedVariantQuery;
+            return getVariantQueryParser().parseQuery(originalQuery, options);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e).setQuery(originalQuery);
         }

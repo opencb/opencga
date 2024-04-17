@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -149,15 +150,15 @@ public class VariantQueryParser {
         return parseQuery(query, options, false);
     }
 
-    public ParsedVariantQuery parseQuery(Query query, QueryOptions options, boolean skipPreProcess) {
-        if (query == null) {
-            query = new Query();
+    public ParsedVariantQuery parseQuery(Query inputQuery, QueryOptions options, boolean skipPreProcess) {
+        if (inputQuery == null) {
+            inputQuery = new Query();
         }
         if (options == null) {
             options = new QueryOptions();
         }
 
-        ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(query), new QueryOptions(options));
+        ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(inputQuery), new QueryOptions(options));
         int limit = options.getInt(QueryOptions.LIMIT, -1);
         variantQuery.setLimit(limit == -1 ? null : limit);
         variantQuery.setSkip(options.getInt(QueryOptions.SKIP, 0));
@@ -166,15 +167,19 @@ public class VariantQueryParser {
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
 
+        variantQuery.setProjection(projectionParser.parseVariantQueryProjection(inputQuery, options));
+
+        VariantQuery query;
         if (!skipPreProcess) {
-            query = preProcessQuery(query, options);
+            query = new VariantQuery(preProcessQuery(inputQuery, options, variantQuery.getProjection()));
+        } else {
+            query = new VariantQuery(inputQuery);
         }
         variantQuery.setQuery(query);
-        variantQuery.setProjection(projectionParser.parseVariantQueryProjection(query, options));
 
         List<Region> geneRegions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
         variantQuery.setGeneRegions(geneRegions == null ? Collections.emptyList() : geneRegions);
-        List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
+        List<Region> regions = Region.parseRegions(query.region(), true);
         variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
         variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
         variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
@@ -188,7 +193,7 @@ public class VariantQueryParser {
         }
         if (isValidParam(query, GENOTYPE)) {
             HashMap<Object, List<String>> map = new HashMap<>();
-            QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.genotype(), map);
 
             if (defaultStudy == null) {
                 List<String> studyNames = metadataManager.getStudyNames();
@@ -224,13 +229,17 @@ public class VariantQueryParser {
         return variantQuery;
     }
 
-    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
+    public final Query preProcessQuery(Query originalQuery, QueryOptions options) {
+        return preProcessQuery(originalQuery, options, null);
+    }
+
+    protected Query preProcessQuery(Query originalQuery, QueryOptions options, VariantQueryProjection projection) {
         // Copy input query! Do not modify original query!
         Query query = VariantQueryUtils.copy(originalQuery);
 
         preProcessAnnotationParams(query);
 
-        preProcessStudyParams(query, options);
+        preProcessStudyParams(query, options, projection);
 
         if (options != null && options.getLong(QueryOptions.LIMIT) < 0) {
             throw VariantQueryException.malformedParam(QueryOptions.LIMIT, options.getString(QueryOptions.LIMIT),
@@ -376,7 +385,7 @@ public class VariantQueryParser {
         }
     }
 
-    protected void preProcessStudyParams(Query query, QueryOptions options) {
+    protected void preProcessStudyParams(Query query, QueryOptions options, VariantQueryProjection projection) {
         StudyMetadata defaultStudy = getDefaultStudy(query);
         QueryOperation formatOperator = null;
         if (isValidParam(query, SAMPLE_DATA)) {
@@ -676,22 +685,23 @@ public class VariantQueryParser {
         if (!isValidParam(query, INCLUDE_STUDY)
                 || !isValidParam(query, INCLUDE_SAMPLE)
                 || !isValidParam(query, INCLUDE_FILE)
-                || !isValidParam(query, SAMPLE_SKIP)
-                || !isValidParam(query, SAMPLE_LIMIT)
+                || isValidParam(query, SAMPLE_SKIP)
+                || isValidParam(query, SAMPLE_LIMIT)
         ) {
-            VariantQueryProjection selectVariantElements =
-                    VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
+            if (projection == null) {
+                projection = projectionParser.parseVariantQueryProjection(query, options);
+            }
             // Apply the sample pagination.
             // Remove the sampleLimit and sampleSkip to avoid applying the pagination twice
             query.remove(SAMPLE_SKIP.key());
             query.remove(SAMPLE_LIMIT.key());
-            query.put(NUM_TOTAL_SAMPLES.key(), selectVariantElements.getNumTotalSamples());
-            query.put(NUM_SAMPLES.key(), selectVariantElements.getNumSamples());
+            query.put(NUM_TOTAL_SAMPLES.key(), projection.getNumTotalSamples());
+            query.put(NUM_SAMPLES.key(), projection.getNumSamples());
 
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
-                for (Integer studyId : selectVariantElements.getStudyIds()) {
-                    includeStudy.add(selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
+                for (Integer studyId : projection.getStudyIds()) {
+                    includeStudy.add(projection.getStudy(studyId).getStudyMetadata().getName());
                 }
                 if (includeStudy.isEmpty()) {
                     query.put(INCLUDE_STUDY.key(), NONE);
@@ -699,8 +709,8 @@ public class VariantQueryParser {
                     query.put(INCLUDE_STUDY.key(), includeStudy);
                 }
             }
-            if (!isValidParam(query, INCLUDE_SAMPLE) || selectVariantElements.getSamplePagination()) {
-                List<String> includeSample = selectVariantElements.getSampleNames().values()
+            if (!isValidParam(query, INCLUDE_SAMPLE) || projection.getSamplePagination()) {
+                List<String> includeSample = projection.getSampleNames().values()
                         .stream().flatMap(Collection::stream).collect(Collectors.toList());
                 if (includeSample.isEmpty()) {
                     query.put(INCLUDE_SAMPLE.key(), NONE);
@@ -708,8 +718,8 @@ public class VariantQueryParser {
                     query.put(INCLUDE_SAMPLE.key(), includeSample);
                 }
             }
-            if (!isValidParam(query, INCLUDE_FILE) || selectVariantElements.getSamplePagination()) {
-                List<String> includeFile = selectVariantElements.getFiles()
+            if (!isValidParam(query, INCLUDE_FILE) || projection.getSamplePagination()) {
+                List<String> includeFile = projection.getFiles()
                         .entrySet()
                         .stream()
                         .flatMap(e -> e.getValue()

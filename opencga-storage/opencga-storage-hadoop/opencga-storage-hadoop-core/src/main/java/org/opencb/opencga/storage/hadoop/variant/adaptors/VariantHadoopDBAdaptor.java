@@ -248,6 +248,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        return get(new HadoopVariantQueryParser(null, getMetadataManager()).parseQuery(query, options));
+    }
+
+    @Override
     public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options,
                                                  int windowsSize) {
         throw new UnsupportedOperationException("Unimplemented");
