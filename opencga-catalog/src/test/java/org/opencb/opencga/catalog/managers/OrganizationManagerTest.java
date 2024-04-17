@@ -14,10 +14,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
-import org.opencb.opencga.core.models.organizations.TokenConfiguration;
+import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
@@ -84,6 +81,14 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
         assertEquals(authOrigin.getType(), organization.getConfiguration().getAuthenticationOrigins().get(0).getType());
+    }
+
+    @Test
+    public void createNewOrganizationTest() throws CatalogException {
+        OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("org2"), INCLUDE_RESULT, opencgaToken);
+        assertEquals(1, result.getNumInserted());
+        assertEquals(1, result.getNumMatches());
+        assertEquals("org2", result.first().getId());
     }
 
     @Test

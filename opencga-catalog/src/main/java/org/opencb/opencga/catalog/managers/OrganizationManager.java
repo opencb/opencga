@@ -182,10 +182,10 @@ public class OrganizationManager extends AbstractManager {
                 // Fetch created organization
                 queryResult.setResults(result.getResults());
             }
-            privatizeResults(queryResult);
-
             // Add required authentication manager for the new organization
             authenticationFactory.configureOrganizationAuthenticationManager(organization);
+
+            privatizeResults(queryResult);
         } catch (CatalogException e) {
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
                 auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,
