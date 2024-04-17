@@ -18,6 +18,7 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.organizations.TokenConfiguration;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -83,6 +84,65 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
         assertEquals(authOrigin.getType(), organization.getConfiguration().getAuthenticationOrigins().get(0).getType());
+    }
+
+    @Test
+    public void organizationInfoIncludeProjectsTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNotNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.INCLUDE, "projects.fqn");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNull(project.getCreationDate());
+        }
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects.name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
+    }
+
+    @Test
+    public void organizationInfoProjectsAuthTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), orgAdminToken1).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), studyAdminToken1).first();
+        assertEquals(2, organization.getProjects().size());
+        assertArrayEquals(Arrays.asList(projectFqn1, projectFqn2).toArray(),
+                organization.getProjects().stream().map(Project::getFqn).toArray());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), normalToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), noAccessToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
     }
 
     @Test
