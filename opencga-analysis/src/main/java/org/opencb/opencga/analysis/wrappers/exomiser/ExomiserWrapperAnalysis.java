@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.wrappers.exomiser;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -52,6 +53,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(study)
                     .setSampleId(analysisParams.getSample())
+                    .setClinicalAnalysisType(ClinicalAnalysis.Type.valueOf(analysisParams.getClinicalAnalysisType()))
                     .execute();
         });
     }
