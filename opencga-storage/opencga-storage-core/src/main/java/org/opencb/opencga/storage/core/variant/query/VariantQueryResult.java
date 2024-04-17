@@ -22,13 +22,10 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE_METADATA;
 
 /**
  * Created on 07/02/17.
@@ -76,6 +73,9 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         if (numTotalSamples != null) {
             setNumTotalSamples(numTotalSamples);
         }
+        if (getEvents() == null) {
+            setEvents(new ArrayList<>());
+        }
         if (variantQuery != null) {
             addSamplesMetadataIfRequested(variantQuery);
         }
@@ -92,6 +92,9 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                 dataResult.getAttributes());
         setResults(results);
         setNumResults(results.size());
+        if (getEvents() == null) {
+            setEvents(new ArrayList<>());
+        }
     }
 
     public VariantQueryResult(DataResult<T> dataResult, ParsedVariantQuery variantQuery) {
@@ -132,36 +135,17 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         VariantQueryProjection projection = query.getProjection();
 
         if (!query.getEvents().isEmpty()) {
-            if (getEvents() == null) {
-                setEvents(new ArrayList<>());
-            }
             getEvents().addAll(query.getEvents());
         }
         if (!projection.getEvents().isEmpty()) {
-            if (getEvents() == null) {
-                setEvents(new ArrayList<>());
-            }
             getEvents().addAll(projection.getEvents());
         }
 
-        int numTotalSamples = projection.getNumTotalSamples();
-        int numSamples = projection.getNumSamples();
-        if (query.getInputQuery().getBoolean(SAMPLE_METADATA.key(), false)) {
-            Map<String, List<String>> samplesMetadata = query.getProjection().getSampleNames();
-            if (numTotalSamples < 0 && numSamples < 0) {
-                numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
-                VariantQueryProjectionParser.skipAndLimitSamples(query.getQuery(), samplesMetadata);
-                numSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
-            }
-            setNumSamples(numSamples);
-            setNumTotalSamples(numTotalSamples);
-            setSamples(samplesMetadata);
-        } else {
-            if (numTotalSamples >= 0 && numSamples >= 0) {
-                setNumSamples(numSamples);
-                setNumTotalSamples(numTotalSamples);
-            }
+        if (query.getQuery().sampleMetadata()) {
+            setSamples(query.getProjection().getSampleNames());
         }
+        setNumSamples(projection.getNumSamples());
+        setNumTotalSamples(projection.getNumTotalSamples());
     }
 
     public Map<String, List<String>> getSamples() {

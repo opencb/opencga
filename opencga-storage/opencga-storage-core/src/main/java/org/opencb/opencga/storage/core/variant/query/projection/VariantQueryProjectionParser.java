@@ -70,6 +70,10 @@ public class VariantQueryProjectionParser {
         }
 
         Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
+        int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
+        skipAndLimitSamples(query, sampleIdsMap);
+        int numSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
+
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
             List<Integer> sampleIds = sampleIdsMap.get(study.getId());
             study.setSamples(sampleIds);
@@ -79,9 +83,6 @@ public class VariantQueryProjectionParser {
             }
             study.setSampleNames(sampleNames);
         }
-        int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
-        skipAndLimitSamples(query, sampleIdsMap);
-        int numSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
 
         Map<Integer, List<Integer>> fileIdsMap = getIncludeFiles(query, includeStudies, includeFields,
                 metadataManager, sampleIdsMap);
@@ -147,7 +148,7 @@ public class VariantQueryProjectionParser {
                 .setEvents(events);
     }
 
-    public static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {
+    private <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.SAMPLE_SKIP)) {
             int skip = query.getInt(VariantQueryParam.SAMPLE_SKIP.key());
             if (skip > 0) {

@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -22,7 +23,7 @@ public class ParsedVariantQuery {
 
     private Query inputQuery;
     private QueryOptions inputOptions;
-    private Query query;
+    private VariantQuery query;
     private boolean optimized = false;
 
     private List<Event> events = new ArrayList<>();
@@ -44,21 +45,21 @@ public class ParsedVariantQuery {
     public ParsedVariantQuery() {
         this.inputQuery = new Query();
         this.inputOptions = new QueryOptions();
-        this.query = new Query();
+        this.query = new VariantQuery();
         studyQuery = new VariantStudyQuery();
     }
 
     public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
         this.inputQuery = inputQuery;
         this.inputOptions = inputOptions;
-        this.query = inputQuery;
+        this.query = new VariantQuery(inputQuery);
         studyQuery = new VariantStudyQuery();
     }
 
     public ParsedVariantQuery(ParsedVariantQuery other) {
         this.inputQuery = new Query(other.inputQuery);
         this.inputOptions = new QueryOptions(other.inputOptions);
-        this.query = new Query(other.query);
+        this.query = new VariantQuery(other.query);
         this.projection = other.projection;
         this.studyQuery = new VariantStudyQuery(other.getStudyQuery());
         this.optimized = other.optimized;
@@ -81,11 +82,11 @@ public class ParsedVariantQuery {
         return this;
     }
 
-    public Query getQuery() {
+    public VariantQuery getQuery() {
         return query;
     }
 
-    public ParsedVariantQuery setQuery(Query query) {
+    public ParsedVariantQuery setQuery(VariantQuery query) {
         this.query = query;
         return this;
     }
