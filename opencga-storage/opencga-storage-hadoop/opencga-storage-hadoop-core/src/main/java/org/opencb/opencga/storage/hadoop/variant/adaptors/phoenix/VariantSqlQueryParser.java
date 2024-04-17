@@ -125,8 +125,6 @@ public class VariantSqlQueryParser {
     public String parse(ParsedVariantQuery variantQuery, QueryOptions options) {
         Query query = variantQuery.getQuery();
 
-        StringBuilder sb = new StringBuilder("SELECT ");
-
         try {
 
             Set<Column> dynamicColumns = new HashSet<>();
@@ -145,21 +143,22 @@ public class VariantSqlQueryParser {
                     hints.add(HintNode.Hint.valueOf(hint));
                 }
             }
+
+            StringBuilder sb = new StringBuilder("SELECT ");
             if (!hints.isEmpty()) {
                 sb.append("/*+ ").append(hints.stream().map(Object::toString).collect(Collectors.joining(","))).append(" */ ");
             }
-
             appendProjectedColumns(sb, variantQuery.getProjection(), options);
             appendFromStatement(sb, dynamicColumns);
             appendWhereStatement(sb, regionFilters, filters);
             appendOrderby(options, sb);
             appendLimitSkip(options, sb);
 
+            return sb.toString();
         } catch (VariantQueryException e) {
             e.setQuery(query);
             throw e;
         }
-        return sb.toString();
     }
 
     private void appendOrderby(QueryOptions options, StringBuilder sb) {
@@ -217,7 +216,6 @@ public class VariantSqlQueryParser {
             return sb.append(" COUNT(*) ");
         } else {
             Set<VariantField> returnedFields = projection.getFields();
-            Collection<Integer> studyIds = projection.getStudyIds();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -967,36 +965,38 @@ public class VariantSqlQueryParser {
                 }
                 boolean multiFileSample = VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData());
                 List<Integer> sampleFiles = new ArrayList<>();
+                // First file does not have the fileID in the column name
+                Integer firstSampleFile = sampleMetadata.getFiles().get(0);
+
                 if (multiFileSample) {
                     if (fileIds.isEmpty()) {
-                        sampleFiles.add(null); // First file does not have the fileID in the column name
                         List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();
-                        sampleFiles.addAll(fileIdsFromSampleId.subList(1, fileIdsFromSampleId.size()));
+                        sampleFiles.addAll(fileIdsFromSampleId);
                     } else {
                         for (Pair<Integer, Integer> fileIdPair : fileIds) {
                             if (fileIdPair.getKey().equals(studyId)) {
-                                Integer fileId = fileIdPair.getValue();
-                                int idx = sampleMetadata.getFiles().indexOf(fileId);
-                                if (idx == 0) {
-                                    sampleFiles.add(null); // First file does not have the fileID in the column name
-                                } else if (idx > 0) {
-                                    sampleFiles.add(fileId); // First file does not have the fileID in the column name
-                                }
+                                sampleFiles.add(fileIdPair.getValue());
                             }
                         }
                     }
                 } else {
-                    sampleFiles.add(null); // First file does not have the fileID in the column name
+                    // Non multi file sample
+                    sampleFiles.add(firstSampleFile);
                 }
 
                 for (Integer sampleFile : sampleFiles) {
+                    if (!metadataManager.isFileIndexed(studyId, sampleFile)) {
+                        // Skip non indexed files
+                        continue;
+                    }
                     List<String> sampleFileGtFilters = new ArrayList<>(genotypes.size());
                     for (String genotype : genotypes) {
                         if (negated) {
                             genotype = removeNegation(genotype);
                         }
                         String key;
-                        if (sampleFile == null) {
+                        if (Objects.equals(sampleFile, firstSampleFile)) {
+                            // Special scenario for the first file. Column name does not contain the fileId
                             key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
                         } else {
                             key = buildSampleColumnKey(studyId, sampleId, sampleFile, new StringBuilder()).toString();
