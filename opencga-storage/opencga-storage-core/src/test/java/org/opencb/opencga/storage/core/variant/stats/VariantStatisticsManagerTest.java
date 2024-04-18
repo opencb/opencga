@@ -146,7 +146,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
         VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
         assertEquals(1, result.getEvents().size());
-        assertEquals("Cohort 'cohort2' has outdated variant stats", result.getEvents().get(0).getMessage());
+        assertEquals("Please note that the Cohort Stats for '1000g:cohort2' are currently outdated." +
+                " The statistics have been calculated with 2 samples, while the total number of samples in the cohort is 4." +
+                " To display updated statistics, please execute variant-stats-index.", result.getEvents().get(0).getMessage());
     }
 
     @Test

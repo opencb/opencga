@@ -369,8 +369,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public VariantQueryResult<Variant> dbAdaptorQuery(Query query, QueryOptions options) {
-        query = variantStorageEngine.preProcessQuery(query, options);
-        return dbAdaptor.get(query, options);
+        ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
+        return dbAdaptor.get(variantQuery);
     }
 
     @Test
