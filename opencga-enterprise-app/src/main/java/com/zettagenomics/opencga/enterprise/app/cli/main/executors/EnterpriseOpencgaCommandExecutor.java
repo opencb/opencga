@@ -248,16 +248,10 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         return this;
     }
 
-    public String getObjectAsJSON(Object o) throws Exception {
-        String jsonInString = "Data model not found.";
-        try {
-            jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
-        } catch (Exception e) {
-            CommandLineUtils.error(e);
-        }
-        return jsonInString;
+    public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
+        return super.getObjectAsJSON(objectCategory,objectPath,enterpriseOpenCGAClient);
     }
-
+/*
     public String getObjectAsJSON(String objectCategory, String objectPath) throws Exception {
         StringBuilder jsonInString = new StringBuilder("\n");
         try {
@@ -367,7 +361,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         }
         return res;
     }
-
+*/
     public RestResponse<AuthenticationResponse> refreshToken(AuthenticationResponse response) throws ClientException, IOException {
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         if (response != null) {

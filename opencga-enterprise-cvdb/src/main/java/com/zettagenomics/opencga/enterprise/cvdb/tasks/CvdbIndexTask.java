@@ -51,7 +51,7 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(getStudyFqn(), jwtPayload);
         String organizationId = catalogFqn.getOrganizationId();
         String userId = jwtPayload.getUserId(organizationId);
-        getCatalogManager().getAuthorizationManager().checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        getCatalogManager().getAuthorizationManager().checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
         // Get study
         Study study = getCatalogManager().getStudyManager().get(getStudyFqn(), QueryOptions.empty(), token).first();
