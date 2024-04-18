@@ -974,7 +974,8 @@ public class VariantSqlQueryParser {
                         sampleFiles.addAll(fileIdsFromSampleId);
                     } else {
                         for (Pair<Integer, Integer> fileIdPair : fileIds) {
-                            if (fileIdPair.getKey().equals(studyId)) {
+                            if (fileIdPair.getKey().equals(studyId)
+                                    && sampleMetadata.getFiles().contains(fileIdPair.getValue())) {
                                 sampleFiles.add(fileIdPair.getValue());
                             }
                         }
@@ -1231,27 +1232,24 @@ public class VariantSqlQueryParser {
                 SampleMetadata sampleMetadata = sampleDataFilter.getKey();
 
                 boolean multiFileSample = VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData());
+                // First file does not have the fileID in the column name
+                Integer firstSampleFile = sampleMetadata.getFiles().get(0);
                 List<Integer> sampleFiles = new ArrayList<>();
                 if (multiFileSample) {
                     if (fileIds.isEmpty()) {
-                        sampleFiles.add(null); // First file does not have the fileID in the column name
                         List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();
-                        sampleFiles.addAll(fileIdsFromSampleId.subList(1, fileIdsFromSampleId.size()));
+                        sampleFiles.addAll(fileIdsFromSampleId);
                     } else {
                         for (Pair<Integer, Integer> fileIdPair : fileIds) {
-                            if (fileIdPair.getKey().equals(sampleMetadata.getStudyId())) {
-                                Integer fileId = fileIdPair.getValue();
-                                int idx = sampleMetadata.getFiles().indexOf(fileId);
-                                if (idx == 0) {
-                                    sampleFiles.add(null); // First file does not have the fileID in the column name
-                                } else if (idx > 0) {
-                                    sampleFiles.add(fileId); // First file does not have the fileID in the column name
-                                }
+                            if (fileIdPair.getKey().equals(sampleMetadata.getStudyId())
+                                    && sampleMetadata.getFiles().contains(fileIdPair.getValue())) {
+                                sampleFiles.add(fileIdPair.getValue());
                             }
                         }
                     }
                 } else {
-                    sampleFiles.add(null); // First file does not have the fileID in the column name
+                    // Non multi file sample
+                    sampleFiles.add(firstSampleFile);
                 }
                 for (Integer sampleFile : sampleFiles) {
                     List<String> sampleFileFilters = new LinkedList<>();
@@ -1271,10 +1269,11 @@ public class VariantSqlQueryParser {
                             sb.append("TO_NUMBER(");
                         }
                         sb.append('"');
-                        if (sampleFile != null) {
-                            buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleFile, sb);
-                        } else {
+                        if (Objects.equals(sampleFile, firstSampleFile)) {
+                            // Special scenario for the first file. Column name does not contain the fileId
                             buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sb);
+                        } else {
+                            buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleFile, sb);
                         }
                         sb.append('"');
 
@@ -1288,10 +1287,11 @@ public class VariantSqlQueryParser {
 
                             if (op.startsWith(">>") || op.startsWith("<<")) {
                                 sb.append(" OR \"");
-                                if (sampleFile != null) {
-                                    buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleFile, sb);
-                                } else {
+                                if (Objects.equals(sampleFile, firstSampleFile)) {
+                                    // Special scenario for the first file. Column name does not contain the fileId
                                     buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sb);
+                                } else {
+                                    buildSampleColumnKey(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleFile, sb);
                                 }
                                 sb.append('"');
 
@@ -1308,8 +1308,8 @@ public class VariantSqlQueryParser {
                     if (multiFileSample) {
                         // The first file is null. Get the actual fileId
                         Integer actualFileId;
-                        if (sampleFile == null) {
-                            actualFileId = sampleMetadata.getFiles().get(0);
+                        if (Objects.equals(sampleFile, firstSampleFile)) {
+                            actualFileId = firstSampleFile;
                         } else {
                             actualFileId = sampleFile;
                         }
