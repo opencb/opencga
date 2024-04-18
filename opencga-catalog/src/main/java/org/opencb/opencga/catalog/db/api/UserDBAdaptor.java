@@ -118,6 +118,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
+        INTERNAL("internal", OBJECT, ""),
+        INTERNAL_FAILED_ATTEMPTS("internal.failedAttempts", INTEGER, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
