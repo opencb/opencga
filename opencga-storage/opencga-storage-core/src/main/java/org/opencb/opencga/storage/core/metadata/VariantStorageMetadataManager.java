@@ -1249,6 +1249,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         if (!oldSamples.equals(sampleIdsList) || !oldFiles.equals(fileIds)) {
                             // Cohort has been modified! Invalidate stats
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                            cohort.getAttributes().put(CohortMetadata.INVALID_STATS_NUM_SAMPLES, oldSamples.size());
                         }
                     }
                 }

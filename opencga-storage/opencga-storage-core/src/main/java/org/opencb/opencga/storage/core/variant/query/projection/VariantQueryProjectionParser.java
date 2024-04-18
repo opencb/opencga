@@ -137,7 +137,14 @@ public class VariantQueryProjectionParser {
                 for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
                     cohorts.add(cohort.getId());
                     if (cohort.isInvalid()) {
-                        events.add(new Event(Event.Type.WARNING, "Cohort '" + cohort.getName() + "' has outdated variant stats"));
+                        String message = "Cohort '" + cohort.getName() + "' has outdated variant stats.";
+                        int numSampmles = cohort.getSamples().size();
+                        int invalidStatsNumSamples = cohort.getAttributes().getInt(CohortMetadata.INVALID_STATS_NUM_SAMPLES, -1);
+                        if (invalidStatsNumSamples > 0) {
+                            message += " Existing stats are calculated with " + invalidStatsNumSamples + " samples, "
+                                    + "but the cohort currently has " + numSampmles + " samples.";
+                        }
+                        events.add(new Event(Event.Type.WARNING, message));
                     }
                 }
                 study.setCohorts(cohorts);
