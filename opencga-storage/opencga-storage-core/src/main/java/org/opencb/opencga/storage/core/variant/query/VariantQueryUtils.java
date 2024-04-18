@@ -1542,6 +1542,13 @@ public final class VariantQueryUtils {
                     query.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
                 }
             }
+            if (isValidParam(query, ID_INTERSECT)) {
+                query = new Query(query);
+                Object idIntersect = query.get(ID_INTERSECT.key());
+                if (idIntersect instanceof Collection) {
+                    query.put(ID_INTERSECT.key(), "numIdIntersect : " + ((Collection<?>) idIntersect).size());
+                }
+            }
             try {
                 return QUERY_MAPPER.writeValueAsString(query);
             } catch (JsonProcessingException e) {

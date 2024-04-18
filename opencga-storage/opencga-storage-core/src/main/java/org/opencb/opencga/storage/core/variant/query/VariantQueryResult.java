@@ -24,6 +24,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -134,6 +135,10 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     private void addSamplesMetadataIfRequested(ParsedVariantQuery query) {
         VariantQueryProjection projection = query.getProjection();
 
+        // Ensure is modifiable
+        if (getEvents() == null || Collections.emptyList().getClass().equals(getEvents().getClass())) {
+            setEvents(new ArrayList<>());
+        }
         if (!query.getEvents().isEmpty()) {
             getEvents().addAll(query.getEvents());
         }
