@@ -30,7 +30,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.CryptoUtils;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -431,8 +434,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key(),
-                ACCOUNT_EXPIRATION_DATE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), ACCOUNT_EXPIRATION_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {

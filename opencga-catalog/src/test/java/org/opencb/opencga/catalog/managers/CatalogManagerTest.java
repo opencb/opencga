@@ -584,6 +584,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(acls.stream().map(x -> String.valueOf(x.get("member"))).collect(Collectors.toSet()).contains("@group_cancer_some_thing_else"));
     }
 
+    @Test
+    public void getUserInfoTest() throws CatalogException {
+        OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, QueryOptions.empty(), orgAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, QueryOptions.empty(), studyAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, normalUserId1, QueryOptions.empty(), normalToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(1, result.first().getProjects().size());
+    }
+
     /**
      * Project methods ***************************
      */

@@ -134,10 +134,13 @@ public class OrganizationManager extends AbstractManager {
 
         OpenCGAResult<Organization> queryResult;
         try {
+            authorizationManager.checkCanViewOrganization(organizationId, userId);
+            ParamUtils.checkParameter(organizationId, "organization id");
             QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
             boolean isOrgAdmin = authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             queryOptions.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, isOrgAdmin);
-            queryResult = getOrganizationDBAdaptor(organizationId).get(queryOptions);
+            queryResult = getOrganizationDBAdaptor(organizationId).get(userId, queryOptions);
+            privatizeResults(queryResult);
         } catch (CatalogException e) {
             auditManager.auditInfo(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -182,9 +185,10 @@ public class OrganizationManager extends AbstractManager {
                 // Fetch created organization
                 queryResult.setResults(result.getResults());
             }
-
             // Add required authentication manager for the new organization
             authenticationFactory.configureOrganizationAuthenticationManager(organization);
+
+            privatizeResults(queryResult);
         } catch (CatalogException e) {
             if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationCreateParams.getId())) {
                 auditManager.auditCreate(ParamConstants.ADMIN_ORGANIZATION, userId, Enums.Resource.ORGANIZATION,
@@ -269,12 +273,10 @@ public class OrganizationManager extends AbstractManager {
                         }
                         internal = true;
                         // Set id to INTERNAL
-                        authenticationOrigin.setId(CatalogAuthenticationManager.INTERNAL);
+                        authenticationOrigin.setId(CatalogAuthenticationManager.OPENCGA);
                     }
                     ParamUtils.checkIdentifier(authenticationOrigin.getId(), authOriginsPrefixKey + ".id");
                     ParamUtils.checkObj(authenticationOrigin.getType(), authOriginsPrefixKey + ".type");
-                    ParamUtils.checkParameter(authenticationOrigin.getSecretKey(), authOriginsPrefixKey + ".secretKey");
-                    ParamUtils.checkParameter(authenticationOrigin.getAlgorithm(), authOriginsPrefixKey + ".algorithm");
                     if (authenticationOriginIds.contains(authenticationOrigin.getId())) {
                         throw new CatalogException("Found duplicated authentication origin id '" + authenticationOrigin.getId() + "'.");
                     }
@@ -295,6 +297,7 @@ public class OrganizationManager extends AbstractManager {
                 OpenCGAResult<Organization> queryResult = getOrganizationDBAdaptor(organizationId).get(options);
                 result.setResults(queryResult.getResults());
             }
+            privatizeResults(result);
         } catch (Exception e) {
             Event event = new Event(Event.Type.ERROR, organizationId, e.getMessage());
             result.getEvents().add(event);
@@ -397,7 +400,11 @@ public class OrganizationManager extends AbstractManager {
         } else {
             organization.getConfiguration()
                     .setAuthenticationOrigins(Collections.singletonList(
-                            CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
+                            CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()));
+        }
+        if (organization.getConfiguration().getToken() == null
+                || StringUtils.isEmpty(organization.getConfiguration().getToken().getSecretKey())) {
+            organization.getConfiguration().setToken(TokenConfiguration.init());
         }
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }
@@ -422,5 +429,20 @@ public class OrganizationManager extends AbstractManager {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         authorizationManager.checkIsOpencgaAdministrator(tokenPayload, "get all organization ids");
         return catalogDBAdaptorFactory.getOrganizationIds();
+    }
+
+    private void privatizeResults(OpenCGAResult<Organization> result) {
+        if (CollectionUtils.isNotEmpty(result.getResults())) {
+            for (Organization organization : result.getResults()) {
+                if (organization.getConfiguration() != null) {
+                    organization.getConfiguration().setToken(null);
+                    if (CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
+                        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                            authenticationOrigin.setOptions(null);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

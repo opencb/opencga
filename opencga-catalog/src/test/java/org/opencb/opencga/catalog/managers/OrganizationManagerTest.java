@@ -16,9 +16,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.*;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.OrganizationUserUpdateParams;
@@ -44,7 +43,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     @Test
     public void ensureAuthOriginCannotBeRemovedTest() throws CatalogException {
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.emptyList(), null));
+                Collections.emptyList(), null, new TokenConfiguration()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
         catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken);
@@ -52,10 +51,10 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void avoidDuplicatedOPENCGAAuthOriginTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
-        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
+        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null));
+                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
@@ -64,11 +63,11 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void avoidDuplicatedAuthOriginIdTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
-        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
+        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         authOrigin2.setType(AuthenticationOrigin.AuthenticationType.LDAP);
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null));
+                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("origin id");
@@ -77,16 +76,80 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateAuthOriginTest() throws CatalogException {
-        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin();
+        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.singletonList(authOrigin), null));
+                Collections.singletonList(authOrigin), null, new TokenConfiguration()));
 
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
         assertEquals(authOrigin.getType(), organization.getConfiguration().getAuthenticationOrigins().get(0).getType());
-        assertEquals(authOrigin.getExpiration(), organization.getConfiguration().getAuthenticationOrigins().get(0).getExpiration());
-        assertEquals(authOrigin.getSecretKey(), organization.getConfiguration().getAuthenticationOrigins().get(0).getSecretKey());
-        assertEquals(authOrigin.getAlgorithm(), organization.getConfiguration().getAuthenticationOrigins().get(0).getAlgorithm());
+    }
+
+    @Test
+    public void createNewOrganizationTest() throws CatalogException {
+        OpenCGAResult<Organization> result = catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("org2"), INCLUDE_RESULT, opencgaToken);
+        assertEquals(1, result.getNumInserted());
+        assertEquals(1, result.getNumMatches());
+        assertEquals("org2", result.first().getId());
+    }
+
+    @Test
+    public void organizationInfoIncludeProjectsTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNotNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getProjects());
+
+        options = new QueryOptions(QueryOptions.INCLUDE, "projects.fqn");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNull(project.getCreationDate());
+        }
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, "projects.name");
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+        for (Project project : organization.getProjects()) {
+            assertNotNull(project.getFqn());
+            assertNull(project.getName());
+            assertNotNull(project.getCreationDate());
+        }
+    }
+
+    @Test
+    public void organizationInfoProjectsAuthTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), orgAdminToken1).first();
+        assertEquals(3, organization.getProjects().size());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), studyAdminToken1).first();
+        assertEquals(2, organization.getProjects().size());
+        assertArrayEquals(Arrays.asList(projectFqn1, projectFqn2).toArray(),
+                organization.getProjects().stream().map(Project::getFqn).toArray());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), normalToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
+
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), noAccessToken1).first();
+        assertEquals(1, organization.getProjects().size());
+        assertEquals(projectFqn1, organization.getProjects().get(0).getFqn());
     }
 
     @Test
@@ -265,6 +328,26 @@ public class OrganizationManagerTest extends AbstractManagerTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void secretKeyIsAlwaysHiddenTest() throws CatalogException {
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, null, ownerToken).first();
+        assertNotNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.CONFIGURATION.key());
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, OrganizationDBAdaptor.QueryParams.NAME.key());
+        organization = catalogManager.getOrganizationManager().get(organizationId, options, ownerToken).first();
+        assertNull(organization.getName());
+        assertNull(organization.getConfiguration().getToken());
+        assertNull(organization.getConfiguration().getAuthenticationOrigins().get(0).getOptions());
     }
 
 }
