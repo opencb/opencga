@@ -12,7 +12,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Date;
 
-@Migration(id = "addFailedLoginAttemtsMigration", description = "Add failedAttempts to User #TASK-6013", version = "3.1.0",
+@Migration(id = "addFailedLoginAttemtsMigration", description = "Add failedAttempts to User #TASK-6013", version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240419)
 public class UserBanMigration extends MigrationTool {
 
