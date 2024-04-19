@@ -219,7 +219,8 @@ public class UserManager extends AbstractManager {
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
             authOrigin = CatalogAuthenticationManager.INTERNAL;
         } else {
-            OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT_AND_INTERNAL);
+            OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
+                    INCLUDE_ACCOUNT_AND_INTERNAL);
             if (userResult.getNumResults() == 0) {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }

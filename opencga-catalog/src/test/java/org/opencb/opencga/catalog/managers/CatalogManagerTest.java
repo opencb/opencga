@@ -253,7 +253,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(authException.getMessage().contains("banned"));
 
         // Remove ban from user
-        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.READY, ownerToken);
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.READY, QueryOptions.empty(), ownerToken);
         user = catalogManager.getUserManager().get(organizationId, normalUserId1, QueryOptions.empty(), ownerToken).first();
         assertEquals(0, user.getInternal().getFailedAttempts());
         assertEquals(UserStatus.READY, user.getInternal().getStatus().getId());
@@ -264,30 +264,30 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void changeUserStatusTest() throws CatalogException {
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, normalToken1));
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, studyAdminToken1));
-        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, ownerToken);
-        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, orgAdminToken1);
-        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, opencgaToken);
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, QueryOptions.empty(), normalToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, QueryOptions.empty(), studyAdminToken1));
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, QueryOptions.empty(), ownerToken);
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, QueryOptions.empty(), orgAdminToken1);
+        catalogManager.getUserManager().changeStatus(organizationId, normalUserId1, UserStatus.BANNED, QueryOptions.empty(), opencgaToken);
 
-        catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.BANNED, ownerToken);
-        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgOwnerUserId, UserStatus.BANNED, ownerToken));
+        catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.BANNED, QueryOptions.empty(), ownerToken);
+        CatalogAuthorizationException authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgOwnerUserId, UserStatus.BANNED, QueryOptions.empty(), ownerToken));
         assertTrue(authException.getMessage().contains("own account"));
 
-        authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.BANNED, orgAdminToken2));
+        authException = assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.BANNED, QueryOptions.empty(), orgAdminToken2));
         assertTrue(authException.getMessage().contains("ban administrators"));
 
         CatalogAuthenticationException incorrect = assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD));
         assertTrue(incorrect.getMessage().contains("banned"));
 
-        catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.READY, orgAdminToken2);
+        catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, UserStatus.READY, QueryOptions.empty(), orgAdminToken2);
         String token = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).getToken();
         assertNotNull(token);
 
-        CatalogParameterException paramException = assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, "NOT_A_STATUS", orgAdminToken2));
+        CatalogParameterException paramException = assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, orgAdminUserId1, "NOT_A_STATUS", QueryOptions.empty(), orgAdminToken2));
         assertTrue(paramException.getMessage().contains("Invalid status"));
 
-        CatalogDBException dbException = assertThrows(CatalogDBException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, "notAUser", UserStatus.BANNED, orgAdminToken2));
+        CatalogDBException dbException = assertThrows(CatalogDBException.class, () -> catalogManager.getUserManager().changeStatus(organizationId, "notAUser", UserStatus.BANNED, QueryOptions.empty(), orgAdminToken2));
         assertTrue(dbException.getMessage().contains("not exist"));
     }
 
@@ -361,7 +361,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testModifyUser() throws CatalogException, InterruptedException, IOException {
+    public void testModifyUser() throws CatalogException, InterruptedException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + RandomStringUtils.randomAlphanumeric(10);
         String newPassword = RandomStringUtils.randomAlphanumeric(10);
