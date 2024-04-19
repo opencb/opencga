@@ -17,24 +17,25 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.opencb.opencga.storage.hadoop.utils.PersistentResultScanner.isValid;
 
@@ -387,6 +388,145 @@ public class HBaseManager implements AutoCloseable {
             throws IOException {
         return createTableIfNeeded(getConnection(), tableName, columnFamily, preSplits, compressionType);
     }
+
+    public boolean splitAndMove(Admin admin, TableName name, byte[] expectedSplit) throws IOException {
+        return splitAndMove(admin, name, expectedSplit, 3, true);
+    }
+
+    public boolean splitAndMove(Admin admin, TableName tableName, byte[] expectedSplit, int retries, boolean ignoreExceptions)
+            throws IOException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        int count = 0;
+        while (count < retries) {
+            count++;
+            try {
+                // Check if split point exists
+                RegionInfo regionInfo = getRegionInfo(admin, tableName, expectedSplit);
+
+                if (regionInfo == null) {
+                    LOGGER.info("Splitting table '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
+                    admin.split(tableName, expectedSplit);
+                    regionInfo = getRegionInfo(admin, tableName, expectedSplit);
+                    int getRegionInfoAttempts = 10;
+                    while (regionInfo == null) {
+                        try {
+                            Thread.sleep(200);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        regionInfo = getRegionInfo(admin, tableName, expectedSplit);
+                        getRegionInfoAttempts--;
+                        if (getRegionInfoAttempts == 0) {
+                            throw new IOException("Split point not found after creation");
+                        }
+                    }
+                } else if (count == 1) {
+                    // First try and split point exists. Skip moving region
+                    LOGGER.info("Split point {} already exists. Nothing to do.", Bytes.toStringBinary(expectedSplit));
+                    return false;
+                }
+                LOGGER.info("Moving region '{}' to another region server", regionInfo.getRegionNameAsString());
+                admin.move(regionInfo.getEncodedNameAsBytes());
+                LOGGER.info("New region created '{}' in {}", regionInfo.getRegionNameAsString(), TimeUtils.durationToString(stopWatch));
+                return true;
+            } catch (IOException | RuntimeException e) {
+                if (ignoreExceptions) {
+                    LOGGER.warn("Error splitting table {} at {}. Retry {}/{}", tableName,
+                            Bytes.toStringBinary(expectedSplit), count, retries, e);
+                } else {
+                    throw e;
+                }
+            }
+            try {
+                // Wait before retry
+                LOGGER.info("Waiting before retrying split table '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        LOGGER.warn("Unable to split table '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
+        return false;
+    }
+
+    public static RegionInfo getRegionInfo(Admin admin, TableName name, byte[] expectedSplit) throws IOException {
+        return admin.getRegions(name)
+                .stream()
+                .filter(region -> Bytes.equals(region.getStartKey(), expectedSplit))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public int expandTableIfNeeded(String tableName, int batch,
+                                   Function<Integer, List<byte[]>> batchSplitsGenerator,
+                                   int extraBatches, Function<Integer, byte[]> batchPlaceholderSplitGenerator) throws IOException {
+        return expandTableIfNeeded(tableName, Collections.singletonList(batch), batchSplitsGenerator, extraBatches,
+                batchPlaceholderSplitGenerator);
+    }
+    public int expandTableIfNeeded(String tableName, Collection<Integer> batches,
+                                    Function<Integer, List<byte[]>> batchSplitsGenerator,
+                                    int extraBatches, Function<Integer, byte[]> batchPlaceholderSplitGenerator) throws IOException {
+        if (batches.isEmpty()) {
+            throw new IllegalArgumentException("No batches provided");
+        }
+        // Get the expected splits for these batches
+        Collection<byte[]> expectedSplits = new LinkedHashSet<>();
+        for (Integer batch : batches) {
+            expectedSplits.addAll(batchSplitsGenerator.apply(batch));
+        }
+        int lastBatch = batches.stream().max(Integer::compareTo).get();
+
+        // Add some split placeholders for the extra batches
+        for (int i = lastBatch + 1; i < lastBatch + 1 + extraBatches; i++) {
+            expectedSplits.add(batchPlaceholderSplitGenerator.apply(i));
+        }
+        // Shuffle the splits
+        List<byte[]> shuffledSplits = new ArrayList<>(expectedSplits);
+        Collections.shuffle(shuffledSplits);
+
+        // Ensure that the table is split at least until the next expected split
+        return act(tableName, (table, admin) -> {
+            int newSplits = 0;
+            byte[][] existingSplits = table.getRegionLocator().getStartKeys();
+
+            int expectedNewSplits = 0;
+            for (byte[] expectedSplit : expectedSplits) {
+                boolean found = false;
+                for (byte[] split : existingSplits) {
+                    if (Bytes.compareTo(expectedSplit, split) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    expectedNewSplits++;
+                    LOGGER.info("Missing split point '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
+                }
+            }
+            if (expectedNewSplits == 0) {
+                return 0;
+            } else {
+                LOGGER.info("Found {} missing split points. Splitting table '{}'", expectedNewSplits, tableName);
+            }
+
+            for (byte[] expectedSplit : expectedSplits) {
+                boolean found = false;
+                for (byte[] split : existingSplits) {
+                    if (Bytes.compareTo(expectedSplit, split) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    if (splitAndMove(admin, table.getName(), expectedSplit)) {
+                        newSplits++;
+                    }
+                }
+            }
+            return newSplits;
+        });
+    }
+
 
     /**
      * Create default HBase table layout with one column family.
