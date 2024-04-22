@@ -470,14 +470,14 @@ function publish() {
 
 function publish_docker() {
   if [ "$DOCKER" == "true" ];then
-    cd "$OPENCGA_HOME_DIR" || exit 2
-    TAG=""
-    if [[ -n $TASK_REFERENCE ]]; then
-    	TAG=$TASK_REFERENCE
-    else
-      TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-    fi
-    python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "$TAG"
+#    cd "$OPENCGA_HOME_DIR" || exit 2
+#    TAG=""
+#    if [[ -n $TASK_REFERENCE ]]; then
+#    	TAG=$TASK_REFERENCE
+#    else
+#      TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+#    fi
+#    python3 ./build/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     if [[ -n $TASK_REFERENCE ]]; then
