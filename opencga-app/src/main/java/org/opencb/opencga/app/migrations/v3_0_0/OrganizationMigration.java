@@ -377,17 +377,22 @@ public class OrganizationMigration extends MigrationTool {
                 if (configuration.getAuthentication() != null && CollectionUtils.isNotEmpty(configuration.getAuthentication().getAuthenticationOrigins())) {
                     for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                         if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                                && authenticationOrigin.getId().equals(CatalogAuthenticationManager.INTERNAL)) {
+                                && "internal".equals(authenticationOrigin.getId())) {
                             continue;
                         }
-                        authenticationOrigin.setAlgorithm(algorithm);
-                        authenticationOrigin.setSecretKey(secretKey);
-                        authenticationOrigin.setExpiration(3600);
-                        authOrigins.add(convertToDocument(authenticationOrigin));
+                        Document authOriginDoc = convertToDocument(authenticationOrigin);
+                        authOriginDoc.put("algorithm", algorithm);
+                        authOriginDoc.put("secretKey", secretKey);
+                        authOriginDoc.put("expiration", 3600L);
+                        authOrigins.add(authOriginDoc);
                     }
                 }
             }
-            authOrigins.add(convertToDocument(CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
+            Document authOriginDoc = convertToDocument(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin());
+            authOriginDoc.put("id", "internal");
+            authOriginDoc.put("algorithm", algorithm);
+            authOriginDoc.put("secretKey", secretKey);
+            authOriginDoc.put("expiration", 3600L);
 
             // Set organization counter, owner and authOrigins
             orgCol.updateOne(Filters.eq("id", organizationId), Updates.combine(

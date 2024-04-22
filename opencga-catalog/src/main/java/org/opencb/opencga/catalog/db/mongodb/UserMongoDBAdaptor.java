@@ -429,7 +429,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         Map<String, Object> userParameters = new HashMap<>();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key()};
         filterStringParams(parameters, userParameters, acceptedParams);
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
