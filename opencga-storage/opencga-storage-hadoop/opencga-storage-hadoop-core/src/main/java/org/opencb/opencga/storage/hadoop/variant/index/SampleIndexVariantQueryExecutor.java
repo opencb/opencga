@@ -131,7 +131,9 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // Ensure results are sorted and it's not counting from variants dbAdaptor
             options.put(QueryOptions.SORT, true);
             options.put(QueryOptions.COUNT, false);
-            options.put(QueryOptions.LIMIT, tmpLimit);
+            if (limit > 0) {
+                options.put(QueryOptions.LIMIT, tmpLimit);
+            }
 
             MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
                     new org.opencb.opencga.storage.core.variant.adaptors.iterators.DelegatedVariantDBIterator(variants) {
@@ -166,7 +168,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             }
 
             // Ensure limit
-            if (result.getNumResults() > limit) {
+            if (limit > 0 && result.getNumResults() > limit) {
                 result.setResults(result.getResults().subList(0, limit));
                 result.setNumResults(limit);
             }

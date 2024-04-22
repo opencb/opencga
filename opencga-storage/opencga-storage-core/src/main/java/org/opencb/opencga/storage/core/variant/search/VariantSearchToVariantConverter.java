@@ -34,6 +34,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
@@ -58,6 +59,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
     private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final Set<VariantField> includeFields;
+
+    private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
 
     public VariantSearchToVariantConverter() {
         this.includeFields = null;
@@ -666,19 +669,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setEnd(variant.getEnd());
         variantSearchModel.setType(variant.getType().toString());
 
-        // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
-        // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
-        Set<String> xrefs = new HashSet<>();
-        xrefs.add(variantSearchModel.getId());
-        xrefs.add(variantSearchModel.getVariantId());
-        if (variant.getNames() != null && !variant.getNames().isEmpty()) {
-            variant.getNames().forEach(name -> {
-                if (name != null) {
-                    xrefs.add(name);
-                }
-            });
-        }
-
         // convert Study related information
         convertStudies(variant, variantSearchModel, other);
 
@@ -698,11 +688,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // Process Variant Annotation
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
-
-            if (StringUtils.isNotEmpty(variantAnnotation.getId())) {
-                xrefs.add(variantAnnotation.getId());
-            }
-
             // This object will store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
 
@@ -720,27 +705,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
             variantSearchModel.setRelease(release);
-
-            // Add cytoband names
-            if (variantAnnotation.getCytoband() != null) {
-                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
-                    xrefs.add(cytoband.getChromosome() + cytoband.getName());
-                }
-            }
-
-            // Add all XRefs coming from the variant annotation
-            if (variantAnnotation.getXrefs() != null && !variantAnnotation.getXrefs().isEmpty()) {
-                variantAnnotation.getXrefs().forEach(xref -> {
-                    if (xref != null) {
-                        xrefs.add(xref.getId());
-                    }
-                });
-            }
-
-            // Add all HGVS coming from the variant annotation
-            if (ListUtils.isNotEmpty(variantAnnotation.getHgvs())) {
-                xrefs.addAll(variantAnnotation.getHgvs());
-            }
 
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
@@ -781,10 +745,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 trans.append(StringUtils.join(conseqType.getTranscriptFlags(), ","));
                             }
                         }
-
-                        xrefs.add(gene);
-                        xrefs.add(conseqType.getGeneId());
-                        xrefs.add(conseqType.getTranscriptId());
 
                         if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
                             biotypes.add(conseqType.getBiotype());
@@ -855,19 +815,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         trans.append(FIELD_SEP);
                         if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotAccession())) {
                             trans.append(protVarAnnotation.getUniprotAccession());
-                            xrefs.add(protVarAnnotation.getUniprotAccession());
                         }
 
                         trans.append(FIELD_SEP);
                         if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotName())) {
                             trans.append(protVarAnnotation.getUniprotName());
-                            xrefs.add(protVarAnnotation.getUniprotName());
                         }
 
                         trans.append(FIELD_SEP);
                         if (StringUtils.isNotEmpty(protVarAnnotation.getUniprotVariantId())) {
                             trans.append(protVarAnnotation.getUniprotVariantId());
-                            xrefs.add(protVarAnnotation.getUniprotVariantId());
                         }
 
                         trans.append(FIELD_SEP).append(protVarAnnotation.getPosition() == null
@@ -908,8 +865,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (protVarAnnotation.getFeatures() != null) {
                             for (ProteinFeature proteinFeature : protVarAnnotation.getFeatures()) {
                                 if (StringUtils.isNotEmpty(proteinFeature.getId())) {
-                                    // We store them in xrefs and traits, the number of these IDs is very small
-                                    xrefs.add(proteinFeature.getId());
                                     traits.add("PD" + FIELD_SEP + proteinFeature.getId() + FIELD_SEP
                                             + proteinFeature.getDescription());
                                 }
@@ -992,9 +947,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 List<String> clinical = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
                 for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
                     if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
-                        if (StringUtils.isNotEmpty(ev.getId())) {
-                            xrefs.add(ev.getId());
-                        }
                         if ("clinvar".equalsIgnoreCase(ev.getSource().getName())) {
                             String clinSigSuffix = "";
                             if (ev.getVariantClassification() != null
@@ -1064,6 +1016,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.setOther(other);
         }
 
+        // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
+        // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
+        Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variant.getAnnotation());
+        xrefs.add(variantSearchModel.getId());
+        xrefs.add(variantSearchModel.getVariantId());
+        if (variant.getNames() != null && !variant.getNames().isEmpty()) {
+            variant.getNames().forEach(name -> {
+                if (name != null) {
+                    xrefs.add(name);
+                }
+            });
+        }
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));
         return variantSearchModel;
     }
