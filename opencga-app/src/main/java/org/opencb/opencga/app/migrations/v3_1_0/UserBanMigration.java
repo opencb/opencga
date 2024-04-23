@@ -19,7 +19,7 @@ public class UserBanMigration extends MigrationTool {
     protected void run() throws Exception {
         String lastModified = TimeUtils.getTime();
         migrateCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION,
-                Filters.exists("internal.failedAttempts", false),
+                Filters.exists("internal.registrationDate", false),
                 Projections.include("_id", "internal", "account"),
                 (document, bulk) -> {
                     Document internal = document.get("internal", Document.class);

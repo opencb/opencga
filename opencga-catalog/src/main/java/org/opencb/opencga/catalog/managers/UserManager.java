@@ -791,6 +791,14 @@ public class UserManager extends AbstractManager {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
                 throw e;
             }
+
+            // If it was a local user and the counter of failed attempts was greater than 0, we reset it
+            if (CatalogAuthenticationManager.OPENCGA.equals(userOpenCGAResult.first().getAccount().getAuthentication().getId())
+                    && userOpenCGAResult.first().getInternal().getFailedAttempts() > 0) {
+                // Reset login failed attempts counter
+                ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), 0);
+                getUserDBAdaptor(organizationId).update(username, updateParams);
+            }
         } else {
             // We attempt to login the user with the different authentication managers
             for (Map.Entry<String, AuthenticationManager> entry
@@ -811,10 +819,6 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
-
-        // Reset login failed attempts counter
-        ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), 0);
-        getUserDBAdaptor(organizationId).update(username, updateParams);
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
