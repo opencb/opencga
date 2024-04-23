@@ -353,21 +353,16 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     studyMap.put(study.getFqn(), study);
                     studyProjectMap.put(study.getFqn(), project.getFqn());
 
-                    String owner = study.getFqn().split("@")[0];
-
                     if (study.getGroups() != null) {
                         for (Group group : study.getGroups()) {
                             if (StudyManager.MEMBERS.equals(group.getId())) {
                                 // Add all the users that should be able to see the study to the map
                                 for (String userId : group.getUserIds()) {
-                                    // Exclude owner of the project
-                                    if (!owner.equals(userId)) {
-                                        if (users.contains(userId)) {
-                                            if (!userStudyMap.containsKey(userId)) {
-                                                userStudyMap.put(userId, new ArrayList<>());
-                                            }
-                                            userStudyMap.get(userId).add(study.getFqn());
+                                    if (users.contains(userId)) {
+                                        if (!userStudyMap.containsKey(userId)) {
+                                            userStudyMap.put(userId, new ArrayList<>());
                                         }
+                                        userStudyMap.get(userId).add(study.getFqn());
                                     }
                                 }
                                 break;
@@ -378,7 +373,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             }
         }
 
-        // Add sharedProject information
+        // Add project information
         for (User user : userDataResult.getResults()) {
             if (userStudyMap.containsKey(user.getId())) {
                 Map<String, List<Study>> projectStudyMap = new HashMap<>();

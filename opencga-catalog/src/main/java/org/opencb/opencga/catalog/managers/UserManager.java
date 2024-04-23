@@ -532,7 +532,7 @@ public class UserManager extends AbstractManager {
      * @return The requested users
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<User> get(String organizationId, List<String> userIdList, QueryOptions options, String token)
+    public OpenCGAResult<User> get(@Nullable String organizationId, List<String> userIdList, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkNotEmptyArray(userIdList, "userId");
         ParamUtils.checkParameter(token, "token");
@@ -545,7 +545,7 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = validateToken(token);
 
-        if (userIdList.size() == 1 && jwtPayload.getUserId().equals(userIdList.get(0)) && StringUtils.isEmpty(organizationId)) {
+        if (StringUtils.isEmpty(organizationId)) {
             organizationId = jwtPayload.getOrganization();
         }
         String userId = jwtPayload.getUserId(organizationId);

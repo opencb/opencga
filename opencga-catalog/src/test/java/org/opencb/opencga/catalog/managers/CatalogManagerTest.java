@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
@@ -361,7 +362,66 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testModifyUser() throws CatalogException, InterruptedException {
+    public void testGetProjectsFromUserInfo() throws CatalogException {
+        String userId = organizationId;
+        catalogManager.getUserManager().create(userId, "test", "mail@mail.com", TestParamConstants.PASSWORD, organizationId, null,
+                opencgaToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("test")), ownerToken);
+        String token = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
+
+        DataResult<User> user = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(), token);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), normalToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+    }
+
+    @Test
+    public void testModifyUser() throws CatalogException, InterruptedException, IOException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + RandomStringUtils.randomAlphanumeric(10);
         String newPassword = RandomStringUtils.randomAlphanumeric(10);
