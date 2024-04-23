@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
@@ -267,7 +268,7 @@ public class CatalogManager implements AutoCloseable {
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
                 Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
-                new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
+                Constants.DEFAULT_USER_EXPIRATION_DATE, new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);

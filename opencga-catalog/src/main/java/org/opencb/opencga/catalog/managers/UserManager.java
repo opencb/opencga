@@ -40,6 +40,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.*;
@@ -118,6 +119,9 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Creating '" + OPENCGA + "' user is forbidden in any organization.");
         }
 
+        Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
+                .first();
+
         ObjectMap auditParams = new ObjectMap("user", user);
 
         // Initialise fields
@@ -132,6 +136,7 @@ public class UserManager extends AbstractManager {
         user.getAccount().setCreationDate(TimeUtils.getTime());
         if (StringUtils.isEmpty(user.getAccount().getExpirationDate())) {
             // By default, user accounts will be valid for 1 year when they are created.
+            user.getAccount().setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
             Date date = TimeUtils.add1YeartoDate(new Date());
             user.getAccount().setExpirationDate(TimeUtils.getTime(date));
         } else {
@@ -706,7 +711,7 @@ public class UserManager extends AbstractManager {
         JwtPayload jwtPayload = validateToken(token);
         String organizationId = jwtPayload.getOrganization();
         try {
-            authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "reset password");
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
             OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
@@ -748,8 +753,10 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_ACCOUNT_AND_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
-            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-                // Check user is not banned or account is expired
+            // We check
+            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
+                    && CatalogAuthenticationManager.OPENCGA.equals(user.getAccount().getAuthentication().getId())) {
+                // Check user is not banned, suspended or has an expired account
                 if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
                     throw CatalogAuthenticationException.userIsBanned(username);
                 }
@@ -760,6 +767,9 @@ public class UserManager extends AbstractManager {
                 if (date.before(new Date())) {
                     throw CatalogAuthenticationException.accountIsExpired(username, user.getAccount().getExpirationDate());
                 }
+            }
+            if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+                throw CatalogAuthenticationException.userIsSuspended(username);
             }
             authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
             try {
@@ -910,28 +920,29 @@ public class UserManager extends AbstractManager {
             getUserDBAdaptor(userIdOrganization).checkId(userId);
 
             // Validate status is valid
-            if (!UserStatus.isValid(status)) {
-                throw new CatalogParameterException("Invalid status '" + status + "'. Valid values are: " + UserStatus.STATUS_LIST);
+            if (!UserStatus.READY.equals(status) && !UserStatus.SUSPENDED.equals(status)) {
+                throw new CatalogParameterException("Invalid status '" + status + "'. Valid values are: " + UserStatus.READY + ", "
+                        + UserStatus.SUSPENDED);
             }
 
-            if (UserStatus.BANNED.equals(status)) {
+            if (UserStatus.SUSPENDED.equals(status)) {
                 // Get organization information
                 Set<String> ownerAndAdmins = catalogManager.getOrganizationManager().getOrganizationOwnerAndAdmins(userIdOrganization);
                 if (ownerAndAdmins.contains(userId)) {
                     if (tokenPayload.getUserId().equals(userId)) {
-                        // The user is trying to ban himself
-                        throw new CatalogAuthorizationException("You can't ban your own account.");
+                        // The user is trying to suspend himself
+                        throw new CatalogAuthorizationException("You can't suspend your own account.");
                     }
                     if (!authorizationManager.isAtLeastOrganizationOwner(userIdOrganization, tokenPayload.getUserId(userIdOrganization))) {
-                        // One of the admins is trying to ban the owner or one of the admins
-                        throw new CatalogAuthorizationException("Only the owner of the organization can ban administrators.");
+                        // One of the admins is trying to suspend the owner or one of the admins
+                        throw new CatalogAuthorizationException("Only the owner of the organization can suspend administrators.");
                     }
                 }
             }
 
             // Update user status and reset failed attempts to 0
             ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), status);
-            if (!UserStatus.BANNED.equals(status)) {
+            if (UserStatus.READY.equals(status)) {
                 updateParams.put(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), 0);
             }
             OpenCGAResult<User> result = getUserDBAdaptor(userIdOrganization).update(userId, updateParams);

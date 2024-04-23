@@ -62,7 +62,12 @@ public class CatalogAuthenticationException extends CatalogException {
     }
 
     public static CatalogAuthenticationException userIsBanned(String userId) {
-        return new CatalogAuthenticationException("The account for user '" + userId + "' is banned. Please, talk to your organization"
+        return new CatalogAuthenticationException("Too many login attempts. The account for user '" + userId + "' is banned."
+                + " Please, talk to your organization owner/administrator.");
+    }
+
+    public static CatalogAuthenticationException userIsSuspended(String userId) {
+        return new CatalogAuthenticationException("The account for user '" + userId + "' is suspended. Please, talk to your organization"
                 + " owner/administrator.");
     }
 

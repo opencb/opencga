@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -406,6 +407,8 @@ public class OrganizationManager extends AbstractManager {
                 || StringUtils.isEmpty(organization.getConfiguration().getToken().getSecretKey())) {
             organization.getConfiguration().setToken(TokenConfiguration.init());
         }
+        organization.getConfiguration().setDefaultUserExpirationDate(ParamUtils.defaultString(
+                organization.getConfiguration().getDefaultUserExpirationDate(), Constants.DEFAULT_USER_EXPIRATION_DATE));
         organization.setAttributes(ParamUtils.defaultObject(organization.getAttributes(), HashMap::new));
     }
 

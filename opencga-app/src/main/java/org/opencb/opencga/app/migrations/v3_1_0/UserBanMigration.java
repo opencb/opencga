@@ -8,9 +8,8 @@ import org.bson.Document;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-
-import java.util.Date;
 
 @Migration(id = "addFailedLoginAttemtsMigration", description = "Add failedAttempts to User #TASK-6013", version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240419)
@@ -19,7 +18,6 @@ public class UserBanMigration extends MigrationTool {
     @Override
     protected void run() throws Exception {
         String lastModified = TimeUtils.getTime();
-        String expirationDate = TimeUtils.getTime(TimeUtils.add1YeartoDate(new Date()));
         migrateCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION,
                 Filters.exists("internal.failedAttempts", false),
                 Projections.include("_id", "internal", "account"),
@@ -29,7 +27,7 @@ public class UserBanMigration extends MigrationTool {
                     internal.put("failedAttempts", 0);
                     internal.put("registrationDate", account.get("creationDate"));
                     internal.put("lastModified", lastModified);
-                    account.put("expirationDate", expirationDate);
+                    account.put("expirationDate", Constants.DEFAULT_USER_EXPIRATION_DATE);
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")),
                             Updates.combine(

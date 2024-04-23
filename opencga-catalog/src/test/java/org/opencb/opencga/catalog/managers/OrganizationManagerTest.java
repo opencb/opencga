@@ -43,7 +43,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     @Test
     public void ensureAuthOriginCannotBeRemovedTest() throws CatalogException {
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.emptyList(), null, new TokenConfiguration()));
+                Collections.emptyList(), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
         catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken);
@@ -54,7 +54,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
+                Arrays.asList(authOrigin, authOrigin2), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("OPENCGA");
@@ -67,7 +67,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         authOrigin2.setType(AuthenticationOrigin.AuthenticationType.LDAP);
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
+                Arrays.asList(authOrigin, authOrigin2), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("origin id");
@@ -78,7 +78,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
     public void updateAuthOriginTest() throws CatalogException {
         AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
         OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-                Collections.singletonList(authOrigin), null, new TokenConfiguration()));
+                Collections.singletonList(authOrigin), Constants.DEFAULT_USER_EXPIRATION_DATE, null, new TokenConfiguration()));
 
         Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
         assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
