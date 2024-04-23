@@ -456,7 +456,7 @@ function publish() {
     export AZCOPY_AUTO_LOGIN_TYPE="SPN"
     export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
     export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
-    azcopy login --service-principal
+    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
     if [[ -n $TASK_REFERENCE ]]; then
       BRANCH_FOLDER=$TASK_REFERENCE
     else
