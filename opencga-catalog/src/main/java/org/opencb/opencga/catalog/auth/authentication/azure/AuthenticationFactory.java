@@ -2,10 +2,7 @@ package org.opencb.opencga.catalog.auth.authentication.azure;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.*;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -63,6 +60,10 @@ public final class AuthenticationFactory {
                                     new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, algorithm, secretKey, expiration);
                             tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.INTERNAL, catalogAuthenticationManager);
                             tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.OPENCGA, catalogAuthenticationManager);
+                            break;
+                        case SSO:
+                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new SSOAuthenticationManager(algorithm, secretKey,
+                                    expiration));
                             break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in organization '{}'. "

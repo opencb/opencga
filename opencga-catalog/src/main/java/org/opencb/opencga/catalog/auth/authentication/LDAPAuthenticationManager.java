@@ -213,12 +213,12 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     @Override
     public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, expiration);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, expiration);
     }
 
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(organizationId, userId, claims, 0L);
+        return jwtManager.createJWTToken(organizationId, AuthenticationType.LDAP, userId, claims, 0L);
     }
 
     /* Private methods */

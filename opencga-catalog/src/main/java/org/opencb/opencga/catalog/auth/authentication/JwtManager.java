@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,13 +85,18 @@ public class JwtManager {
         return this;
     }
 
-    public String createJWTToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
+    public String createJWTToken(String organizationId, AuthenticationOrigin.AuthenticationType type, String userId,
+                                 Map<String, Object> claims, long expiration) {
         long currentTime = System.currentTimeMillis();
 
         JwtBuilder jwtBuilder = Jwts.builder();
         if (claims != null && !claims.isEmpty()) {
             jwtBuilder.setClaims(claims);
         }
+        if (type != null) {
+            jwtBuilder.addClaims(Collections.singletonMap("authOrigin", type));
+        }
+
         jwtBuilder.setSubject(userId)
                 .setAudience(organizationId)
                 .setIssuer("OpenCGA")
@@ -115,14 +121,24 @@ public class JwtManager {
 
     public JwtPayload getPayload(String token) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
-        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
+        return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
+                body.getExpiration(), token);
     }
 
     public JwtPayload getPayload(String token, Key publicKey) throws CatalogAuthenticationException {
         Claims body = parseClaims(token, publicKey).getBody();
-        return new JwtPayload(body.getSubject(), body.getAudience(), body.getIssuer(), body.getIssuedAt(), body.getExpiration(), token);
+        return new JwtPayload(body.getSubject(), body.getAudience(), getAuthOrigin(body), body.getIssuer(), body.getIssuedAt(),
+                body.getExpiration(), token);
     }
 
+    private AuthenticationOrigin.AuthenticationType getAuthOrigin(Claims claims) {
+        String o = claims.get("authOrigin", String.class);
+        if (o != null) {
+            return AuthenticationOrigin.AuthenticationType.valueOf(o);
+        } else {
+            return null;
+        }
+    }
 
     public String getAudience(String token) throws CatalogAuthenticationException {
         return getAudience(token, this.publicKey);
