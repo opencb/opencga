@@ -26,10 +26,8 @@ import org.opencb.opencga.server.AbstractStorageServer;
 
 import javax.servlet.DispatcherType;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -135,10 +133,13 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
                     FilterHolder casAuthenticationFilterHolder = new FilterHolder();
                     casAuthenticationFilterHolder.setName("CAS Authentication Filter");
-                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+//                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
+                    casAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.OpencgaAuthenticationFilter");
                     casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.IGNORE_URL_PATTERN_TYPE.getName(), "REGEX");
+                    casInitParameters.put(ConfigurationKeys.IGNORE_PATTERN.getName(), "/webservices/rest/*/meta/about");
                     casAuthenticationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -166,7 +167,8 @@ public class EnterpriseRestServer extends AbstractStorageServer {
 
                     FilterHolder samlAuthenticationFilterHolder = new FilterHolder();
                     samlAuthenticationFilterHolder.setName("CAS Authentication Filter");
-                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
+//                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
+                    samlAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.Saml11OpencgaAuthenticationFilter");
                     samlInitParameters = new HashMap<>();
                     samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());

@@ -9,7 +9,10 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -64,6 +67,20 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             }
         }
 
+        // Get authOrigin id
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId,
+                OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, opencgaToken).first();
+        String authOriginId = null;
+        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+            if (authenticationOrigin.getType() == AuthenticationOrigin.AuthenticationType.SSO) {
+                authOriginId = authenticationOrigin.getId();
+                break;
+            }
+        }
+        if (authOriginId == null) {
+            throw new CatalogException("Missing SSO authentication origin in organization '" + organizationId + "'.");
+        }
+
         // Check user exists
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userId);
         OpenCGAResult<User> result = catalogManager.getAdminManager().userSearch(organizationId, query,
@@ -71,7 +88,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
 
         if (result.getNumResults() == 1) {
             // Check account
-            if (!"CAS".equals(result.first().getAccount().getAuthentication().getId())) {
+            if (!authOriginId.equals(result.first().getAccount().getAuthentication().getId())) {
                 throw new CatalogException("User '" + principal.getName() + "' was already registered from a "
                         + "different authentication origin (" + result.first().getAccount().getAuthentication().getId()
                         + ")");
@@ -80,7 +97,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             // User does not exist
             User user = new User()
                     .setId(principal.getName())
-                    .setAccount(new Account(null, null, new Account.AuthenticationOrigin("CAS", false)))
+                    .setAccount(new Account(null, null, new Account.AuthenticationOrigin(authOriginId, false)))
                     .setAttributes(principal.getAttributes());
             if (enterpriseConfiguration.getSso().getAttributes() != null && principal.getAttributes() != null) {
                 String name = getDefaultValue(principal.getAttributes(),
@@ -101,15 +118,16 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             catalogManager.getUserManager().create(user, null, opencgaToken);
         }
 
-        syncGroups(organizationId, principal);
+        syncGroups(organizationId, authOriginId, principal);
 
         return catalogManager.getUserManager().getToken(organizationId, principal.getName(), Collections.emptyMap(),
                 null, opencgaToken);
     }
 
-    private void syncGroups(String organizationId, AttributePrincipal principal) throws CatalogException {
+    private void syncGroups(String organizationId, String authOriginId, AttributePrincipal principal)
+            throws CatalogException {
         List<String> groups = getGroupsFromSSO(principal);
-        catalogManager.getAdminManager().syncRemoteGroups(organizationId, principal.getName(), groups, "CAS",
+        catalogManager.getAdminManager().syncRemoteGroups(organizationId, principal.getName(), groups, authOriginId,
                 opencgaToken);
     }
 
