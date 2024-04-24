@@ -125,6 +125,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
+
         SampleAclUpdateParams sampleAclUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<SampleAclEntryList> res = new RestResponse<>();

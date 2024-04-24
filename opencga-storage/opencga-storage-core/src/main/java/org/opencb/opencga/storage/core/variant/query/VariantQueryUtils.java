@@ -468,6 +468,20 @@ public final class VariantQueryUtils {
     }
 
     /**
+     * Determines if the given value is a HGVS.
+     *
+     * @param value Value to check
+     * @return If is a known accession
+     */
+    public static boolean isHGVS(String value) {
+        // Check regex ':[cnpg].'
+        // HGVC examples :
+        //  - "1:g.65325832G>A"
+        //  - "1:g.65325832_65325833insA"
+        return value.contains(":c.") || value.contains(":n.") || value.contains(":p.") || value.contains(":g.");
+    }
+
+    /**
      * Determines if the given value is a known clinical accession or not.
      * <p>
      * ClinVar accession starts with 'VCV', 'RCV' or 'SCV'
@@ -493,6 +507,18 @@ public final class VariantQueryUtils {
      */
     public static boolean isGeneAccession(String value) {
         return isHpo(value) || value.startsWith("OMIM:") || value.startsWith("umls:");
+    }
+
+    /**
+     * Determines if the given value is a valid protein feature id.
+     * <p>
+     *     Protein feature id starts with 'PRO_', 'VAR_' or 'VSP_'
+     *
+     * @param value Value to check
+     * @return If is a known accession
+     */
+    public static boolean isProteinFeatureId(String value) {
+        return value.startsWith("PRO_") |  value.startsWith("VAR_") |  value.startsWith("VSP_");
     }
 
     /**

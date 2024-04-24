@@ -361,5 +361,16 @@ public class ParsedVariantQuery {
         public boolean isEmpty() {
             return genes.isEmpty() && variants.isEmpty() && ids.isEmpty() && otherXrefs.isEmpty();
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("VariantQueryXref{");
+            sb.append("genes=").append(genes);
+            sb.append(", variants=").append(variants);
+            sb.append(", ids=").append(ids);
+            sb.append(", otherXrefs=").append(otherXrefs);
+            sb.append('}');
+            return sb.toString();
+        }
     }
 }
