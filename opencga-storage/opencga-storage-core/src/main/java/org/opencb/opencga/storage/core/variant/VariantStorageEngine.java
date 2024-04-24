@@ -1200,7 +1200,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public Variant getVariant(String variantStr) {
         final Variant variant;
         if (VariantQueryUtils.isVariantId(variantStr)) {
-            variant = new Variant(variantStr);
+            variant = VariantQueryUtils.toVariant(variantStr, true);
         } else if (VariantQueryUtils.isVariantAccession(variantStr)) {
             VariantQueryResult<Variant> result = get(new Query(VariantQueryParam.ANNOT_XREF.key(), variantStr),
                     new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1).append(QueryOptions.COUNT, true));
