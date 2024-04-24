@@ -1192,8 +1192,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return get(query, options);
     }
 
-    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
+    public DataResult<Variant> getSampleData(String variantStr, String study, QueryOptions options) throws StorageEngineException {
+        final Variant variant = getVariant(variantStr);
+        return getVariantSampleDataManager().getSampleData(variant, study, options);
+    }
+
+    public Variant getVariant(String variantStr) {
+        final Variant variant;
+        if (VariantQueryUtils.isVariantId(variantStr)) {
+            variant = VariantQueryUtils.toVariant(variantStr, true);
+        } else if (VariantQueryUtils.isVariantAccession(variantStr)) {
+            VariantQueryResult<Variant> result = get(new Query(VariantQueryParam.ANNOT_XREF.key(), variantStr),
+                    new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1).append(QueryOptions.COUNT, true));
+            if (result.getNumMatches() > 1) {
+                throw new VariantQueryException("Not unique variant identifier '" + variantStr + "'."
+                        + " Found " + result.getNumMatches() + " results");
+            } else if (result.getNumResults() == 1) {
+                variant = result.first();
+            } else {
+                throw VariantQueryException.variantNotFound(variantStr);
+            }
+        } else {
+            throw new VariantQueryException("Variant not valid. Variant = '" + variantStr + "'. Supported values:"
+                    + " {chr}:{start}:{end}:{ref}:{alt}, rs{id}");
+        }
+        variant.setId(variant.toString());
+        return variant;
+    }
+
+    protected VariantSampleDataManager getVariantSampleDataManager() throws StorageEngineException {
+        return new VariantSampleDataManager(getDBAdaptor());
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {

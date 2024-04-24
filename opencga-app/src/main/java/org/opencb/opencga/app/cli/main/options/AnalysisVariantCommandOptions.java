@@ -410,10 +410,13 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis-type"}, description = "Clinical analysis type: SINGLE or FAMILY.", required = false, arity = 1)
+        public String clinicalAnalysisType = "SINGLE";
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     
     }
@@ -993,7 +996,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--description"}, description = "Decription for these particular HRDetect results.", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--sample-id"}, description = "Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most basic and important information.", required = false, arity = 1)
+        @Parameter(names = {"--sample-id"}, description = "Sample ID.", required = false, arity = 1)
         public String sampleId;
     
         @Parameter(names = {"--snv-fitting-id"}, description = "Mutational signature fitting ID for SNV.", required = false, arity = 1)
@@ -1079,7 +1082,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--fail-on-malformed-lines"}, description = "Fail when encountering malformed lines. (yes, no, auto) [auto]", required = false, arity = 1)
         public String failOnMalformedLines;
     
-        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards", required = false, help = true, arity = 0)
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. This will set 'load-hom-ref' to YES if it was in AUTO", required = false, help = true, arity = 0)
         public boolean family = false;
     
         @Parameter(names = {"--somatic"}, description = "Indicate that the files to be loaded contain somatic samples. This will set 'load-hom-ref' to YES if it was in AUTO.", required = false, help = true, arity = 0)
@@ -2035,7 +2038,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--sample"}, description = "Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most basic and important information.", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = false, arity = 1)
         public String sample;
     
         @Parameter(names = {"--vs-id"}, description = "Variant stats ID.", required = false, arity = 1)

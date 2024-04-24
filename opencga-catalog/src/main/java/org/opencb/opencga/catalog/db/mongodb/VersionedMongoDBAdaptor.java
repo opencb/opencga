@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +118,10 @@ public class VersionedMongoDBAdaptor {
     }
 
     public interface VersionedModelExecution<T> {
+        T execute(List<Document> entries) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    }
+
+    public interface NonVersionedModelExecution<T> {
         T execute() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
@@ -137,28 +142,45 @@ public class VersionedMongoDBAdaptor {
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
 
-    protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
-                              PostVersionIncrementIterator<E> postVersionIncrementIterator,
-                              ReferenceModelExecution<E> postVersionIncrementExecution)
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update,
+                                          PostVersionIncrementIterator<E> postVersionIncrementIterator,
+                                          ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(session, sourceQuery, update, Collections.emptyList(), postVersionIncrementIterator, postVersionIncrementExecution);
+        return update(session, sourceQuery, Collections.emptyList(), update, Collections.emptyList(), postVersionIncrementIterator,
+                postVersionIncrementExecution);
     }
 
-    protected <T, E> T update(ClientSession session, Bson sourceQuery, VersionedModelExecution<T> update,
-                           List<String> postVersionIncrementAdditionalIncludeFields, PostVersionIncrementIterator<E> dbIterator,
-                           ReferenceModelExecution<E> postVersionIncrementExecution)
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> fieldsToInclude,
+                         VersionedModelExecution<OpenCGAResult<E>> update, PostVersionIncrementIterator<E> postVersionIncrementIterator,
+                         ReferenceModelExecution<E> postVersionIncrementExecution)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, fieldsToInclude, update, Collections.emptyList(), postVersionIncrementIterator,
+                postVersionIncrementExecution);
+    }
+
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> fieldsToInclude,
+                                          VersionedModelExecution<OpenCGAResult<E>> update,
+                                          List<String> postVersionIncrementAdditionalIncludeFields,
+                                          PostVersionIncrementIterator<E> dbIterator,
+                                          ReferenceModelExecution<E> postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String uuid = getClientSessionUuid(session);
 
         // 1. Increment version
         // 1.1 Only increase version of those documents not already increased by same transaction id
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION, PRIVATE_TRANSACTION_ID));
+        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION, PRIVATE_TRANSACTION_ID));
+        if (fieldsToInclude != null) {
+            includeFields.addAll(fieldsToInclude);
+        }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, includeFields);
+        List<Document> entryList = new LinkedList<>();
         List<Long> allUids = new LinkedList<>();
         List<Long> uidsChanged = new LinkedList<>();
         try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
+
+                entryList.add(result);
 
                 long uid = result.get(PRIVATE_UID, Number.class).longValue();
                 int version = result.get(VERSION, Number.class).intValue();
@@ -192,8 +214,13 @@ public class VersionedMongoDBAdaptor {
             }
         }
 
+        if (entryList.isEmpty()) {
+            logger.warn("Update not executed. No entries could be found for query '{}'", sourceQuery.toBsonDocument());
+            return OpenCGAResult.empty();
+        }
+
         // 2. Execute main update
-        T executionResult = update.execute();
+        OpenCGAResult<E> executionResult = update.execute(entryList);
 
         // 3. Fetch document containing update and copy into the archive collection
         Bson bsonQuery = Filters.in(PRIVATE_UID, allUids);
@@ -245,7 +272,7 @@ public class VersionedMongoDBAdaptor {
         return executionResult;
     }
 
-    protected <T> T updateWithoutVersionIncrement(Bson sourceQuery, VersionedModelExecution<T> update)
+    protected <T> T updateWithoutVersionIncrement(Bson sourceQuery, NonVersionedModelExecution<T> update)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // Execute main update
         T executionResult = update.execute();

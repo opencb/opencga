@@ -571,28 +571,45 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_xref() {
-        Query query = new Query(ANNOT_XREF.key(), "3:108634973:C:A,rs2032582,HP:0001250,VAR_048225,Q9BY64,ENSG00000250026,TMPRSS11B,COSM1421316");
-        queryResult = query(query, null);
-        assertThat(queryResult, everyResult(allVariantsSummary, anyOf(
-                hasAnnotation(at("3:108634973:C:A")),
-                with("id", Variant::getId, is("rs2032582")),
-                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
-                        hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
-                                with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
-                                with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("EnsemblGene", ConsequenceType::getGeneId, is("ENSG00000250026"))))),
-                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
-//                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
-//                        with("Cosmic", VariantTraitAssociation::getCosmic,
-//                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
-        )));
+        Map<String, Matcher<? super Variant>> matchers = new HashMap<>();
+        matchers.put("3:108634973:C:A", hasAnnotation(at("3:108634973:C:A")));
+        matchers.put("rs2032582", with("id", Variant::getId, is("rs2032582")));
+        matchers.put("HP:0001250", hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))));
+        matchers.put("VAR_048225", hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                        with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))));
+        matchers.put("Q9BY64", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotAccession", ProteinVariantAnnotation::getUniprotAccession,
+                                        is("Q9BY64")))))));
+        matchers.put("ENSG00000250026", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("GeneId", ConsequenceType::getGeneId,
+                                is("ENSG00000250026"))))));
+        matchers.put("TMPRSS11B", hasAnnotation(
+                with("ConsequenceType", VariantAnnotation::getConsequenceTypes, hasItem(
+                        with("GeneName", ConsequenceType::getGeneName,
+                                is("TMPRSS11B"))))));
+        matchers.put("COSM1421316", hasAnnotation(with("TraitAssociation", VariantAnnotation::getTraitAssociation, hasItem(
+                with("Cosmic", EvidenceEntry::getId, is("COSM1421316"))))));
 
+        // Query one by one
+        for (Map.Entry<String, Matcher<? super Variant>> entry : matchers.entrySet()) {
+            Query query = new Query(ANNOT_XREF.key(), entry.getKey());
+            queryResult = query(query, null);
+            assertThat(entry.getKey(), queryResult, everyResult(allVariantsSummary, allOf(entry.getValue())));
+
+            query = new Query(ID.key(), entry.getKey());
+            queryResult = query(query, null);
+            assertThat(entry.getKey(), queryResult, everyResult(allVariantsSummary, allOf(entry.getValue())));
+        }
+
+        // Query by all xrefs
+        Query query = new Query(ANNOT_XREF.key(), matchers.keySet());
+        queryResult = query(query, null);
+        assertThat(queryResult, everyResult(allVariantsSummary, anyOf(matchers.values())));
     }
 
     @Test

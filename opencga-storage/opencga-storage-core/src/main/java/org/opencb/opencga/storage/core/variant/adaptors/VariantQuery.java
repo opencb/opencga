@@ -105,6 +105,15 @@ public class VariantQuery extends Query {
         return sample(VariantQueryUtils.QueryOperation.OR, value);
     }
 
+    public VariantQuery sample(List<String> value) {
+        return sample(VariantQueryUtils.QueryOperation.OR, value);
+    }
+
+    public VariantQuery sample(VariantQueryUtils.QueryOperation operation, List<String> value) {
+        put(VariantQueryParam.SAMPLE.key(), value.stream().collect(Collectors.joining(operation.separator())));
+        return this;
+    }
+
     public VariantQuery sample(String... value) {
         return sample(VariantQueryUtils.QueryOperation.OR, value);
     }
@@ -178,8 +187,9 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), value);
         return this;
     }
-    public String includeSampleId() {
-        return getString(VariantQueryParam.INCLUDE_SAMPLE_ID.key());
+
+    public boolean includeSampleId() {
+        return getBoolean(VariantQueryParam.INCLUDE_SAMPLE_ID.key());
     }
 
     public VariantQuery sampleMetadata(boolean value) {

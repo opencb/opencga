@@ -104,8 +104,11 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String file;
+        @Parameter(names = {"--file-id"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--overwrite"}, description = "Force to overwrite the alignment index file", arity = 0)
+        public boolean overwrite;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
