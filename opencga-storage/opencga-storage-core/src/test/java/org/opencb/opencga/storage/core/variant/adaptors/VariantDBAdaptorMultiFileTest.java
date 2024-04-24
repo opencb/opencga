@@ -10,7 +10,8 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -111,9 +112,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
-        options = options == null ? QueryOptions.empty() : options;
-        query = variantStorageEngine.preProcessQuery(query, options);
-        return dbAdaptor.get(query, options);
+        ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
+        return dbAdaptor.get(variantQuery);
     }
 
     protected ObjectMap getOptions() {
@@ -382,13 +382,13 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("samples(ALL) = " + result.getSamples());
 
         for (int i : new int[]{1, 3, 6, 8, 10}) {
-            result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
+            result = query(new VariantQuery().sampleSkip(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
             assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
             assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
             assertEquals(8, result.getNumTotalSamples().intValue());
 
-            result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
+            result = query(new VariantQuery().sampleLimit(i).includeSampleAll().sampleMetadata(true), options);
 //            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
             assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
             assertEquals(Math.min(8, i), result.getNumSamples().intValue());

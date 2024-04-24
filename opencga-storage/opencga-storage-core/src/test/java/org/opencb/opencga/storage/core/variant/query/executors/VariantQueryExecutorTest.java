@@ -8,7 +8,6 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -20,6 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
@@ -198,7 +198,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(query, options));
 
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
-        VariantQueryResult<Variant> expected = dbQueryExecutor.get(new Query(variantQuery.getQuery()), new QueryOptions(options));
+        VariantQueryResult<Variant> expected = dbQueryExecutor.get(variantQuery);
 
         VariantQueryResult<Variant> unfilteredResult = null;
         VariantQueryResult<Variant> result = null;
@@ -237,7 +237,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             QueryOptions emptyOptions = new QueryOptions();
             emptyOptions.putIfNotEmpty(QueryOptions.INCLUDE, options.getString(QueryOptions.INCLUDE));
             emptyOptions.putIfNotEmpty(QueryOptions.EXCLUDE, options.getString(QueryOptions.EXCLUDE));
-            unfilteredResult = dbQueryExecutor.get(emptyQuery, emptyOptions);
+            unfilteredResult = dbQueryExecutor.get(variantStorageEngine.parseQuery(emptyQuery, emptyOptions));
         }
 
         for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
@@ -245,7 +245,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 logger.info("");
                 logger.info("###################");
                 logger.info("### Testing " + variantQueryExecutor.getClass().getSimpleName());
-                result = variantQueryExecutor.get(new Query(variantQuery.getQuery()), new QueryOptions(options));
+                result = variantQueryExecutor.get(variantQuery);
                 logger.info("### Num results : " + result.getNumResults());
                 logger.info("###################");
                 expected.getResults().sort(Comparator.comparing(Variant::toString));

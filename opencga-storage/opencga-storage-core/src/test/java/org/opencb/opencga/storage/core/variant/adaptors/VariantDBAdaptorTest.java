@@ -35,7 +35,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -45,6 +44,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.NoOpVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.filters.VariantFilterBuilder;
@@ -266,8 +267,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
 
-        DataResult<Variant> queryResult = iterator.toDataResult();
-        assertEquals(variantsToQuery.size(), queryResult.getResults().size());
+        List<Variant> variants = iterator.toList();
+        assertEquals(variantsToQuery.size(), variants.size());
     }
 
     @Test
@@ -2450,7 +2451,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private Matcher<Variant> withFilter(Query query) {
-        return VariantMatchers.withFilter(new VariantFilterBuilder(metadataManager).buildFilter(query, null), query.toJson());
+        ParsedVariantQuery parsedVariantQuery = variantStorageEngine.parseQuery(query, new QueryOptions());
+        return VariantMatchers.withFilter(new VariantFilterBuilder().buildFilter(parsedVariantQuery), query.toJson());
     }
 /*
     @Test

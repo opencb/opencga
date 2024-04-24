@@ -27,8 +27,8 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.IOException;
 import java.net.URI;
@@ -110,6 +111,44 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort1.cohort2.stats"));
 
         checkCohorts(dbAdaptor, studyMetadata);
+    }
+
+    @Test
+    public void queryInvalidStats() throws Exception {
+        //Calculate stats for 2 cohorts at one time
+        checkCohorts(dbAdaptor, studyMetadata);
+
+        QueryOptions options = new QueryOptions();
+        options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
+        Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
+
+        /** Create cohorts **/
+        HashSet<String> cohort1 = new HashSet<>();
+        cohort1.add(iterator.next().getName());
+        cohort1.add(iterator.next().getName());
+
+        HashSet<String> cohort2 = new HashSet<>();
+        cohort2.add(iterator.next().getName());
+        cohort2.add(iterator.next().getName());
+
+        Map<String, Set<String>> cohorts = new HashMap<>();
+        cohorts.put("cohort1", cohort1);
+        cohorts.put("cohort2", cohort2);
+
+        //Calculate stats
+        stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort1.cohort2.stats"));
+
+        checkCohorts(dbAdaptor, studyMetadata);
+
+        List<Integer> cohort1Samples = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1").getSamples();
+        CohortMetadata cohort = metadataManager.addSamplesToCohort(studyMetadata.getId(), "cohort2", cohort1Samples);
+        assertTrue(cohort.isInvalid());
+
+        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(1, result.getEvents().size());
+        assertEquals("Please note that the Cohort Stats for '1000g:cohort2' are currently outdated." +
+                " The statistics have been calculated with 2 samples, while the total number of samples in the cohort is 4." +
+                " To display updated statistics, please execute variant-stats-index.", result.getEvents().get(0).getMessage());
     }
 
     @Test
