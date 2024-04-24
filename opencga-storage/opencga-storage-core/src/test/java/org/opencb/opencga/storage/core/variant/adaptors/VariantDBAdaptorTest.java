@@ -530,11 +530,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_variantId() {
         int i = 0;
         List<Variant> variants = new ArrayList<>();
+        Map<String, String> normalizedVariants = new HashMap<>();
         for (Variant variant : allVariants.getResults()) {
-            if (i++ % 10 == 0) {
-                if (!variant.isSymbolic()) {
-                    variants.add(variant);
-                }
+            if ((i++ % 10) == 0) {
+                variants.add(variant);
+            }
+            OriginalCall call = variant.getStudies().get(0).getFiles().get(0).getCall();
+            if (call != null) {
+                normalizedVariants.put(variant.toString(), call.getVariantId());
             }
         }
         List<Variant> result = query(new Query(ID.key(), variants), new QueryOptions()).getResults();
@@ -553,6 +556,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             }
         }
         assertEquals(expectedList, actualList);
+
+        normalizedVariants.forEach((key, value) -> {
+            System.out.println(key + " = " + value);
+        });
+        List<Variant> resultNormalized = query(new Query(ID.key(), normalizedVariants.values()).append(INCLUDE_FILE.key(), ALL), new QueryOptions()).getResults();
+        assertEquals(normalizedVariants.size(), resultNormalized.size());
+        assertTrue(!resultNormalized.isEmpty());
+        for (Variant variant : resultNormalized) {
+            String expected = normalizedVariants.get(variant.toString());
+            String actual = variant.getStudies().get(0).getFiles().get(0).getCall().getVariantId();
+            assertEquals(expected, actual);
+        }
     }
 
     @Test
