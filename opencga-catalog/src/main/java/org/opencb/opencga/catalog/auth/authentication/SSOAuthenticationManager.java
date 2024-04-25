@@ -10,6 +10,7 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.security.Key;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,13 @@ public class SSOAuthenticationManager extends AuthenticationManager {
         this.jwtManager = new JwtManager(signatureAlgorithm.getValue(), secretKey);
 
         this.logger = LoggerFactory.getLogger(SSOAuthenticationManager.class);
+    }
+
+    public static void validateAuthenticationOriginConfiguration(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        if (authenticationOrigin.getType() != AuthenticationOrigin.AuthenticationType.SSO) {
+            throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationOrigin.AuthenticationType.SSO
+                    + "' but received '" + authenticationOrigin.getType() + "'.");
+        }
     }
 
     @Override
@@ -70,5 +78,10 @@ public class SSOAuthenticationManager extends AuthenticationManager {
     @Override
     public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
         return jwtManager.createJWTToken(organizationId, AuthenticationOrigin.AuthenticationType.SSO, userId, claims, 0L);
+    }
+
+    @Override
+    public void close() throws IOException {
+
     }
 }

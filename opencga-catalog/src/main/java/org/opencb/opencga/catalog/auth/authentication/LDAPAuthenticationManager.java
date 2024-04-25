@@ -24,8 +24,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -122,6 +124,24 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         env.replace(DirContext.SECURITY_CREDENTIALS, remove);
 
         return string;
+    }
+
+    public static void validateAuthenticationOriginConfiguration(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        if (authenticationOrigin.getType() != AuthenticationType.LDAP) {
+            throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationType.LDAP + "' but received '"
+                    + authenticationOrigin.getType() + "'.");
+        }
+        ParamUtils.checkParameter(authenticationOrigin.getHost(), AuthenticationType.LDAP + " host.");
+
+        TokenConfiguration defaultTokenConfig = TokenConfiguration.init();
+        LDAPAuthenticationManager ldapAuthenticationManager = new LDAPAuthenticationManager(authenticationOrigin,
+                defaultTokenConfig.getAlgorithm(), defaultTokenConfig.getSecretKey(), defaultTokenConfig.getExpiration());
+        DirContext dirContext = ldapAuthenticationManager.getDirContext(ldapAuthenticationManager.getDefaultEnv(), 1);
+        if (dirContext == null) {
+            throw new CatalogException("LDAP: Could not connect to the LDAP server using the provided configuration.");
+        }
+        ldapAuthenticationManager.closeDirContextAndSuppress(dirContext, new Exception());
+        ldapAuthenticationManager.close();
     }
 
     @Override
@@ -502,5 +522,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         String value = objectMap.getString(key, defaultValue);
         objectMap.remove(key);
         return value;
+    }
+
+    @Override
+    public void close() {
+        executorService.shutdown();
     }
 }

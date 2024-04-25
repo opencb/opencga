@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.jsonwebtoken.security.InvalidKeyException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -17,6 +18,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -34,6 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class OrganizationManager extends AbstractManager {
 
@@ -257,33 +263,6 @@ public class OrganizationManager extends AbstractManager {
             // We set the proper values for the audit
             organizationId = organization.getId();
 
-            // Avoid duplicated authentication origin ids.
-            // Validate all mandatory authentication origin fields are filled in.
-            if (updateParams.getConfiguration() != null && updateParams.getConfiguration().getAuthenticationOrigins() != null) {
-                String authOriginsPrefixKey = OrganizationDBAdaptor.QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key();
-                boolean internal = false;
-                Set<String> authenticationOriginIds = new HashSet<>();
-                for (AuthenticationOrigin authenticationOrigin : updateParams.getConfiguration().getAuthenticationOrigins()) {
-                    if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)) {
-                        if (internal) {
-                            throw new CatalogException("Found duplicated authentication origin of type OPENCGA.");
-                        }
-                        internal = true;
-                        // Set id to INTERNAL
-                        authenticationOrigin.setId(CatalogAuthenticationManager.OPENCGA);
-                    }
-                    ParamUtils.checkIdentifier(authenticationOrigin.getId(), authOriginsPrefixKey + ".id");
-                    ParamUtils.checkObj(authenticationOrigin.getType(), authOriginsPrefixKey + ".type");
-                    if (authenticationOriginIds.contains(authenticationOrigin.getId())) {
-                        throw new CatalogException("Found duplicated authentication origin id '" + authenticationOrigin.getId() + "'.");
-                    }
-                    authenticationOriginIds.add(authenticationOrigin.getId());
-                }
-                if (!internal) {
-                    throw new CatalogException("Missing mandatory AuthenticationOrigin of type OPENCGA.");
-                }
-            }
-
             result = getOrganizationDBAdaptor(organizationId).update(organizationId, updateMap, options);
 
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "",
@@ -301,6 +280,168 @@ public class OrganizationManager extends AbstractManager {
             result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update organization {}: {}", organizationId, e.getMessage());
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Update organization",
+                            e.getMessage())));
+            throw e;
+        }
+        return result;
+    }
+
+    public OpenCGAResult<OrganizationConfiguration> updateConfiguration(String organizationId, OrganizationConfiguration updateParams,
+                                                           QueryOptions options, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("updateParams", updateParams)
+                .append("options", options)
+                .append("token", token);
+
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        OpenCGAResult<OrganizationConfiguration> result = OpenCGAResult.empty(OrganizationConfiguration.class);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+            ParamUtils.checkObj(updateParams, "OrganizationConfiguration");
+            ObjectMap updateConfigurationMap;
+            try {
+                updateConfigurationMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse OrganizationConfiguration object: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Organization> internalResult = get(organizationId, INCLUDE_ORGANIZATION_CONFIGURATION, token);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Organization '" + organizationId + "' not found");
+            }
+            Organization organization = internalResult.first();
+
+            // We set the proper values for the audit
+            organizationId = organization.getId();
+
+            if (CollectionUtils.isNotEmpty(updateParams.getAuthenticationOrigins())) {
+                // Check action
+                ParamUtils.UpdateAction authOriginsAction = null;
+                Map<String, Object> map = queryOptions.getMap(Constants.ACTIONS);
+                if (map == null || map.get(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD) == null) {
+                    // Write default option
+                    authOriginsAction = ParamUtils.UpdateAction.ADD;
+                    Map<String, Object> actionMap = new HashMap<>();
+                    actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, authOriginsAction);
+                    queryOptions.put(Constants.ACTIONS, actionMap);
+                } else {
+                    authOriginsAction = ParamUtils.UpdateAction.valueOf(map.get(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD).toString());
+                }
+
+                Set<String> currentAuthOriginIds = organization.getConfiguration().getAuthenticationOrigins()
+                        .stream()
+                        .map(AuthenticationOrigin::getId)
+                        .collect(Collectors.toSet());
+
+                Set<String> updateAuthOriginIds = new HashSet<>();
+                StringBuilder authOriginUpdateBuilder = new StringBuilder();
+                List<AuthenticationOrigin> authenticationOrigins = updateParams.getAuthenticationOrigins();
+                for (int i = 0; i < authenticationOrigins.size(); i++) {
+                    AuthenticationOrigin authenticationOrigin = authenticationOrigins.get(i);
+                    ParamUtils.checkParameter(authenticationOrigin.getId(), "AuthenticationOrigin id");
+                    ParamUtils.checkObj(authenticationOrigin.getType(), "AuthenticationOrigin type");
+                    if (updateAuthOriginIds.contains(authenticationOrigin.getId())) {
+                        throw new CatalogParameterException("Found duplicated authentication origin id '" + authenticationOrigin.getId()
+                                + "'.");
+                    }
+                    updateAuthOriginIds.add(authenticationOrigin.getId());
+                    if (i > 0) {
+                        authOriginUpdateBuilder.append(", ");
+                    }
+                    authOriginUpdateBuilder.append(authenticationOrigin.getType()).append(": ").append(authenticationOrigin.getId());
+
+                    if (authOriginsAction != ParamUtils.UpdateAction.REMOVE) {
+                        // Validate configuration is correct and can be used
+                        authenticationFactory.validateAuthenticationOrigin(authenticationOrigin);
+                    }
+                }
+
+                switch (authOriginsAction) {
+                    case ADD:
+                        for (AuthenticationOrigin authenticationOrigin : updateParams.getAuthenticationOrigins()) {
+                            if (currentAuthOriginIds.contains(authenticationOrigin.getId())) {
+                                throw new CatalogException("Authentication origin '" + authenticationOrigin.getId() + "' already exists. "
+                                        + "Please, set the authOriginsAction to 'REPLACE' to replace the current configuration.");
+                            }
+                        }
+                        logger.debug("Adding new list of Authentication Origins: {}.", authOriginUpdateBuilder);
+                        break;
+                    case SET:
+                        boolean userAuthOriginFound = false;
+                        for (AuthenticationOrigin authenticationOrigin : updateParams.getAuthenticationOrigins()) {
+                            if (tokenPayload.getAuthOrigin().equals(authenticationOrigin.getType())) {
+                                userAuthOriginFound = true;
+                            }
+                        }
+                        if (!userAuthOriginFound) {
+                            throw new CatalogException("User authentication origin not found in the list of authentication origins. "
+                                    + "Please, add an AuthenticationOrigin of type '" + tokenPayload.getAuthOrigin() + "' to the list.");
+                        }
+                        logger.debug("Set new list of Authentication Origins: {}.", authOriginUpdateBuilder);
+                        break;
+                    case REMOVE:
+                        for (AuthenticationOrigin authenticationOrigin : updateParams.getAuthenticationOrigins()) {
+                            if (!currentAuthOriginIds.contains(authenticationOrigin.getId())) {
+                                throw new CatalogException("Authentication origin '" + authenticationOrigin.getId() + "' does not exist. "
+                                        + "The current available authentication origin ids are: '"
+                                        + StringUtils.join(currentAuthOriginIds, ", ") + "'.");
+                            }
+                            if (tokenPayload.getAuthOrigin().equals(authenticationOrigin.getType())) {
+                                throw new CatalogException("Removing the authentication origin '" + tokenPayload.getAuthOrigin() + "' "
+                                        + "not allowed. Your user account uses that AuthenticationOrigin.");
+                            }
+                        }
+                        logger.debug("Removing list of Authentication Origins: {}.", authOriginUpdateBuilder);
+                        break;
+                    case REPLACE:
+                        for (AuthenticationOrigin authenticationOrigin : updateParams.getAuthenticationOrigins()) {
+                            if (!currentAuthOriginIds.contains(authenticationOrigin.getId())) {
+                                throw new CatalogException("Authentication origin '" + authenticationOrigin.getId() + "' not found."
+                                        + "Please, set the authOriginsAction to 'ADD' to add the new AuthenticationOrigin.");
+                            }
+                        }
+                        logger.debug("Replace list of Authentication Origins: {}.", authOriginUpdateBuilder);
+                        break;
+                    default:
+                        throw new CatalogParameterException("Unknown authentication origins action " + authOriginsAction);
+                }
+            }
+
+            if (updateParams.getToken() != null) {
+                try {
+                    JwtUtils.validateJWTKey(updateParams.getToken().getAlgorithm(), updateParams.getToken().getSecretKey());
+                } catch (InvalidKeyException e) {
+                    throw new CatalogParameterException("Invalid secret key - algorithm for JWT token: " + e.getMessage(), e);
+                }
+                if (updateParams.getToken().getExpiration() <= 0) {
+                    throw new CatalogParameterException("Invalid expiration for JWT token. It must be a positive number.");
+                }
+            }
+
+            ObjectMap updateMap = new ObjectMap(OrganizationDBAdaptor.QueryParams.CONFIGURATION.key(), updateConfigurationMap);
+            OpenCGAResult<?> update = getOrganizationDBAdaptor(organizationId).update(organizationId, updateMap, queryOptions);
+            result.append(update);
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            if (queryOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated organization
+                OpenCGAResult<Organization> queryResult = getOrganizationDBAdaptor(organizationId).get(INCLUDE_ORGANIZATION_CONFIGURATION);
+                result.setResults(Collections.singletonList(queryResult.first().getConfiguration()));
+            }
+
+            if (CollectionUtils.isNotEmpty(updateParams.getAuthenticationOrigins())) {
+                authenticationFactory.configureOrganizationAuthenticationManager(organization);
+            }
+
+        } catch (Exception e) {
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organizationId, organizationId, "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "Update organization",
                             e.getMessage())));

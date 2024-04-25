@@ -64,6 +64,17 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
+    public static void validateAuthenticationOriginConfiguration(AuthenticationOrigin authenticationOrigin) throws CatalogException {
+        if (!OPENCGA.equals(authenticationOrigin.getId())) {
+            throw new CatalogException("Unknown authentication origin. Expected origin id '" + OPENCGA + "' but received '"
+                    + authenticationOrigin.getId() + "'.");
+        }
+        if (authenticationOrigin.getType() != AuthenticationOrigin.AuthenticationType.OPENCGA) {
+            throw new CatalogException("Unknown authentication type. Expected type '" + AuthenticationOrigin.AuthenticationType.OPENCGA
+                    + "' but received '" + authenticationOrigin.getType() + "'.");
+        }
+    }
+
     @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
@@ -144,5 +155,9 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         return new AuthenticationOrigin()
                 .setId(CatalogAuthenticationManager.OPENCGA)
                 .setType(AuthenticationOrigin.AuthenticationType.OPENCGA);
+    }
+
+    @Override
+    public void close() {
     }
 }

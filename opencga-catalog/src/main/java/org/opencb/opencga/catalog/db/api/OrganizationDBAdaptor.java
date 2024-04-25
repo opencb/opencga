@@ -17,6 +17,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface OrganizationDBAdaptor extends Iterable<Organization> {
 
     String IS_ORGANIZATION_ADMIN_OPTION = "isOrgAdmin";
+    String AUTH_ORIGINS_FIELD = "authenticationOrigins";
 
     enum QueryParams implements QueryParam {
         UID("uid", LONG, ""),
@@ -28,8 +29,8 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_MIGRATION_EXECUTIONS("internal.migrationExecutions", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
-        CONFIGURATION_AUTHENTICATION_ORIGINS("configuration.authenticationOrigins", OBJECT, ""),
-        CONFIGURATION_AUTHENTICATION_ORIGINS_OPTIONS("configuration.authenticationOrigins.options", OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS("configuration." + AUTH_ORIGINS_FIELD, OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS_OPTIONS("configuration." + AUTH_ORIGINS_FIELD + ".options", OBJECT, ""),
         CONFIGURATION_TOKEN("configuration.token", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
