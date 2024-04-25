@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-02-02 OpenCB
+* Copyright 2015-2024-04-25 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -338,6 +338,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
         filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("move", filesCommandOptions.moveCommandOptions);
         filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
         filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
