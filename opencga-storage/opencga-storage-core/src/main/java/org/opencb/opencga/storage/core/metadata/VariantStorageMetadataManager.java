@@ -1135,6 +1135,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isInvalid);
     }
 
+    public Iterable<CohortMetadata> getCalculatedOrInvalidCohorts(int studyId) {
+        return () -> Iterators.filter(cohortIterator(studyId),
+                cohortMetadata -> cohortMetadata.isStatsReady() || cohortMetadata.isInvalid());
+    }
+
     public CohortMetadata setSamplesToCohort(int studyId, String cohortName, Collection<Integer> samples) throws StorageEngineException {
         return updateCohortSamples(studyId, cohortName, samples, false);
     }
@@ -1244,6 +1249,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         if (!oldSamples.equals(sampleIdsList) || !oldFiles.equals(fileIds)) {
                             // Cohort has been modified! Invalidate stats
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                            cohort.getAttributes().put(CohortMetadata.INVALID_STATS_NUM_SAMPLES, oldSamples.size());
                         }
                     }
                 }

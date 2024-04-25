@@ -18,7 +18,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;

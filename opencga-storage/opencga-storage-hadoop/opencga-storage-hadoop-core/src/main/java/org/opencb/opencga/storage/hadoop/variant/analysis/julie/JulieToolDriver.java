@@ -68,6 +68,7 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
             for (Integer studyId : metadataManager.getStudies().values()) {
                 List<Integer> studyCohorts = new LinkedList<>();
                 cohorts.put(studyId, studyCohorts);
+                // Only READY cohort stats are used for JulieTool
                 for (CohortMetadata c : metadataManager.getCalculatedCohorts(studyId)) {
                     studyCohorts.add(c.getId());
                 }
