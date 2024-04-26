@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -72,7 +73,6 @@ import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
 
 /**
  *  Utility class for VariantStorage hadoop tests
@@ -236,8 +236,11 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "all,SAMPLE_ID")
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL),
+        if (dbAdaptor.getMetadataManager().getStudyIds().isEmpty()) {
+            out.println("No studies found!");
+            return;
+        }
+        VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
                 new QueryOptions("simpleGenotypes", true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {

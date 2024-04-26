@@ -1273,11 +1273,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Iterator<TaskMetadata> taskIterator(int studyId) {
-        return taskIterator(studyId, null);
+        return taskIterator(studyId, null, false);
     }
 
     public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter) {
         return taskIterator(studyId, statusFilter, false);
+    }
+
+    public Iterator<TaskMetadata> taskIterator(int studyId, TaskMetadata.Status... statusFilter) {
+        return taskIterator(studyId, Arrays.asList(statusFilter), false);
     }
 
     public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter, boolean reversed) {
@@ -1286,6 +1290,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Iterable<TaskMetadata> getRunningTasks(int studyId) {
         return taskDBAdaptor.getRunningTasks(studyId);
+    }
+
+    public Iterable<TaskMetadata> getActiveTasks(int studyId) {
+        return () -> taskIterator(studyId,
+                TaskMetadata.Status.RUNNING,
+                TaskMetadata.Status.DONE,
+                TaskMetadata.Status.ERROR);
     }
 
     public void unsecureUpdateTask(int studyId, TaskMetadata task) throws StorageEngineException {
@@ -2074,47 +2085,35 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                                                         TaskMetadata.Type type, Predicate<TaskMetadata> allowConcurrent)
             throws StorageEngineException {
         TaskMetadata resumeTask = null;
-        Iterator<TaskMetadata> iterator = taskIterator(studyId, Arrays.asList(
-                TaskMetadata.Status.DONE,
-                TaskMetadata.Status.RUNNING,
-                TaskMetadata.Status.ERROR));
-        while (iterator.hasNext()) {
-            TaskMetadata task = iterator.next();
+        for (TaskMetadata task : getActiveTasks(studyId)) {
             TaskMetadata.Status currentStatus = task.currentStatus();
 
-            switch (currentStatus) {
-                case READY:
-                    logger.warn("Unexpected READY task. IGNORE");
-                    // Ignore ready operations
-                    break;
-                case DONE:
-                case RUNNING:
-                    if (!resume) {
-                        if (task.sameOperation(fileIds, type, jobOperationName)) {
-                            throw StorageEngineException.currentOperationInProgressException(task, this);
-                        } else {
-                            if (allowConcurrent.test(task)) {
-                                break;
-                            } else {
-                                throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, this);
-                            }
-                        }
-                    }
-                    // DO NOT BREAK!. Resuming last loading, go to error case.
-                case ERROR:
-                    if (!task.sameOperation(fileIds, type, jobOperationName)) {
-                        if (allowConcurrent.test(task)) {
-                            break;
-                        } else {
-                            throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, this, resume);
-                        }
-                    } else {
-                        logger.info("Resuming last batch operation \"" + task.getName() + "\" due to error.");
-                        resumeTask = task;
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown Status " + currentStatus);
+            if (currentStatus != TaskMetadata.Status.DONE
+                    && currentStatus != TaskMetadata.Status.RUNNING
+                    && currentStatus != TaskMetadata.Status.ERROR) {
+                logger.warn("Unexpected {} task. IGNORE", currentStatus);
+                // Ignore ready operations
+                continue;
+            }
+
+            if (task.sameOperation(fileIds, type, jobOperationName)) {
+                if (currentStatus == TaskMetadata.Status.ERROR) {
+                    // Automatically resume ERROR status tasks
+                    logger.info("Resuming last batch operation \"" + task.getName() + "\" due to error.");
+                    resumeTask = task;
+                } else if (resume) {
+                    // Force resume
+                    logger.info("Manually resuming last batch operation \"" + task.getName() + "\" in status " + currentStatus + ".");
+                    resumeTask = task;
+                } else {
+                    // Already being executed
+                    throw StorageEngineException.currentOperationInProgressException(task, this);
+                }
+            } else {
+                // Check if it can be executed concurrently
+                if (!allowConcurrent.test(task)) {
+                    throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, this);
+                }
             }
         }
         return resumeTask;

@@ -2,8 +2,11 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -24,6 +27,7 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -50,6 +54,7 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDB
 public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     public static final List<String> SAMPLES = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+    public static final String MOCKED_EXCEPTION = "Mocked exception";
 
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
@@ -61,6 +66,91 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     @After
     public void tearDown() throws Exception {
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @Test
+    public void testMultiChromosomeSplitDataConcurrentFail() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        failAtLoadingFile("by_chr/", "chr20.variant-test-file.vcf.gz", outputUri);
+        // Will fail if LOAD_SPLIT_DATA is not set
+        thrown.expect(StoragePipelineException.class);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")), outputUri);
+    }
+
+    @Test
+    public void testMultiChromosomeSplitDataConcurrentFailOneIndexOther() throws Exception {
+        // Test goal:
+        //  - Index chr20 and chr21 concurrently with shared samples and LOAD_SPLIT_DATA=CHROMOSOME
+        // Test steps:
+        //  - Fail at loading chr20 (left the file in status "RUNNING")
+        //  - Index chr21 correctly with LOAD_SPLIT_DATA=CHROMOSOME
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        failAtLoadingFile("by_chr/", "chr20.variant-test-file.vcf.gz", outputUri);
+
+        // Won't fail if LOAD_SPLIT_DATA is set correctly
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")), outputUri);
+    }
+
+    @Test
+    public void testMultiChromosomeSplitDataConcurrentFail3() throws Exception {
+        // Test goal:
+        //  - Ensure file can be loaded after deleting a file with shared samples without any LOAD_SPLIT_DATA.
+        // Test steps:
+        //  - Fail at loading chr20 (left the file in status "RUNNING")
+        //  - Force remove chr20
+        //  - Index chr21 correctly
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        failAtLoadingFile("by_chr/", "chr20.variant-test-file.vcf.gz", outputUri);
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+        variantStorageEngine.removeFile(STUDY_NAME, "chr20.variant-test-file.vcf.gz", outputUri);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), false);
+
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")), outputUri);
+    }
+
+    @Test
+    public void testMultiChromosomeSplitDataConcurrentFailDelete() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        failAtLoadingFile("by_chr/", "chr20.variant-test-file.vcf.gz", outputUri);
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")), outputUri);
+
+        try {
+            // FORCE=true is needed, as the file is not correctly indexed
+            // Set FORCE=false to assert exception
+            variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), false);
+            variantStorageEngine.removeFile(STUDY_NAME, "chr20.variant-test-file.vcf.gz", outputUri);
+            fail();
+        } catch (StorageEngineException e) {
+            assertEquals("Unable to remove non indexed file: chr20.variant-test-file.vcf.gz", e.getMessage());
+        }
+
+        // FORCE=true is needed, as the file is not correctly indexed
+        failAtDeletingFile("chr20.variant-test-file.vcf.gz", outputUri, 1, new ObjectMap(VariantStorageOptions.FORCE.key(), true));
+
+        try {
+            // FORCE=true is needed, as the file is not correctly indexed
+            variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+            // RESUME=true is needed, as the delete task is in status "RUNNING" from the previous failAtDeletingFile
+            // Set RESUME=false to assert exception
+            variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), false);
+            variantStorageEngine.removeFile(STUDY_NAME, "chr20.variant-test-file.vcf.gz", outputUri);
+            fail();
+        } catch (StorageEngineException e) {
+            assertEquals("Operation \"remove\" for files [\"chr20.variant-test-file.vcf.gz\" (id=1)] in status \"RUNNING\". Relaunch with resume=true to finish the operation.", e.getMessage());
+        }
+
+
+        // FORCE=true is needed, as the file is not correctly indexed
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+        // RESUME=true is needed, as the delete task is in status "RUNNING"
+        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
+        variantStorageEngine.removeFile(STUDY_NAME, "chr20.variant-test-file.vcf.gz", outputUri);
     }
 
     @Test
@@ -129,6 +219,57 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(1, variant.getStudies().get(0).getFiles().size());
             assertEquals(expectedFile, variant.getStudies().get(0).getFiles().get(0).getFileId());
         }, QueryOptions.empty());
+    }
+
+    private void failAtLoadingFile(String x, String file1, URI outputUri) throws Exception {
+        try {
+            VariantStorageEngine engine = getMockedStorageEngine(new ObjectMap(VariantStorageOptions.STUDY.key(), STUDY_NAME));
+            engine.index(Collections.singletonList(getResourceUri(x + file1)), outputUri);
+            fail("Should have thrown an exception");
+        } catch (StoragePipelineException e) {
+            try {
+                assertEquals(MOCKED_EXCEPTION, e.getCause().getMessage());
+                int studyId = metadataManager.getStudyId(STUDY_NAME);
+                FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file1);
+                assertEquals(TaskMetadata.Status.NONE, fileMetadata.getIndexStatus());
+                List<TaskMetadata> runningTasks = new ArrayList<>();
+                metadataManager.getRunningTasks(studyId).forEach(runningTasks::add);
+                assertEquals(1, runningTasks.size());
+                assertEquals(TaskMetadata.Type.LOAD, runningTasks.get(0).getType());
+                assertEquals(TaskMetadata.Status.RUNNING, runningTasks.get(0).currentStatus());
+                assertEquals(Arrays.asList(fileMetadata.getId()), runningTasks.get(0).getFileIds());
+            } catch (AssertionError error) {
+                e.printStackTrace();
+                throw error;
+            }
+        }
+    }
+
+    private void failAtDeletingFile(String file, URI outputUri, int expectedRunningTasks, ObjectMap options) throws Exception {
+        int studyId = metadataManager.getStudyId(STUDY_NAME);
+        FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
+        try {
+            getMockedStorageEngine(options).removeFile(STUDY_NAME, file, outputUri);
+            fail("Should have thrown an exception");
+        } catch (StorageEngineException e) {
+            try {
+                assertEquals(MOCKED_EXCEPTION, e.getMessage());
+                assertEquals(TaskMetadata.Status.NONE, fileMetadata.getIndexStatus());
+                List<TaskMetadata> runningTasks = new ArrayList<>();
+                metadataManager.getRunningTasks(studyId).forEach(runningTasks::add);
+                assertEquals(expectedRunningTasks, runningTasks.size());
+                Optional<TaskMetadata> optional = runningTasks.stream()
+                        .filter(t -> t.getType() == TaskMetadata.Type.REMOVE && Arrays.asList(fileMetadata.getId()).equals(t.getFileIds()))
+                        .findFirst();
+                assertTrue(optional.isPresent());
+                assertEquals(TaskMetadata.Type.REMOVE, optional.get().getType());
+                assertEquals(TaskMetadata.Status.RUNNING, optional.get().currentStatus());
+                assertEquals(Arrays.asList(fileMetadata.getId()), optional.get().getFileIds());
+            } catch (AssertionError error) {
+                e.printStackTrace();
+                throw error;
+            }
+        }
     }
 
     @Test
@@ -405,6 +546,148 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         assertNotEquals(0, study.getIssues().size());
     }
 
+
+    @Test
+    public void testLoadMultiFileDataConcurrency() throws Exception {
+
+        URI outDir = newOutputUri();
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), false);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+
+        String resourceDir = "by_chr/";
+        String file1 = "chr22.variant-test-file.vcf.gz";
+        String file2 = "chr22_1-2-DUP.variant-test-file.vcf.gz";
+
+        failAtLoadingFile(resourceDir, file1, outDir);
+
+        try {
+            variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
+        } catch (StoragePipelineException e) {
+            MatcherAssert.assertThat(e.getCause().getMessage(), startsWith("Can not \"Load\" files"));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file2));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file1));
+        }
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+        variantStorageEngine.removeFile(STUDY_NAME, file1, outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
+//        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file1)), outDir);
+    }
+
+
+    @Test
+    public void testLoadMultiFileDataConcurrencyDeleteMany() throws Exception {
+
+        URI outDir = newOutputUri();
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), false);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+
+        String resourceDir = "platinum/";
+        String file1 = "1K.end.platinum-genomes-vcf-NA12877_S1.vcf.gz";
+        String file2 = "1K.end.platinum-genomes-vcf-NA12878_S1.vcf.gz";
+
+        failAtLoadingFile(resourceDir, file1, outDir);
+        failAtLoadingFile(resourceDir, file2, outDir);
+//        try {
+//            getMockedStorageEngine().index(Collections.singletonList(getResourceUri(resourceDir + file1)), outDir);
+//            fail("Should have thrown an exception");
+//        } catch (StoragePipelineException e) {
+//            assertEquals(MOCKED_EXCEPTION, e.getCause().getMessage());
+//        }
+//        try {
+//            getMockedStorageEngine().index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
+//            fail("Should have thrown an exception");
+//        } catch (StoragePipelineException e) {
+//            assertEquals(MOCKED_EXCEPTION, e.getCause().getMessage());
+//        }
+
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+        try {
+            variantStorageEngine.removeFile(STUDY_NAME, file1, outDir);
+            fail();
+        } catch (StorageEngineException e) {
+            MatcherAssert.assertThat(e.getMessage(), startsWith("Can not \"remove\" files"));
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString(file1));
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString(file2));
+        }
+        try {
+            variantStorageEngine.removeFile(STUDY_NAME, file2, outDir);
+            fail();
+        } catch (StorageEngineException e) {
+            MatcherAssert.assertThat(e.getMessage(), startsWith("Can not \"remove\" files"));
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString(file1));
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString(file2));
+        }
+        variantStorageEngine.removeFiles(STUDY_NAME, Arrays.asList(file1, file2), outDir);
+
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file1)), outDir);
+    }
+
+    @Test
+    public void testLoadMultiFileDataConcurrencyFail() throws Exception {
+
+        URI outDir = newOutputUri();
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), false);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+
+        String resourceDir = "by_chr/";
+        String file1 = "chr22.variant-test-file.vcf.gz";
+        String file2 = "chr22_1-2-DUP.variant-test-file.vcf.gz";
+
+        failAtLoadingFile(resourceDir, file1, outDir);
+
+        try {
+            variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
+        } catch (StoragePipelineException e) {
+            MatcherAssert.assertThat(e.getCause().getMessage(), startsWith("Can not \"Load\" files"));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file2));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file1));
+        }
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(file1)), outDir);
+
+    }
+
+    private VariantStorageEngine getMockedStorageEngine() throws Exception {
+        return getMockedStorageEngine(new ObjectMap());
+    }
+
+    private VariantStorageEngine getMockedStorageEngine(ObjectMap options) throws Exception {
+        HadoopVariantStorageEngine mockedStorageEngine = Mockito.spy(getVariantStorageEngine());
+        mockedStorageEngine.getOptions().putAll(options);
+        mockedStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        VariantStoragePipeline mockedPipeline = Mockito.spy(variantStorageEngine.newStoragePipeline(true));
+
+        Mockito.doReturn(mockedPipeline).when(mockedStorageEngine).newStoragePipeline(Mockito.anyBoolean());
+//        Mockito.doThrow(new StoragePipelineException(MOCKED_EXCEPTION, Collections.emptyList())).when(mockedPipeline).load(Mockito.any(), Mockito.any());
+        Mockito.doAnswer(invocation -> {
+            // Throw StorageEngineException when calling load
+            System.out.printf("MOCKED load(%s, %s)%n", invocation.getArgument(0), invocation.getArgument(1));
+            System.out.println("MOCKED load throw StorageEngineException");
+            throw new StoragePipelineException(MOCKED_EXCEPTION, Collections.emptyList());
+        }).when(mockedPipeline).load(Mockito.any(), Mockito.any());
+
+        Mockito.doAnswer(invocation -> {
+            // Call real method when calling preRemove, then throw StorageEngineException
+            System.out.printf("MOCKED preRemove(%s, %s, %s)%n", invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2));
+            System.out.println("MOCKED preRemove callRealMethod");
+            invocation.callRealMethod();
+            System.out.println("MOCKED preRemove callRealMethod DONE");
+            System.out.println("MOCKED preRemove throw StorageEngineException");
+            throw new StorageEngineException(MOCKED_EXCEPTION);
+        }).when(mockedStorageEngine).preRemove(Mockito.any(), Mockito.any(), Mockito.any());
+        return mockedStorageEngine;
+    }
 
     @Test
     public void testLoadByRegion() throws Exception {

@@ -699,6 +699,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
+        return super.preRemove(study, files, samples);
+    }
+
+    @Override
     public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
         remove(study, files, Collections.emptyList(), outdir);
     }
