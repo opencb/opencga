@@ -12,6 +12,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OrganizationsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
@@ -22,6 +23,7 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -73,6 +75,9 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "notes-update":
                 queryResponse = updateNotes();
+                break;
+            case "configuration-update":
+                queryResponse = updateConfiguration();
                 break;
             case "info":
                 queryResponse = info();
@@ -220,6 +225,41 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), NoteUpdateParams.class);
         }
         return openCGAClient.getOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
+    }
+
+    private RestResponse<OrganizationConfiguration> updateConfiguration() throws Exception {
+        logger.debug("Executing updateConfiguration in Organizations command line");
+
+        OrganizationsCommandOptions.UpdateConfigurationCommandOptions commandOptions = organizationsCommandOptions.updateConfigurationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        queryParams.putIfNotNull("authenticationOrigins", commandOptions.authenticationOrigins);
+
+
+        OrganizationConfiguration organizationConfiguration = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<OrganizationConfiguration> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/organizations/{organization}/configuration/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            organizationConfiguration = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), OrganizationConfiguration.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions",commandOptions.optimizationsSimplifyPermissions, true);
+            putNestedIfNotEmpty(beanParams, "token.algorithm",commandOptions.tokenAlgorithm, true);
+            putNestedIfNotEmpty(beanParams, "token.secretKey",commandOptions.tokenSecretKey, true);
+            putNestedIfNotNull(beanParams, "token.expiration",commandOptions.tokenExpiration, true);
+
+            organizationConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), OrganizationConfiguration.class);
+        }
+        return openCGAClient.getOrganizationClient().updateConfiguration(commandOptions.organization, organizationConfiguration, queryParams);
     }
 
     private RestResponse<Organization> info() throws Exception {

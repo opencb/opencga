@@ -1,5 +1,5 @@
 /*
-* Copyright 2015-2024-04-10 OpenCB
+* Copyright 2015-2024-04-29 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -287,6 +287,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
+        organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 
