@@ -35,7 +35,7 @@ public class MailUtils {
     private static final Logger logger = LoggerFactory.getLogger(MailUtils.class);
 
     public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword,
-                                             String mailHost, String mailPort, String ssl, String UserName) throws Exception {
+                                             String mailHost, String mailPort, String ssl, String user_id) throws Exception {
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
@@ -59,7 +59,7 @@ public class MailUtils {
                 InternetAddress.parse(to));
 
         message.setSubject("XetaBase: Password Reset");
-        message.setText(getEmailContent(UserName,newPassword));
+        message.setText(getEmailContent(user_id,newPassword));
         Transport.send(message);
     }
 
