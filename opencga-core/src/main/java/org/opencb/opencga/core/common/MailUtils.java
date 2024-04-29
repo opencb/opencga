@@ -39,7 +39,8 @@ public class MailUtils {
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", ssl);
+       // props.put("mail.smtp.starttls.enable", ssl);
+        props.put("mail.smtp.ssl.enable", ssl);
         props.put("mail.smtp.host", mailHost);
         props.put("mail.smtp.port", mailPort);
 
