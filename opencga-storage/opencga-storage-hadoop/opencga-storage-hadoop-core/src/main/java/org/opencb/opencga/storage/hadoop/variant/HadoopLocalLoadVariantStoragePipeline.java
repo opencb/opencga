@@ -331,8 +331,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
     }
 
     protected void loadFromAvro(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -390,13 +390,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 
     protected void loadFromAvroWithoutArchive(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -438,13 +438,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 
     private void logLoadResults(VariantFileMetadata variantFileMetadata,

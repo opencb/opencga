@@ -21,16 +21,14 @@ public class InstallationParams {
     private String secretKey;
     private String password;
     private String email;
-    private String organization;
 
     public InstallationParams() {
     }
 
-    public InstallationParams(String secretKey, String password, String email, String organization) {
+    public InstallationParams(String secretKey, String password, String email) {
         this.secretKey = secretKey;
         this.password = password;
         this.email = email;
-        this.organization = organization;
     }
 
     @Override
@@ -39,7 +37,6 @@ public class InstallationParams {
         sb.append("secretKey='").append(secretKey).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", organization='").append(organization).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -71,12 +68,4 @@ public class InstallationParams {
         return this;
     }
 
-    public String getOrganization() {
-        return organization;
-    }
-
-    public InstallationParams setOrganization(String organization) {
-        this.organization = organization;
-        return this;
-    }
 }

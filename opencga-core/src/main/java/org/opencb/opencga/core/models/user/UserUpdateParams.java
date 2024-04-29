@@ -22,16 +22,14 @@ public class UserUpdateParams {
 
     private String name;
     private String email;
-    private String organization;
     private Map<String, Object> attributes;
 
     public UserUpdateParams() {
     }
 
-    public UserUpdateParams(String name, String email, String organization, Map<String, Object> attributes) {
+    public UserUpdateParams(String name, String email, Map<String, Object> attributes) {
         this.name = name;
         this.email = email;
-        this.organization = organization;
         this.attributes = attributes;
     }
 
@@ -40,7 +38,6 @@ public class UserUpdateParams {
         final StringBuilder sb = new StringBuilder("UserUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", organization='").append(organization).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -61,15 +58,6 @@ public class UserUpdateParams {
 
     public UserUpdateParams setEmail(String email) {
         this.email = email;
-        return this;
-    }
-
-    public String getOrganization() {
-        return organization;
-    }
-
-    public UserUpdateParams setOrganization(String organization) {
-        this.organization = organization;
         return this;
     }
 

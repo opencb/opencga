@@ -15,16 +15,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.models.analysis.knockout.*;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(MediumTests.class)
 public class RgaEngineTest {
@@ -38,7 +39,10 @@ public class RgaEngineTest {
 
     private List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
 
-    @Rule
+    @Rule(order = 0)
+    public HadoopVariantStorageTest.HadoopSolrSupport solrSupport = new HadoopVariantStorageTest.HadoopSolrSupport();
+
+    @Rule(order = 1)
     public RgaSolrExtenalResource solr = new RgaSolrExtenalResource();
 
     @Before

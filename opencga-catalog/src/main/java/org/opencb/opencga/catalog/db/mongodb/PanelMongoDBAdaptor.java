@@ -55,24 +55,24 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.ge
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 
-public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
+public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
     private final MongoDBCollection panelArchiveCollection;
     private final MongoDBCollection deletedPanelCollection;
     private final PanelConverter panelConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
                                MongoDBCollection deletedPanelCollection, Configuration configuration,
-                               MongoDBAdaptorFactory dbAdaptorFactory) {
+                               OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(PanelMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelArchiveCollection = panelArchiveCollection;
         this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
     }
 
     /**
@@ -326,7 +326,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return result;
     }
 
-    private OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Panel panel, ObjectMap parameters, QueryOptions queryOptions)
+    private OpenCGAResult<Panel> privateUpdate(ClientSession clientSession, Panel panel, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -343,7 +343,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         Bson finalQuery = parseQuery(tmpQuery);
-        return versionedMongoDBAdaptor.update(clientSession, finalQuery, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, finalQuery, (entrylist) -> {
                     logger.debug("Panel update: query : {}, update: {}", finalQuery.toBsonDocument(), panelUpdate.toBsonDocument());
 
                     DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),

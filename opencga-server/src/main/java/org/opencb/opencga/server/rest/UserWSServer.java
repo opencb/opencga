@@ -21,11 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
@@ -49,6 +48,27 @@ public class UserWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a new user", response = User.class)
+    public Response create(
+            @ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user
+    ) {
+        try {
+            if (!user.checkValidParams()) {
+                return createErrorResponse(new CatalogException("id, name, email or password not present"));
+            }
+
+            OpenCGAResult<User> queryResult = catalogManager.getUserManager()
+                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, token);
+
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{users}/info")
     @ApiOperation(value = "Return the user information including its projects and studies", response = User.class)
@@ -58,50 +78,18 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
     })
-    public Response getInfo(@ApiParam(value = ParamConstants.USERS_DESCRIPTION, required = true) @PathParam("users") String userIds) {
+    public Response getInfo(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.USERS_DESCRIPTION, required = true) @PathParam("users") String userIds
+    ) {
         try {
             List<String> userList = getIdList(userIds);
-            OpenCGAResult<User> result = catalogManager.getUserManager().get(userList, queryOptions, token);
+            OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, userList, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-//    @Deprecated
-//    @POST
-//    @Path("/{user}/login")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Get identified and gain access to the system",
-//            notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
-//                    "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
-//                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
-//                    "provided and a valid token is given, a new token will be provided extending the expiration time.",
-//            response = AuthenticationResponse.class, hidden = true)
-//    public Response deprecatedLogin(
-//            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-//            @ApiParam(value = "JSON containing the parameter 'password'") LoginParams login) {
-//        try {
-//            if (login == null) {
-//                login = new LoginParams();
-//            }
-//            AuthenticationResponse authenticationResponse;
-//            if (StringUtils.isNotEmpty(login.getPassword())) {
-//                authenticationResponse = catalogManager.getUserManager().login(userId, login.getPassword());
-//            } else if (StringUtils.isNotEmpty(this.token)) {
-//                authenticationResponse = catalogManager.getUserManager().refreshToken(this.token);
-//            } else {
-//                throw new Exception("Neither a password nor a token was provided.");
-//            }
-//
-//            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
-//                    Collections.singletonList(authenticationResponse), 1);
-//
-//            return createOkResponse(response);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @POST
     @Path("/login")
@@ -120,7 +108,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
                 }
-                authenticationResponse = catalogManager.getUserManager().login(login.getUser(), login.getPassword());
+                authenticationResponse = catalogManager.getUserManager().login(login.getOrganization(), login.getUser(), login.getPassword());
             } else if (StringUtils.isNotEmpty(login.getRefreshToken())) {
                 if (StringUtils.isNotEmpty(login.getPassword()) || StringUtils.isNotEmpty(login.getUser())) {
                     throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
@@ -139,23 +127,21 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @Deprecated
-//    @POST
-//    @Path("/{user}/password")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Change the password of a user",
-//            notes = "Only for local users. Not available for users belonging to external authentication origins.", response = User.class,
-//            hidden = true)
-//    public Response deprecatedChangePasswordPost(
-//            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-//            @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
-//        try {
-//            catalogManager.getUserManager().changePassword(userId, params.getPassword(), params.getNewPassword());
-//            return createOkResponse(DataResult.empty());
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @POST
+    @Path("/anonymous")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get an anonymous token to gain access to the system", response = AuthenticationResponse.class)
+    public Response anonymous(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ORGANIZATION) String organizationId) {
+        try {
+            AuthenticationResponse authenticationResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
+            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authenticationResponse), 1);
+            return createOkResponse(response);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @POST
     @Path("/password")
@@ -165,7 +151,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response changePassword(
             @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
         try {
-            catalogManager.getUserManager().changePassword(params.getUser(), params.getPassword(), params.getNewPassword());
+            catalogManager.getUserManager().changePassword(params.getOrganizationId(), params.getUser(), params.getPassword(), params.getNewPassword());
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -176,35 +162,11 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/password/reset")
     @ApiOperation(value = "Reset password", hidden = false,
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
-    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
+    public Response resetPassword(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
             OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
             return createOkResponse(result, "The new password has been sent to the user's email.");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/projects")
-    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
-            + " performing the query. This will not fetch shared projects. To get those, please use /projects/search web service.",
-            response = Project.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
-                    "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
-    })
-    public Response getAllProjects(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
-        try {
-            ParamUtils.checkIsSingleID(userId);
-            query.remove("user");
-            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            return createOkResponse(catalogManager.getProjectManager().search(query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

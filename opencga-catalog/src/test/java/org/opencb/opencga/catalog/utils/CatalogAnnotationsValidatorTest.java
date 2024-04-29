@@ -201,7 +201,7 @@ public class CatalogAnnotationsValidatorTest {
         annotations.put("K", "V");
         annotations.put("K2", "V2");
         annotations.put("K4", false);
-        AnnotationSet annotationSet = new AnnotationSet("", "", annotations, "", 1, Collections.emptyMap());
+        AnnotationSet annotationSet = new AnnotationSet("", "", annotations);
         Map<String, Object> newAnnotations = new ObjectMap()
                 .append("K", "newValue")        //Modify
                 .append("K2", null)             //Delete

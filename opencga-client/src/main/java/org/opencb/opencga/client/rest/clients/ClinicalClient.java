@@ -77,7 +77,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param action Action to be performed [ADD, SET, REMOVE or RESET].
      * @param data JSON containing the parameters to add ACLs.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       propagate: Propagate permissions to related families, individuals, samples and files.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -94,7 +94,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Update Clinical Analysis configuration.
      * @param data Configuration params to update.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -111,7 +111,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       skipCreateDefaultInterpretation: Flag to skip creating and initialise an empty default primary interpretation (Id will be
      *            '{clinicalAnalysisId}.1'). This flag is only considered if no Interpretation object is passed.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
@@ -128,7 +128,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Clinical Analysis distinct method.
      * @param field Field for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list of Clinical Analysis IDs up to a maximum of 100.
      *       uuid: Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
      *       type: Clinical Analysis type.
@@ -167,7 +167,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Interpretation distinct method.
      * @param field Field for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list of Interpretation IDs up to a maximum of 100.
      *       uuid: Comma separated list of Interpretation UUIDs up to a maximum of 100.
      *       clinicalAnalysisId: Clinical Analysis id.
@@ -198,7 +198,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       limit: Number of results to be returned.
      *       skip: Number of results to skip.
      *       sort: Sort the results.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list of Interpretation IDs up to a maximum of 100.
      *       uuid: Comma separated list of Interpretation UUIDs up to a maximum of 100.
      *       clinicalAnalysisId: Clinical Analysis id.
@@ -226,7 +226,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       version: Comma separated list of interpretation versions. 'all' to get all the interpretation versions. Not supported if
      *            multiple interpretation ids are provided.
      *       deleted: Boolean to retrieve deleted entries.
@@ -242,7 +242,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Run cancer tiering interpretation analysis.
      * @param data Cancer tiering interpretation analysis params.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
@@ -261,7 +261,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Run TEAM interpretation analysis.
      * @param data TEAM interpretation analysis params.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
@@ -279,7 +279,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Run tiering interpretation analysis.
      * @param data Tiering interpretation analysis params.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
@@ -297,7 +297,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Run Zetta interpretation analysis.
      * @param data Zetta interpretation analysis params.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
@@ -338,7 +338,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -379,7 +379,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -414,7 +414,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -427,7 +427,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Generate Recessive Gene Analysis secondary index.
      * @param data Recessive Gene Analysis index params.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
      *       jobDescription: Job description.
      *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
@@ -470,7 +470,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -505,7 +505,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -545,7 +545,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -580,7 +580,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       clinicalSignificance: Filter by clinical significance.
      *       populationFrequency: Filter by population frequency.
      *       consequenceType: Filter by consequence type.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -597,7 +597,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       limit: Number of results to be returned.
      *       skip: Number of results to skip.
      *       count: Get the total number of results matching the query. Deactivated by default.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list of Clinical Analysis IDs up to a maximum of 100.
      *       uuid: Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
      *       type: Clinical Analysis type.
@@ -634,7 +634,7 @@ public class ClinicalClient extends AbstractParentClient {
     /**
      * Fetch actionable clinical variants.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       sample: Sample ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -662,7 +662,7 @@ public class ClinicalClient extends AbstractParentClient {
      *       type: List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION,
      *            DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
      *       study: Filter variants from the given studies, these can be either the numeric ID or the alias with the format
-     *            user@project:study.
+     *            organization@project:study.
      *       file: Filter variants from the files specified. This will set includeFile parameter when not provided.
      *       filter: Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.:
      *            PASS,LowGQX.
@@ -748,7 +748,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.
      * @param clinicalAnalyses Comma separated list of clinical analysis IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       member: User or group ID.
      *       silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
      *            looked for cannot be shown for whichever reason.
@@ -764,7 +764,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Delete clinical analyses.
      * @param clinicalAnalyses Comma separated list of clinical analysis IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       force: Force deletion if the ClinicalAnalysis contains interpretations or is locked.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -781,7 +781,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       commentsAction: Action to be performed if the array of comments is being updated.
      *       flagsAction: Action to be performed if the array of flags is being updated.
      *       filesAction: Action to be performed if the array of files is being updated.
@@ -803,7 +803,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       deleted: Boolean to retrieve deleted entries.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -820,7 +820,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: [[user@]project:]study id.
+     *       study: [[organization@]project:]study id.
      *       setAs: Set interpretation as.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
@@ -838,7 +838,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param clinicalAnalysis Clinical analysis ID.
      * @param interpretations Interpretation IDs of the Clinical Analysis.
      * @param params Map containing any of the following optional parameters.
-     *       study: [[user@]project:]study ID.
+     *       study: [[organization@]project:]study ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -854,7 +854,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param clinicalAnalysis Clinical analysis ID.
      * @param interpretations Interpretation IDs of the Clinical Analysis.
      * @param params Map containing any of the following optional parameters.
-     *       study: [[user@]project:]study ID.
+     *       study: [[organization@]project:]study ID.
      *       setAsPrimary: Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -872,7 +872,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param interpretation Interpretation ID.
      * @param version Version to revert to.
      * @param params Map containing any of the following optional parameters.
-     *       study: [[user@]project:]study ID.
+     *       study: [[organization@]project:]study ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -892,7 +892,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       study: [[user@]project:]study ID.
+     *       study: [[organization@]project:]study ID.
      *       primaryFindingsAction: Action to be performed if the array of primary findings is being updated.
      *       methodsAction: Action to be performed if the array of methods is being updated.
      *       secondaryFindingsAction: Action to be performed if the array of secondary findings is being updated.

@@ -222,13 +222,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         // ---------------- Annotate
-//        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-//        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.1");
-//        variantStorageEngine.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-//            projectMetadata.setAssembly("grch38");
-//        });
-//        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
-//        this.variantStorageEngine.reloadCellbaseConfiguration();
         this.variantStorageEngine.annotate(outputUri, new QueryOptions());
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
@@ -904,29 +897,54 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregationCorrectnessTFBS() throws Exception {
-        testAggregationCorrectness(TF_BINDING_SITE_VARIANT, true);
+        // Special scenario. This CT might include intergenic values, so can't be used alone
+        testAggregationCorrectness(new Query(ANNOT_BIOTYPE.key(), "protein_coding"), TF_BINDING_SITE_VARIANT);
     }
 
     @Test
     public void testAggregationCorrectnessRegulatoryRegionVariant() throws Exception {
-        testAggregationCorrectness(REGULATORY_REGION_VARIANT);
+        // Special scenario. This CT might include intergenic values, so can't be used alone
+        testAggregationCorrectness(new Query(ANNOT_BIOTYPE.key(), "protein_coding"),
+                REGULATORY_REGION_VARIANT);
+    }
+
+    @Test
+    public void testAggregationByIntergenicQuery() throws Exception {
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        Query baseQuery = new Query(STUDY.key(), STUDY_NAME_3)
+                .append(SAMPLE.key(), "NA12877");
+
+        assertFalse(executor.canUseThisExecutor(new Query(baseQuery)
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), REGULATORY_REGION_VARIANT), new QueryOptions(QueryOptions.FACET, "consequenceType")));
+        assertFalse(executor.canUseThisExecutor(new Query(baseQuery)
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), TF_BINDING_SITE_VARIANT), new QueryOptions(QueryOptions.FACET, "consequenceType")));
+
+        assertTrue(executor.canUseThisExecutor(new Query(baseQuery)
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), REGULATORY_REGION_VARIANT)
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions(QueryOptions.FACET, "consequenceType")));
+        assertTrue(executor.canUseThisExecutor(new Query(baseQuery)
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), TF_BINDING_SITE_VARIANT)
+                        .append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new QueryOptions(QueryOptions.FACET, "consequenceType")));
     }
 
     private void testAggregationCorrectness(String ct) throws Exception {
-        testAggregationCorrectness(ct, false);
+        testAggregationCorrectness(new Query(), ct);
     }
 
-    private void testAggregationCorrectness(String ct, boolean sampleIndexMightBeMoreAccurate) throws Exception {
+    private void testAggregationCorrectness(Query baseQuery, String ct) throws Exception {
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
-        Query query = new Query(STUDY.key(), STUDY_NAME_3)
+        Query query = new Query(baseQuery)
+                .append(STUDY.key(), STUDY_NAME_3)
                 .append(SAMPLE.key(), "NA12877")
                 .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
         assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
-
         AtomicInteger count = new AtomicInteger(0);
         sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
-        FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
+        FacetField facet = executor.aggregation(new Query(query), new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
 
         assertEquals(count.get(), facet.getCount());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
@@ -941,11 +959,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             }
         } else {
             assertNotNull(msg, bucket);
-            if (sampleIndexMightBeMoreAccurate) {
-                assertThat(msg, count.get(), gte(bucket.getCount()));
-            } else {
-                assertEquals(msg, count.get(), bucket.getCount());
-            }
+            assertEquals(msg, count.get(), bucket.getCount());
         }
     }
 

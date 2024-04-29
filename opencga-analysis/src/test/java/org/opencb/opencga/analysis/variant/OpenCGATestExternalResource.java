@@ -61,7 +61,7 @@ import java.util.Map;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;

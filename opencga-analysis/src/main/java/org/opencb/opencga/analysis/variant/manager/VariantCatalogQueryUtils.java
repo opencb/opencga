@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -279,7 +280,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         if (isValidParam(query, SAVED_FILTER)) {
             String savedFilter = query.getString(SAVED_FILTER.key());
-            String userId = catalogManager.getUserManager().getUserId(token);
+            JwtPayload payload = catalogManager.getUserManager().validateToken(token);
+            String userId = payload.getUserId();
             UserFilter userFilter = catalogManager.getUserManager().getFilter(userId, savedFilter, token).first();
             if (!userFilter.getResource().equals(Enums.Resource.VARIANT)) {
                 throw VariantQueryException.malformedParam(SAVED_FILTER, savedFilter,
@@ -1607,7 +1609,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
+                JwtPayload payload = catalogManager.getUserManager().validateToken(sessionId);
+                String userId = payload.getUserId();
 //                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 long numMatches = catalogManager.getSampleManager()

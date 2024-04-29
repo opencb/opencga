@@ -110,7 +110,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @GET
     @Path("/model")
     @ApiOperation(value = "Opencga model webservices.", response = String.class)
-    public Response model(@QueryParam("model") String modelStr) {
+    public Response model(@ApiParam(value = "Model description") @QueryParam("model") String modelStr) {
 
         return run(() -> new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(DataModelsUtils.dataModelToJsonString(modelStr, false)), 1));
 
@@ -121,6 +121,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
         Map<String, Class<?>> classMap = new LinkedHashMap<>();
+        classMap.put("organizations", OrganizationWSServer.class);
         classMap.put("users", UserWSServer.class);
         classMap.put("projects", ProjectWSServer.class);
         classMap.put("studies", StudyWSServer.class);

@@ -26,6 +26,8 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -123,7 +125,8 @@ public class CatalogUtils {
                         Collections.singleton(VariantField.STUDIES));
             } else {
                 // Get all studies from user.
-                return catalogManager.getStudyManager().search(new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId).getResults()
+                return catalogManager.getStudyManager().searchInOrganization(null, new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId)
+                        .getResults()
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
@@ -142,7 +145,9 @@ public class CatalogUtils {
         } else {
             String studyFqn = getAnyStudy(query, sessionId);
             String project = catalogManager.getStudyManager().getProjectFqn(studyFqn);
-            return catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
+            String organizationId = CatalogFqn.extractFqnFromProjectFqn(project).getOrganizationId();
+            return catalogManager.getProjectManager().search(organizationId,
+                            new Query(ProjectDBAdaptor.QueryParams.FQN.key(), project), options, sessionId)
                     .first();
         }
     }

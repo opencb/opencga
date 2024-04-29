@@ -88,7 +88,7 @@ def build():
 
 
 def tag_latest(image):
-    if "hdp" in tag or "dev" in tag:
+    if "hdi" in tag or "emr" in tag or "dev" in tag or "SNAPSHOT" in tag or "TASK" in tag:
         print("Don't use tag " + tag + " as latest")
         return
     if server:
@@ -160,7 +160,7 @@ else:
     build_folder = str(Path(__file__).resolve().parents[2])
 
 # 2. Set docker tag to default value if not set
-if args.tag is not None:
+if args.tag is not None and not args.tag == "":
     tag = args.tag
 else:
     # Read OpenCGA version from git.properties
@@ -177,9 +177,9 @@ else:
     # Get hadoop_flavour from JAR library file name
     hadoop_flavour = None
     for file in os.listdir(build_folder + "/libs/"):
-        if (file.startswith("opencga-storage-hadoop-deps")):
+        if (file.startswith("opencga-storage-hadoop-lib-") and file.endswith(".jar")):
             if hadoop_flavour is not None:
-                exit("Error. Multiple libs/opencga-storage-hadoop-deps*.jar found")
+                exit("Error. Multiple libs/opencga-storage-hadoop-lib*.jar found")
             hadoop_flavour = file.split("-")[4]
 
     # Create docker tag

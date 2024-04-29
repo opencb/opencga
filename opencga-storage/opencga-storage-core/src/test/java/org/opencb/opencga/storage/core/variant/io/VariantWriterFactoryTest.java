@@ -30,7 +30,6 @@ import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.ByteArrayOutputStream;
@@ -101,7 +100,6 @@ public class VariantWriterFactoryTest {
         writer.close();
 
         String s = outputStream.toString();
-        System.out.println("s = " + s);
         assertThat(s, containsString("##contig=<ID=chr1>"));
         assertThat(s, containsString("##contig=<ID=chr2>"));
         assertThat(s, containsString("##contig=<ID=chr3>"));

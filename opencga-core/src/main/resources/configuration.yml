@@ -107,6 +107,8 @@ healthCheck:
 
 
 analysis:
+  packages: # List of packages where to find analysis tools
+    - "org.opencb.opencga"
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
   resources:
     ## External URL from where to download extra analysis resources to be placed at
