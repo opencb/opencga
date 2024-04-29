@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -176,7 +177,12 @@ public class CatalogUtils {
     }
 
     public String getAssembly(String studyId, String sessionId) throws CatalogException {
-        OpenCGAResult<Project> result = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+        JwtPayload jwtPayload = new JwtPayload(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
+
+        OpenCGAResult<Project> result = catalogManager.getProjectManager().search(organizationId,
+                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
         if (result.getNumResults() == 0) {
             throw new CatalogException("Unable to get assembly from study ID: " + studyId);
@@ -190,5 +196,4 @@ public class CatalogUtils {
             throw new CatalogException("Multiple projects found for study ID " + studyId + ". Please, specify one project.");
         }
     }
-
 }
