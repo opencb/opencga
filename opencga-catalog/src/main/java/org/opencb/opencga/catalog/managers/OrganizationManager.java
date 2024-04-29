@@ -325,11 +325,11 @@ public class OrganizationManager extends AbstractManager {
                 .append("token", token);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
         try {
-            String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
-            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(organizationId));
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(myOrganizationId));
             ParamUtils.checkObj(updateParams, "OrganizationUserUpdateParams");
-            getUserDBAdaptor(organizationId).checkId(userId);
+            getUserDBAdaptor(myOrganizationId).checkId(userId);
 
             if (StringUtils.isNotEmpty(updateParams.getEmail())) {
                 ParamUtils.checkEmail(updateParams.getEmail());
@@ -359,18 +359,18 @@ public class OrganizationManager extends AbstractManager {
                 throw new CatalogException("Could not parse OrganizationUserUpdateParams object: " + e.getMessage(), e);
             }
             OpenCGAResult<User> updateResult = getUserDBAdaptor(myOrganizationId).update(userId, updateMap);
-            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(organizationId), Enums.Resource.USER, userId, "", "", "",
+            auditManager.auditUpdate(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, userId, "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated user
-                OpenCGAResult<User> result = getUserDBAdaptor(organizationId).get(userId, options);
+                OpenCGAResult<User> result = getUserDBAdaptor(myOrganizationId).get(userId, options);
                 updateResult.setResults(result.getResults());
             }
 
             return updateResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(organizationId, tokenPayload.getUserId(organizationId), Enums.Resource.USER, userId, "", "", "",
+            auditManager.auditUpdate(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, userId, "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

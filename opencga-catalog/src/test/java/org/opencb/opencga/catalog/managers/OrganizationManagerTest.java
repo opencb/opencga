@@ -181,7 +181,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
                 .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
                 .setQuota(new UserQuota(1000, 1000000, 1000, 1000000))
                 .setAttributes(Collections.singletonMap("key1", "value1"));
-        updateAndAssertChanges(userUpdateParams, opencgaToken);
+        updateAndAssertChanges(organizationId, userUpdateParams, opencgaToken);
 
         userUpdateParams = new OrganizationUserUpdateParams()
                 .setName("newName2")
@@ -189,7 +189,7 @@ public class OrganizationManagerTest extends AbstractManagerTest {
                 .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
                 .setQuota(new UserQuota(1001, 1010000, 1010, 1100000))
                 .setAttributes(Collections.singletonMap("key2", "value2"));
-        updateAndAssertChanges(userUpdateParams, ownerToken);
+        updateAndAssertChanges(null, userUpdateParams, ownerToken);
 
         userUpdateParams = new OrganizationUserUpdateParams()
                 .setName("newName3")
@@ -197,14 +197,14 @@ public class OrganizationManagerTest extends AbstractManagerTest {
                 .setAccount(new OrganizationUserUpdateParams.Account(expirationTime))
                 .setQuota(new UserQuota(3001, 1010300, 1013, 1300000))
                 .setAttributes(Collections.singletonMap("key3", "value3"));
-        updateAndAssertChanges(userUpdateParams, orgAdminToken1);
+        updateAndAssertChanges(null, userUpdateParams, orgAdminToken1);
 
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getOrganizationManager().updateUser(organizationId, normalUserId1, userUpdateParams, INCLUDE_RESULT, normalToken1);
     }
 
-    private void updateAndAssertChanges(OrganizationUserUpdateParams userUpdateParams, String token) throws CatalogException {
-        User user = catalogManager.getOrganizationManager().updateUser(organizationId, normalUserId1, userUpdateParams, INCLUDE_RESULT, token).first();
+    private void updateAndAssertChanges(String orgId, OrganizationUserUpdateParams userUpdateParams, String token) throws CatalogException {
+        User user = catalogManager.getOrganizationManager().updateUser(orgId, normalUserId1, userUpdateParams, INCLUDE_RESULT, token).first();
         assertEquals(userUpdateParams.getName(), user.getName());
         assertEquals(userUpdateParams.getEmail(), user.getEmail());
         assertEquals(userUpdateParams.getAccount().getExpirationDate(), user.getAccount().getExpirationDate());
