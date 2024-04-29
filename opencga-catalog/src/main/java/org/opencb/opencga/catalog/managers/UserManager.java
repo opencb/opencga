@@ -754,9 +754,11 @@ public class UserManager extends AbstractManager {
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_ACCOUNT_AND_INTERNAL);
         if (userOpenCGAResult.getNumResults() == 1) {
             User user = userOpenCGAResult.first();
+            // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
+            boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
+                    && CatalogAuthenticationManager.OPENCGA.equals(user.getAccount().getAuthentication().getId());
             // We check
-            if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
-                    && CatalogAuthenticationManager.OPENCGA.equals(user.getAccount().getAuthentication().getId())) {
+            if (userCanBeBanned) {
                 // Check user is not banned, suspended or has an expired account
                 if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
                     throw CatalogAuthenticationException.userIsBanned(username);
@@ -776,7 +778,7 @@ public class UserManager extends AbstractManager {
             try {
                 response = authenticationFactory.authenticate(organizationId, authId, username, password);
             } catch (CatalogAuthenticationException e) {
-                if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+                if (userCanBeBanned) {
                     // We can only lock the account if it is not the root user
                     int failedAttempts = userOpenCGAResult.first().getInternal().getFailedAttempts();
                     ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), failedAttempts + 1);
@@ -793,8 +795,7 @@ public class UserManager extends AbstractManager {
             }
 
             // If it was a local user and the counter of failed attempts was greater than 0, we reset it
-            if (CatalogAuthenticationManager.OPENCGA.equals(userOpenCGAResult.first().getAccount().getAuthentication().getId())
-                    && userOpenCGAResult.first().getInternal().getFailedAttempts() > 0) {
+            if (userCanBeBanned && userOpenCGAResult.first().getInternal().getFailedAttempts() > 0) {
                 // Reset login failed attempts counter
                 ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), 0);
                 getUserDBAdaptor(organizationId).update(username, updateParams);
