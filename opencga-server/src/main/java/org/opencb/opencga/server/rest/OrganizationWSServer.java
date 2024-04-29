@@ -109,9 +109,15 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION, required = true) @PathParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "Action to be performed if the array of authenticationOrigins is being updated.",
-                    allowableValues = "ADD,REMOVE,SET", defaultValue = "ADD") @QueryParam("authenticationOrigins") ParamUtils.BasicUpdateAction authOriginsAction,
+                    allowableValues = "ADD,REMOVE,SET,REPLACE", defaultValue = "ADD") @QueryParam("authenticationOrigins") ParamUtils.UpdateAction authOriginsAction,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) OrganizationConfiguration parameters) {
         try {
+            if (authOriginsAction == null) {
+                authOriginsAction = ParamUtils.UpdateAction.ADD;
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, authOriginsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
             OpenCGAResult<OrganizationConfiguration> result = catalogManager.getOrganizationManager().updateConfiguration(organizationId, parameters, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {

@@ -431,13 +431,17 @@ public class OrganizationManager extends AbstractManager {
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.ORGANIZATION, organization.getId(), organization.getUuid(), "",
                     "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
+            organization = null;
             if (queryOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated organization
-                OpenCGAResult<Organization> queryResult = getOrganizationDBAdaptor(organizationId).get(INCLUDE_ORGANIZATION_CONFIGURATION);
-                result.setResults(Collections.singletonList(queryResult.first().getConfiguration()));
+                organization = getOrganizationDBAdaptor(organizationId).get(INCLUDE_ORGANIZATION_CONFIGURATION).first();
+                result.setResults(Collections.singletonList(organization.getConfiguration()));
             }
 
-            if (CollectionUtils.isNotEmpty(updateParams.getAuthenticationOrigins())) {
+            if (CollectionUtils.isNotEmpty(updateParams.getAuthenticationOrigins()) || updateParams.getToken() != null) {
+                if (organization == null) {
+                    organization = getOrganizationDBAdaptor(organizationId).get(INCLUDE_ORGANIZATION_CONFIGURATION).first();
+                }
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
 

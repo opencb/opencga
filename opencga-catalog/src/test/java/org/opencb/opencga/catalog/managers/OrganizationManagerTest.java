@@ -3,10 +3,13 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -14,20 +17,14 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Optimizations;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -77,49 +74,91 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getOrganizationManager()
                 .updateConfiguration(organizationId, configuration, options, ownerToken));
         assertTrue(catalogException.getMessage().contains("user account uses"));
-
-
-        // Add new authentication origins
-        configuration.setAuthenticationOrigins(Collections.singletonList(new AuthenticationOrigin("newId", AuthenticationOrigin.AuthenticationType.LDAP,
-                "newHost", Collections.emptyMap())));
-
     }
 
-//    @Test
-//    public void avoidDuplicatedOPENCGAAuthOriginTest() throws CatalogException {
-//        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
-//        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
-//        OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-//                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
-//
-//        thrown.expect(CatalogException.class);
-//        thrown.expectMessage("OPENCGA");
-//        catalogManager.getOrganizationManager().update(organizationId, updateParams, null, ownerToken);
-//    }
-//
-//    @Test
-//    public void avoidDuplicatedAuthOriginIdTest() throws CatalogException {
-//        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
-//        AuthenticationOrigin authOrigin2 = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
-//        authOrigin2.setType(AuthenticationOrigin.AuthenticationType.LDAP);
-//        OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-//                Arrays.asList(authOrigin, authOrigin2), null, new TokenConfiguration()));
-//
-//        thrown.expect(CatalogException.class);
-//        thrown.expectMessage("origin id");
-//        catalogManager.getOrganizationManager().update(organizationId, updateParams, null, ownerToken);
-//    }
-//
-//    @Test
-//    public void updateAuthOriginTest() throws CatalogException {
-//        AuthenticationOrigin authOrigin = CatalogAuthenticationManager.createOpencgaAuthenticationOrigin();
-//        OrganizationUpdateParams updateParams = new OrganizationUpdateParams().setConfiguration(new OrganizationConfiguration(
-//                Collections.singletonList(authOrigin), null, new TokenConfiguration()));
-//
-//        Organization organization = catalogManager.getOrganizationManager().update(organizationId, updateParams, INCLUDE_RESULT, ownerToken).first();
-//        assertEquals(authOrigin.getId(), organization.getConfiguration().getAuthenticationOrigins().get(0).getId());
-//        assertEquals(authOrigin.getType(), organization.getConfiguration().getAuthenticationOrigins().get(0).getType());
-//    }
+    @Test
+    public void authOriginActionTest() throws CatalogException {
+        OrganizationConfiguration configuration = new OrganizationConfiguration()
+                .setAuthenticationOrigins(Collections.singletonList(new AuthenticationOrigin("myId",
+                        AuthenticationOrigin.AuthenticationType.SSO, null, null)));
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions()
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true)
+                .append(Constants.ACTIONS, actionMap);
+
+        OrganizationConfiguration configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId,
+                configuration, options, ownerToken).first();
+        assertEquals(2, configurationResult.getAuthenticationOrigins().size());
+        for (AuthenticationOrigin authenticationOrigin : configurationResult.getAuthenticationOrigins()) {
+            if (authenticationOrigin.getId().equals("myId")) {
+                assertEquals(AuthenticationOrigin.AuthenticationType.SSO, authenticationOrigin.getType());
+            } else {
+                assertEquals(AuthenticationOrigin.AuthenticationType.OPENCGA, authenticationOrigin.getType());
+            }
+        }
+
+        // Remove authOrigin
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.REMOVE);
+        options.put(Constants.ACTIONS, actionMap);
+        configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId, configuration, options,
+                ownerToken).first();
+        assertEquals(1, configurationResult.getAuthenticationOrigins().size());
+        assertEquals(AuthenticationOrigin.AuthenticationType.OPENCGA, configurationResult.getAuthenticationOrigins().get(0).getType());
+
+        // Set authOrigin
+        List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
+        authenticationOriginList.add(new AuthenticationOrigin("myId", AuthenticationOrigin.AuthenticationType.SSO, null, null));
+        authenticationOriginList.add(configurationResult.getAuthenticationOrigins().get(0));
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.SET);
+        options.put(Constants.ACTIONS, actionMap);
+        configuration.setAuthenticationOrigins(authenticationOriginList);
+        configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId, configuration, options,
+                ownerToken).first();
+        assertEquals(2, configurationResult.getAuthenticationOrigins().size());
+        for (AuthenticationOrigin authenticationOrigin : configurationResult.getAuthenticationOrigins()) {
+            if (authenticationOrigin.getId().equals("myId")) {
+                assertEquals(AuthenticationOrigin.AuthenticationType.SSO, authenticationOrigin.getType());
+            } else {
+                assertEquals(AuthenticationOrigin.AuthenticationType.OPENCGA, authenticationOrigin.getType());
+            }
+        }
+
+        // Add existing authOrigin
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.ADD);
+        options.put(Constants.ACTIONS, actionMap);
+        CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getOrganizationManager()
+                .updateConfiguration(organizationId, configuration, options, ownerToken));
+        assertTrue(catalogException.getMessage().contains("REPLACE"));
+
+        // Replace existing authOrigin
+        actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.REPLACE);
+        options.put(Constants.ACTIONS, actionMap);
+        configuration.setAuthenticationOrigins(Collections.singletonList(
+                new AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, AuthenticationOrigin.AuthenticationType.OPENCGA, null, new ObjectMap("key", "value"))));
+        configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId, configuration, options, ownerToken).first();
+        assertEquals(2, configurationResult.getAuthenticationOrigins().size());
+        for (AuthenticationOrigin authenticationOrigin : configurationResult.getAuthenticationOrigins()) {
+            if (authenticationOrigin.getId().equals("myId")) {
+                assertEquals(AuthenticationOrigin.AuthenticationType.SSO, authenticationOrigin.getType());
+            } else {
+                assertEquals(AuthenticationOrigin.AuthenticationType.OPENCGA, authenticationOrigin.getType());
+                assertTrue(authenticationOrigin.getOptions().containsKey("key"));
+                assertEquals("value", authenticationOrigin.getOptions().get("key"));
+            }
+        }
+    }
+
+    @Test
+    public void tokenUpdateTest() throws CatalogException {
+        TokenConfiguration tokenConfiguration = TokenConfiguration.init();
+        OrganizationConfiguration configuration = new OrganizationConfiguration().setToken(tokenConfiguration);
+        OrganizationConfiguration configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId,
+                configuration, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(tokenConfiguration.getSecretKey(), configurationResult.getToken().getSecretKey());
+
+        assertThrows(CatalogAuthenticationException.class, () -> catalogManager.getOrganizationManager().get(organizationId, null, ownerToken));
+    }
 
     @Test
     public void createNewOrganizationTest() throws CatalogException {
