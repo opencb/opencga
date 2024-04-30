@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -94,8 +95,7 @@ public abstract class OpenCgaToolExecutor {
             throw new ToolExecutorException("Missing OpenCGA home within the executor parameters");
         }
         try {
-            InputStream inputStream = FileUtils.newInputStream(Paths.get(opencgaHome).resolve("conf/configuration.yml"));
-            Configuration configuration = Configuration.load(inputStream);
+            Configuration configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
             if (StringUtils.isEmpty(configuration.getAnalysis().getResources().getUrl())) {
                 return ParamConstants.OPENCGA_ANALYSIS_RESOURCE_URL;
             }

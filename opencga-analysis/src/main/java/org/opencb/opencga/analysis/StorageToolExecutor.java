@@ -23,6 +23,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -64,17 +65,4 @@ public interface StorageToolExecutor {
             throw new ToolExecutorException(e);
         }
     }
-
-//    default AnalysisResourceUtils getAnalysisResourceUtils() throws ToolExecutorException {
-//        String opencgaHome = getExecutorParams().getString("opencgaHome");
-//        if (StringUtils.isEmpty(opencgaHome)) {
-//            throw new ToolExecutorException("Missing arguments!");
-//        }
-//        try {
-//            Configuration configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
-//            return new AnalysisResourceUtils(configuration);
-//        } catch (IOException e) {
-//            throw new ToolExecutorException(e);
-//        }
-//    }
 }
