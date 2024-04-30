@@ -16,6 +16,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
@@ -344,7 +345,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private Path getOpencgaHomePath() throws ToolExecutorException {
-        String value = getExecutorParams().getString("opencgaHome");
+        String value = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (StringUtils.isEmpty(value)) {
             throw new ToolExecutorException("Missing OpenCGA home in executor parameters.");
         }

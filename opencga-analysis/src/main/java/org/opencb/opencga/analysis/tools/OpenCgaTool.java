@@ -550,7 +550,7 @@ public abstract class OpenCgaTool {
     }
 
     private final void setUpStorageEngineExecutor(String projectId, String study) throws ToolException {
-        executorParams.put("opencgaHome", opencgaHome);
+        executorParams.put(ParamConstants.OPENCGA_HOME, opencgaHome);
         executorParams.put(ParamConstants.TOKEN, token);
         try {
             DataStore dataStore;

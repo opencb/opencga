@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -215,8 +216,8 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
 
     protected static boolean skipParameter(String param) {
         switch (param) {
-            case "opencgaHome":
-            case "token":
+            case ParamConstants.OPENCGA_HOME:
+            case ParamConstants.TOKEN:
             case "storageEngineId":
             case "dbName":
             case "executorId":

@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.CatalogUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -119,7 +120,7 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
+            String rScriptPath = getExecutorParams().getString(ParamConstants.OPENCGA_HOME) + "/analysis/R/" + getToolId();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()

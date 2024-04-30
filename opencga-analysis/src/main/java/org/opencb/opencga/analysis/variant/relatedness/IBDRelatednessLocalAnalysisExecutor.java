@@ -20,6 +20,7 @@ import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -44,7 +45,7 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
         // Sanity check to compute
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (!Paths.get(opencgaHome).toFile().exists()) {
             throw new ToolExecutorException("Missing OpenCGA home");
         }

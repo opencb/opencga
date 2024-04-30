@@ -36,6 +36,7 @@ import org.opencb.commons.utils.URLUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -78,7 +79,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
-        opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        opencgaHome = Paths.get(getExecutorParams().getString(ParamConstants.OPENCGA_HOME));
 
         // Get analysis resource URL
         resourceUrl = getAnalysisResourceUrl();

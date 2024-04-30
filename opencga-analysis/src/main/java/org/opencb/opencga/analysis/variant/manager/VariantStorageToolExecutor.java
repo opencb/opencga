@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -37,7 +38,7 @@ public interface VariantStorageToolExecutor {
     ObjectMap getExecutorParams();
 
     default VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (StringUtils.isEmpty(opencgaHome)) {
             throw new ToolExecutorException("Missing arguments!");
         }

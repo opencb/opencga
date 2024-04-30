@@ -22,6 +22,7 @@ public class ParamConstants {
     public static final String ALL = "all";
     public static final String ID = "id";
     public static final String TOKEN = "token";
+    public static final String OPENCGA_HOME = "opencgaHome";
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
     public static final String INCLUDE_RESULT_PARAM = "includeResult";

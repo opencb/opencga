@@ -25,6 +25,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.individual.qc.InferredSexComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
@@ -73,7 +74,7 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         double yAuto = ratios[1];
 
         Map<String, Double> karyotypicSexThresholds = new HashMap<>();
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         Path thresholdsPath = Paths.get(opencgaHome).resolve("analysis").resolve(IndividualQcAnalysis.ID)
                 .resolve("karyotypic_sex_thresholds.json");
         try {

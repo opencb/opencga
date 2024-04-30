@@ -86,11 +86,11 @@ public abstract class OpenCgaToolExecutor {
     }
 
     protected final String getToken() {
-        return getExecutorParams().getString("token");
+        return getExecutorParams().getString(ParamConstants.TOKEN);
     }
 
     protected final String getAnalysisResourceUrl() throws ToolExecutorException {
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (StringUtils.isEmpty(opencgaHome)) {
             throw new ToolExecutorException("Missing OpenCGA home within the executor parameters");
         }

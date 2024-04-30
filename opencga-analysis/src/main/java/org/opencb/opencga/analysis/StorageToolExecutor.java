@@ -22,6 +22,7 @@ import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -37,7 +38,7 @@ public interface StorageToolExecutor {
     ObjectMap getExecutorParams();
 
     default VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (StringUtils.isEmpty(opencgaHome)) {
             throw new ToolExecutorException("Missing arguments!");
         }
@@ -52,7 +53,7 @@ public interface StorageToolExecutor {
     }
 
     default AlignmentStorageManager getAlignmentStorageManager() throws ToolExecutorException {
-        String opencgaHome = getExecutorParams().getString("opencgaHome");
+        String opencgaHome = getExecutorParams().getString(ParamConstants.OPENCGA_HOME);
         if (StringUtils.isEmpty(opencgaHome)) {
             throw new ToolExecutorException("Missing arguments!");
         }

@@ -26,6 +26,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -66,7 +67,7 @@ public class HRDetectLocalAnalysisExecutor extends HRDetectAnalysisExecutor
 
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
-        opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        opencgaHome = Paths.get(getExecutorParams().getString(ParamConstants.OPENCGA_HOME));
 
         // Prepare CNV data
         prepareCNVData();
