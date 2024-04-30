@@ -76,8 +76,7 @@ public class StudyCreateParams {
 
     public Study toStudy() {
         return new Study(id, name, alias, creationDate, modificationDate, description, type, sources, notification, 0, null, null, null,
-                null, null, null, null, null, null, null, null, null, 0, status != null ? status.toStatus() : null, null,
-                additionalInfo, attributes);
+                null, 0, status != null ? status.toStatus() : null, null, additionalInfo, attributes);
     }
 
     @Override

@@ -64,7 +64,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by pfurio on 08/01/16.
  */
-public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
+public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAdaptor {
 
     private static final String PRIVATE_PRIORITY = "_priority";
     private static final String PRIVATE_STUDY_UIDS = "_studyUids";
@@ -73,7 +73,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private JobConverter jobConverter;
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection, Configuration configuration,
-                             MongoDBAdaptorFactory dbAdaptorFactory) {
+                             OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
@@ -129,7 +129,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
-        long jobUid = getNewUid();
+        long jobUid = getNewUid(clientSession);
         job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {

@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -110,11 +110,10 @@ public class VariantAnnotatorTest {
         testAnnotator.annotate(Arrays.asList(new Variant("10:999:A:C"), new Variant("10:1000:A:C"), new Variant("10:1001:A:C")));
     }
 
-    @Ignore
     @Test
     public void useCellBaseApiKeys() throws VariantAnnotatorException {
         storageConfiguration.getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
-        storageConfiguration.getCellbase().setVersion("v5.4");
+        storageConfiguration.getCellbase().setVersion("v5.8");
         storageConfiguration.getCellbase().setDataRelease("3");
 
         VariantAnnotator variantAnnotator = null;

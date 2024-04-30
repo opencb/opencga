@@ -118,7 +118,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                         .setCommit(GitRepositoryState.getInstance().getCommitId())));
 
         // Analyst
-        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
+        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
 
         List<ClinicalVariant> primaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + PRIMARY_FINDINGS_FILENAME));

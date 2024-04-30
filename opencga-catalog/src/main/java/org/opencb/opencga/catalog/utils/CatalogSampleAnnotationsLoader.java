@@ -28,12 +28,12 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -48,7 +48,7 @@ import java.util.*;
  */
 public class CatalogSampleAnnotationsLoader {
 
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(CatalogSampleAnnotationsLoader.class);
     private final CatalogManager catalogManager;
 
     public CatalogSampleAnnotationsLoader(CatalogManager catalogManager) {
@@ -59,13 +59,17 @@ public class CatalogSampleAnnotationsLoader {
         this.catalogManager = null;
     }
 
-    public DataResult<Sample> loadSampleAnnotations(File pedFile, String variableSetId, String sessionId) throws CatalogException {
+    public DataResult<Sample> loadSampleAnnotations(String studyStr, File pedFile, String variableSetId, String sessionId)
+            throws CatalogException {
         if (!pedFile.getFormat().equals(File.Format.PED)) {
             throw new CatalogException(pedFile.getUid() + " is not a pedigree file");
         }
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
 
-        URI fileUri = catalogManager.getFileManager().getUri(pedFile);
-        Study study = catalogManager.getFileManager().getStudy(pedFile, sessionId);
+        URI fileUri = catalogManager.getFileManager().getUri(organizationId, pedFile);
+        Study study = catalogManager.getFileManager().getStudy(organizationId, pedFile, sessionId);
         long auxTime;
         long startTime = System.currentTimeMillis();
 
@@ -76,7 +80,8 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), variableSetId, null, sessionId).first();
+            variableSet = catalogManager.getStudyManager().getVariableSet(study.getFqn(), variableSetId, null, sessionId)
+                    .first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             AnnotationUtils.checkVariableSet(variableSet);
@@ -104,8 +109,8 @@ public class CatalogSampleAnnotationsLoader {
             List<Variable> variableList = new ArrayList<>();
             variableList.addAll(variableSet.getVariables());
             String name = pedFile.getName();
-            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), name, name, true, false, "Auto-generated  "
-                            + "VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
+            variableSet = catalogManager.getStudyManager().createVariableSet(study.getFqn(), name, name, true, false,
+                    "Auto-generated VariableSet from File = {path: " + pedFile.getPath() + ", name: \"" + pedFile.getName() + "\"}", null,
                     variableList, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId).getResults().get(0);
             variableSetId = variableSet.getId();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
@@ -114,7 +119,8 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().search(study.getFqn(), samplesQuery, null, sessionId).getResults()) {
+        for (Sample sample : catalogManager.getSampleManager().search(study.getFqn(), samplesQuery, null, sessionId)
+                .getResults()) {
             loadedSamples.put(sample.getId(), sample);
         }
 

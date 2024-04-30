@@ -183,8 +183,7 @@ public class FileUnlinkTask extends OpenCgaTool {
     }
 
     private void addCriticalError(CatalogException e) {
-        CatalogException exception = new CatalogException("Critical: Could not restore status of pending files to "
-                + FileStatus.READY, e);
+        CatalogException exception = new CatalogException("Critical: Could not restore status of pending files to " + FileStatus.READY, e);
         logger.error("{}", e.getMessage(), e);
         try {
             addError(exception);

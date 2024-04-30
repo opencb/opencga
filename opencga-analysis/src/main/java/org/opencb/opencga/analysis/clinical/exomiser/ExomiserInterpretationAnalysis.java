@@ -155,7 +155,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         .setVersion(dockerVersion)));
 
         // Analyst
-        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
+        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
 
         List<ClinicalVariant> primaryFindings = getPrimaryFindings();
 

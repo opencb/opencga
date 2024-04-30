@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -70,9 +69,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "create":
                 queryResponse = create();
@@ -146,37 +142,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JobAclUpdateParams.class);
         }
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Jobs command line");
-
-        JobsCommandOptions.AggregationStatsCommandOptions commandOptions = jobsCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
-        queryParams.putIfNotEmpty("toolScope", commandOptions.toolScope);
-        queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
-        queryParams.putIfNotEmpty("toolResource", commandOptions.toolResource);
-        queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotEmpty("tags", commandOptions.tags);
-        queryParams.putIfNotEmpty("executorId", commandOptions.executorId);
-        queryParams.putIfNotEmpty("executorFramework", commandOptions.executorFramework);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getJobClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> create() throws Exception {

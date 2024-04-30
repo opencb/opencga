@@ -55,8 +55,6 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         DISORDER_NAME("disorder.name", TEXT, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", OBJECT, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -73,6 +71,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         ANALYSTS_ID("analysts.id", TEXT, ""),
         ANALYSTS_ASSIGNED_BY("analysts.assignedBy", TEXT, ""),
         REPORT("report", OBJECT, ""),
+        REPORT_UPDATE("report_update", OBJECT, ""),   // Made up key to be able to set inner fields and not the entire object
         REPORT_SUPPORTING_EVIDENCES("report.supportingEvidences", TEXT_ARRAY, ""),
         REPORT_FILES("report.files", TEXT_ARRAY, ""),
         REQUEST("request", OBJECT, ""),
@@ -165,6 +164,13 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
     }
 
     enum ReportQueryParams implements QueryParam {
+        TITLE("title", STRING, ""),
+        OVERVIEW("overview", STRING, ""),
+        DISCUSSION("discussion", OBJECT, ""),
+        LOGO("logo", STRING, ""),
+        SIGNED_BY("signedBy", STRING, ""),
+        SIGNATURE("signature", STRING, ""),
+        DATE("date", STRING, ""),
         COMMENTS("comments", OBJECT, ""),
         SUPPORTING_EVIDENCES("supportingEvidences", TEXT_ARRAY, ""),
         FILES("files", TEXT_ARRAY, "");

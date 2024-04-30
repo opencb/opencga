@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -28,10 +27,12 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
-import org.opencb.opencga.analysis.alignment.qc.*;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -40,19 +41,17 @@ import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.*;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -72,6 +71,7 @@ import static org.junit.Assert.*;
 @Category(MediumTests.class)
 public class AlignmentAnalysisTest {
 
+    public static final String ORGANIZATION = "test";
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
@@ -79,7 +79,7 @@ public class AlignmentAnalysisTest {
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
-    public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private ToolRunner toolRunner;
     private static String father = "NA19661";
     private static String mother = "NA19660";
@@ -223,7 +223,7 @@ public class AlignmentAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
     }
 
     @AfterClass
@@ -234,9 +234,13 @@ public class AlignmentAnalysisTest {
         opencga.after();
     }
 
-    public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, opencga.getAdminToken());
-        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+    public void setUpCatalogManager() throws CatalogException, IOException {
+        catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test"), null, opencga.getAdminToken());
+        catalogManager.getUserManager().create(new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk").setOrganization("test"),
+                PASSWORD, opencga.getAdminToken());
+        catalogManager.getOrganizationManager().update("test", new OrganizationUpdateParams().setOwner(USER), null, opencga.getAdminToken());
+
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -466,7 +470,7 @@ public class AlignmentAnalysisTest {
         }
 
         CoverageIndexParams params = new CoverageIndexParams();
-        params.setFile(bamFile.getId());
+        params.setBamFileId(bamFile.getId());
         params.setWindowSize(500);
 
         toolRunner.execute(AlignmentCoverageAnalysis.class, params, new ObjectMap(), outdir, null, token);

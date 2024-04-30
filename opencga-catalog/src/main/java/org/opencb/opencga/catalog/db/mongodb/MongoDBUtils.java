@@ -85,7 +85,7 @@ public class MongoDBUtils {
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 
-        Bson query = Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(ID, OrganizationMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -289,9 +289,13 @@ public class MongoDBUtils {
     }
 
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        filterStringParams(parameters, filteredParams, acceptedParams, "");
+    }
+
+    static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams, String dbKeyPrefix) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                filteredParams.put(s, parameters.getString(s));
+                filteredParams.put(dbKeyPrefix + s, parameters.getString(s));
             }
         }
     }
@@ -360,24 +364,26 @@ public class MongoDBUtils {
         }
     }
 
-    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams)
+            throws CatalogDBException {
+        filterObjectParams(parameters, filteredParams, acceptedMapParams, "");
+    }
+
+    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams,
+                                   String dbKeyPrefix) throws CatalogDBException {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
                 Document document;
-                try {
-                    if (parameters.get(s) instanceof List<?>) {
-                        List<Object> originalList = parameters.getAsList(s);
-                        List<Document> documentList = new ArrayList<>(originalList.size());
-                        for (Object object : originalList) {
-                            documentList.add(getMongoDBDocument(object, s));
-                        }
-                        filteredParams.put(s, documentList);
-                    } else {
-                        document = getMongoDBDocument(parameters.get(s), s);
-                        filteredParams.put(s, document);
+                if (parameters.get(s) instanceof List<?>) {
+                    List<Object> originalList = parameters.getAsList(s);
+                    List<Document> documentList = new ArrayList<>(originalList.size());
+                    for (Object object : originalList) {
+                        documentList.add(getMongoDBDocument(object, s));
                     }
-                } catch (CatalogDBException e) {
-                    logger.warn("Skipping key '" + s + "': " + e.getMessage(), e);
+                    filteredParams.put(dbKeyPrefix + s, documentList);
+                } else {
+                    document = getMongoDBDocument(parameters.get(s), s);
+                    filteredParams.put(dbKeyPrefix + s, document);
                 }
             }
         }
@@ -801,7 +807,7 @@ public class MongoDBUtils {
         }
     }
     public static String getMongoDBCli(DatabaseCredentials credentials, String database) {
-        String sb = "mongo" + getMongoDBCliOpts(credentials)
+        String sb = "mongosh" + getMongoDBCliOpts(credentials)
                 + "'" + getMongoDBUri(credentials, database) + "'";
         return sb;
 
@@ -829,6 +835,10 @@ public class MongoDBUtils {
 
     public static URI getMongoDBUri(DatabaseCredentials credentials) {
         return getMongoDBUri(credentials, null);
+    }
+
+    public static URI getMongoDBUriRedacted(DatabaseCredentials credentials) {
+        return getMongoDBUri(new DatabaseCredentials(credentials).setPassword("<redacted>"), null);
     }
 
     public static URI getMongoDBUri(DatabaseCredentials credentials, String database) {

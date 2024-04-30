@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.app.cli.internal.options.FamilyCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -25,9 +24,6 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(familyCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case "secondary-index":
-                secondaryIndex();
-                break;
             case "tsv-load":
                 tsvLoad();
                 break;
@@ -36,12 +32,6 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
                 break;
 
         }
-    }
-
-    private void secondaryIndex() throws ToolException {
-        FamilyCommandOptions.SecondaryIndex options = familyCommandOptions.secondaryIndex;
-        Path outDir = Paths.get(options.outDir);
-        toolRunner.execute(FamilyIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
     private void tsvLoad() throws ToolException {

@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.family.qc;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;

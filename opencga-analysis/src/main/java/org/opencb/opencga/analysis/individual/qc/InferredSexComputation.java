@@ -34,25 +34,25 @@ import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.
 
 public class InferredSexComputation {
 
-    public static double[] computeRatios(String study, File bamFile, String assembly, AlignmentStorageManager alignmentStorageManager,
+    public static double[] computeRatios(String study, File bwFile, String assembly, AlignmentStorageManager alignmentStorageManager,
                                          String token)
             throws ToolException {
 
         // Compute coverage for each chromosome for each BAM file
-        // TODO get chromosomes from cellbase
         Map<String, Integer> chromosomes;
-        if (assembly.toLowerCase().equals("grch37")) {
+        if (assembly.equalsIgnoreCase("grch37")) {
             chromosomes = GRCH37_CHROMOSOMES;
         } else {
             chromosomes = GRCH38_CHROMOSOMES;
         }
 
         double[] means = new double[]{0d, 0d, 0d};
-        for (String chrom : chromosomes.keySet()) {
-            int chromSize = chromosomes.get(chrom);
+        for (Map.Entry<String, Integer> entry : chromosomes.entrySet()) {
+            String chrom = entry.getKey();
+            int chromSize = entry.getValue();
             Region region = new Region(chrom, 1, chromSize);
             try {
-                List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bamFile.getUuid(), region, 0,
+                List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bwFile.getId(), region, 0,
                         Integer.MAX_VALUE, chromSize, token).getResults();
 
                 double meanCoverage = 0d;

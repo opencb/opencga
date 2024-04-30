@@ -75,7 +75,17 @@ public class FileMetadataReader {
         file.setFormat(updateParams.getFormat() != null ? updateParams.getFormat() : file.getFormat());
         file.setAttributes(updateParams.getAttributes() != null ? updateParams.getAttributes() : file.getAttributes());
         file.setSampleIds(updateParams.getSampleIds() != null ? updateParams.getSampleIds() : file.getSampleIds());
-        file.setSize(updateParams.getSize() != null ? updateParams.getSize() : file.getSize());
+
+        IOManager ioManager;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(file.getUri().getScheme());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(file.getUri(), e);
+        }
+        final long fileSize = ioManager.getFileSize(file.getUri());
+        if (fileSize != file.getSize()) {
+            file.setSize(fileSize);
+        }
     }
 
     public File updateMetadataInformation(String studyId, File file, String token) throws CatalogException {
@@ -96,7 +106,8 @@ public class FileMetadataReader {
                             });
                     if (!missingSamples.isEmpty()) {
                         for (String missingSample : missingSamples) {
-                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
+                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample),
+                                    new QueryOptions(), token);
                         }
                     }
                 }
@@ -123,7 +134,8 @@ public class FileMetadataReader {
                         progressLogger.increment(samplesBatch.size());
                     }
 
-                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(),
+                            token);
                 } else {
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
                             new QueryOptions(Constants.ACTIONS,
@@ -212,17 +224,6 @@ public class FileMetadataReader {
                 List<String> sampleList = getFileSamples(bioformat, updateParams.getAttributes(), sampleMap);
                 updateParams.setSampleIds(sampleList);
             }
-        }
-
-        IOManager ioManager;
-        try {
-            ioManager = catalogManager.getIoManagerFactory().get(file.getUri().getScheme());
-        } catch (IOException e) {
-            throw CatalogIOException.ioManagerException(file.getUri(), e);
-        }
-        final long fileSize = ioManager.getFileSize(file.getUri());
-        if (fileSize != file.getSize()) {
-            updateParams.setSize(fileSize);
         }
 
         return updateParams;

@@ -27,10 +27,6 @@ import java.util.Calendar;
  */
 public class Account {
 
-    @DataField(id = "type", indexed = true, uncommentedClasses = {"AccountType"},
-            description = FieldConstants.ACCOUNT_TYPE)
-    private AccountType type;
-
     @DataField(id = "creationDate", indexed = true,
             description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -52,14 +48,12 @@ public class Account {
         cal.add(Calendar.YEAR, +1);
         String expirationDate = TimeUtils.getTime(cal.getTime());
 
-        this.type = AccountType.FULL;
         this.creationDate = creationDate;
         this.expirationDate = expirationDate;
         this.authentication = null;
     }
 
-    public Account(AccountType type, String creationDate, String expirationDate, AuthenticationOrigin authentication) {
-        this.type = type;
+    public Account(String creationDate, String expirationDate, AuthenticationOrigin authentication) {
         this.expirationDate = expirationDate;
         this.creationDate = creationDate;
         this.authentication = authentication;
@@ -68,21 +62,11 @@ public class Account {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Account{");
-        sb.append("type='").append(type).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append("creationDate='").append(creationDate).append('\'');
         sb.append(", expirationDate='").append(expirationDate).append('\'');
         sb.append(", authentication='").append(authentication).append('\'');
         sb.append('}');
         return sb.toString();
-    }
-
-    public AccountType getType() {
-        return type;
-    }
-
-    public Account setType(AccountType type) {
-        this.type = type;
-        return this;
     }
 
     public String getExpirationDate() {
@@ -110,12 +94,6 @@ public class Account {
     public Account setAuthentication(AuthenticationOrigin authentication) {
         this.authentication = authentication;
         return this;
-    }
-
-    public enum AccountType {
-        GUEST,
-        FULL,
-        ADMINISTRATOR
     }
 
     public static class AuthenticationOrigin {

@@ -25,12 +25,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(ShortTests.class)
 public class CatalogIOManagerTest {
@@ -58,31 +58,17 @@ public class CatalogIOManagerTest {
     }
 
     @Test
-    public void testCreateAccount() throws Exception {
-        String userId = "imedina";
-        URI userUri = ioManager.createUser(userId);
-
-        Path userPath = Paths.get(userUri);
-        assertTrue(Files.exists(userPath));
-        assertEquals(tmpOutdir.resolve("users/" + userId).toAbsolutePath().toString(), userUri.getPath());
-
-        ioManager.deleteUser(userId);
-        assertFalse(Files.exists(userPath));
-    }
-
-    @Test
     public void testCreateStudy() throws Exception {
-        String userId = "imedina";
+        String organizationId = "opencb";
+        ioManager.createOrganization(organizationId);
         String projectId = "1000g";
 
-        Path userPath = Paths.get(ioManager.createUser(userId));
-
-        Path projectPath = Paths.get(ioManager.createProject(userId, projectId));
+        Path projectPath = Paths.get(ioManager.createProject(organizationId, projectId));
         assertTrue(Files.exists(projectPath));
-        assertEquals(userPath.toString() + "/projects/" + projectId, projectPath.toString());
+        assertEquals(tmpOutdir.resolve("orgs").resolve(organizationId).resolve("projects").resolve(projectId).toAbsolutePath().toString(), projectPath.toString());
 
-        Path studyPath = Paths.get(ioManager.createStudy(userId, projectId, "phase1"));
+        Path studyPath = Paths.get(ioManager.createStudy(organizationId, projectId, "phase1"));
         assertTrue(Files.exists(studyPath));
-        assertEquals(projectPath.toString() + "/phase1", studyPath.toString());
+        assertEquals(projectPath.resolve("phase1").toString(), studyPath.toString());
     }
 }

@@ -48,6 +48,26 @@ public class AnalysisUtils {
         return (fileQueryResult.getNumResults() == 0) ? null : fileQueryResult.first();
     }
 
+    public static File getBwFileBySampleId(String sampleId, String studyId, FileManager fileManager, String token) throws ToolException {
+        // Look for the bam file for each sample
+        OpenCGAResult<File> fileQueryResult;
+
+        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BIGWIG)
+                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
+        try {
+            fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Sanity check
+        if (fileQueryResult.getNumResults() > 1) {
+            throw new ToolException("Found more than one BIGWIG files (" + fileQueryResult.getNumResults() + ") for sample " + sampleId);
+        }
+
+        return (fileQueryResult.getNumResults() == 0) ? null : fileQueryResult.first();
+    }
+
     public static File getBamFile(String filename, String sampleId, String studyId, FileManager fileManager, String token) throws ToolException {
         // Look for the bam file for each sample
         OpenCGAResult<File> fileQueryResult;

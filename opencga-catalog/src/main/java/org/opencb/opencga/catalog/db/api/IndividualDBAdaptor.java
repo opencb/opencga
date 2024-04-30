@@ -93,8 +93,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 

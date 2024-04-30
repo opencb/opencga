@@ -1,8 +1,10 @@
 package org.opencb.opencga.analysis.wrappers.deeptools;
 
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.opencga.analysis.alignment.AlignmentConstants;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.config.Docker;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -11,6 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 @ToolExecutor(id = DeeptoolsWrapperAnalysisExecutor.ID,
@@ -40,6 +46,47 @@ public class DeeptoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecu
 
     private void runBamCommonCommand() throws ToolException {
         StringBuilder sb = initCommandLine();
+
+        // Check symbolic links to be appended
+        if (MapUtils.isNotEmpty(getExecutorParams())) {
+            Set<String> fileParamNames = DeeptoolsWrapperAnalysis.getFileParamNames(command);
+            Set<Path> symbolicPaths = new HashSet<>();
+            for (String paramName : getExecutorParams().keySet()) {
+                if (skipParameter(paramName)) {
+                    continue;
+                }
+
+                if (fileParamNames.contains(paramName)) {
+                    Path filePath = Paths.get(getExecutorParams().getString(paramName));
+                    if ( Files.isSymbolicLink(filePath)) {
+                        try {
+                            Path target = Files.readSymbolicLink(filePath);
+                            if (!symbolicPaths.contains(target.getParent())) {
+                                symbolicPaths.add(target.getParent());
+                            }
+                            // If it is BAM file, we have to check the BAI file (that is not present in the input parameters but it is
+                            // located in the same folder)
+                            if (filePath.toString().endsWith(AlignmentConstants.BAM_EXTENSION)) {
+                                Path baiPath = Paths.get(filePath.toAbsolutePath() + AlignmentConstants.BAI_EXTENSION);
+                                if (baiPath.toFile().exists()) {
+                                    if (Files.isSymbolicLink(baiPath)) {
+                                        Path baiTarget = Files.readSymbolicLink(baiPath);
+                                        if (!symbolicPaths.contains(baiTarget.getParent())) {
+                                            symbolicPaths.add(baiTarget.getParent());
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (IOException e) {
+                            throw new ToolException("Error processing symbolic links", e);
+                        }
+                    }
+                }
+            }
+            for (Path symbolicPath : symbolicPaths) {
+                sb.append(" --mount type=bind,source=\"").append(symbolicPath).append("\",target=\"").append(symbolicPath).append("\" ");
+            }
+        }
 
         // Append mounts
         List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null,
