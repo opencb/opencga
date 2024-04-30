@@ -69,7 +69,7 @@ import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -646,6 +646,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     @SuppressWarnings("unchecked")
     public <T> VariantQueryResult<T> get(Query query, QueryOptions queryOptions, String token, Class<T> clazz)
             throws CatalogException, IOException, StorageEngineException {
+
         VariantQueryResult<Variant> result = get(query, queryOptions, token);
         List<T> variants;
         if (clazz == Variant.class) {
@@ -659,16 +660,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         } else {
             throw new IllegalArgumentException("Unknown variant format " + clazz);
         }
-        return new VariantQueryResult<>(
-                result.getTime(),
-                result.getNumResults(),
-                result.getNumMatches(),
-                result.getEvents(),
-                variants,
-                result.getSamples(),
-                result.getSource(),
-                result.getApproximateCount(),
-                result.getApproximateCountSamplingSize(), null);
+        return new VariantQueryResult<>(result, variants);
 
     }
 
@@ -899,7 +891,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
                         VariantQueryResult<Variant> result = new VariantQueryResult<>(
                                 ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
-                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
+                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), engine.getStorageEngineId())
                                 .setNumSamples(sampleEntries.size());
                         if (exactNumSamples) {
                             result.setApproximateCount(false);

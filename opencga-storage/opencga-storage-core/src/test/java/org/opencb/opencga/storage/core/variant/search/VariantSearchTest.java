@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -67,8 +67,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         variantSearchManager.insert(collection, annotatedVariants);
 
-        VariantQueryResult<Variant> results = variantSearchManager.query(collection, new Query(),
-                new QueryOptions(QueryOptions.LIMIT, limit));
+        VariantQueryResult<Variant> results = variantSearchManager.query(collection, variantStorageEngine.parseQuery(new Query(),
+                new QueryOptions(QueryOptions.LIMIT, limit)));
 
         for (int i = 0; i < limit; i++) {
             Variant expectedVariant = annotatedVariants.get(i);
@@ -213,8 +213,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         query.put(VariantQueryParam.FILE.key(), fileId);
         query.put(VariantQueryParam.FILTER.key(), "PASS");
         query.put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign");
-        VariantQueryResult<Variant> results = variantSearchManager.query(collection, query,
-                new QueryOptions(QueryOptions.LIMIT, limit));
+        VariantQueryResult<Variant> results = variantSearchManager.query(collection, variantStorageEngine.parseQuery(query,
+                new QueryOptions(QueryOptions.LIMIT, limit)));
 
         if (results.getResults().size() > 0) {
             System.out.println(results.getResults().get(0).toJson());

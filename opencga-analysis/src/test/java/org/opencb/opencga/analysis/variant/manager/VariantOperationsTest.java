@@ -515,7 +515,7 @@ public class VariantOperationsTest {
         assertEquals("GRCh38", cellBaseUtils.getAssembly());
 
         String newCellbase = "https://uk.ws.zettagenomics.com/cellbase/";
-        String newCellbaseVersion = "v5.2";
+        String newCellbaseVersion = "v5.8";
 
         assertNotEquals(newCellbase, cellBaseUtils.getURL());
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());

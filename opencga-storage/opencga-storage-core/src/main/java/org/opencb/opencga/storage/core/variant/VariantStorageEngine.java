@@ -31,7 +31,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -1243,7 +1243,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public Variant getVariant(String variantStr) {
         final Variant variant;
         if (VariantQueryUtils.isVariantId(variantStr)) {
-            variant = new Variant(variantStr);
+            variant = VariantQueryUtils.toVariant(variantStr, true);
         } else if (VariantQueryUtils.isVariantAccession(variantStr)) {
             VariantQueryResult<Variant> result = get(new Query(VariantQueryParam.ANNOT_XREF.key(), variantStr),
                     new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1).append(QueryOptions.COUNT, true));
@@ -1276,8 +1276,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         addDefaultLimit(options, getOptions());
         addDefaultSampleLimit(query, getOptions());
-        query = preProcessQuery(query, options);
-        return getVariantQueryExecutor(query, options).get(query, options);
+        ParsedVariantQuery variantQuery = parseQuery(query, options);
+        return getVariantQueryExecutor(variantQuery).get(variantQuery);
     }
 
     @Override
@@ -1294,8 +1294,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         query = VariantQueryUtils.copy(query);
         options = VariantQueryUtils.copy(options);
-        query = preProcessQuery(query, options);
-        return getVariantQueryExecutor(query, options).iterator(query, options);
+        ParsedVariantQuery variantQuery = parseQuery(query, options);
+        return getVariantQueryExecutor(variantQuery).iterator(variantQuery);
     }
 
     public final List<VariantQueryExecutor> getVariantQueryExecutors() throws StorageEngineException {
@@ -1317,7 +1317,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
         executors.add(new BreakendVariantQueryExecutor(
-                getMetadataManager(), getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
+                getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
@@ -1336,12 +1336,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return VariantQueryExecutor to use
      */
     public VariantQueryExecutor getVariantQueryExecutor(Query query, QueryOptions options) {
+        return getVariantQueryExecutor(parseQuery(query, options));
+    }
+
+    /**
+     * Determine which {@link VariantQueryExecutor} should be used to execute the given query.
+     *
+     * @param variantQuery Parsed variant query
+     * @return VariantQueryExecutor to use
+     */
+    public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(query, options)) {
+                if (executor.canUseThisExecutor(variantQuery.getQuery(), variantQuery.getInputOptions())) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
-                    logger.info("  Query : " + VariantQueryUtils.printQuery(query));
-                    logger.info("  Options : " + options.toJson());
+                    logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
+                    logger.info("  Options : " + variantQuery.getInputOptions().toJson());
                     return executor;
                 }
             }
