@@ -177,7 +177,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
@@ -259,7 +259,7 @@ public class AnalysisVariantCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1614,7 +1614,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--saved-filter"}, description = "Use a saved filter at User level", required = false, arity = 1)
         public String savedFilter; 
     
-        @Parameter(names = {"--id"}, description = "List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id; 
     
         @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
@@ -1740,7 +1740,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
         public String ct; 
     
-        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...", required = false, arity = 1)
+        @Parameter(names = {"--xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
         public String xref; 
     
         @Parameter(names = {"--biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
