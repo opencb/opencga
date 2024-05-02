@@ -38,11 +38,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
@@ -2193,6 +2199,73 @@ public class FileManagerTest extends AbstractManagerTest {
             assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getId());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertFalse("File uri: " + fileTmp.getUri() + " should not exist", ioManager.exists(fileTmp.getUri()));
+        }
+    }
+
+    @Test
+    public void deleteFileInClinicalAnalysis() throws CatalogException, IOException {
+        // START DATA PREPARATION FOR TEST !!!
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        File file = fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null, null), false, token).first();
+
+        Family family1 = DummyModelUtils.getDummyFamily("familyId1");
+        catalogManager.getFamilyManager().create(studyFqn, family1, QueryOptions.empty(), token);
+
+        // Associate BAM file to sample
+        String sampleId = family1.getMembers().get(0).getSamples().get(0).getId();
+        catalogManager.getFileManager().update(studyFqn, file.getId(), new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)),
+                QueryOptions.empty(), token);
+
+        Panel myPanel = DummyModelUtils.getDummyPanel("myPanel");
+        catalogManager.getPanelManager().create(studyFqn, myPanel, QueryOptions.empty(), token);
+
+        Family copy = JacksonUtils.copy(family1, Family.class);
+        for (Individual member : copy.getMembers()) {
+            // Only use the first sample
+            member.setSamples(Collections.singletonList(member.getSamples().get(0)));
+        }
+
+        ClinicalAnalysis clinicalAnalysis1 = DummyModelUtils.getDummyClinicalAnalysis(copy.getMembers().get(0), copy, Collections.singletonList(myPanel));
+        clinicalAnalysis1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis1, INCLUDE_RESULT, token).first();
+        assertEquals(1, clinicalAnalysis1.getFiles().size());
+        assertEquals(file.getPath(), clinicalAnalysis1.getFiles().get(0).getPath());
+        assertFalse(clinicalAnalysis1.isLocked());
+
+        ClinicalAnalysis clinicalAnalysis2 = DummyModelUtils.getDummyClinicalAnalysis(copy.getMembers().get(0), copy, Collections.singletonList(myPanel));
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis2, INCLUDE_RESULT, token).first();
+        assertEquals(1, clinicalAnalysis2.getFiles().size());
+        assertEquals(file.getPath(), clinicalAnalysis2.getFiles().get(0).getPath());
+        assertFalse(clinicalAnalysis2.isLocked());
+
+        // Lock clinicalAnalysis2
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis2.getId(),
+                new ClinicalAnalysisUpdateParams().setLocked(true), INCLUDE_RESULT, token).first();
+        assertTrue(clinicalAnalysis2.isLocked());
+        // END DATA PREPARATION FOR TEST !!!
+
+        // Mark as pending delete
+        catalogManager.getFileManager().fileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE), QueryOptions.empty());
+        CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getFileManager().unlink(studyFqn, file.getId(), token));
+        assertTrue(catalogException.getMessage().contains("Could not unlink"));
+        assertTrue(catalogException.getCause().getMessage().contains("clinical analyses"));
+
+        // Unlock clinicalAnalysis2
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis2.getId(),
+                new ClinicalAnalysisUpdateParams().setLocked(false), INCLUDE_RESULT, token).first();
+        assertFalse(clinicalAnalysis2.isLocked());
+
+        // Unlink file
+        catalogManager.getFileManager().unlink(studyFqn, file.getId(), token);
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId, QueryOptions.empty(), token).first();
+        assertEquals(0, sample.getFileIds().size());
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(studyFqn, new Query(), QueryOptions.empty(), token);
+        assertEquals(2, search.getNumResults());
+        for (ClinicalAnalysis clinicalAnalysis : search.getResults()) {
+            assertEquals(0, clinicalAnalysis.getFiles().size());
+            assertEquals("OPENCGA", clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getAuthor());
+            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove file references from case"));
         }
     }
 

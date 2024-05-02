@@ -1008,6 +1008,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
 
                 dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
+                dbAdaptorFactory.getClinicalAnalysisDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
                 // Set status
                 nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
