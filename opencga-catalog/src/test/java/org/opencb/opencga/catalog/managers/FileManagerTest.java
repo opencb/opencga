@@ -1032,7 +1032,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We send the unlink command again
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not unlink");
         fileManager.unlink(studyFqn, "myDirectory/data/test/folder/test_0.5K.txt", token);
     }
 
@@ -2267,6 +2267,30 @@ public class FileManagerTest extends AbstractManagerTest {
             assertEquals("OPENCGA", clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getAuthor());
             assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove file references from case"));
         }
+    }
+
+    @Test
+    public void deleteFileUserInRelatedFilesTest() throws CatalogException {
+        fileManager.update(studyFqn, "data/test/folder/test_1K.txt.gz",
+                new FileUpdateParams().setRelatedFiles(Collections.singletonList(
+                        new SmallRelatedFileParams("data/test/folder/test_0.5K.txt", FileRelatedFile.Relation.PART_OF_PAIR))),
+                null, token);
+        File file = fileManager.get(studyFqn, "data/test/folder/test_1K.txt.gz", QueryOptions.empty(), token).first();
+        assertFalse(file.getRelatedFiles().isEmpty());
+        assertEquals(1, file.getRelatedFiles().size());
+        assertEquals("data/test/folder/test_0.5K.txt", file.getRelatedFiles().get(0).getFile().getPath());
+
+        file = fileManager.get(studyFqn, "data/test/folder/test_0.5K.txt", FileManager.INCLUDE_FILE_IDS, token).first();
+
+        // Mark as pending delete
+        catalogManager.getFileManager().fileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE), QueryOptions.empty());
+        // Delete test_0.5K file
+        QueryOptions options = new QueryOptions(Constants.SKIP_TRASH, true);
+        fileManager.delete(studyFqn, Collections.singletonList("data/test/folder/test_0.5K.txt"), options, token);
+
+        // Ensure there are no more references to test_0.5K file
+        file = fileManager.get(studyFqn, "data/test/folder/test_1K.txt.gz", QueryOptions.empty(), token).first();
+        assertTrue(file.getRelatedFiles().isEmpty());
     }
 
     private File createBasicDirectoryFileTestEnvironment(List<File> folderFiles) throws CatalogException {

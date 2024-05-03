@@ -1535,7 +1535,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return delete(studyStr, fileIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -1546,13 +1546,15 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileIds", fileIds)
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
+        boolean physicalDelete = queryOptions.getBoolean(Constants.SKIP_TRASH, false);
 
         auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<File> result = OpenCGAResult.empty(File.class);
