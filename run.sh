@@ -196,7 +196,7 @@ function validateTags() {
 
 LOG_SUMMARY=""
 
-# Function to log summary
+# Function to add messages to the log summary
 function log_summary() {
   if [ -n "$LOG_SUMMARY" ]; then
     LOG_SUMMARY="$LOG_SUMMARY""\n"
@@ -204,7 +204,7 @@ function log_summary() {
   LOG_SUMMARY="$LOG_SUMMARY""$@"
 }
 
-# Function to print log summary
+# Function to print all the log summary
 function print_log_summary() {
   echo "=========================="
   echo -e "$LOG_SUMMARY"
@@ -317,9 +317,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+## 3. Ensure where is the opencga-enterprise root directory and se it to a variable
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
+## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
   echo "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
   echo "OPENCGA_HOME_DIR $OPENCGA_HOME_DIR"
@@ -331,6 +333,8 @@ if [ "$DEBUG" == "true" ];then
   exit 0
 fi
 
+
+# Function to validate input parameters
 function validate() {
   validateTags "$TEST_TAG"
 
@@ -378,6 +382,8 @@ function validate() {
     exit 1
   fi
 
+
+  ## Validate that if the current branch is a task, the reference branch must be the same
   local CURRENT_BRANCH="$(git branch --show-current)"
   log "CURRENT_BRANCH $CURRENT_BRANCH"
   log "TASK_REFERENCE $TASK_REFERENCE"
@@ -399,6 +405,7 @@ function validate() {
       -pl :opencga || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
 }
 
+# Function to download and compile java-common-libs, cellbase and biodata dependencies
 function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch
   if [ "$PREPARE_BRANCHES" == "true" ]; then
@@ -413,6 +420,7 @@ function prepare_branches() {
   fi
 }
 
+# Function to build or/and test the opencga
 function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
@@ -435,6 +443,7 @@ function build_opencga() {
   fi
 }
 
+# Function to build or/and test the opencga-enterprise
 function build_opencga_enterprise() {
   ## Move to opencga-enterprise to build or test
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -459,6 +468,8 @@ function build_opencga_enterprise() {
   fi
 }
 
+# Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
+#It is do it with azure and AZ_COPY command
 function publish_reports() {
   if [ "$PUBLISH" == "true" ];then
     ## Move to opencga-enterprise to build or test
@@ -475,6 +486,8 @@ function publish_reports() {
   fi
 }
 
+
+# Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
 function publish_docker() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
@@ -487,6 +500,9 @@ function publish_docker() {
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
   fi
 }
+
+
+## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
 
 # Validate input parameters
 validate
