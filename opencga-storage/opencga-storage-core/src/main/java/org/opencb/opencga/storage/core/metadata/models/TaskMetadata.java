@@ -61,6 +61,12 @@ public class TaskMetadata {
          * Any needed clean might be executed by other running tasks
          */
         ABORTED,
+        /**
+         * Finished.
+         * Task finished with invalid results.
+         * Similar to "ERROR" status, but this can't be resumed. Needs to be cleaned first.
+         */
+        INVALID,
     }
 
     public enum Type {

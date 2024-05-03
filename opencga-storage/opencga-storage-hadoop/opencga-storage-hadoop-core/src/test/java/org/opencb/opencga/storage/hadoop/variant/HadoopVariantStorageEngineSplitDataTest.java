@@ -16,6 +16,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -30,6 +31,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
@@ -687,6 +689,84 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             throw new StorageEngineException(MOCKED_EXCEPTION);
         }).when(mockedStorageEngine).preRemove(Mockito.any(), Mockito.any(), Mockito.any());
         return mockedStorageEngine;
+    }
+
+    @Test
+    public void testDeleteErrorFiles() throws Exception {
+        URI outDir = newOutputUri();
+
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        URI file = variantStorageEngine.index(Collections.singletonList(getPlatinumFile(1)), outDir).get(0).getInput();
+        String fileName = UriUtils.fileName(file);
+
+        int studyId = mm.getStudyId(STUDY_NAME);
+        int fileId = mm.getFileId(studyId, fileName);
+        FileMetadata fileMetadata = mm.updateFileMetadata(studyId, fileId, fm -> {
+            fm.setIndexStatus(TaskMetadata.Status.INVALID);
+        });
+        assertFalse(mm.isFileIndexed(studyId, fileId));
+        assertFalse(fileMetadata.isIndexed());
+        LinkedHashSet<Integer> samples = fileMetadata.getSamples();
+
+        for (Integer sample : samples) {
+            mm.updateSampleMetadata(studyId, sample, sampleMetadata -> {
+                sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
+            });
+        }
+
+        try {
+            variantStorageEngine.get(new VariantQuery().file(fileName), new QueryOptions());
+            fail();
+        } catch (VariantQueryException e) {
+            String expected = VariantQueryException.fileNotIndexed(fileName, STUDY_NAME).getMessage();
+            assertEquals(expected, e.getMessage());
+        }
+
+        try {
+            variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+            variantStorageEngine.index(Collections.singletonList(getPlatinumFile(1)), outDir);
+            fail();
+        } catch (StorageEngineException e) {
+            try {
+                String expected = StorageEngineException.invalidFileStatus(fileId, fileName).getMessage();
+                assertEquals(expected, e.getCause().getMessage());
+            } catch (AssertionError error) {
+                e.printStackTrace();
+                throw error;
+            }
+        }
+
+        try {
+            variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), false);
+            variantStorageEngine.index(Collections.singletonList(getPlatinumFile(1)), outDir);
+            fail();
+        } catch (StorageEngineException e) {
+            try {
+                String expected = StorageEngineException.invalidFileStatus(fileId, fileName).getMessage();
+                assertEquals(expected, e.getCause().getMessage());
+            } catch (AssertionError error) {
+                e.printStackTrace();
+                throw error;
+            }
+        }
+
+        variantStorageEngine.removeFile(STUDY_NAME, fileName, outDir);
+
+        fileMetadata = mm.getFileMetadata(studyId, fileId);
+        assertEquals(TaskMetadata.Status.NONE, fileMetadata.getIndexStatus());
+        for (Integer sample : samples) {
+            assertEquals(TaskMetadata.Status.NONE, mm.getSampleMetadata(studyId, sample).getIndexStatus());
+        }
+
+        variantStorageEngine.index(Collections.singletonList(getPlatinumFile(1)), outDir);
+
+        fileMetadata = mm.getFileMetadata(studyId, fileId);
+        assertEquals(TaskMetadata.Status.READY, fileMetadata.getIndexStatus());
+        for (Integer sample : samples) {
+            assertEquals(TaskMetadata.Status.READY, mm.getSampleMetadata(studyId, sample).getIndexStatus());
+        }
     }
 
     @Test

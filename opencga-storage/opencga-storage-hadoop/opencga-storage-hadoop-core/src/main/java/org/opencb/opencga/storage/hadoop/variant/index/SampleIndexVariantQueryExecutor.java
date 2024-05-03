@@ -191,7 +191,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         // Check if the query is fully covered
         Set<VariantQueryParam> params = VariantQueryUtils.validParams(query, true);
         params.remove(VariantQueryParam.STUDY);
-
+        logger.info("Uncovered filters : " + params);
         return params.isEmpty();
     }
 

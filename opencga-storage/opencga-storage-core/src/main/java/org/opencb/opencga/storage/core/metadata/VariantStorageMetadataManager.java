@@ -679,6 +679,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             update.update(fileMetadata);
             lock.checkLocked();
             unsecureUpdateFileMetadata(studyId, fileMetadata);
+            fileIdIndexedCache.put(studyId, fileId, fileMetadata.isIndexed());
             return fileMetadata;
         } finally {
             lock.unlock();
@@ -807,7 +808,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     .getName();
             logger.info("Register file " + name + " as INDEXED");
         }
-        fileDBAdaptor.addIndexedFiles(studyId, fileIds);
         fileIdsFromSampleIdCache.clear();
         fileIdIndexedCache.clear();
     }
@@ -821,6 +821,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+                fileMetadata.getAttributes().remove(LOAD_ARCHIVE.key());
                 if (fileMetadata.getType() == FileMetadata.Type.VIRTUAL) {
                     partialFiles.addAll(fileMetadata.getAttributes().getAsIntegerList(FileMetadata.VIRTUAL_FILES));
                 }
@@ -833,6 +834,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 fileMetadata.setIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
                 fileMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+                fileMetadata.getAttributes().remove(LOAD_ARCHIVE.key());
             });
 //            deleteVariantFileMetadata(studyId, fileId);
         }
@@ -851,7 +853,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             });
         }
-        fileDBAdaptor.removeIndexedFiles(studyId, fileIds);
     }
 
     public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
@@ -1276,6 +1277,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throw new IllegalStateException("Batch task " + taskName + " for files " + fileIds + " not found!");
         }
         return task;
+    }
+
+    public Iterable<TaskMetadata> taskIterable(int studyId) {
+        return () -> taskIterator(studyId, null, false);
     }
 
     public Iterator<TaskMetadata> taskIterator(int studyId) {
@@ -1754,6 +1759,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         if (fileId != null) {
             updateFileMetadata(studyId, fileId, fileMetadata -> {
+                if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
+                    throw StorageEngineException.invalidFileStatus(fileMetadata.getId(), fileName);
+                }
                 if (fileMetadata.isIndexed()) {
                     throw StorageEngineException.alreadyLoaded(fileMetadata.getId(), fileName);
                 }
