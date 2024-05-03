@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -e
-set -o pipefail
-set -o nounset
+set -e  # Exit immediately if a command exits with a non-zero status
+set -o pipefail  # Return value of a pipeline is the value of the last (rightmost) command to exit with a non-zero status
+set -o nounset  # Treat unset variables as an error
 
 ## Functions
+# Function to print usage based on the command
 function printUsage() {
   case $COMMAND in
     build)
@@ -19,6 +20,7 @@ function printUsage() {
   esac
 }
 
+# Function to print main usage of the script
 function printMainUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -31,6 +33,7 @@ function printMainUsage() {
   echo ""
 }
 
+# Function to print usage for the build command
 function printBuildUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -48,6 +51,7 @@ function printBuildUsage() {
   echo ""
 }
 
+# Function to print usage for the test command
 function printTestUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -69,6 +73,7 @@ function printTestUsage() {
   echo ""
 }
 
+# Function to log messages
 function log() {
 
     if [[ "$#" -gt 0 ]]; then
@@ -82,12 +87,14 @@ function log() {
     fi
 }
 
+# Function to log error messages
 function error() {
   log "=========================="
   log "[ERROR] - " "$@"
   log "=========================="
 }
 
+# Function to calculate the branch for dependencies
 function calculate_branch() {
 
   local EXISTS=""
@@ -95,7 +102,7 @@ function calculate_branch() {
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
   if [[ -n $EXISTS ]]; then
-    log "Entrando en el if con $EXISTS"
+    log "Entering the if statement with $EXISTS"
     echo $TASK_REFERENCE
   else
     local TMP_DIR=$(pwd)
@@ -135,6 +142,7 @@ function calculate_branch() {
   fi
 }
 
+# Function to manage dependencies
 function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
@@ -169,6 +177,7 @@ function manage_dependency() {
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
 
+# Function to validate test tags
 function validateTags() {
 
   #Split input string
@@ -185,15 +194,17 @@ function validateTags() {
 
 }
 
-
 LOG_SUMMARY=""
 
+# Function to log summary
 function log_summary() {
   if [ -n "$LOG_SUMMARY" ]; then
     LOG_SUMMARY="$LOG_SUMMARY""\n"
   fi
   LOG_SUMMARY="$LOG_SUMMARY""$@"
 }
+
+# Function to print log summary
 function print_log_summary() {
   echo "=========================="
   echo -e "$LOG_SUMMARY"
@@ -477,16 +488,23 @@ function publish_docker() {
   fi
 }
 
+# Validate input parameters
 validate
 
+# Prepare branches if needed
 prepareBranches
 
+# Build opencb-opencga
 build_opencb_opencga
 
+# Build opencga-enterprise
 build_opencga_enterprise
 
+# Publish test reports
 publish
 
+# Publish Docker images
 publish_docker
 
+# Print log summary
 print_log_summary
