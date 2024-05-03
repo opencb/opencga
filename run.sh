@@ -399,7 +399,7 @@ function validate() {
       -pl :opencga || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
 }
 
-function prepareBranches() {
+function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
@@ -413,7 +413,7 @@ function prepareBranches() {
   fi
 }
 
-function build_opencb_opencga() {
+function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
     if [ "$SKIP_OPENCGA_BUILD" == "true" ] ; then
@@ -459,7 +459,7 @@ function build_opencga_enterprise() {
   fi
 }
 
-function publish() {
+function publish_reports() {
   if [ "$PUBLISH" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -492,16 +492,16 @@ function publish_docker() {
 validate
 
 # Prepare branches if needed
-prepareBranches
+prepare_branches
 
 # Build opencb-opencga
-build_opencb_opencga
+build_opencga
 
 # Build opencga-enterprise
 build_opencga_enterprise
 
 # Publish test reports
-publish
+publish_reports
 
 # Publish Docker images
 publish_docker
