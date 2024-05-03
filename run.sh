@@ -452,10 +452,6 @@ function publish() {
   if [ "$PUBLISH" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-#    export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
-#    export AZCOPY_AUTO_LOGIN_TYPE="SPN"
-#    export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
-#    export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
     azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
     if [[ -n $TASK_REFERENCE ]]; then
       BRANCH_FOLDER=$TASK_REFERENCE
@@ -470,14 +466,6 @@ function publish() {
 
 function publish_docker() {
   if [ "$DOCKER" == "true" ];then
-#    cd "$OPENCGA_HOME_DIR" || exit 2
-#    TAG=""
-#    if [[ -n $TASK_REFERENCE ]]; then
-#    	TAG=$TASK_REFERENCE
-#    else
-#      TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-#    fi
-#    python3 ./build/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     if [[ -n $TASK_REFERENCE ]]; then
