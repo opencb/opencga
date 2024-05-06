@@ -213,7 +213,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         VariantFileIndexJobLauncherParams params = new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs");
         List<String> tags = Arrays.asList("tag1", "tag2");
         Job job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
-                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, sessionId).first();
+                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, sessionId).first();
         ExecutionResult result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 
         List<String> tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);
@@ -232,7 +232,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         //// Execute again, no new jobs should be submitted
         tags = Arrays.asList("tag10", "tag20");
         job = catalogManager.getJobManager().submit(studyFqn, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
-                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, sessionId).first();
+                params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, sessionId).first();
         result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 
         tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);

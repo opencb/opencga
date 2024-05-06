@@ -755,12 +755,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
         } catch (CatalogIOException | IOException e) {
-            // Submit job to delete job folder
-            ObjectMap params = new ObjectMap()
-                    .append("files", folder.getUuid())
-                    .append("study", job.getStudy().getId())
-                    .append(Constants.SKIP_TRASH, true);
-            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 

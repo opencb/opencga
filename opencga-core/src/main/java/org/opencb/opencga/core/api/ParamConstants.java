@@ -568,6 +568,8 @@ public class ParamConstants {
     public static final String JOB_TAGS = "jobTags";
     public static final String JOB_TAGS_PARAM = "tags";
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION;
+    public static final String JOB_SCHEDULED_START_TIME = FieldConstants.JOB_SCHEDULED_START_TIME;
 
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";

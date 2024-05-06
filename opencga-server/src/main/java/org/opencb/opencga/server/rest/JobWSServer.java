@@ -99,8 +99,8 @@ public class JobWSServer extends OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
-                    null, jobId, jobDescription, jobDependsOn, jobTags, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params, null, jobId, jobDescription, jobDependsOn,
+                    jobTags, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

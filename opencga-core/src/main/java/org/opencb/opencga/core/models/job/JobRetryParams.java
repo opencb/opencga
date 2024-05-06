@@ -6,14 +6,16 @@ public class JobRetryParams {
 
     private String job;
     private boolean force;
+    private String scheduledStartTime;
     private ObjectMap params;
 
     public JobRetryParams() {
     }
 
-    public JobRetryParams(String job, boolean force, ObjectMap params) {
+    public JobRetryParams(String job, boolean force, String scheduledStartTime, ObjectMap params) {
         this.job = job;
         this.force = force;
+        this.scheduledStartTime = scheduledStartTime;
         this.params = params;
     }
 
@@ -32,6 +34,15 @@ public class JobRetryParams {
 
     public JobRetryParams setForce(boolean force) {
         this.force = force;
+        return this;
+    }
+
+    public String getScheduledStartTime() {
+        return scheduledStartTime;
+    }
+
+    public JobRetryParams setScheduledStartTime(String scheduledStartTime) {
+        this.scheduledStartTime = scheduledStartTime;
         return this;
     }
 

@@ -82,8 +82,9 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(name = "body", value = "Panel parameters") PanelImportParams params) {
-        return submitJob(PanelImportTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+        return submitJob(PanelImportTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime);
     }
 
 //    @POST

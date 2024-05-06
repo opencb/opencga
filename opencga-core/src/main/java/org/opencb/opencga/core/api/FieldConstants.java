@@ -346,11 +346,16 @@ public class FieldConstants {
     public static final String JOB_INTERNAL_WEBHOOK_URL_DESCRIPTION = "Webhook URL.";
     public static final String JOB_INTERNAL_WEBHOOK_STATUS_DESCRIPTION = "Webhook status map can have the values SUCCESS or ERROR.";
 
+    public static final String JOB_PARENT_ID = "parentId";
+    public static final String JOB_SCHEDULED_START_TIME = "scheduledStartTime";
+
     public static final String JOB_OUT_DIR_DESCRIPTION = "Output dir for the job.";
     public static final String JOB_INPUT_DESCRIPTION = "List of input files.";
     public static final String JOB_OUTPUT_DESCRIPTION = "List of output files.";
     public static final String JOB_TAGS_DESCRIPTION = "List of tags for the job.";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "List of jobs the current job depends on.";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Id of the job that generated this job (if any)";
+    public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = "Time when the job is scheduled to start.";
     public static final String JOB_EXECUTION_DESCRIPTION = "Result of the execution.";
 
     //ExecutorInfo

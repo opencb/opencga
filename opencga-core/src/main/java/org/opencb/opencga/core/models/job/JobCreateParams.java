@@ -272,7 +272,7 @@ public class JobCreateParams {
         return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority,
                 internal != null ? new org.opencb.opencga.core.models.job.JobInternal(internal.getStatus()) : null,
                 outDir != null ? outDir.toFile() : null, getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(),
+                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(), null, null,
                 tags, result, false, stdout != null ? stdout.toFile() : null, stderr != null ? stderr.toFile() : null, 1, null, attributes);
     }
 
