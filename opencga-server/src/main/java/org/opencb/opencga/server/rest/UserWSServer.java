@@ -87,12 +87,10 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_ID_DESCRIPTION) @QueryParam(ParamConstants.USER_ID_PARAM) String userId,
             @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
-        try {
+        return run(() -> {
             query.remove(ParamConstants.ORGANIZATION);
-            return createOkResponse(catalogManager.getUserManager().search(organizationId, query, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            return catalogManager.getUserManager().search(organizationId, query, queryOptions, token);
+        });
     }
 
     @GET

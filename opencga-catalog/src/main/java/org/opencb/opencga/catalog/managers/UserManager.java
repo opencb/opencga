@@ -237,9 +237,9 @@ public class UserManager extends AbstractManager {
             auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "User search", e.getMessage())));
             throw e;
         }
     }
