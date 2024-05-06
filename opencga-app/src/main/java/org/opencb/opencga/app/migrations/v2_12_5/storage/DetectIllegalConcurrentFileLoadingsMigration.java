@@ -138,7 +138,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                     metadataManager.getFileName(studyId, file), file);
                         }
                     }
-                } else if (sampleMetadata.getSampleIndexStatus(sampleMetadata.getSampleIndexVersion()) == TaskMetadata.Status.READY) {
+                } else if (sampleMetadata.getSampleIndexStatus(Optional.of(sampleMetadata.getSampleIndexVersion()).orElse(-1)) == TaskMetadata.Status.READY) {
                     for (Integer fileId : sampleMetadata.getFiles()) {
                         if (affectedFiles.contains(fileId)) {
                             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
@@ -158,7 +158,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                 invalidSampleIndexes.add(sampleId);
                                 continue;
                             }
-                            if (fileMetadata.getSamples().size() == 1) {
+                            if (fileMetadata.getSamples().size() == 1 && catalogFile.getSampleIds().size() == 1) {
                                 long expectedCount = 0;
                                 for (Map.Entry<String, Long> entry : catalogFile.getQualityControl().getVariant()
                                         .getVariantSetMetrics().getGenotypeCount().entrySet()) {
@@ -172,7 +172,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                 if (expectedCount != actualCount) {
                                     invalidSampleIndexes.add(sampleId);
                                     logger.warn("Sample '{}'({}) was expected to have {} variants in the sample index of file '{}'({}) but has {}",
-                                            sampleName, sampleId, fileName, fileId, expectedCount, actualCount);
+                                            sampleName, sampleId, expectedCount, fileName, fileId, actualCount);
                                     logger.info(" - Invalidating sample index for sample '{}'({})", sampleName, sampleId);
                                 }
                             } else {
@@ -193,7 +193,20 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
             }
 
             if (params.getBoolean("dry-run")) {
-                logger.info("Dry-run mode. Skipping invalidation of files and samples");
+                if (invalidFiles.isEmpty() && invalidSampleIndexes.isEmpty()) {
+                    logger.info("Dry-run mode. No files or samples to invalidate");
+                } else {
+                    logger.info("Dry-run mode. Skipping invalidation of files and samples");
+
+                    Set<Integer> invalidSamples = new HashSet<>();
+                    for (Integer fileId : invalidFiles) {
+                        invalidSamples.addAll(metadataManager.getSampleIdsFromFileId(studyId, fileId));
+                    }
+
+                    logger.info("Affected files: {}", invalidFiles);
+                    logger.info("Affected samples: {}", invalidSamples);
+                    logger.info("Affected sample indexes: {}", invalidSampleIndexes);
+                }
             } else {
                 ObjectMap event = new ObjectMap()
                         .append("patch", getAnnotation().patch())
@@ -205,10 +218,11 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
                         } else {
+                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
                             for (Integer sampleIndexVersion : sampleMetadata.getSampleIndexVersions()) {
                                 sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, sampleIndexVersion);
                             }
-                            sampleMetadata.getAttributes().put("TASK-6078", event);
+                            sampleMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
                         }
                     });
                 }
@@ -219,8 +233,9 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         if (fileMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("File '{}'({}) already has the attribute 'TASK-6078'. Skip", fileMetadata.getName(), fileMetadata.getId());
                         } else {
+                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(fileMetadata.getStatus());
                             fileMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            fileMetadata.getAttributes().put("TASK-6078", event);
+                            fileMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
                         }
                     });
                 }
@@ -229,8 +244,9 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
                         } else {
+                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
                             sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            sampleMetadata.getAttributes().put("TASK-6078", event);
+                            sampleMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
                         }
                     });
                 }
