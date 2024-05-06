@@ -6,7 +6,7 @@
 
     <groupId>com.zettagenomics.opencga-enterprise</groupId>
     <artifactId>opencga-enterprise</artifactId>
-    <version>1.10.4</version>
+    <version>1.10.4.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -19,7 +19,7 @@
     </modules>
 
     <properties>
-        <opencga.version>2.12.4</opencga.version>
+        <opencga.version>2.12.4.1-SNAPSHOT</opencga.version>
         <pyopencga.version>1.10.4</pyopencga.version>
         <opencgar.version>1.10.4</opencgar.version>
         <cellbase.version>5.8.3</cellbase.version>
