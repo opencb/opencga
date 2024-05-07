@@ -99,7 +99,7 @@ function manage_dependency() {
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
-      log_summary "$COMMAND $REPO branch $BRANCH_NAME Test Successful!!!"
+      log_summary "$COMMAND $REPO with $REPO_VERSION branch $BRANCH_NAME Test Successful!!!"
     fi
   elif [ "$COMMAND" == "test" ]; then
     log "Testing $REPO branch $BRANCH_NAME."
@@ -107,7 +107,7 @@ function manage_dependency() {
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
-      log_summary "$COMMAND $REPO branch $BRANCH_NAME Test Successful!!!"
+      log_summary "$COMMAND $REPO with $REPO_VERSION branch $BRANCH_NAME Test Successful!!!"
     fi
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -229,6 +229,8 @@ function prepare_branches() {
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
     manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
+  else
+    log_summary "Skipped prepare branches"
   fi
 }
 
