@@ -234,22 +234,21 @@ function prepare_branches() {
 function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
-    if [ "$SKIP_OPENCGA_BUILD" == "true" ] ; then
-      log "-- Skipping opencga build"
-    else
       log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 || (error "Opencga compilation ERROR" && exit 1)
-    fi
+      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+      else
+        log_summary "$COMMAND opencga Success!"
+      fi
   elif [ "$COMMAND" == "test" ];then
-    if [ "$SKIP_TESTS" == "true" ]; then
-      log "-- Skipping opencga tests"
-    else
-      mvn clean install surefire-report:report \
-        ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
-        -Dcheckstyle.skip \
-        || (error "Opencga tests ERROR" && exit 1)
+      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+      else
+        log_summary "$COMMAND opencga Success!"
+      fi
       cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
-    fi
   fi
 }
 
@@ -259,22 +258,22 @@ function build_opencga_enterprise() {
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
   if [ "$COMMAND" == "build" ];then
-    mvn clean install -DskipTests -T 2 \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        -Dopencga.war.name=opencga \
-        || (error "Opencga enterprise compilation ERROR" && exit 1)
+    mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+      else
+        log_summary "$COMMAND opencga-enterprise Success!"
+      fi
   elif [ "$COMMAND" == "test" ]; then
-    if [ "$SKIP_TESTS" == "true" ]; then
-      log "-- Skipping opencga enterprise tests"
-    else
-      mvn clean install -B verify surefire-report:report \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        ${FAIL_NEVER} \
-        || (error "Opencga enterprise tests ERROR" && exit 1)
-    fi
-    cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+      mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER}
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+      else
+        log_summary "$COMMAND opencga-enterprise Success!"
+      fi
+      cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
   fi
 }
 
@@ -340,7 +339,6 @@ FAIL_NEVER=""
 PREPARE_BRANCHES=""
 SAVE_REPORTS=""
 DEBUG=""
-SKIP_OPENCGA_BUILD=false
 SKIP_TESTS=false
 TESTS_DIR="$PWD/tests"
 LOG_FILE=""
