@@ -10,6 +10,8 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -214,7 +216,8 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         .append("dateStr", TimeUtils.getTime())
                         .append("date", Date.from(Instant.now()));
                 for (Integer sampleId : invalidSampleIndexes) {
-                    metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    ObjectMap thisEvent = new ObjectMap(event);
+                    String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
                         } else {
@@ -222,33 +225,41 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                             for (Integer sampleIndexVersion : sampleMetadata.getSampleIndexVersions()) {
                                 sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, sampleIndexVersion);
                             }
-                            sampleMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
+                            sampleMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
                         }
-                    });
+                    }).getName();
+                    catalogManager.getSampleManager().update(study, sampleName,
+                            new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
                 }
                 Set<Integer> invalidSamples = new HashSet<>();
                 for (Integer fileId : invalidFiles) {
-                    metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> {
+                    ObjectMap thisEvent = new ObjectMap(event);
+                    String filePath = metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> {
                         invalidSamples.addAll(fileMetadata.getSamples());
                         if (fileMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("File '{}'({}) already has the attribute 'TASK-6078'. Skip", fileMetadata.getName(), fileMetadata.getId());
                         } else {
                             Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(fileMetadata.getStatus());
                             fileMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            fileMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
+                            fileMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
                         }
-                    });
+                    }).getPath();
+                    catalogManager.getFileManager().update(study, filePath,
+                            new FileUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
                 }
                 for (Integer sampleId : invalidSamples) {
-                    metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    ObjectMap thisEvent = new ObjectMap(event);
+                    String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
                             logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
                         } else {
                             Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
                             sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            sampleMetadata.getAttributes().put("TASK-6078", new ObjectMap(event).append("oldStatus", oldStatus));
+                            sampleMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
                         }
-                    });
+                    }).getName();
+                    catalogManager.getSampleManager().update(study, sampleName,
+                            new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
                 }
             }
         }
