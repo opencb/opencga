@@ -238,6 +238,8 @@ function build_opencga() {
       mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+        print_log_summary
+        exit 1
       else
         log_summary "$COMMAND opencga Success!"
       fi
@@ -245,6 +247,8 @@ function build_opencga() {
       mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+        print_log_summary
+        exit 1
       else
         log_summary "$COMMAND opencga Success!"
       fi
@@ -262,6 +266,8 @@ function build_opencga_enterprise() {
     -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+        print_log_summary
+        exit 1
       else
         log_summary "$COMMAND opencga-enterprise Success!"
       fi
@@ -270,6 +276,8 @@ function build_opencga_enterprise() {
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER}
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+        print_log_summary
+        exit 1
       else
         log_summary "$COMMAND opencga-enterprise Success!"
       fi
@@ -292,6 +300,11 @@ function publish_reports() {
     VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
     COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
     azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+    if [[ "$?" -ne 0 ]] ; then
+      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
+    else
+      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT "
+    fi
   fi
 }
 
@@ -306,6 +319,11 @@ function publish_docker() {
       TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
     fi
     python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
+    if [[ "$?" -ne 0 ]] ; then
+      log_summary "[ERROR] DOCKER UPLOAD FAILED!!!!!"
+    else
+      log_summary "Docker uploaded correctly with tag $TAG"
+    fi
   fi
 }
 
