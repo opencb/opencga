@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.annotation.converters;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -81,10 +82,10 @@ public class VariantAnnotationModelUtils {
                         for (ConsequenceType conseqType : consequenceTypes) {
                             if (conseqType != null && conseqType.getHgvs() != null && conseqType.getHgvs().contains(hgvs)) {
                                 String[] fields = hgvs.split(":", 2);
-                                if (conseqType.getGeneId() != null) {
+                                if (StringUtils.isNotEmpty(conseqType.getGeneId())) {
                                     xrefs.add(conseqType.getGeneId() + ":" + fields[1]);
                                 }
-                                if (conseqType.getGeneName() != null) {
+                                if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
                                     xrefs.add(conseqType.getGeneName() + ":" + fields[1]);
                                 }
                                 break;
@@ -102,11 +103,6 @@ public class VariantAnnotationModelUtils {
                 xrefs.add(conseqType.getTranscriptId());
                 xrefs.add(conseqType.getEnsemblGeneId());
                 xrefs.add(conseqType.getEnsemblTranscriptId());
-
-                // This is already added in the variantAnnotation.getHgvs() section
-//                if (conseqType.getHgvs() != null) {
-//                    xrefs.addAll(conseqType.getHgvs());
-//                }
 
                 ProteinVariantAnnotation protVarAnnotation = conseqType.getProteinVariantAnnotation();
                 if (protVarAnnotation != null) {

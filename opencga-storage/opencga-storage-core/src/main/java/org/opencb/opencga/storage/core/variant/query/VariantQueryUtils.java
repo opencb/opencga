@@ -470,14 +470,14 @@ public final class VariantQueryUtils {
     /**
      * Determines if the given value might be a known transcript or not.
      * Ensembl transcripts start with `ENST`
-     * RefSeq transcripts start with `NM_`
+     * RefSeq transcripts start with `NM_` and `XM_`
      * See <a href="https://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/?report=objectonly">...</a>
      *
      * @param value Value to check
      * @return If is a known transcript
      */
     public static boolean isTranscript(String value) {
-        return value.startsWith("ENST") || value.startsWith("NM_");
+        return value.startsWith("ENST") || value.startsWith("NM_")  || value.startsWith("XM_");
     }
 
     /**
