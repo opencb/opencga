@@ -34,14 +34,16 @@ public class MailUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(MailUtils.class);
 
+
+
     public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword,
-                                             String mailHost, String mailPort, String ssl, String userId) throws Exception {
+                                             String mailHost, String mailPort, String userId) throws Exception {
 
         Properties props = new Properties();
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.ssl.enable", ssl);
         props.put("mail.smtp.host", mailHost);
         props.put("mail.smtp.port", mailPort);
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.starttls.required", "true");
         props.put("mail.smtp.ssl.protocols", "TLSv1.2");

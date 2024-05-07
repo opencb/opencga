@@ -133,8 +133,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         String mailHost = this.emailConfig.getHost();
         String mailPort = this.emailConfig.getPort();
         try {
-            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort,
-                    "true", ((User) user.getResults().get(0)).getId());
+            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort, userId);
             result = userDBAdaptor.resetPassword(userId, email, newPassword);
         } catch (Exception e) {
             throw new CatalogException("Email could not be sent.", e);
