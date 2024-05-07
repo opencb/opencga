@@ -288,7 +288,7 @@ function build_opencga_enterprise() {
 # Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
 #It is do it with azure and AZ_COPY command
 function publish_reports() {
-  if [ "$PUBLISH" == "true" ];then
+  if [ "$SAVE_REPORTS" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
@@ -355,7 +355,6 @@ STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 PREPARE_BRANCHES=""
-SAVE_REPORTS=""
 DEBUG=""
 SKIP_TESTS=false
 TESTS_DIR="$PWD/tests"
@@ -363,7 +362,7 @@ LOG_FILE=""
 TASK_REFERENCE=""
 DOCKER=""
 COMMAND="build"
-PUBLISH="false"
+SAVE_REPORTS="false"
 
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
