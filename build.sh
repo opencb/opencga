@@ -4,6 +4,11 @@ set -e
 set -o pipefail
 set -o nounset
 
+###########################################
+####### Declare all functions first #######
+###########################################
+
+# Function to log messages
 function log() {
 
     if [[ "$#" -gt 0 ]]; then
@@ -17,20 +22,20 @@ function log() {
     fi
 }
 
+# Function to log error messages
 function error() {
   log "=========================="
   log "[ERROR] - " "$@"
   log "=========================="
 }
 
+# Function to calculate the branch for dependencies
 function calculate_branch() {
-
   local EXISTS=""
   if [[ -n $TASK_REFERENCE ]]; then
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
   if [[ -n $EXISTS ]]; then
-    log "Entrando en el if con $EXISTS"
     echo $TASK_REFERENCE
   else
     local TMP_DIR=$(pwd)
@@ -70,6 +75,7 @@ function calculate_branch() {
   fi
 }
 
+# Function to manage dependencies
 function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
@@ -83,12 +89,9 @@ function manage_dependency() {
    if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
-    else
-      log "The $REPO branch $BRANCH_NAME doesn't exist we use the version $REPO_VERSION from maven repo"
-    fi
+   fi
   fi
-  log "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
-  log_summary "$REPO $REPO_VERSION $BRANCH_NAME"
+  log_summary "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
   git checkout "$BRANCH_NAME"
   if [ "$COMMAND" == "test" ];then
     if [ "$SKIP_TESTS" == "true" ]; then
@@ -98,17 +101,20 @@ function manage_dependency() {
     else
       log "Testing $REPO branch $BRANCH_NAME."
       mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip || (error "Testing $REPO branch $BRANCH_NAME ERROR" && exit 1)
-      log "$REPO branch $BRANCH_NAME Test Successful!!!"
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
+      else
+        log_summary "$REPO branch $BRANCH_NAME Test Successful!!!"
+      fi
     fi
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
 
-function validateTags() {
-
+# Function to validate test tags
+function validate_tags() {
   #Split input string
   IFS=',' read -ra my_array <<< "$1"
-
   #Check the split string
   for i in "${my_array[@]}"
   do
@@ -117,27 +123,10 @@ function validateTags() {
       exit 1
     fi
   done
-
 }
 
-
-LOG_SUMMARY=""
-
-function log_summary() {
-  if [ -n "$LOG_SUMMARY" ]; then
-    LOG_SUMMARY="$LOG_SUMMARY""\n"
-  fi
-  LOG_SUMMARY="$LOG_SUMMARY""$@"
-}
-function print_log_summary() {
-  echo "=========================="
-  echo -e "$LOG_SUMMARY"
-  echo "=========================="
-}
-
-
-
-function printUsage() {
+# Function to print main usage of the script
+function print_usage() {
   echo ""
   echo "Run opencga-enterprise."
   echo ""
@@ -158,10 +147,192 @@ function printUsage() {
   echo ""
 }
 
+# Function to validate input parameters
+function validate() {
+  validate_tags "$TEST_TAG"
+  ## Validate opencga home dir
+  if [ ! -d "$OPENCGA_HOME_DIR" ]; then
+    log "ERROR OPENCGA HOME NOT FOUND!!!"
+    log "You must create in the current directory a symbolic link to the directory where you have downloaded opencga and call it opencga-home"
+    log "         ln -s /path/to/opencga $OPENCGA_HOME_DIR    "
+    print_usage
+    exit 1
+  fi
+
+  if [ "$COMMAND" == "test" ]; then
+    ## Clean tests dir
+    if [ -d "${TESTS_DIR:?}" ]; then
+      rm -rf "${TESTS_DIR:?}"
+    fi
+    mkdir -p "$TESTS_DIR"
+  fi
+
+  OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=opencga.version -q -DforceStdout)"
+  OPENCGA_CURRENT_VERSION="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+
+  log_summary "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
+  log_summary "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
+
+  ## Validate opencga version
+  if [ "$OPENCGA_DEPENDENCY_VERSION" != "$OPENCGA_CURRENT_VERSION" ]; then
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
+    OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
+    REF_TYPE=
+    REF=
+    if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
+      REF_TYPE="tag"
+      REF="$OPENCGA_EXPECTED_TAG"
+    else
+      REF_TYPE="branch"
+      REF="$OPENCGA_EXPECTED_BRANCH"
+    fi
+    log "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
+    log "Please, execute bellow command and retry:"
+    log "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
+    exit 1
+  fi
+
+  ## Validate that if the current branch is a task, the reference branch must be the same
+  local CURRENT_BRANCH="$(git branch --show-current)"
+  log_summary "CURRENT_BRANCH $CURRENT_BRANCH"
+  log_summary "TASK_REFERENCE $TASK_REFERENCE"
+
+  if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ -n $TASK_REFERENCE ]]; then
+      if [[ "$CURRENT_BRANCH" != "$TASK_REFERENCE" ]]; then
+      log "If the opencga-enterprise branch is a TASK branch, the name must be the same as the reference branch."
+      exit 1
+      fi
+    fi
+  fi
+
+  ## Validate opencga-storage-hadoop
+  mvn enforcer:enforce -q \
+      --file "${OPENCGA_HOME_DIR}/pom.xml" \
+      -Denforcer.rules=requireProfileIdsExist \
+      -P"$STORAGE_HADOOP_DEPS" \
+      -pl :opencga || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
+}
+
+# Function to download and compile java-common-libs, cellbase and biodata dependencies
+function prepare_branches() {
+  ## Only if you pass the parameter: --prepare-branch
+  if [ "$PREPARE_BRANCHES" == "true" ]; then
+    JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+    manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
+
+    BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+    manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
+
+    CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+    manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
+  fi
+}
+
+# Function to build or/and test the opencga
+function build_opencga() {
+  cd "$OPENCGA_HOME_DIR" || exit 2
+  if [ "$COMMAND" == "build" ];then
+    if [ "$SKIP_OPENCGA_BUILD" == "true" ] ; then
+      log "-- Skipping opencga build"
+    else
+      log "Compiling opencga... $(pwd)"
+      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 || (error "Opencga compilation ERROR" && exit 1)
+    fi
+  elif [ "$COMMAND" == "test" ];then
+    if [ "$SKIP_TESTS" == "true" ]; then
+      log "-- Skipping opencga tests"
+    else
+      mvn clean install surefire-report:report \
+        ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
+        -Dcheckstyle.skip \
+        || (error "Opencga tests ERROR" && exit 1)
+      cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+    fi
+  fi
+}
+
+# Function to build or/and test the opencga-enterprise
+function build_opencga_enterprise() {
+  ## Move to opencga-enterprise to build or test
+  cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+
+  if [ "$COMMAND" == "build" ];then
+    mvn clean install -DskipTests -T 2 \
+        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
+        -Dopencga.war.name=opencga \
+        || (error "Opencga enterprise compilation ERROR" && exit 1)
+  elif [ "$COMMAND" == "test" ]; then
+    if [ "$SKIP_TESTS" == "true" ]; then
+      log "-- Skipping opencga enterprise tests"
+    else
+      mvn clean install -B verify surefire-report:report \
+        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
+        ${FAIL_NEVER} \
+        || (error "Opencga enterprise tests ERROR" && exit 1)
+    fi
+    cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+  fi
+}
+
+# Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
+#It is do it with azure and AZ_COPY command
+function publish_reports() {
+  if [ "$PUBLISH" == "true" ];then
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
+    if [[ -n $TASK_REFERENCE ]]; then
+      BRANCH_FOLDER=$TASK_REFERENCE
+    else
+      BRANCH_FOLDER=$(git branch --show-current)
+    fi
+    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
+    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+  fi
+}
+
+# Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
+function publish_docker() {
+  if [ "$DOCKER" == "true" ];then
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    if [[ -n $TASK_REFERENCE ]]; then
+      TAG=$TASK_REFERENCE
+    else
+      TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+    fi
+    python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
+  fi
+}
+
+# Function to add messages to the log summary
+function log_summary() {
+  if [ -n "$LOG_SUMMARY" ]; then
+    LOG_SUMMARY="$LOG_SUMMARY""\n"
+  fi
+  LOG_SUMMARY="$LOG_SUMMARY""$@"
+}
+
+# Function to print all the log summary
+function print_log_summary() {
+  echo "=========================="
+  echo -e "$LOG_SUMMARY"
+  echo "=========================="
+}
+
 ###################################
 ####### Script starts here  #######
 ###################################
-## 1. Set default values
+## 1. Initialize variables and set default values
+
+# Initialize the global variable LOG_SUMMARY
+LOG_SUMMARY=""
+
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
@@ -176,13 +347,15 @@ LOG_FILE=""
 TASK_REFERENCE=""
 DOCKER=""
 COMMAND="build"
+PUBLISH="false"
 
+## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
   key="$1"
   value="${2:-}"
   case $key in
   -h | --help)
-    printUsage
+    print_usage
     exit 0
     ;;
   --verbose)
@@ -242,206 +415,46 @@ while [[ $# -gt 0 ]]; do
     ;;
   *) # unknown option
     echo "Unknown option $key"
-    printUsage
+    print_usage
     exit 1
     ;;
   esac
 done
 
+## 3. Ensure where is the opencga-enterprise root directory and set it to a variable
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
+## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
-  echo "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
-  echo "OPENCGA_HOME_DIR $OPENCGA_HOME_DIR"
-  echo "STORAGE_HADOOP_DEPS $STORAGE_HADOOP_DEPS"
-  echo "COMMAND $COMMAND"
-  echo "SAVE_REPORTS $SAVE_REPORTS"
-  echo "PREPARE_BRANCHES $PREPARE_BRANCHES"
-  echo "SKIP_TESTS $SKIP_TESTS"
-  exit 0
+  log_summary "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
+  log_summary "OPENCGA_HOME_DIR $OPENCGA_HOME_DIR"
+  log_summary "STORAGE_HADOOP_DEPS $STORAGE_HADOOP_DEPS"
+  log_summary "COMMAND $COMMAND"
+  log_summary "SAVE_REPORTS $SAVE_REPORTS"
+  log_summary "PREPARE_BRANCHES $PREPARE_BRANCHES"
+  log_summary "SKIP_TESTS $SKIP_TESTS"
 fi
 
-function validate() {
+## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
 
-  validateTags "$TEST_TAG"
-
-  ## Validate opencga home dir
-  if [ ! -d "$OPENCGA_HOME_DIR" ]; then
-    log "ERROR OPENCGA HOME NOT FOUND!!!"
-    log "You must create in the current directory a symbolic link to the directory where you have downloaded opencga and call it opencga-home"
-    log "         ln -s /path/to/opencga $OPENCGA_HOME_DIR    "
-    printUsage
-    exit 1
-  fi
-
-  if [ "$COMMAND" == "test" ]; then
-    ## Clean tests dir
-    if [ -d "${TESTS_DIR:?}" ]; then
-      rm -rf "${TESTS_DIR:?}"
-    fi
-    mkdir -p "$TESTS_DIR"
-  fi
-
-  OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=opencga.version -q -DforceStdout)"
-  OPENCGA_CURRENT_VERSION="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-
-  log "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
-  log "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
-
-  ## Validate opencga version
-  if [ "$OPENCGA_DEPENDENCY_VERSION" != "$OPENCGA_CURRENT_VERSION" ]; then
-    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    OPENCGA_EXPECTED_BRANCH="$(.github/workflows/scripts/opencga_branch.sh)"
-    OPENCGA_EXPECTED_TAG="$(.github/workflows/scripts/opencga_branch.sh true)"
-
-    REF_TYPE=
-    REF=
-    if git -C "$OPENCGA_HOME_DIR" tag --list  | grep "^${OPENCGA_EXPECTED_TAG}$" >/dev/null ; then
-      REF_TYPE="tag"
-      REF="$OPENCGA_EXPECTED_TAG"
-    else
-      REF_TYPE="branch"
-      REF="$OPENCGA_EXPECTED_BRANCH"
-    fi
-    log "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
-    log "Please, execute bellow command and retry:"
-    log "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
-    exit 1
-  fi
-
-  local CURRENT_BRANCH="$(git branch --show-current)"
-  log "CURRENT_BRANCH $CURRENT_BRANCH"
-  log "TASK_REFERENCE $TASK_REFERENCE"
-
-  if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
-    if [[ -n $TASK_REFERENCE ]]; then
-      if [[ "$CURRENT_BRANCH" != "$TASK_REFERENCE" ]]; then
-      log "If the opencga-enterprise branch is a TASK branch, the name must be the same as the reference branch."
-      exit 1
-      fi
-    fi
-  fi
-
-  ## Validate opencga-storage-hadoop
-  mvn enforcer:enforce -q \
-      --file "${OPENCGA_HOME_DIR}/pom.xml" \
-      -Denforcer.rules=requireProfileIdsExist \
-      -P"$STORAGE_HADOOP_DEPS" \
-      -pl :opencga || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
-}
-
-function prepareBranches() {
-  ## Only if you pass the parameter: --prepare-branch
-  if [ "$PREPARE_BRANCHES" == "true" ]; then
-    JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
-    manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
-
-    BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
-    manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
-
-    CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
-    manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
-  fi
-}
-
-function build_opencb_opencga() {
-  cd "$OPENCGA_HOME_DIR" || exit 2
-  if [ "$COMMAND" == "build" ];then
-    if [ "$SKIP_OPENCGA_BUILD" == "true" ] ; then
-      log "-- Skipping opencga build"
-    else
-      log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 || (error "Opencga compilation ERROR" && exit 1)
-    fi
-  elif [ "$COMMAND" == "test" ];then
-    if [ "$SKIP_TESTS" == "true" ]; then
-      log "-- Skipping opencga tests"
-    else
-      mvn clean install surefire-report:report \
-        ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
-        -Dcheckstyle.skip \
-        || (error "Opencga tests ERROR" && exit 1)
-      cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
-    fi
-  fi
-}
-
-function build_opencga_enterprise() {
-  ## Move to opencga-enterprise to build or test
-  cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-
-  if [ "$COMMAND" == "build" ];then
-    mvn clean install -DskipTests -T 2 \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        -Dopencga.war.name=opencga \
-        || (error "Opencga enterprise compilation ERROR" && exit 1)
-  elif [ "$COMMAND" == "test" ]; then
-    if [ "$SKIP_TESTS" == "true" ]; then
-      log "-- Skipping opencga enterprise tests"
-    else
-      mvn clean install -B verify surefire-report:report \
-        -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        ${FAIL_NEVER} \
-        || (error "Opencga enterprise tests ERROR" && exit 1)
-    fi
-    cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
-  fi
-}
-
-function publish() {
-  if [ "$SAVE_REPORTS" == "true" ];then
-    ## Move to opencga-enterprise to build or test
-    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
-    export AZCOPY_AUTO_LOGIN_TYPE="SPN"
-    export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
-    export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
-    azcopy login --service-principal
-    if [[ -n $TASK_REFERENCE ]]; then
-      BRANCH_FOLDER=$TASK_REFERENCE
-    else
-      BRANCH_FOLDER=$(git branch --show-current)
-    fi
-    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
-    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
-  fi
-}
-
-function publish_docker() {
-  if [ "$DOCKER" == "true" ];then
-    cd "$OPENCGA_HOME_DIR" || exit 2
-    TAG=""
-    if [[ -n $TASK_REFERENCE ]]; then
-    	TAG=$TASK_REFERENCE
-    else
-      TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-    fi
-    python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "$TAG"
-    ## Move to opencga-enterprise to build or test
-    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    if [[ -n $TASK_REFERENCE ]]; then
-      TAG=$TASK_REFERENCE
-    else
-      TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
-    fi
-    python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
-  fi
-}
-
+# Validate input parameters
 validate
 
-prepareBranches
+# Prepare branches if needed
+prepare_branches
 
-build_opencb_opencga
+# Build opencb-opencga
+build_opencga
 
+# Build opencga-enterprise
 build_opencga_enterprise
 
-publish
+# Publish test reports
+publish_reports
 
+# Publish Docker images
 publish_docker
 
+# Print log summary
 print_log_summary
