@@ -93,19 +93,21 @@ function manage_dependency() {
   fi
   log_summary "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
   git checkout "$BRANCH_NAME"
-  if [ "$COMMAND" == "test" ];then
-    if [ "$SKIP_TESTS" == "true" ]; then
-      log "Skipping test compiling $REPO branch $BRANCH_NAME."
-      mvn clean install -T 2 -DskipTests || (error "The $REPO branch $BRANCH_NAME compilation process has failed!"; exit 1)
-      log "$REPO Compilation Successful!!!"
+  if [ "$COMMAND" == "build" ];then
+    log "Building $REPO branch $BRANCH_NAME."
+    mvn clean install -T 2 -DskipTests
+    if [[ "$?" -ne 0 ]] ; then
+      log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
-      log "Testing $REPO branch $BRANCH_NAME."
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip || (error "Testing $REPO branch $BRANCH_NAME ERROR" && exit 1)
-      if [[ "$?" -ne 0 ]] ; then
-        log_summary "[ERROR] $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
-      else
-        log_summary "$REPO branch $BRANCH_NAME Test Successful!!!"
-      fi
+      log_summary "$COMMAND $REPO branch $BRANCH_NAME Test Successful!!!"
+    fi
+  elif [ "$COMMAND" == "test" ]; then
+    log "Testing $REPO branch $BRANCH_NAME."
+    mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
+    if [[ "$?" -ne 0 ]] ; then
+      log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
+    else
+      log_summary "$COMMAND $REPO branch $BRANCH_NAME Test Successful!!!"
     fi
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
