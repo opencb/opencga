@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation.converters;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.HashSet;
 import java.util.List;
@@ -56,12 +57,14 @@ public class VariantAnnotationModelUtils {
             }
         }
 
+        List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
+
         if (CollectionUtils.isNotEmpty(variantAnnotation.getHgvs())) {
             xrefs.addAll(variantAnnotation.getHgvs());
 
             // TODO Remove this code when CellBase 6.4.0 returns the expected HGVS
             for (String hgvs: variantAnnotation.getHgvs()) {
-                if (hgvs.startsWith("ENST") || hgvs.startsWith("NM_")) {
+                if (VariantQueryUtils.isTranscript(hgvs)) {
                     // 1. Remove the content between parentheses, e.g. ENST00000680783.1(ENSG00000135744):c.776T>C
                     if (hgvs.contains("(")) {
                         Matcher matcher = HGVS_PATTERN.matcher(hgvs);
@@ -74,19 +77,24 @@ public class VariantAnnotationModelUtils {
                     }
 
                     // 2. Add the HGVS with the Ensembl and gene name, e.g. ENSG00000135744:c.776T>C, AGT:c.776T>C
-                    for (ConsequenceType conseqType : variantAnnotation.getConsequenceTypes()) {
-                        if (conseqType != null && conseqType.getHgvs().contains(hgvs)) {
-                            String[] fields = hgvs.split(":");
-                            xrefs.add(conseqType.getGeneId() + ":" + fields[1]);
-                            xrefs.add(conseqType.getGeneName() + ":" + fields[1]);
-                            break;
+                    if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+                        for (ConsequenceType conseqType : consequenceTypes) {
+                            if (conseqType != null && conseqType.getHgvs() != null && conseqType.getHgvs().contains(hgvs)) {
+                                String[] fields = hgvs.split(":", 2);
+                                if (conseqType.getGeneId() != null) {
+                                    xrefs.add(conseqType.getGeneId() + ":" + fields[1]);
+                                }
+                                if (conseqType.getGeneName() != null) {
+                                    xrefs.add(conseqType.getGeneName() + ":" + fields[1]);
+                                }
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
 
-        List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
         if (CollectionUtils.isNotEmpty(consequenceTypes)) {
             for (ConsequenceType conseqType : consequenceTypes) {
                 xrefs.add(conseqType.getGeneName());

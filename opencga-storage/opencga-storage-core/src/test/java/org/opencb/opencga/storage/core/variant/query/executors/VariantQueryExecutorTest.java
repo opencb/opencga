@@ -139,6 +139,12 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 with("Cosmic", EvidenceEntry::getId, is("COSV60260399"))))));
         matchers.put("ENST00000341832.11(ENSG00000248333):c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
                  is("ENST00000341832.11(ENSG00000248333):c.356-1170A>G")))));
+        matchers.put("ENST00000341832.11:c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
+                // The variant annotation may not have the "alternate" hgvs
+                is("ENST00000341832.11(ENSG00000248333):c.356-1170A>G")))));
+        matchers.put("ENSG00000248333:c.356-1170A>G", hasAnnotation(with("HGVS", VariantAnnotation::getHgvs, hasItem(
+                // The variant annotation may not have the "alternate" hgvs
+                is("ENST00000341832.11(ENSG00000248333):c.356-1170A>G")))));
         matchers.put("VSP_039324", hasAnnotation(
                 with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
                         hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
