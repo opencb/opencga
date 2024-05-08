@@ -50,7 +50,7 @@ public abstract class AbstractServerConfiguration {
 
     @Deprecated
     protected void setLogFile(Object o) {
-        Configuration.reportUnusedField("configuration.yml#server.rest.maxLimit", o);
+        Configuration.reportUnusedField("configuration.yml#server.[rest|grpc].logFile", o);
     }
 
 }
