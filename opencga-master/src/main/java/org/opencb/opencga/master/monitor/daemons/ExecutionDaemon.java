@@ -363,6 +363,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Attempting to abort execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            try {
+                if (batchExecutor.kill(job.getId())) {
+                    return abortJob(job, "Job was already in execution. Job killed by the user.");
+                } else {
+                    return 0;
+                }
+            } catch (Exception e) {
+                return abortJob(job, "Error trying to kill the job.", e);
+            }
+        }
+
         switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
                 ExecutionResult result = readExecutionResult(job);
@@ -428,6 +442,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Attempting to avoid execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            try {
+                if (batchExecutor.kill(job.getId())) {
+                    return abortJob(job, "Job was already queued. Job killed by the user.");
+                } else {
+                    return 0;
+                }
+            } catch (Exception e) {
+                return abortJob(job, "Error trying to kill the job.", e);
+            }
+        }
+
         switch (status.getId()) {
             case Enums.ExecutionStatus.QUEUED:
                 // Job is still queued
@@ -490,6 +518,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         if (StringUtils.isEmpty(job.getTool().getId())) {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
+        }
+
+        if (killSignalSent(job)) {
+            logger.info("Kill signal request received for job '{} (status={})'. Job did not start the execution.", job.getId(),
+                    job.getInternal().getStatus().getId());
+            return abortJob(job, "Job killed by the user.");
         }
 
         if (!canBeQueued(organizationId, job)) {
@@ -604,6 +638,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private boolean killSignalSent(Job job) {
+        return job.getInternal().isKillJobRequested();
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
@@ -1137,7 +1175,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
-        JobInternal jobInternal = new JobInternal(null, null, null, job.getInternal().getWebhook().clone(), null);
+        JobInternal jobInternal = new JobInternal(null, null, null, job.getInternal().getWebhook().clone(), null, false);
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
                 .setInternal(jobInternal);
 

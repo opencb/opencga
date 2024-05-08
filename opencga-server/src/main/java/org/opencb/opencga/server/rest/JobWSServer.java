@@ -107,6 +107,16 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{job}/kill")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Send a signal to kill a pending or running job", response = Job.class)
+    public Response kill(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+        return run(() -> catalogManager.getJobManager().kill(study, jobId, token));
+    }
+
     @GET
     @Path("/{jobs}/info")
     @ApiOperation(value = "Get job information", response = Job.class)

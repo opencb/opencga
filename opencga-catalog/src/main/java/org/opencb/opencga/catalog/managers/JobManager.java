@@ -386,6 +386,55 @@ public class JobManager extends ResourceManager<Job> {
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
+    public OpenCGAResult<Job> kill(String studyStr, String jobId, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobId", jobId)
+                .append("token", token);
+        String jobUuid = "";
+        try {
+            QueryOptions options = keepFieldInQueryOptions(INCLUDE_JOB_IDS, JobDBAdaptor.QueryParams.USER_ID.key());
+            Job job = internalGet(organizationId, study.getUid(), jobId, options, userId).first();
+            jobId = job.getId();
+            jobUuid = job.getUuid();
+
+            try {
+                if (!job.getUserId().equals(userId)) {
+                    // Check if the user is a study administrator
+                    authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+                }
+            } catch (CatalogException e) {
+                throw CatalogAuthorizationException.deny(userId, "job", jobId, CatalogAuthorizationException.ErrorCode.KILL_JOB, e);
+            }
+
+            if (!job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.PENDING)
+                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
+                    && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
+                throw new CatalogException("Cannot kill job in status " + job.getInternal().getStatus().getId());
+            }
+
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_KILL_JOB_REQUESTED.key(), true);
+            OpenCGAResult<Job> update = catalogDBAdaptorFactory.getCatalogJobDBAdaptor(organizationId).update(job.getUid(), params,
+                    QueryOptions.empty());
+
+            auditManager.audit(organizationId, userId, Enums.Action.KILL_JOB, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return update;
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, Enums.Action.KILL_JOB, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                            new Error(0, "kill job", e.getMessage())));
+            throw e;
+        }
+    }
+
+
     public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
         // Look for input files
         String fileParamSuffix = "file";
