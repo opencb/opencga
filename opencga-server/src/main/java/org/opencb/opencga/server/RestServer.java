@@ -48,6 +48,22 @@ public class RestServer extends AbstractStorageServer {
 
     @Override
     public void start() throws Exception {
+        initServer();
+
+        Path war = getOpencgaWar();
+
+        initWebApp(war);
+
+        server.start();
+        logger.info("REST server started, listening on {}", server.getURI());
+
+        initHooks();
+
+//        // AdminWSServer server needs a reference to this class to cll to .stop()
+//        AdminRestWebService.setServer(this);
+    }
+
+    protected Server initServer() {
         server = new Server();
 
         HttpConfiguration httpConfig = getHttpConfiguration();
@@ -56,8 +72,10 @@ public class RestServer extends AbstractStorageServer {
         httpConnector.setPort(port);
 
         server.addConnector(httpConnector);
+        return server;
+    }
 
-        WebAppContext webapp = new WebAppContext();
+    protected Path getOpencgaWar() throws Exception {
         Optional<Path> warPath;
         try (Stream<Path> stream = Files.list(opencgaHome)) {
             warPath = stream
@@ -70,32 +88,33 @@ public class RestServer extends AbstractStorageServer {
         if (!warPath.isPresent()) {
             throw new Exception("No war file found at " + opencgaHome.toString());
         }
+        return warPath.get();
+    }
 
-        String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
+    protected WebAppContext initWebApp(Path war) throws Exception {
+        String opencgaVersion = war.toFile().getName().replace(".war", "");
+        WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/" + opencgaVersion);
-        webapp.setWar(warPath.get().toString());
+        webapp.setWar(war.toString());
         webapp.setClassLoader(this.getClass().getClassLoader());
         webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
         webapp.getServletContext().setAttribute("OPENCGA_HOME", opencgaHome.toFile().toString());
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
         server.setHandler(webapp);
+        return webapp;
+    }
 
-        server.start();
-        logger.info("REST server started, listening on {}", port);
-
+    protected void initHooks() {
         // A hook is added in case the JVM is shutting down
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    if (server.isRunning()) {
-                        stopJettyServer();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (server.isRunning()) {
+                    stopJettyServer();
                 }
+            } catch (Exception e) {
+                logger.error("Error stopping Jetty server", e);
             }
-        });
+        }));
 
         // A separated thread is launched to shut down the server
         new Thread(() -> {
@@ -108,15 +127,12 @@ public class RestServer extends AbstractStorageServer {
                     Thread.sleep(500);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error stopping Jetty server", e);
             }
         }).start();
-
-//        // AdminWSServer server needs a reference to this class to cll to .stop()
-//        AdminRestWebService.setServer(this);
     }
 
-    private HttpConfiguration getHttpConfiguration() {
+    protected HttpConfiguration getHttpConfiguration() {
         HttpConfiguration httpConfig = new HttpConfiguration();
         RestServerConfiguration.HttpConfiguration restHttpConf = configuration.getServer().getRest().getHttpConfiguration();
         if (restHttpConf.getOutputBufferSize() > 0) {
