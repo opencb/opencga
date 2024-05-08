@@ -66,6 +66,8 @@ public class Configuration {
 
     private static Logger logger;
 
+    private static final Set<String> reportedFields = new HashSet<>();
+
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
 
     static {
@@ -200,6 +202,14 @@ public class Configuration {
         }
     }
 
+    public static void reportUnusedField(String field, Object value) {
+        if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+            if (reportedFields.add(field)) {
+                logger.warn("Ignored configuration option '{}' with value '{}'. The option was deprecated and removed.", field, value);
+            }
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Configuration{");
@@ -246,9 +256,7 @@ public class Configuration {
 
     @Deprecated
     public Configuration setLogFile(String logFile) {
-        if (logFile != null) {
-            logger.warn("Deprecated option 'configuration.yml#logFile'");
-        }
+        reportUnusedField("configuration.yml#logFile", logFile);
         return this;
     }
 

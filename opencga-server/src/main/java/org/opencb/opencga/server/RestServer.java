@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.server;
 
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.opencb.opencga.core.config.RestServerConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,7 +48,14 @@ public class RestServer extends AbstractStorageServer {
 
     @Override
     public void start() throws Exception {
-        server = new Server(port);
+        server = new Server();
+
+        HttpConfiguration httpConfig = getHttpConfiguration();
+
+        ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+        httpConnector.setPort(port);
+
+        server.addConnector(httpConnector);
 
         WebAppContext webapp = new WebAppContext();
         Optional<Path> warPath;
@@ -56,7 +67,7 @@ public class RestServer extends AbstractStorageServer {
             throw new Exception("Error accessing OpenCGA Home: " + opencgaHome.toString(), e);
         }
         // Check is a war file has been found in opencgaHome
-        if (warPath == null || !warPath.isPresent()) {
+        if (!warPath.isPresent()) {
             throw new Exception("No war file found at " + opencgaHome.toString());
         }
 
@@ -103,6 +114,27 @@ public class RestServer extends AbstractStorageServer {
 
 //        // AdminWSServer server needs a reference to this class to cll to .stop()
 //        AdminRestWebService.setServer(this);
+    }
+
+    private HttpConfiguration getHttpConfiguration() {
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        RestServerConfiguration.HttpConfiguration restHttpConf = configuration.getServer().getRest().getHttpConfiguration();
+        if (restHttpConf.getOutputBufferSize() > 0) {
+            httpConfig.setOutputBufferSize(restHttpConf.getOutputBufferSize());
+        }
+        if (restHttpConf.getOutputAggregationSize() > 0) {
+            httpConfig.setOutputAggregationSize(restHttpConf.getOutputAggregationSize());
+        }
+        if (restHttpConf.getRequestHeaderSize() > 0) {
+            httpConfig.setRequestHeaderSize(restHttpConf.getRequestHeaderSize());
+        }
+        if (restHttpConf.getResponseHeaderSize() > 0) {
+            httpConfig.setResponseHeaderSize(restHttpConf.getResponseHeaderSize());
+        }
+        if (restHttpConf.getHeaderCacheSize() > 0) {
+            httpConfig.setHeaderCacheSize(restHttpConf.getHeaderCacheSize());
+        }
+        return httpConfig;
     }
 
     @Override
