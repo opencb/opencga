@@ -868,6 +868,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return false;
         }
 
+        if (StringUtils.isNotEmpty(job.getScheduledStartTime())) {
+            Date date = TimeUtils.toDate(job.getScheduledStartTime());
+            if (date.after(new Date())) {
+                logger.debug("Job '{}' can't be queued yet. It is scheduled to start at '{}'.", job.getId(), job.getScheduledStartTime());
+                return false;
+            }
+        }
+
         Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
         if (maxJobs == null) {
             // No limit for this tool

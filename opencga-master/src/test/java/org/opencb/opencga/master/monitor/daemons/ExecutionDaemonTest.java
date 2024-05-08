@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclParams;
@@ -498,6 +499,29 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(16, files.getNumMatches());
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), ownerToken);
         assertEquals(16, files.getNumMatches());
+    }
+
+    @Test
+    public void scheduledJobTest() throws CatalogException, InterruptedException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        Date date = new Date();
+        // Create a date object with the current time + 2 seconds
+        date.setTime(date.getTime() + 2000);
+        String scheduledTime = TimeUtils.getTime(date);
+        System.out.println("Scheduled time: " + scheduledTime);
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, null, null, null,
+                null, null, scheduledTime, null, ownerToken).first();
+
+        daemon.checkJobs();
+        checkStatus(getJob(job.getId()), Enums.ExecutionStatus.PENDING);
+        daemon.checkJobs();
+        checkStatus(getJob(job.getId()), Enums.ExecutionStatus.PENDING);
+
+        // Sleep for 2 seconds and check again
+        Thread.sleep(2000);
+        daemon.checkJobs();
+        checkStatus(getJob(job.getId()), Enums.ExecutionStatus.QUEUED);
     }
 
     @Test
