@@ -16,6 +16,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface OrganizationDBAdaptor extends Iterable<Organization> {
 
+    String IS_ORGANIZATION_ADMIN_OPTION = "isOrgAdmin";
+
     enum QueryParams implements QueryParam {
         UID("uid", LONG, ""),
         ID("id", STRING, ""),
@@ -27,9 +29,12 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         INTERNAL_MIGRATION_EXECUTIONS("internal.migrationExecutions", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
         CONFIGURATION_AUTHENTICATION_ORIGINS("configuration.authenticationOrigins", OBJECT, ""),
+        CONFIGURATION_AUTHENTICATION_ORIGINS_OPTIONS("configuration.authenticationOrigins.options", OBJECT, ""),
+        CONFIGURATION_TOKEN("configuration.token", OBJECT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         PROJECTS("projects", OBJECT, ""),
+        NOTES("notes", OBJECT, ""),
         ATTRIBUTES("attributes", OBJECT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
@@ -92,9 +97,9 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
 //
     OpenCGAResult<Organization> insert(Organization organization, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-//
-//    OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
-//
+
+    OpenCGAResult<Organization> get(String userId, QueryOptions options) throws CatalogDBException;
+
     OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException;
 //
 //    OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException;

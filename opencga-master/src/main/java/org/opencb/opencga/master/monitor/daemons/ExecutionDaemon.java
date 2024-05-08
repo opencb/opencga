@@ -638,9 +638,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             authorizationManager.checkIsOpencgaAdministrator(jwtPayload, "run tools with scope '" + Tool.Scope.GLOBAL + "'");
         } else if (tool.scope() == Tool.Scope.ORGANIZATION) {
             // Only organization owners or administrators can run tools with scope organization
-            authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, user);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, user);
         } else {
-            if (authorizationManager.isOrganizationOwnerOrAdmin(organizationId, user)) {
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, user)) {
                 // Organization administrators can run tools with scope study or project
                 return;
             }

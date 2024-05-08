@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -65,7 +66,7 @@ public class OrganizationMigration extends MigrationTool {
 
     private MigrationStatus checkAndInit() throws CatalogException {
         this.oldDatabase = configuration.getDatabasePrefix() + "_catalog";
-        this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        this.mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory());
         this.oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
 
         MongoCollection<Document> userCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
@@ -376,17 +377,22 @@ public class OrganizationMigration extends MigrationTool {
                 if (configuration.getAuthentication() != null && CollectionUtils.isNotEmpty(configuration.getAuthentication().getAuthenticationOrigins())) {
                     for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                         if (authenticationOrigin.getType().equals(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                                && authenticationOrigin.getId().equals(CatalogAuthenticationManager.INTERNAL)) {
+                                && "internal".equals(authenticationOrigin.getId())) {
                             continue;
                         }
-                        authenticationOrigin.setAlgorithm(algorithm);
-                        authenticationOrigin.setSecretKey(secretKey);
-                        authenticationOrigin.setExpiration(3600);
-                        authOrigins.add(convertToDocument(authenticationOrigin));
+                        Document authOriginDoc = convertToDocument(authenticationOrigin);
+                        authOriginDoc.put("algorithm", algorithm);
+                        authOriginDoc.put("secretKey", secretKey);
+                        authOriginDoc.put("expiration", 3600L);
+                        authOrigins.add(authOriginDoc);
                     }
                 }
             }
-            authOrigins.add(convertToDocument(CatalogAuthenticationManager.createRandomInternalAuthenticationOrigin()));
+            Document authOriginDoc = convertToDocument(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin());
+            authOriginDoc.put("id", "internal");
+            authOriginDoc.put("algorithm", algorithm);
+            authOriginDoc.put("secretKey", secretKey);
+            authOriginDoc.put("expiration", 3600L);
 
             // Set organization counter, owner and authOrigins
             orgCol.updateOne(Filters.eq("id", organizationId), Updates.combine(

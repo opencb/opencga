@@ -24,10 +24,11 @@ import java.util.Map;
 
 public abstract class InferredSexAnalysisExecutor extends OpenCgaToolExecutor {
 
-    private String studyId;
-    private String individualId;
+    protected String studyId;
+    protected String individualId;
+    protected String sampleId;
 
-    private InferredSexReport inferredSexReport;
+    protected InferredSexReport inferredSexReport;
 
     public InferredSexAnalysisExecutor() {
     }
@@ -47,6 +48,15 @@ public abstract class InferredSexAnalysisExecutor extends OpenCgaToolExecutor {
 
     public InferredSexAnalysisExecutor setIndividualId(String individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public InferredSexAnalysisExecutor setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
