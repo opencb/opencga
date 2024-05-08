@@ -474,6 +474,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 //
 //    }
 
+    @Deprecated
     void checkAndUpdateCalculatedCohorts(StudyMetadata studyMetadata, URI uri, boolean updateStats)
             throws IOException, StorageEngineException {
         Set<String> cohortNames = readCohortsFromStatsFile(uri);
