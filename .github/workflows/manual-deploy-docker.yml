@@ -11,10 +11,15 @@ on:
         type: string
         required: true
       hadoop:
-        type: string
+        type: choice
         description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
-        default: "hdp3.1"
+        default: hdp3.1
+        options:
+          - hdp3.1
+          - hdi5.1
+          - emr6.1
+          - emr6.13
 
 jobs:
   build:
