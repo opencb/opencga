@@ -43,7 +43,7 @@
     </modules>
 
     <properties>
-        <pyopencga.version></pyopencga.version>
+        <pyopencga.version>2.12.4.post2</pyopencga.version>
         <opencgar.version>2.12.4.1</opencgar.version>
         <cellbase.version>5.8.3</cellbase.version>
         <biodata.version>2.12.2</biodata.version>
