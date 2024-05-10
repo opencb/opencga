@@ -52,8 +52,8 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                     // Sort buffer
                     if (buffer.size() > 1) {
                         buffer.sort((o1, o2) -> {
-                            Variant v1 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o1.getSecond().getRow());
-                            Variant v2 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o2.getSecond().getRow());
+                            Variant v1 = VariantPhoenixKeyFactory.extractVariantFromResult(o1.getSecond());
+                            Variant v2 = VariantPhoenixKeyFactory.extractVariantFromResult(o2.getSecond());
                             return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
                         });
                     }

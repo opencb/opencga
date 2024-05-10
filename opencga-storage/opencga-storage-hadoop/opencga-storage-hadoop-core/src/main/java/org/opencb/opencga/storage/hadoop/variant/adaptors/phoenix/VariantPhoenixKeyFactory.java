@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 import htsjdk.variant.variantcontext.Allele;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.phoenix.query.QueryConstants;
@@ -28,6 +30,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,12 +46,15 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
  */
 public class VariantPhoenixKeyFactory {
 
+    public static final Integer UINT_SIZE = PUnsignedInt.INSTANCE.getByteSize();
     protected static final String SV_ALTERNATE_SEPARATOR = "|";
     protected static final String SV_ALTERNATE_SEPARATOR_SPLIT = "\\" + SV_ALTERNATE_SEPARATOR;
 
     public static final Comparator<String> HBASE_KEY_CHROMOSOME_COMPARATOR = (c1, c2) -> Bytes.compareTo(
             VariantPhoenixKeyFactory.generateSimpleVariantRowKey(c1, 1, "N", "N"),
             VariantPhoenixKeyFactory.generateSimpleVariantRowKey(c2, 1, "N", "N"));
+    public static final String HASH_PREFIX = "#";
+    public static final byte[] HASH_PREFIX_BYTES = Bytes.toBytes(HASH_PREFIX);
 
     public static byte[] generateVariantRowKey(String chrom, int position) {
         return generateSimpleVariantRowKey(chrom, position, "", "");
@@ -97,6 +103,12 @@ public class VariantPhoenixKeyFactory {
         return generateVariantRowKey(chrom, position, null, ref, alt, null);
     }
 
+    public static boolean mightHashAlleles(Variant variant) {
+        String alt = buildSymbolicAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv());
+        int size = getSize(variant.getChromosome(), variant.getReference(), variant.getAlternate());
+        return size > HConstants.MAX_ROW_LENGTH;
+    }
+
     /**
      * Generates a Row key based on Chromosome, start, end (optional), ref and alt. <br>
      * <ul>
@@ -114,16 +126,16 @@ public class VariantPhoenixKeyFactory {
      */
     public static byte[] generateVariantRowKey(String chrom, int start, Integer end, String ref, String alt, StructuralVariation sv) {
         chrom = Region.normalizeChromosome(chrom);
-        int size = PVarchar.INSTANCE.estimateByteSizeFromLength(chrom.length())
-                + QueryConstants.SEPARATOR_BYTE_ARRAY.length
-                + PUnsignedInt.INSTANCE.getByteSize()
-                + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
         alt = buildSymbolicAlternate(ref, alt, end, sv);
-        if (!alt.isEmpty()) {
-            size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
-                    + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
-        }
+        int size = getSize(chrom, ref, alt);
 
+        if (size > HConstants.MAX_ROW_LENGTH) {
+            // This is a problem. The row key is too long.
+            // Use hashCode for reference/alternate/SV fields
+            ref = hashAllele(ref);
+            alt = hashAllele(alt);
+            size = getSize(chrom, ref, alt);
+        }
         byte[] rk = new byte[size];
 
         int offset = 0;
@@ -141,6 +153,26 @@ public class VariantPhoenixKeyFactory {
 
 //        assert offset == size;
         return rk;
+    }
+
+    private static int getSize(String chrom, String ref, String alt) {
+        int size = PVarchar.INSTANCE.estimateByteSizeFromLength(chrom.length())
+                + QueryConstants.SEPARATOR_BYTE_ARRAY.length
+                + PUnsignedInt.INSTANCE.getByteSize()
+                + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
+        if (!alt.isEmpty()) {
+            size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
+                    + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
+        }
+        return size;
+    }
+
+    public static String hashAllele(String ref) {
+        return HASH_PREFIX + Integer.toString(ref.hashCode());
+    }
+
+    public static String buildAlleles(Variant v) {
+        return v.getReference() + SV_ALTERNATE_SEPARATOR + buildSymbolicAlternate(v);
     }
 
     public static String buildSymbolicAlternate(Variant v) {
@@ -215,6 +247,24 @@ public class VariantPhoenixKeyFactory {
         return (String) PVarchar.INSTANCE.toObject(variantRowKey, offset, chrPosSeparator, PVarchar.INSTANCE);
     }
 
+    public static Variant extractVariantFromResult(Result result) {
+        byte[] variantRowKey = result.getRow();
+
+        int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0);
+        int referenceOffset = chrPosSeparator + 1 + UINT_SIZE;
+        if (Bytes.equals(variantRowKey, referenceOffset, HASH_PREFIX_BYTES.length, HASH_PREFIX_BYTES, 0, HASH_PREFIX_BYTES.length)) {
+            // The reference and alternate are hashed.
+            // The type and alleles are stored in the result
+            byte[] type = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES,
+                    VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+            byte[] alleles = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES,
+                    VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+            return extractVariantFromVariantRowKey(variantRowKey, type, alleles);
+        } else {
+            return extractVariantFromVariantRowKey(variantRowKey, null, null);
+        }
+    }
+
     public static Variant extractVariantFromResultSet(ResultSet resultSet) {
         String chromosome = null;
         Integer start = null;
@@ -226,9 +276,10 @@ public class VariantPhoenixKeyFactory {
             reference = resultSet.getString(VariantPhoenixSchema.VariantColumn.REFERENCE.column());
             alternate = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALTERNATE.column());
 
+            String alleles = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALLELES.column());
             String type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
 
-            return buildVariant(chromosome, start, reference, alternate, type);
+            return buildVariant(chromosome, start, reference, alternate, type, alleles);
         } catch (RuntimeException | SQLException e) {
             throw new IllegalStateException("Fail to parse variant: " + chromosome
                     + ':' + start
@@ -237,13 +288,12 @@ public class VariantPhoenixKeyFactory {
         }
     }
 
-    public static Variant extractVariantFromVariantRowKey(byte[] variantRowKey) {
+    public static Variant extractVariantFromVariantRowKey(byte[] variantRowKey, byte[] type, byte[] alleles) {
         int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0);
         String chromosome = (String) PVarchar.INSTANCE.toObject(variantRowKey, 0, chrPosSeparator, PVarchar.INSTANCE);
 
-        Integer intSize = PUnsignedInt.INSTANCE.getByteSize();
-        int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
-        int referenceOffset = chrPosSeparator + 1 + intSize;
+        int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, UINT_SIZE, PUnsignedInt.INSTANCE);
+        int referenceOffset = chrPosSeparator + 1 + UINT_SIZE;
         int refAltSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, referenceOffset);
         String reference;
         String alternate;
@@ -257,8 +307,16 @@ public class VariantPhoenixKeyFactory {
             alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1,
                     variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
         }
+        String typeStr = null;
+        String alleleStr = null;
+        if (type != null) {
+            typeStr = (String) PVarchar.INSTANCE.toObject(type);
+        }
+        if (alleles != null) {
+            alleleStr = (String) PVarchar.INSTANCE.toObject(alleles);
+        }
         try {
-            return buildVariant(chromosome, position, reference, alternate, null);
+            return buildVariant(chromosome, position, reference, alternate, typeStr, alleleStr);
         } catch (RuntimeException e) {
             throw new IllegalStateException("Fail to parse variant: " + chromosome
                     + ':' + position
@@ -268,7 +326,17 @@ public class VariantPhoenixKeyFactory {
         }
     }
 
-    public static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
+    public static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type, String alleles) {
+        if ((reference != null && reference.startsWith(HASH_PREFIX)) || (alternate != null && alternate.startsWith(HASH_PREFIX))) {
+            if (StringUtils.isNotEmpty(alleles)) {
+                int i1 = alleles.indexOf(SV_ALTERNATE_SEPARATOR);
+                reference = alleles.substring(0, i1);
+                alternate = alleles.substring(i1 + SV_ALTERNATE_SEPARATOR.length());
+            } else {
+                throw new IllegalStateException("Reference and alternate are hashed, but alleles is empty!"
+                        + " '" + chromosome + "' '" + start + "' '" + reference + "' '" + alternate + "'");
+            }
+        }
 
         if (alternate != null && alternate.length() > 5 && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
             Integer end = null;

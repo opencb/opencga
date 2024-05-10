@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.opencb.biodata.models.core.Region;
@@ -186,9 +187,9 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             startChr = null;
             start = 0;
         } else {
-            Variant startVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(firstRow);
-            startChr = startVariant.getChromosome();
-            start = startVariant.getStart();
+            Pair<String, Integer> startLocus = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(firstRow);
+            startChr = startLocus.getFirst();
+            start = startLocus.getSecond();
         }
         String stopChr;
         Integer end;
@@ -197,9 +198,9 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             stopChr = null;
             end = Integer.MAX_VALUE;
         } else {
-            Variant stopVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(lastRow);
-            stopChr = stopVariant.getChromosome();
-            end = stopVariant.getStart();
+            Pair<String, Integer> stopLocus = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(firstRow);
+            stopChr = stopLocus.getFirst();
+            end = stopLocus.getSecond();
         }
 
         List<Region> regions = new ArrayList<>();

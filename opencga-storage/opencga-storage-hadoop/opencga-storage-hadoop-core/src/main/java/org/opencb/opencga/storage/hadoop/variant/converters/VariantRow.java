@@ -66,7 +66,7 @@ public class VariantRow {
             if (result != null) {
                 byte[] row = result.getRow();
                 Objects.requireNonNull(row, "Empty result. Missing variant rowkey.");
-                variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(row);
+                variant = VariantPhoenixKeyFactory.extractVariantFromResult(result);
             } else {
                 variant = VariantPhoenixKeyFactory.extractVariantFromResultSet(resultSet);
             }
@@ -136,6 +136,10 @@ public class VariantRow {
                         walker.fillMissing(studyId, resultSet.getInt(i));
                     } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                         walker.variantAnnotation(new BytesVariantAnnotationColumn(bytes));
+                    } else if (columnName.equals(VariantColumn.TYPE.column())) {
+                        walker.type(VariantType.valueOf(Bytes.toString(bytes)));
+                    } else if (columnName.equals(VariantColumn.ALLELES.column())) {
+                        walker.alleles(Bytes.toString(bytes));
                     }
                 }
             } catch (SQLException e) {
@@ -164,6 +168,8 @@ public class VariantRow {
                     walker.variantAnnotation(new BytesVariantAnnotationColumn(cell));
                 } else if (columnName.equals(VariantColumn.TYPE.column())) {
                     walker.type(VariantType.valueOf(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
+                } else if (columnName.equals(VariantColumn.ALLELES.column())) {
+                    walker.alleles(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 }
             }
         }
@@ -175,6 +181,9 @@ public class VariantRow {
         }
 
         protected void type(VariantType type) {
+        }
+
+        protected void alleles(String alleles) {
         }
 
         protected void study(int studyId) {
@@ -202,6 +211,7 @@ public class VariantRow {
     public class VariantRowWalkerBuilder extends VariantRowWalker {
 
         private IntConsumer studyConsumer = r -> { };
+        private Consumer<String> allelesConsumer = r -> { };
         private Consumer<FileColumn> fileConsumer = r -> { };
         private boolean hasFileConsumer = false;
         private Consumer<SampleColumn> sampleConsumer = r -> { };
@@ -227,6 +237,11 @@ public class VariantRow {
         @Override
         protected void study(int studyId) {
             studyConsumer.accept(studyId);
+        }
+
+        @Override
+        protected void alleles(String alleles) {
+            allelesConsumer.accept(alleles);
         }
 
         @Override
@@ -271,6 +286,11 @@ public class VariantRow {
 
         public VariantRowWalkerBuilder onStudy(IntConsumer consumer) {
             studyConsumer = consumer;
+            return this;
+        }
+
+        public VariantRowWalkerBuilder onAlleles(Consumer<String> consumer) {
+            allelesConsumer = consumer;
             return this;
         }
 

@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -37,6 +36,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
@@ -45,6 +45,7 @@ import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.COLUMN_FAMI
 public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
     private Logger logger = LoggerFactory.getLogger(VariantPruneManager.class);
+    public static final String ATTRIBUTE_DELETION_VARIANT = "d_variant";
     public static final String ATTRIBUTE_DELETION_STUDIES = "d_studies";
     public static final String ATTRIBUTE_DELETION_TYPE = "d_type";
     public static final byte[] ATTRIBUTE_DELETION_TYPE_FULL = Bytes.toBytes(VariantPruneReportRecord.Type.FULL.toString());
@@ -210,7 +211,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             List<Integer> emptyStudies = new ArrayList<>();
             List<Integer> studies = new ArrayList<>();
             List<Integer> studiesWithStats = new ArrayList<>();
-
+            AtomicReference<String> alleles = new AtomicReference<>();
             Variant variant = variantRow.walker()
                     .onStudy(studies::add)
                     .onCohortStats(c -> {
@@ -220,6 +221,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                             emptyStudies.add(c.getStudyId());
                         }
                     })
+                    .onAlleles(alleles::set)
                     .walk();
 
             for (Integer studyWithStats : studiesWithStats) {
@@ -253,13 +255,18 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                 // Drop variant && add to deleted variants list
                 context.getCounter(COUNTER_GROUP_NAME, "variants_deleted").increment(1);
 
-                context.write(pendingDeletionVariantsTable,
-                        new Put(value.getRow()).addColumn(COLUMN_FAMILY_BYTES, COLUMN, VALUE));
+                Put put = new Put(value.getRow())
+                        .addColumn(COLUMN_FAMILY_BYTES, COLUMN, VALUE);
+                if (alleles.get() != null) {
+                    put.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes(), Bytes.toBytes(alleles.get()));
+                }
+                context.write(pendingDeletionVariantsTable, put);
                 context.write(pendingAnnotationVariantsTable,
                         new Delete(value.getRow()));
 
                 Delete delete = new Delete(value.getRow());
                 delete.addFamily(COLUMN_FAMILY_BYTES);
+                delete.setAttribute(ATTRIBUTE_DELETION_VARIANT, Bytes.toBytes(variant.toString()));
                 delete.setAttribute(ATTRIBUTE_DELETION_TYPE, ATTRIBUTE_DELETION_TYPE_FULL);
                 delete.setAttribute(ATTRIBUTE_DELETION_STUDIES,
                         Bytes.toBytes(emptyStudies.stream()
@@ -285,12 +292,16 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
                     // This block is here to prevent accidental "full row" deletes.
                     throw new IllegalStateException("Unexpected empty delete at partial variant prune in variant " + variant);
                 }
+                delete.setAttribute(ATTRIBUTE_DELETION_VARIANT, Bytes.toBytes(variant.toString()));
                 delete.setAttribute(ATTRIBUTE_DELETION_TYPE, ATTRIBUTE_DELETION_TYPE_PARTIAL);
                 delete.setAttribute(ATTRIBUTE_DELETION_STUDIES,
                         Bytes.toBytes(emptyStudies.stream().map(Object::toString).collect(Collectors.joining(","))));
 
                 Put updateSecondaryIndexColumns = new Put(value.getRow());
-
+                if (alleles.get() != null) {
+                    updateSecondaryIndexColumns.addColumn(COLUMN_FAMILY_BYTES,
+                            VariantPhoenixSchema.VariantColumn.ALLELES.bytes(), Bytes.toBytes(alleles.get()));
+                }
                 HadoopVariantSearchIndexUtils.addNotSyncStatus(updateSecondaryIndexColumns);
 
                 context.write(variantsTable, delete);
@@ -360,8 +371,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             public synchronized void write(ImmutableBytesWritable key, Mutation mutation)
                     throws IOException {
                 if (mutation instanceof Delete && key.equals(variantsTable)) {
-                    Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(mutation.getRow());
-                    out.write(variant.toString().getBytes(StandardCharsets.UTF_8));
+                    out.write(mutation.getAttribute(ATTRIBUTE_DELETION_VARIANT));
                     out.write(SEPARATOR);
                     out.write(mutation.getAttribute(ATTRIBUTE_DELETION_TYPE));
                     out.write(SEPARATOR);

@@ -138,6 +138,8 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             List<VariantStats> stats = new LinkedList<>();
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
                 // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
                     get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
