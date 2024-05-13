@@ -22,7 +22,7 @@ on:
           - emr6.1
           - emr6.13
       release:
-        type: string
+        type: boolean
         required: false
         default: ""
 
@@ -68,10 +68,6 @@ jobs:
           fi
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: ./run.sh build --storage-hadoop ${{ inputs.hadoop }} --opencga-home ./opencga-home/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.artifact_name }}
-          path: build
       - id: get_project_version
         uses: avides/actions-project-version-check@v1.3.0
         with:
@@ -91,6 +87,3 @@ jobs:
           chmod +x ./.github/workflows/scripts/opencga_enterprise_docker_tag.sh
           tag=$(./.github/workflows/scripts/opencga_enterprise_docker_tag.sh)
           python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$tag"
-       
-
-
