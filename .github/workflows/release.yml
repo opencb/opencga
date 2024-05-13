@@ -34,6 +34,34 @@ jobs:
     with:
       artifact_name: emr-build-folder
 
+  build-hdi:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: hdi5.1
+      artifact_name: build-hdi-folder
+      release: true
+
+  deploy-hdi-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build-hdi
+    secrets: inherit
+    with:
+      artifact_name: build-hdi-folder
+
+  build-emr13:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr6.13
+      artifact_name: emr13-build-folder
+      release: true
+
+  deploy-emr13-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr13
+    secrets: inherit
+    with:
+      artifact_name: emr13-build-folder
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
