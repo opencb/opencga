@@ -127,7 +127,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                     samples.add(sampleColumn.getSampleId());
                                     sampleDataMap.add(sampleColumn);
                                 }
-                            }).walk();
+                            }).walk(variant);
                 }
             });
 
@@ -138,8 +138,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             List<VariantStats> stats = new LinkedList<>();
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
-                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
-                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+
                 // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
                     get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
@@ -178,7 +177,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                             ImmutableBytesWritable b = column.toBytesWritable();
                             variant.setAnnotation(new HBaseToVariantAnnotationConverter().convert(b.get(), b.getOffset(), b.getLength()));
                         })
-                        .walk();
+                        .walk(variant);
             });
 
             // Convert to VariantSampleData
@@ -194,13 +193,14 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                     new ArrayList<>(fileIdsFromSampleIds)))
                     .build());
 
-            StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variant, studyId);
+            Variant variantResult = new Variant(variant.toString());
+            StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variantResult, studyId);
 
-            variant.addStudyEntry(studyEntry);
+            variantResult.addStudyEntry(studyEntry);
             studyEntry.setStats(stats);
-//        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
+
             return new DataResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), 1,
-                    Collections.singletonList(variant), 1);
+                    Collections.singletonList(variantResult), 1);
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }

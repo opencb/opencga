@@ -64,8 +64,6 @@ public class VariantRow {
     public Variant getVariant() {
         if (variant == null) {
             if (result != null) {
-                byte[] row = result.getRow();
-                Objects.requireNonNull(row, "Empty result. Missing variant rowkey.");
                 variant = VariantPhoenixKeyFactory.extractVariantFromResult(result);
             } else {
                 variant = VariantPhoenixKeyFactory.extractVariantFromResultSet(resultSet);
@@ -104,11 +102,27 @@ public class VariantRow {
     }
 
     public void walk(VariantRowWalker walker) {
-        walk(walker, true, true, true, true, true);
+        walk(walker, true, true, true, true, true, null);
     }
 
-    protected void walk(VariantRowWalker walker, boolean file, boolean sample, boolean cohort, boolean score, boolean annotation) {
-        walker.variant(getVariant());
+    protected void walk(VariantRowWalker walker, boolean file, boolean sample, boolean cohort, boolean score, boolean annotation,
+                        Variant variant) {
+        if (variant == null) {
+            variant = getVariant();
+        } else {
+            byte[] expectedRow = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+            byte[] actualRow;
+            if (result != null) {
+                actualRow = result.getRow();
+            } else {
+                actualRow = VariantPhoenixKeyFactory.generateVariantRowKey(resultSet);
+            }
+            if (!Bytes.equals(expectedRow, actualRow)) {
+                throw new IllegalStateException("Expected row "
+                        + Bytes.toStringBinary(expectedRow) + " but got " + Bytes.toStringBinary(actualRow));
+            }
+        }
+        walker.variant(variant);
         if (resultSet != null) {
             try {
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -280,8 +294,17 @@ public class VariantRow {
                     hasSampleConsumer,
                     hasStatsConsumer,
                     hasVariantScoreConsumer,
-                    hasVariantAnnotationConsummer);
+                    hasVariantAnnotationConsummer, null);
             return getVariant();
+        }
+
+        public void walk(Variant variant) {
+            VariantRow.this.walk(this,
+                    hasFileConsumer,
+                    hasSampleConsumer,
+                    hasStatsConsumer,
+                    hasVariantScoreConsumer,
+                    hasVariantAnnotationConsummer, variant);
         }
 
         public VariantRowWalkerBuilder onStudy(IntConsumer consumer) {

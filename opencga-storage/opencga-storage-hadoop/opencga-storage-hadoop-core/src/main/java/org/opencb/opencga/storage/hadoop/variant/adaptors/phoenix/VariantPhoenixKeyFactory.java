@@ -65,6 +65,26 @@ public class VariantPhoenixKeyFactory {
                 var.getSv());
     }
 
+    public static byte[] generateVariantRowKey(ResultSet resultSet) {
+        String chromosome = null;
+        Integer start = null;
+        String reference = null;
+        String alternate = null;
+        try {
+            chromosome = resultSet.getString(VariantPhoenixSchema.VariantColumn.CHROMOSOME.column());
+            start = resultSet.getInt(VariantPhoenixSchema.VariantColumn.POSITION.column());
+            reference = resultSet.getString(VariantPhoenixSchema.VariantColumn.REFERENCE.column());
+            alternate = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALTERNATE.column());
+
+            return generateVariantRowKey(chromosome, start, null, reference, alternate, null);
+        } catch (RuntimeException | SQLException e) {
+            throw new IllegalStateException("Fail to generate row key from Phoenix result set: " + chromosome
+                    + ':' + start
+                    + ':' + (reference == null ? "-" : reference)
+                    + ':' + (alternate == null ? "-" : alternate), e);
+        }
+    }
+
     public static byte[] generateVariantRowKey(VariantAnnotation variantAnnotation) {
         byte[] bytesRowKey = null;
         if (variantAnnotation.getAdditionalAttributes() != null) {
@@ -104,10 +124,10 @@ public class VariantPhoenixKeyFactory {
     }
 
     public static boolean mightHashAlleles(Variant variant) {
-        String alt = buildSymbolicAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv());
-        int size = getSize(variant.getChromosome(), variant.getReference(), variant.getAlternate());
+        int size = getSize(variant);
         return size > HConstants.MAX_ROW_LENGTH;
     }
+
 
     /**
      * Generates a Row key based on Chromosome, start, end (optional), ref and alt. <br>
@@ -153,6 +173,11 @@ public class VariantPhoenixKeyFactory {
 
 //        assert offset == size;
         return rk;
+    }
+
+    private static int getSize(Variant variant) {
+        String symbolicAlternate = buildSymbolicAlternate(variant);
+        return getSize(variant.getChromosome(), variant.getReference(), symbolicAlternate);
     }
 
     private static int getSize(String chrom, String ref, String alt) {

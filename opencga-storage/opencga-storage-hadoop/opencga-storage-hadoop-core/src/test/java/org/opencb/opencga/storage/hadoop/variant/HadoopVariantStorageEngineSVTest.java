@@ -13,6 +13,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +33,7 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
 
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     protected void loadFiles() throws Exception {
@@ -65,10 +68,14 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
                             Assert.assertNull(message, result.first());
                         }
                     }
+                    logger.info("Variant " + variant + " with samples " + samplesInVariant);
+                    logger.info("Query variant " + variant + " in study " + studyName + " from sampleData");
+                    Variant sampleDataVariant = variantStorageEngine.getSampleData(variant.toString(), studyName, new QueryOptions()).first();
+                    List<String> actualSampleNames = sampleDataVariant.getSampleNames(studyName);
+                    logger.info("Variant " + variant + " with actual samples " + actualSampleNames);
+                    Assert.assertEquals(samplesInVariant, new HashSet<>(actualSampleNames));
                 }
             }
-            List<String> actualSampleNames = variantStorageEngine.getSampleData(variant.toString(), studyMetadata.getName(), new QueryOptions()).first().getSampleNames(studyMetadata.getName());
-            Assert.assertEquals(samplesInVariant, new HashSet<>(actualSampleNames));
         }
     }
 
