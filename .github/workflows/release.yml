@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - '*'
+    workflow_dispatch:
 
 jobs:
   build-hdp:
@@ -62,23 +63,25 @@ jobs:
     with:
       artifact_name: emr13-build-folder
 
-  release:
-    name: Create GitHub Release
-    runs-on: ubuntu-22.04
-    needs: [ build-hdp, deploy-hdp-docker, deploy-emr-docker ]
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-folder
-      - name: GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref }}
-          generate_release_notes: true
-          files: |
-            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
-      - id: echo_result
-        name: Results
-        run: |
-          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+#  release:
+#    name: Create GitHub Release
+#    runs-on: ubuntu-22.04
+#    needs: [ build-hdp, deploy-hdp-docker, deploy-emr-docker ]
+#    steps:
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: build-folder
+#      - name: GitHub Release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          name: ${{ github.ref_name }}
+#          tag_name: ${{ github.ref }}
+#          generate_release_notes: true
+#          files: |
+#            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
+#      - id: echo_result
+#        name: Results
+#        run: |
+#          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+#
+#
