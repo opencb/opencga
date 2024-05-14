@@ -49,6 +49,7 @@ import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -274,6 +275,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     private String getAdminToken() throws CatalogException, IOException {
         return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+    }
+
+    @Test
+    public void createUserUsingMailAsId() throws CatalogException {
+        catalogManager.getUserManager().create(new User().setId("hello.mail@mymail.org").setName("Hello")
+                        .setAccount(new Account().setType(Account.AccountType.GUEST)), TestParamConstants.PASSWORD, opencgaToken);
+        AuthenticationResponse login = catalogManager.getUserManager().login("hello.mail@mymail.org", TestParamConstants.PASSWORD);
+        assertNotNull(login);
+        User user = catalogManager.getUserManager().get("hello.mail@mymail.org", new QueryOptions(), login.getToken()).first();
+        assertEquals("hello.mail@mymail.org", user.getId());
     }
 
     @Test
