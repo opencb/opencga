@@ -41,6 +41,7 @@ public class VariantPhoenixKeyFactoryTest {
         checkVariantRowKeyGeneration(new Variant("5", 21648, "A", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "AAAAAA", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "A", ""));
+        checkVariantRowKeyGeneration(new Variant("5", 21648, "", "T"));
         checkVariantRowKeyGeneration(new Variant("5", 21648, "AAT", "TTT"));
         checkVariantRowKeyGeneration(new Variant("X", 21648, "", "TTT"));
         checkVariantRowKeyGeneration(new Variant("MT", 21648, "", ""));

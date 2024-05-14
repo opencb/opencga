@@ -277,7 +277,9 @@ public class VariantPhoenixKeyFactory {
 
         int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0);
         int referenceOffset = chrPosSeparator + 1 + UINT_SIZE;
-        if (Bytes.equals(variantRowKey, referenceOffset, HASH_PREFIX_BYTES.length, HASH_PREFIX_BYTES, 0, HASH_PREFIX_BYTES.length)) {
+        if (variantRowKey.length > (referenceOffset + HASH_PREFIX_BYTES.length)
+                && Bytes.equals(variantRowKey, referenceOffset, HASH_PREFIX_BYTES.length,
+                HASH_PREFIX_BYTES, 0, HASH_PREFIX_BYTES.length)) {
             // The reference and alternate are hashed.
             // The type and alleles are stored in the result
             byte[] type = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES,
