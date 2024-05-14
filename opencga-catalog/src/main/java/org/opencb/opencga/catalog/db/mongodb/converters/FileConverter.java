@@ -107,7 +107,7 @@ public class FileConverter extends AnnotableConverter<File> {
         if (ListUtils.isNotEmpty(relatedFileList)) {
             for (FileRelatedFile relatedFile : relatedFileList) {
                 relatedFiles.add(new Document()
-                        .append("relation", relatedFile.getRelation().name())
+                        .append("relation", relatedFile.getRelation() != null ? relatedFile.getRelation().name() : null)
                         .append("file", new Document("uid", relatedFile.getFile().getUid()))
                 );
             }

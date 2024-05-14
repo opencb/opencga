@@ -68,6 +68,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
+        RELATED_FILES_FILE_UID("relatedFiles.file.uid", LONG, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER, ""),
         EXPERIMENT("experiment", OBJECT, ""),
