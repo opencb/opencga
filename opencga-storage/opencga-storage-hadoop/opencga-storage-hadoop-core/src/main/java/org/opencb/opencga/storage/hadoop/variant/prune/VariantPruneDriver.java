@@ -96,6 +96,8 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
         FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         scan.setFilter(filterList);
 
+        scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+        scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
         scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_NOT_SYNC.bytes());
         scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_UNKNOWN.bytes());
         scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes());

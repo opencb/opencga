@@ -70,18 +70,22 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38")
         );
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
 
         input3 = getResourceUri("variant-test-sv-large.vcf");
         studyMetadata2 = new StudyMetadata(2, "s2");
         pipelineResult3 = runDefaultETL(input3, variantStorageEngine, studyMetadata2, new QueryOptions()
-                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
+
     }
 
     @Test

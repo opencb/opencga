@@ -16,12 +16,10 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 
 /**
  * Created on 26/06/18.
@@ -39,6 +37,12 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
     protected void loadFiles() throws Exception {
         super.loadFiles();
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @Test
+    public void testRecreateSampleIndex() throws Exception {
+        variantStorageEngine.sampleIndex(studyMetadata.getName(), Collections.singletonList("all"), new QueryOptions(OVERWRITE, true));
+        variantStorageEngine.sampleIndex(studyMetadata2.getName(), Collections.singletonList("all"), new QueryOptions(OVERWRITE, true));
     }
 
     @Test

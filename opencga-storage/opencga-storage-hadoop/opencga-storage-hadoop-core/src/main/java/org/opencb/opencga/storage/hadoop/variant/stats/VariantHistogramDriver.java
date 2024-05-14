@@ -76,7 +76,8 @@ public class VariantHistogramDriver extends AbstractVariantsTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
 
         Scan scan = new Scan();
-
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
         for (Integer studyId : getMetadataManager().getStudyIds()) {
             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
         }
