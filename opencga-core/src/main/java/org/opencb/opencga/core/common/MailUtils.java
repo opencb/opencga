@@ -81,11 +81,7 @@ public class MailUtils {
         sb.append("If you did not request a password reset, please contact our support team immediately at support@zettagenomics.com.\n\n");
         sb.append("Best regards,\n\n");
         sb.append("ZettaGenomics Support Team \n\n");
-        sb.append("*This email and any attachments are confidential and may contain privileged information " +
-                "intended solely for the use of the individual or entity to whom they are addressed. " +
-                "If you have received this email in error, please notify the sender immediately and delete the email" +
-                " and any attachments from your system. Any unauthorized use, disclosure, distribution, " +
-                "or copying of this email or its attachments is strictly prohibited.*");
+
 
 
         return sb.toString();
