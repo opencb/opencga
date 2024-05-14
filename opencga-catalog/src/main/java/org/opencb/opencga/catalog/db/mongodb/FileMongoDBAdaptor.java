@@ -1517,13 +1517,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                             addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         }
                         break;
-                    case FORMAT:
-                    case BIOFORMAT:
-                        // Replace the value for an uppercase string as we know it will always be in that way
-                        String uppercaseValue = myQuery.getString(queryParam.key()).toUpperCase();
-                        myQuery.put(queryParam.key(), uppercaseValue);
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
-                        break;
                     case UUID:
                     case EXTERNAL:
                     case TYPE:
@@ -1531,6 +1524,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case ID:
                     case PATH:
                     case RELEASE:
+                    case FORMAT:
+                    case BIOFORMAT:
                     case TAGS:
                     case SIZE:
                     case SOFTWARE_NAME:
