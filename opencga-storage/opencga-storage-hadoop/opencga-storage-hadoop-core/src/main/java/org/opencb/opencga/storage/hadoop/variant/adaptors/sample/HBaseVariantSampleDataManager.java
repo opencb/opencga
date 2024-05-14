@@ -194,6 +194,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                     .build());
 
             Variant variantResult = new Variant(variant.toString());
+            variantResult.setId(variant.toString());
             StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variantResult, studyId);
 
             variantResult.addStudyEntry(studyEntry);
