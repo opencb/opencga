@@ -198,7 +198,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             stopChr = null;
             end = Integer.MAX_VALUE;
         } else {
-            Pair<String, Integer> stopLocus = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(firstRow);
+            Pair<String, Integer> stopLocus = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(lastRow);
             stopChr = stopLocus.getFirst();
             end = stopLocus.getSecond();
         }
