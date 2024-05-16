@@ -24,6 +24,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -48,10 +49,10 @@ public class OrganizationManager extends AbstractManager {
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
 
-    OrganizationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+    OrganizationManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                        CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
                         AuthenticationFactory authenticationFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
         this.authenticationFactory = authenticationFactory;
     }

@@ -46,6 +46,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -119,10 +120,10 @@ public class StudyManager extends AbstractManager {
 
     protected Logger logger;
 
-    StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
-                 Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    StudyManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                 CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory,
+                 CatalogIOManager catalogIOManager, Configuration configuration) {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
         this.ioManagerFactory = ioManagerFactory;

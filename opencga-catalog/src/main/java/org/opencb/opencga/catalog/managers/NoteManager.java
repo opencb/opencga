@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -36,9 +37,9 @@ public class NoteManager extends AbstractManager {
 
     private final Logger logger;
 
-    NoteManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    NoteManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.logger = LoggerFactory.getLogger(NoteManager.class);
     }
 

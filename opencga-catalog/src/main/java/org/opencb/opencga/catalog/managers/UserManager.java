@@ -38,6 +38,7 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Group;
@@ -65,12 +66,11 @@ public class UserManager extends AbstractManager {
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
 
-    UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+    UserManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
                 AuthenticationFactory authenticationFactory, Configuration configuration)
             throws CatalogException {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
         this.authenticationFactory = authenticationFactory;
     }

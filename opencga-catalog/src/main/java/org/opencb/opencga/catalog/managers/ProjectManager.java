@@ -33,6 +33,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -79,9 +80,10 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
             ProjectDBAdaptor.QueryParams.FQN.key()));
 
-    ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    ProjectManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                   CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+                   Configuration configuration) {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
     }
 

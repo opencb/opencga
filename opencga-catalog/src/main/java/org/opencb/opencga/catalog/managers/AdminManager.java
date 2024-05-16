@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -38,10 +39,10 @@ public class AdminManager extends AbstractManager {
     private final CatalogIOManager catalogIOManager;
     protected static Logger logger = LoggerFactory.getLogger(AdminManager.class);
 
-    AdminManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
-            throws CatalogException {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    AdminManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                 CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager,
+                 Configuration configuration) throws CatalogException {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
         this.catalogIOManager = catalogIOManager;
     }
 

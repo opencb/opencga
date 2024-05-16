@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.config;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
@@ -29,6 +31,92 @@ import java.util.*;
  */
 @Category(ShortTests.class)
 public class ConfigurationTest {
+
+    @Test
+    public void testEvents() throws InterruptedException {
+        Observable<String> observable = Observable.just("hello");
+
+        CompositeDisposable compositeDisposable = new CompositeDisposable();
+        observable.subscribe(s -> System.out.println("Suscriptor 1: " + s), (t) -> System.out.println("error"), () -> System.out.println("Suscriptor 1 completed"), compositeDisposable);
+        observable.doOnDispose(() -> {
+            System.out.println("Esto es lo que hago al final");
+        });
+        observable.subscribe(s -> System.out.println("Suscriptor 2: " + s), (t) -> System.out.println("error"), () -> System.out.println("Suscriptor 2 completed"), compositeDisposable);
+        observable.subscribe(s -> { throw new Exception("My exception"); }, throwable -> System.out.println(throwable.getMessage()), () -> {}, compositeDisposable);
+        System.out.println(compositeDisposable.isDisposed());
+        compositeDisposable.dispose();
+        System.out.println(compositeDisposable.isDisposed());
+
+        observable.subscribe(s -> System.out.println("Suscriptor 3: " + s), (t) -> System.out.println("error"), () -> System.out.println("Suscriptor 3 completed"), compositeDisposable);
+        compositeDisposable.clear();
+        Thread.sleep(2000);
+
+//        Observer<OpencgaEvent> observer = new Observer<OpencgaEvent>() {
+//            @Override
+//            public void onSubscribe(@NonNull Disposable d) {
+//                System.out.println("On subscription " + d);
+//            }
+//
+//            @Override
+//            public void onNext(OpencgaEvent opencgaEvent) {
+//                System.out.println("On next " + opencgaEvent.getMessage());
+//            }
+//
+//            @Override
+//            public void onError(Throwable throwable) {
+//                System.out.println("On error " + throwable);
+//            }
+//
+//            @Override
+//            public void onComplete() {
+//                System.out.println("On complete");
+//            }
+//        };
+//        OpencgaEventManager.subscribe(OpencgaEventManager.SAMPLE_CREATE, observer);
+
+//        OpencgaEventManager.addEvent(OpencgaEventManager.SAMPLE_CREATE, Observable.just(new OpencgaEvent("First event")));
+//        OpencgaEventManager.addEvent(OpencgaEventManager.SAMPLE_CREATE, Observable.just(new OpencgaEvent("Second event")));
+//        OpencgaEventManager.subscribe(OpencgaEventManager.SAMPLE_CREATE, observer);
+//        OpencgaEventManager.addEvent(OpencgaEventManager.SAMPLE_CREATE, Observable.just(new OpencgaEvent("Third event")));
+//        OpencgaEventManager.addEvent(OpencgaEventManager.SAMPLE_CREATE, Observable.fromAction(() -> {
+//            throw new Exception("asdasd");
+//        }));
+
+//        AsyncProcessor<OpencgaEvent> asyncProcessor = AsyncProcessor.create();
+//        asyncProcessor.onNext(new OpencgaEvent("Hello"));
+//
+//        Consumer<OpencgaEvent> consumer = new Consumer<OpencgaEvent>() {
+//            @Override
+//            public void accept(OpencgaEvent opencgaEvent) throws Throwable {
+//                System.out.println("Receive " + opencgaEvent.getMessage());
+//            }
+//        };
+//        asyncProcessor.subscribe(consumer);
+//
+//        asyncProcessor.onNext(new OpencgaEvent("Bye"));
+//        asyncProcessor.subscribe(consumer);
+//
+//        Flowable.fromAction(() -> {
+//
+//        })
+//        Flowable<OpencgaEvent> myEvent = Flowable.create(emitter -> {
+//                    OpencgaEvent event  = new OpencgaEvent("My event");
+//                    System.out.println("Emit event " + event.getMessage());
+//                    return event;
+//                }, BackpressureStrategy.LATEST)
+//                .subscribeOn(Schedulers.io());
+//        OpencgaEventManager.addEvent(OpencgaEventManager.SAMPLE_CREATE, myEvent);
+//
+//        Flowable<OpencgaEvent> event = (Flowable<OpencgaEvent>) OpencgaEventManager.getEvent(OpencgaEventManager.SAMPLE_CREATE);
+//        event.subscribe(opencgaEvent -> System.out.println(opencgaEvent.getMessage()));
+//
+//        event.doOnNext(opencgaEvent -> {
+//            OpencgaEvent mmm  = new OpencgaEvent("My event");
+//            System.out.println("Emit new event " + mmm.getMessage());
+//        });
+//
+//        Thread.sleep(100000);
+    }
 
     @Test
     public void testDefault() {
@@ -49,7 +137,7 @@ public class ConfigurationTest {
         configuration.setHooks(Collections.singletonMap("organization@project:study", Collections.singletonMap("file",
                 Collections.singletonList(
                         new HookConfiguration("name", "~*SV*", HookConfiguration.Stage.CREATE, HookConfiguration.Action.ADD, "tags", "SV")
-        ))));
+                ))));
 
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
         authenticationOriginList.add(new AuthenticationOrigin());

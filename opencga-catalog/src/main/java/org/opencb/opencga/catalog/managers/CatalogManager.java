@@ -41,6 +41,9 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.events.EventManager;
+import org.opencb.opencga.core.events.OpencgaEvent;
+import org.opencb.opencga.core.events.OpencgaProcessedEvent;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -58,6 +61,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -88,6 +92,7 @@ public class CatalogManager implements AutoCloseable {
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
 
+    private EventManager eventManager;
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
 
@@ -139,29 +144,48 @@ public class CatalogManager implements AutoCloseable {
             }
         }
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
-        auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
+        eventManager = new EventManager(getPreEventConsumer(), getPostEventConsumer(), configuration);
+        auditManager = new AuditManager(authorizationManager, eventManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
-        noteManager = new NoteManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
-        organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
-                authenticationFactory, configuration);
-        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
-                authenticationFactory, configuration);
-        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
+        noteManager = new NoteManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        adminManager = new AdminManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
-        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+        organizationManager = new OrganizationManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory,
+                catalogIOManager, authenticationFactory, configuration);
+        userManager = new UserManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
+                authenticationFactory, configuration);
+        projectManager = new ProjectManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManager, configuration);
-        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
-        jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
-        sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        studyManager = new StudyManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogIOManager, configuration);
+        fileManager = new FileManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
                 configuration);
-        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        jobManager = new JobManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                configuration);
+        sampleManager = new SampleManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        individualManager = new IndividualManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory,
+                configuration);
+        cohortManager = new CohortManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        familyManager = new FamilyManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        panelManager = new PanelManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, eventManager, auditManager, this,
+                catalogDBAdaptorFactory, configuration);
+        interpretationManager = new InterpretationManager(authorizationManager, eventManager, auditManager, this, catalogDBAdaptorFactory,
+                configuration);
+    }
+
+    private Consumer<OpencgaEvent> getPreEventConsumer() {
+        return opencgaEvent -> {
+//            catalogDBAdaptorFactory.getEventDBAdaptor(opencgaEvent.getOrganizationId()).insert(new OpencgaProcessedEvent());
+            System.out.println("Pre event consumer: " + opencgaEvent);
+        };
+    }
+
+    private Consumer<OpencgaEvent> getPostEventConsumer() {
+        return opencgaEvent -> {
+            System.out.println("Post event consumer: " + opencgaEvent);
+        };
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -367,6 +391,11 @@ public class CatalogManager implements AutoCloseable {
 
     @Override
     public void close() throws CatalogException {
+        try {
+            eventManager.close();
+        } catch (Exception e) {
+            throw new CatalogException(e);
+        }
         catalogDBAdaptorFactory.close();
     }
 

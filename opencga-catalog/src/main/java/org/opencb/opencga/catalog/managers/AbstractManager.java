@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -45,6 +46,7 @@ import java.util.function.Function;
 public abstract class AbstractManager {
 
     protected final Logger logger;
+    protected final EventManager eventManager;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
     protected final CatalogManager catalogManager;
@@ -62,9 +64,10 @@ public abstract class AbstractManager {
 
     protected static final String INTERNAL_DELIMITER = "__";
 
-    AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                    DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+    AbstractManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                    CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.authorizationManager = authorizationManager;
+        this.eventManager = eventManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;

@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -81,9 +82,10 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
-    JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    JobManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+               CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory,
+               Configuration configuration) {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();

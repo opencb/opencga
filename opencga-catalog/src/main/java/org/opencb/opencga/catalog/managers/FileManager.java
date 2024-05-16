@@ -49,6 +49,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
+import org.opencb.opencga.core.events.EventManager;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -131,9 +132,10 @@ public class FileManager extends AnnotationSetManager<File> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
-    FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+    FileManager(AuthorizationManager authorizationManager, EventManager eventManager, AuditManager auditManager,
+                CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory,
+                Configuration configuration) {
+        super(authorizationManager, eventManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
