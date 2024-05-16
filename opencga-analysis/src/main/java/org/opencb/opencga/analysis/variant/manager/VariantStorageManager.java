@@ -71,7 +71,9 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.VariantPruneParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -472,6 +474,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.aggregate(getStudyFqn(studyStr, token), params, new ObjectMap());
             return null;
         });
+    }
+
+    public VariantSetupResult variantSetup(String studyStr, VariantSetupParams params, String token)
+            throws CatalogException, StorageEngineException {
+        return secureOperation("variant-setup", studyStr, params.toObjectMap(), token,
+                engine -> new VariantSetupOperationManager(this, engine).setup(studyStr, params, token));
     }
 
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {

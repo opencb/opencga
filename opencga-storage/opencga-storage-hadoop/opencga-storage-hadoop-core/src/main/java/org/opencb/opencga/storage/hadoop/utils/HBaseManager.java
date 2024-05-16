@@ -427,7 +427,7 @@ public class HBaseManager implements AutoCloseable {
                     return false;
                 }
                 LOGGER.info("Moving region '{}' to another region server", regionInfo.getRegionNameAsString());
-                admin.move(regionInfo.getEncodedNameAsBytes(), null);
+                admin.move(regionInfo.getEncodedNameAsBytes(), (byte[]) null);
                 LOGGER.info("New region created '{}' in {}", regionInfo.getRegionNameAsString(), TimeUtils.durationToString(stopWatch));
                 return true;
             } catch (IOException | RuntimeException e) {

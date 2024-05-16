@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -39,6 +40,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -1082,6 +1084,49 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throw VariantQueryException.internalException(e);
         }
         return executors;
+    }
+
+    @Override
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = super.inferConfigurationParams(params);
+        ObjectMap configuredOptions = getOptions();
+
+        long expectedHBaseRegionSize = IOUtils.fromHumanReadableToByte("7.5GiB");
+
+        options.put(EXPECTED_SAMPLES_NUMBER.key(), params.getExpectedSamplesNumber());
+        options.put(EXPECTED_FILES_NUMBER.key(), params.getExpectedFilesNumber());
+
+        // Variant pre-split
+        int defaultVariantPreSplit = configuredOptions
+                .getInt(VARIANT_TABLE_PRESPLIT_SIZE.key(), VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
+        float variantsFileToHBaseMultiplier = 1.3f;
+        float variantsTableSize = params.getExpectedFilesNumber() * params.getAverageFileSize() * variantsFileToHBaseMultiplier;
+        int variantPreSplit = (int) (variantsTableSize / expectedHBaseRegionSize);
+        options.put(VARIANT_TABLE_PRESPLIT_SIZE.key(), Math.max(defaultVariantPreSplit, variantPreSplit));
+
+        // Archive pre-split
+        Long averageFileSize = params.getAverageFileSize();
+        int filesPerBatch = configuredOptions
+                .getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
+        float archiveFileToHBaseMultiplier = 1.2f;
+        float archiveTableSize = filesPerBatch * averageFileSize.floatValue() * archiveFileToHBaseMultiplier;
+        int archiveTablePreSplit = (int) (archiveTableSize / expectedHBaseRegionSize);
+        options.put(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), archiveTablePreSplit);
+
+        // SampleIndex pre-split
+        long averageSizePerVariant;
+        if (params.getNumberOfVariantsPerSample() > 3500000) {
+            // With this many variants per sample, most of them won't have much data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("13B");
+        } else {
+            // With a small number of variants per sample, most of them will have a lot of data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("25B");
+        }
+        long sampleIndexSize = params.getNumberOfVariantsPerSample() * averageSizePerVariant;
+        int samplesPerSplit = (int) (expectedHBaseRegionSize / sampleIndexSize);
+        options.put(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(), samplesPerSplit);
+
+        return options;
     }
 
     @Override

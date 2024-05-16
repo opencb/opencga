@@ -1820,6 +1820,31 @@ public class StudyManager extends AbstractManager {
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
     }
 
+    public void setVariantEngineSetupOptions(String studyStr, VariantSetupResult variantSetupResult, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(studyFqn,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
+                        StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())),
+                tokenPayload);
+
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        configuration.setSetup(variantSetupResult);
+        if (configuration.getOptions() == null) {
+            configuration.setOptions(new ObjectMap());
+        }
+        configuration.getOptions().putAll(variantSetupResult.getOptions());
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
+        getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
     public void setVariantEngineConfigurationSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);

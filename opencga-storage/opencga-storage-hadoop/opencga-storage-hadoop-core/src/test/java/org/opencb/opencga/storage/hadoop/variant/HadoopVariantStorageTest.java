@@ -232,8 +232,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Configurator.setLevel(MapTask.class.getName(), Level.WARN);
                 Configurator.setLevel(TableInputFormatBase.class.getName(), Level.WARN);
 
-                utility.set(new HBaseTestingUtility());
-                Configuration conf = utility.get().getConfiguration();
+                HBaseTestingUtility testingUtility = new HBaseTestingUtility();
+                Configuration conf = testingUtility.getConfiguration();
                 HadoopVariantStorageTest.configuration.set(conf);
 
 
@@ -277,7 +277,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 }
 
                 //org.apache.commons.configuration2.Configuration
-                utility.get().startMiniCluster(1);
+                testingUtility.startMiniCluster(1);
+                utility.set(testingUtility);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
     //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);

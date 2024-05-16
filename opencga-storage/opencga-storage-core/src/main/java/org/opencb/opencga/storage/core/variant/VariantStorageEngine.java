@@ -31,6 +31,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -1402,6 +1403,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             logger.warn(message);
         }
         throw new VariantQueryException("No VariantAggregationExecutor found to run the query. " + messages).setQuery(query);
+    }
+
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = new ObjectMap();
+
+
+        return options;
     }
 
     @Override

@@ -55,7 +55,9 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -71,6 +73,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -160,8 +163,8 @@ public class VariantOperationsTest {
                 if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                     VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants_AFTER")).toUri());
                 }
-            } catch (Exception ignore) {
-                ignore.printStackTrace();
+            } catch (Exception e) {
+                LoggerFactory.getLogger(getClass()).error("Ignoring exception printing variants", e);
             }
 
             hadoopExternalResource.after();
@@ -311,6 +314,19 @@ public class VariantOperationsTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
+    }
+
+    @Test
+    public void testSetup() throws Exception {
+        VariantSetupParams setupParams = new VariantSetupParams();
+        setupParams
+                .setFileType(VariantSetupParams.FileType.GENOME_VCF)
+                .setDataDistribution(VariantSetupParams.DataDistribution.MULTI_SAMPLE_FILES)
+                .setExpectedFilesNumber(20)
+                .setExpectedSamplesNumber(100);
+        VariantSetupResult result = variantStorageManager.variantSetup(STUDY, setupParams, token);
+        System.out.println("result = " + result);
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
     }
 
     @Test
