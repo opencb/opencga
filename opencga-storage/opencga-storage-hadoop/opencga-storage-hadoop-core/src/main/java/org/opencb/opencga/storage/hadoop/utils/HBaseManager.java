@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -426,7 +427,7 @@ public class HBaseManager implements AutoCloseable {
                     return false;
                 }
                 LOGGER.info("Moving region '{}' to another region server", regionInfo.getRegionNameAsString());
-                admin.move(regionInfo.getEncodedNameAsBytes());
+                admin.move(regionInfo.getEncodedNameAsBytes(), null);
                 LOGGER.info("New region created '{}' in {}", regionInfo.getRegionNameAsString(), TimeUtils.durationToString(stopWatch));
                 return true;
             } catch (IOException | RuntimeException e) {
@@ -487,7 +488,7 @@ public class HBaseManager implements AutoCloseable {
         // Ensure that the table is split at least until the next expected split
         return act(tableName, (table, admin) -> {
             int newSplits = 0;
-            byte[][] existingSplits = table.getRegionLocator().getStartKeys();
+            byte[][] existingSplits = HBaseCompat.getInstance().getTableStartKeys(admin, table);
 
             int expectedNewSplits = 0;
             for (byte[] expectedSplit : expectedSplits) {

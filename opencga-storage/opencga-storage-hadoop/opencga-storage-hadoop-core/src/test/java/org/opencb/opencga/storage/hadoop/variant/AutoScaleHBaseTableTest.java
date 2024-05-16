@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -97,7 +98,8 @@ public class AutoScaleHBaseTableTest extends VariantStorageBaseTest implements H
 
         String archiveTableName = engine.getArchiveTableName(studyId);
         HBaseManager hBaseManager = dbAdaptor.getHBaseManager();
-        int archiveNumRegions = hBaseManager.act(archiveTableName, table -> table.getRegionLocator().getStartKeys().length);
+        int archiveNumRegions = hBaseManager.act(archiveTableName,
+                (table, admin) -> HBaseCompat.getInstance().getTableStartKeys(admin, table).length);
         // numRegions == numSplits + 1
         assertEquals(archiveTableName, expectedSplits + 1, archiveNumRegions);
     }
@@ -107,7 +109,8 @@ public class AutoScaleHBaseTableTest extends VariantStorageBaseTest implements H
 
         String sampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableName(studyId, 1);
         HBaseManager hBaseManager = dbAdaptor.getHBaseManager();
-        int sampleIndexNumRegions = hBaseManager.act(sampleIndexTableName, table -> table.getRegionLocator().getStartKeys().length);
+        int sampleIndexNumRegions = hBaseManager.act(sampleIndexTableName,
+                (table, admin) -> HBaseCompat.getInstance().getTableStartKeys(admin, table).length);
         // numRegions == numSplits + 1
         assertEquals(sampleIndexTableName, expectedSplits + 1, sampleIndexNumRegions);
     }
