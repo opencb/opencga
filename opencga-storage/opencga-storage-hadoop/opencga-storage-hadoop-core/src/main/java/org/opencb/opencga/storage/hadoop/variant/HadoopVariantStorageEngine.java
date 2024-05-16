@@ -1111,7 +1111,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         float archiveFileToHBaseMultiplier = 1.2f;
         float archiveTableSize = filesPerBatch * averageFileSize.floatValue() * archiveFileToHBaseMultiplier;
         int archiveTablePreSplit = (int) (archiveTableSize / expectedHBaseRegionSize);
-        options.put(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), archiveTablePreSplit);
+        options.put(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), Math.max(1, archiveTablePreSplit));
 
         // SampleIndex pre-split
         long averageSizePerVariant;

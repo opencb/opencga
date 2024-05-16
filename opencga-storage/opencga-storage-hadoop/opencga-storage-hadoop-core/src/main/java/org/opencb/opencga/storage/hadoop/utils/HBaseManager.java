@@ -32,11 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.utils.PersistentResultScanner.isValid;
 
@@ -488,18 +490,13 @@ public class HBaseManager implements AutoCloseable {
         // Ensure that the table is split at least until the next expected split
         return act(tableName, (table, admin) -> {
             int newSplits = 0;
-            byte[][] existingSplits = HBaseCompat.getInstance().getTableStartKeys(admin, table);
+            Set<ByteBuffer> existingSplits = Arrays.stream(HBaseCompat.getInstance().getTableStartKeys(admin, table))
+                    .map(ByteBuffer::wrap)
+                    .collect(Collectors.toSet());
 
             int expectedNewSplits = 0;
             for (byte[] expectedSplit : expectedSplits) {
-                boolean found = false;
-                for (byte[] split : existingSplits) {
-                    if (Bytes.compareTo(expectedSplit, split) == 0) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
+                if (!existingSplits.contains(ByteBuffer.wrap(expectedSplit))) {
                     expectedNewSplits++;
                     LOGGER.info("Missing split point '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
                 }
@@ -511,14 +508,7 @@ public class HBaseManager implements AutoCloseable {
             }
 
             for (byte[] expectedSplit : expectedSplits) {
-                boolean found = false;
-                for (byte[] split : existingSplits) {
-                    if (Bytes.compareTo(expectedSplit, split) == 0) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
+                if (!existingSplits.contains(ByteBuffer.wrap(expectedSplit))) {
                     if (splitAndMove(admin, table.getName(), expectedSplit)) {
                         newSplits++;
                     }

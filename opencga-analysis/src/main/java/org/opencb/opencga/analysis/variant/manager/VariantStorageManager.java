@@ -478,8 +478,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public VariantSetupResult variantSetup(String studyStr, VariantSetupParams params, String token)
             throws CatalogException, StorageEngineException {
-        return secureOperation("variant-setup", studyStr, params.toObjectMap(), token,
-                engine -> new VariantSetupOperationManager(this, engine).setup(studyStr, params, token));
+        return secureOperation(VariantSetupOperationManager.ID, studyStr, params.toObjectMap(), token,
+                engine -> new VariantSetupOperationManager(this, engine).setup(getStudyFqn(studyStr, token), params, token));
+    }
+
+    public boolean hasVariantSetup(String studyStr, String token) throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyStr,
+                new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key()), token).first();
+        return VariantSetupOperationManager.hasVariantSetup(study);
     }
 
     public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
@@ -1181,7 +1187,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperationByProject(String operationName, String project, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineByProject(project, params, token)) {
-            return secureTool(operationName, true, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, true, null, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1190,7 +1196,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperation(String operationName, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineForStudyOperation(study, params, token)) {
-            return secureTool(operationName, true, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, true, study, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1199,7 +1205,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureAnalysis(String operationName, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineForStudyOperation(study, params, token)) {
-            return secureTool(operationName, false, params, token, variantStorageEngine, operation);
+            return secureTool(operationName, false, study, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
@@ -1221,7 +1227,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperationByProject(operationName, projectStr, params, token, operation);
     }
 
-    private <R> R secureTool(String toolId, boolean isOperation, ObjectMap params, String token,
+    private <R> R secureTool(String toolId, boolean isOperation, String study, ObjectMap params, String token,
                              VariantStorageEngine variantStorageEngine, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
 
@@ -1240,6 +1246,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             if (isOperation && storageConfiguration.getMode() == StorageConfiguration.Mode.READ_ONLY) {
                 throw new StorageEngineException("Unable to execute operation '" + toolId + "'. "
                         + "The storage engine is in mode=" + storageConfiguration.getMode());
+            }
+            if (isOperation && study != null && !VariantSetupOperationManager.ID.equals(toolId)) {
+                // Ensure that the variant setup has been executed
+                //   do not check for the setup operation itself
+                // Project level operations can not be checked for setup.
+                if (!hasVariantSetup(study, token)) {
+                    throw new StorageEngineException("Unable to execute operation '" + toolId + "'. "
+                            + "The variant storage has not been setup for study '" + study + "'");
+                }
             }
             result = operation.apply(variantStorageEngine);
             return result;

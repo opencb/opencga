@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.manager;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,6 +33,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -231,6 +233,8 @@ public class VariantOperationsTest {
             solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
         }
 
+        dummyVariantSetup(variantStorageManager, STUDY, token);
+
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
         toolRunner.execute(VariantIndexOperationTool.class, STUDY,
@@ -292,6 +296,15 @@ public class VariantOperationsTest {
         }
     }
 
+    public static void dummyVariantSetup(VariantStorageManager variantStorageManager, String study, String token)
+            throws CatalogException, StorageEngineException {
+        variantStorageManager.variantSetup(study, new VariantSetupParams()
+                        .setAverageFileSize(100L)
+                        .setExpectedFilesNumber(5)
+                        .setExpectedSamplesNumber(5)
+                        .setNumberOfVariantsPerSample(1000), token);
+    }
+
     public void setUpCatalogManager() throws Exception {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(),
                 opencga.getAdminToken());
@@ -324,9 +337,31 @@ public class VariantOperationsTest {
                 .setDataDistribution(VariantSetupParams.DataDistribution.MULTI_SAMPLE_FILES)
                 .setExpectedFilesNumber(20)
                 .setExpectedSamplesNumber(100);
-        VariantSetupResult result = variantStorageManager.variantSetup(STUDY, setupParams, token);
-        System.out.println("result = " + result);
-        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
+        String study2 = "study2";
+        catalogManager.getStudyManager().create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token);
+
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class, study2,
+                    new VariantIndexParams()
+                            .setFile(file.getId())
+                            .setAnnotate(false)
+                            .setLoadHomRef(YesNoAuto.YES.name()),
+                    Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+            fail("Should have thrown an exception");
+        } catch (ToolException e) {
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString("The variant storage has not been setup for study"));
+        }
+
+        VariantSetupResult result = variantStorageManager.variantSetup(study2, setupParams, token);
+        assertEquals(VariantSetupResult.Status.READY, result.getStatus());
+
+        try {
+            variantStorageManager.variantSetup(STUDY, setupParams, token);
+            fail("Should fail");
+        } catch (Exception e) {
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("Unable to execute variant-setup on study"));
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("It already has indexed files."));
+        }
     }
 
     @Test

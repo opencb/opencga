@@ -10,23 +10,28 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 public class VariantSetupOperationManager extends OperationManager {
 
 
+    public static final String ID = "variant-setup";
+
     public VariantSetupOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine variantStorageEngine) {
         super(variantStorageManager, variantStorageEngine);
     }
 
-    public VariantSetupResult setup(String studyStr, VariantSetupParams params, String token) throws CatalogException {
+    public VariantSetupResult setup(String studyFqn, VariantSetupParams params, String token)
+            throws CatalogException, StorageEngineException {
         // Copy params to avoid modifying input object
         params = new VariantSetupParams(params);
-        check(studyStr, params, token);
+        check(studyFqn, params, token);
 
         VariantSetupResult result = new VariantSetupResult();
         result.setDate(TimeUtils.getTime());
-        result.setUserId(catalogManager.getUserManager().getUserIdContextStudy(studyStr, token));
+        result.setUserId(catalogManager.getUserManager().getUserIdContextStudy(studyFqn, token));
         result.setParams(params.toObjectMap());
         result.setStatus(VariantSetupResult.Status.READY);
 
@@ -35,7 +40,7 @@ public class VariantSetupOperationManager extends OperationManager {
         ObjectMap options = variantStorageEngine.inferConfigurationParams(params);
         result.setOptions(options);
 
-        catalogManager.getStudyManager().setVariantEngineSetupOptions(studyStr, result, token);
+        catalogManager.getStudyManager().setVariantEngineSetupOptions(studyFqn, result, token);
 
         return result;
     }
@@ -47,7 +52,7 @@ public class VariantSetupOperationManager extends OperationManager {
      *  - numberOfVariantsPerSample inferred from fileType
      * @param params params to infer
      */
-    private static void inferParams(VariantSetupParams params) {
+    private void inferParams(VariantSetupParams params) {
         if (params.getFileType() != null) {
             switch (params.getFileType()) {
                 case GENOME_gVCF:
@@ -109,18 +114,22 @@ public class VariantSetupOperationManager extends OperationManager {
         }
     }
 
-    private void check(String studyStr, VariantSetupParams params, String token) throws CatalogException {
+    private void check(String studyStr, VariantSetupParams params, String token) throws CatalogException, StorageEngineException {
         Study study = catalogManager.getStudyManager().get(studyStr,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key()), token)
                 .first();
-        if (study.getInternal() != null
-                && study.getInternal().getConfiguration() != null
-                && study.getInternal().getConfiguration().getVariantEngine() != null) {
-            VariantSetupResult setup = study.getInternal().getConfiguration().getVariantEngine().getSetup();
-            if (setup != null && setup.getStatus() == VariantSetupResult.Status.READY) {
-                throw new IllegalArgumentException("Study " + studyStr + " is already setup");
-                // TODO: Allow double setup if no files are loaded
+
+        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
+        if (metadataManager.studyExists(studyStr)) {
+            int studyId = metadataManager.getStudyId(studyStr);
+            if (!metadataManager.getIndexedFiles(studyId).isEmpty()) {
+                throw new IllegalArgumentException("Unable to execute variant-setup on study '" + studyStr + "'. "
+                        + "It already has indexed files.");
             }
+        }
+        if (hasVariantSetup(study)) {
+            // TODO: Allow double setup if no files are loaded?
+            throw new IllegalArgumentException("Study " + studyStr + " is already setup");
         }
 
         if (params.getExpectedFilesNumber() == null || params.getExpectedFilesNumber() <= 0) {
@@ -133,6 +142,19 @@ public class VariantSetupOperationManager extends OperationManager {
         if (params.getAverageFileSize() == null && params.getFileType() == null) {
             throw new IllegalArgumentException("Missing averageFileSize or fileType");
         }
+    }
+
+    public static boolean hasVariantSetup(Study study) {
+        boolean hasSetup = false;
+        if (study.getInternal() != null
+                && study.getInternal().getConfiguration() != null
+                && study.getInternal().getConfiguration().getVariantEngine() != null) {
+            VariantSetupResult setup = study.getInternal().getConfiguration().getVariantEngine().getSetup();
+            if (setup != null && setup.getStatus() == VariantSetupResult.Status.READY) {
+                hasSetup = true;
+            }
+        }
+        return hasSetup;
     }
 
 }
