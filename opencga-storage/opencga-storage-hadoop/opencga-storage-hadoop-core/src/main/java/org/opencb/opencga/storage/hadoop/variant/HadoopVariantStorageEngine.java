@@ -121,17 +121,10 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
-    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
-            VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL,
-            VariantType.MNV, VariantType.MNP,
-            VariantType.INSERTION, VariantType.DELETION,
-            VariantType.CNV,
-            VariantType.COPY_NUMBER, VariantType.COPY_NUMBER_LOSS, VariantType.COPY_NUMBER_GAIN,
-            VariantType.DUPLICATION, VariantType.TANDEM_DUPLICATION, VariantType.TRANSLOCATION,
-            VariantType.BREAKEND,
-            VariantType.SV, VariantType.SYMBOLIC
+    public static final EnumSet<VariantType> UNSUPPORTED_VARIANT_TYPE_SET = EnumSet.of(
+            VariantType.NO_VARIATION, VariantType.MIXED
     );
+    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.complementOf(UNSUPPORTED_VARIANT_TYPE_SET);
 
     public static final String FILE_ID = "fileId";
     public static final String STUDY_ID = "studyId";
