@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -244,7 +245,12 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                             fileMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
                         }
                     }).getPath();
-                    catalogManager.getFileManager().update(study, filePath,
+                    String fileUri = Paths.get(filePath).toUri().toString();
+                    Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), fileUri);
+                    String catalogFileId = catalogManager.getFileManager()
+                            .search(study, query, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), token)
+                            .first().getId();
+                    catalogManager.getFileManager().update(study, catalogFileId,
                             new FileUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
                 }
                 for (Integer sampleId : invalidSamples) {
