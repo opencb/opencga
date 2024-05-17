@@ -393,6 +393,7 @@ public class OrganizationMigration extends MigrationTool {
             authOriginDoc.put("algorithm", algorithm);
             authOriginDoc.put("secretKey", secretKey);
             authOriginDoc.put("expiration", 3600L);
+            authOrigins.add(authOriginDoc);
 
             // Set organization counter, owner and authOrigins
             orgCol.updateOne(Filters.eq("id", organizationId), Updates.combine(
