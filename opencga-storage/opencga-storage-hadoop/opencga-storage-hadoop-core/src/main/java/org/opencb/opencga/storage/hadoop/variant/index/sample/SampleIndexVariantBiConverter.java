@@ -645,7 +645,7 @@ public class SampleIndexVariantBiConverter {
         String[] refAlt = AlleleCodec.decode(bytes[offset]);
         int start = batchStart + (read24bitInteger(bytes, offset) & 0x0F_FF_FF);
 
-        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null);
+        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null, null);
     }
 
     private Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset, int referenceLength, int alternateLength) {
@@ -655,7 +655,7 @@ public class SampleIndexVariantBiConverter {
         offset += referenceLength + SEPARATOR_LENGTH; // add reference, and separator
         String alternate = readString(bytes, offset, alternateLength);
 
-        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, reference, alternate, null);
+        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, reference, alternate, null, null);
     }
 
     private int readNextSeparator(byte[] bytes, int offset) {

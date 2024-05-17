@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -134,9 +135,10 @@ public class VariantQueryProjectionParser {
             for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
                 int studyId = study.getId();
                 List<Integer> cohorts = new LinkedList<>();
-                for (CohortMetadata cohort : metadataManager.getCalculatedOrInvalidCohorts(studyId)) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(studyId)) {
                     cohorts.add(cohort.getId());
-                    if (cohort.isInvalid()) {
+                    TaskMetadata.Status status = cohort.getStatsStatus();
+                    if (status == TaskMetadata.Status.ERROR) {
                         String message = "Please note that the Cohort Stats for "
                                 + "'" + study.getName() + ":" + cohort.getName() + "' are currently outdated.";
                         int numSampmles = cohort.getSamples().size();
@@ -146,6 +148,10 @@ public class VariantQueryProjectionParser {
                                     + "while the total number of samples in the cohort is " + numSampmles + ".";
                         }
                         message += " To display updated statistics, please execute variant-stats-index.";
+                        events.add(new Event(Event.Type.WARNING, message));
+                    } else if (status == TaskMetadata.Status.RUNNING) {
+                        String message = "Please note that the Cohort Stats for "
+                                + "'" + study.getName() + ":" + cohort.getName() + "' are currently being calculated.";
                         events.add(new Event(Event.Type.WARNING, message));
                     }
                 }
