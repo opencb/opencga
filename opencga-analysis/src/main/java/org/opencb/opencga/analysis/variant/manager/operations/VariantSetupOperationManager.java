@@ -65,7 +65,7 @@ public class VariantSetupOperationManager extends OperationManager {
                     break;
                 case GENOME_VCF:
                     if (params.getAverageFileSize() == null) {
-                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("400MiB"));
+                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("500MiB"));
                     }
                     if (params.getNumberOfVariantsPerSample() == null) {
                         params.setNumberOfVariantsPerSample(5000000);
@@ -73,10 +73,10 @@ public class VariantSetupOperationManager extends OperationManager {
                     break;
                 case EXOME:
                     if (params.getAverageFileSize() == null) {
-                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("50MiB"));
+                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("100MiB"));
                     }
                     if (params.getNumberOfVariantsPerSample() == null) {
-                        params.setNumberOfVariantsPerSample(50000);
+                        params.setNumberOfVariantsPerSample(100000);
                     }
                     break;
                 default:
