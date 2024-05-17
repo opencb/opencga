@@ -54,6 +54,7 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
     @Override
     public Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager) {
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, FULL_ANNOTATION.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ANNOTATION_ID.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
