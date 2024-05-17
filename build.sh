@@ -103,11 +103,7 @@ function manage_dependency() {
     fi
   elif [ "$COMMAND" == "test" ]; then
     log "Testing $REPO branch $BRANCH_NAME."
-    if [ "$REPO" == "cellbase" ];then
-      mvn clean install -T 2 -DskipTests
-    else
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
-    fi
+    mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
