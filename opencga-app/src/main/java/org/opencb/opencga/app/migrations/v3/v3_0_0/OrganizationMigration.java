@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v3_0_0;
+package org.opencb.opencga.app.migrations.v3.v3_0_0;
 
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
@@ -28,7 +28,14 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.scanners.TypeAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
 
+import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -102,13 +109,52 @@ public class OrganizationMigration extends MigrationTool {
             throw new CatalogException("Please grant write access to path '" + configuration.getWorkspace() + "'");
         }
 
-        // TODO: Check last migration is 2.2.??
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
+        // Check all previous v2.x migrations have been run successfully
         MongoCollection<Document> migrationCol = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION);
-        long count = migrationCol.countDocuments(Filters.in("status", MigrationRun.MigrationStatus.PENDING,
+        long count = migrationCol.countDocuments();
+        // We take out 1 to the availableMigrations.size() because it will consider the present migration, which is not part of the check
+        logger.debug("Found '{}' Java migrations", availableMigrations.size() - 1);
+        logger.debug("Found '{}' migrations registered in the database", count);
+        if (count < availableMigrations.size() - 1) {
+            Set<String> migrations = new HashSet<>();
+            for (Class<? extends MigrationTool> availableMigration : availableMigrations) {
+                Migration annotation = availableMigration.getAnnotation(Migration.class);
+                // Only consider previous migrations, not the present one
+                if (!annotation.version().equals("3.0.0")) {
+                    migrations.add(annotation.id() + ":v" + annotation.version());
+                }
+            }
+
+            Set<String> processedMigrations = new HashSet<>();
+            Set<String> onlyInJava = new HashSet<>();
+            Set<String> onlyInDB = new HashSet<>();
+            migrationCol.find().forEach((document) -> {
+                String migrationId = document.getString("id") + ":v" + document.getString("version");
+                processedMigrations.add(migrationId);
+                if (!migrations.contains(migrationId)) {
+                    onlyInDB.add(migrationId);
+                }
+            });
+            for (String migration : migrations) {
+                if (!processedMigrations.contains(migration)) {
+                    onlyInJava.add(migration);
+                }
+            }
+            logger.debug("Migrations not registered in the database: {}", String.join(", ", onlyInJava));
+            logger.debug("Migrations only found in the DB: {}", String.join(", ", onlyInDB));
+
+            throw new CatalogException("Please check past migrations before moving to v3.0.0. Found "
+                    + (availableMigrations.size() -1 - count) + " missing migrations available.");
+        }
+
+        count = migrationCol.countDocuments(Filters.in("status", MigrationRun.MigrationStatus.PENDING,
                 MigrationRun.MigrationStatus.ON_HOLD, MigrationRun.MigrationStatus.ERROR));
         if (count > 0) {
-            throw new CatalogException("Please check past migrations. Found migrations with status '" + MigrationRun.MigrationStatus.PENDING
-                    + "', '" + MigrationRun.MigrationStatus.ON_HOLD + "', or '" + MigrationRun.MigrationStatus.ERROR + "'.");
+            throw new CatalogException("Please check past migrations. Found " + count + " migrations with status '"
+                    + MigrationRun.MigrationStatus.PENDING + "', '" + MigrationRun.MigrationStatus.ON_HOLD + "', or '"
+                    + MigrationRun.MigrationStatus.ERROR + "'.");
         }
 
         // Retrieve all users with data
@@ -226,24 +272,22 @@ public class OrganizationMigration extends MigrationTool {
         queryMongo(oldUserCollection, Filters.eq("id", ParamConstants.OPENCGA_USER_ID), Projections.exclude("_id"), document -> {
             String organizationId = ParamConstants.ADMIN_ORGANIZATION;
             try {
-                MongoCollection<Document> userCollection = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb()
-                        .getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
-                MongoCollection<Document> projectCollection = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb()
-                        .getCollection(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION);
-                MongoCollection<Document> studyCollection = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb()
-                        .getCollection(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION);
-                MongoCollection<Document> fileCollection = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb()
-                        .getCollection(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION);
+                MongoDatabase orgDatabase = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb();
+
+                MongoCollection<Document> userCollection = orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.USER_COLLECTION);
+                MongoCollection<Document> projectCollection = orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION);
+                MongoCollection<Document> studyCollection = orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION);
+                MongoCollection<Document> fileCollection = orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.FILE_COLLECTION);
+                MongoCollection<Document> migrationCollection = orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION);
                 // Empty data from collections with default data
                 userCollection.deleteMany(new Document());
                 projectCollection.deleteMany(new Document());
                 studyCollection.deleteMany(new Document());
                 fileCollection.deleteMany(new Document());
+                migrationCollection.deleteMany(new Document());
 
                 // Replace user in organization
                 userCollection.insertOne(document);
-
-                MongoDatabase orgDatabase = mongoDBAdaptorFactory.getMongoDataStore(organizationId).getDb();
 
                 // Extract projects
                 List<Document> projects = document.getList("projects", Document.class);
@@ -280,11 +324,15 @@ public class OrganizationMigration extends MigrationTool {
                         replicateData(studyUid, oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION),
                                 orgDatabase.getCollection(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION));
 
-
                         oldStudyCol.deleteOne(Filters.eq("uid", studyUid));
                     });
-
                 }
+
+                // Copy migration history
+                MongoCollection<Document> oldMigrationCollection = oldDatastore.getDb().getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION);
+                logger.info("Copying Migration data from {} to {}", oldMigrationCollection.getNamespace(), migrationCollection.getNamespace());
+                migrateCollection(oldMigrationCollection, migrationCollection, new Document(), Projections.exclude("_id"),
+                        (tmpDocument, bulk) -> bulk.add(new InsertOneModel<>(tmpDocument)));
 
                 // Remove user from the source database
                 oldUserCollection.deleteOne(Filters.eq("id", ParamConstants.OPENCGA_USER_ID));
@@ -302,17 +350,12 @@ public class OrganizationMigration extends MigrationTool {
         // Rename database to main organization database
         MongoDataStore adminDatastore = mongoDBAdaptorFactory.getMongoManager().get("admin", mongoDBAdaptorFactory.getMongoDbConfiguration());
         for (String collectionName : oldDatastore.getCollectionNames()) {
-            if (!OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION.equals(collectionName)) {
-                logger.info("Renaming collection {} to {}", oldDatabase + "." + collectionName, newDatabase + "." + collectionName);
-                adminDatastore.getDb().runCommand(new Document()
-                        .append("renameCollection", oldDatabase + "." + collectionName)
-                        .append("to", newDatabase + "." + collectionName)
-                        .append("dropTarget", true)
-                );
-            } else {
-                // Remove collections
-                oldDatastore.getDb().getCollection(collectionName).drop();
-            }
+            logger.info("Renaming collection {} to {}", oldDatabase + "." + collectionName, newDatabase + "." + collectionName);
+            adminDatastore.getDb().runCommand(new Document()
+                    .append("renameCollection", oldDatabase + "." + collectionName)
+                    .append("to", newDatabase + "." + collectionName)
+                    .append("dropTarget", true)
+            );
         }
 
         CatalogIOManager ioManager = new CatalogIOManager(configuration);
@@ -395,6 +438,57 @@ public class OrganizationMigration extends MigrationTool {
                     Updates.set("configuration.authenticationOrigins", authOrigins)
             ));
         }
+
+        // Skip current migration for both organizations
+        catalogManager.getMigrationManager().skipPendingMigrations(ParamConstants.ADMIN_ORGANIZATION, opencgaToken);
+        catalogManager.getMigrationManager().skipPendingMigrations(organizationId, opencgaToken);
+    }
+
+    Set<Class<? extends MigrationTool>> getAvailableMigrations() {
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .setScanners(
+                        new SubTypesScanner(),
+                        new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Migration.class.getName()))
+                )
+                .addUrls(getUrls())
+                .filterInputsBy(input -> input != null && input.endsWith(".class"))
+        );
+
+        Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
+        migrations.removeIf(c -> Modifier.isAbstract(c.getModifiers()));
+
+        // Validate unique ids and rank
+        Map<String, Set<String>> versionIdMap = new HashMap<>();
+
+        for (Class<? extends MigrationTool> migration : migrations) {
+            Migration annotation = migration.getAnnotation(Migration.class);
+
+            if (!versionIdMap.containsKey(annotation.version())) {
+                versionIdMap.put(annotation.version(), new HashSet<>());
+            }
+            if (versionIdMap.get(annotation.version()).contains(annotation.id())) {
+                throw new IllegalStateException("Found duplicated migration id '" + annotation.id() + "' in version "
+                        + annotation.version());
+            }
+            if (String.valueOf(annotation.date()).length() != 8) {
+                throw new IllegalStateException("Found unexpected date '" + annotation.date() + "' in migration '" + annotation.id()
+                        + "' from version " + annotation.version() + ". Date format is YYYYMMDD.");
+            }
+            versionIdMap.get(annotation.version()).add(annotation.id());
+        }
+
+        return migrations;
+    }
+
+    private Collection<URL> getUrls() {
+        Collection<URL> urls = new LinkedList<>();
+        for (URL url : ClasspathHelper.forPackage("org.opencb.opencga")) {
+            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-hadoop-shaded"))) {
+                urls.add(url);
+            }
+        }
+        return urls;
     }
 
     private void replicateData(long studyUid, MongoCollection<Document> sourceCol, MongoCollection<Document> targetCol) {

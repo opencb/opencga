@@ -622,6 +622,11 @@ public class MigrationManager {
                              String token) throws MigrationException {
         Migration annotation = getMigrationAnnotation(runnableMigration);
 
+        if (StringUtils.isNotEmpty(annotation.deprecatedSince())) {
+            throw new MigrationException("Migration '" + annotation.id() + "' can't be run since version '" + annotation.deprecatedSince()
+                    + "'. Please, run this migration from a previous OpenCGA version.");
+        }
+
         MigrationTool migrationTool;
         try {
             migrationTool = runnableMigration.newInstance();
