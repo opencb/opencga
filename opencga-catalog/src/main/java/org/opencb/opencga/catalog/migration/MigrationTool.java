@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.WriteModel;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
@@ -78,6 +79,11 @@ public abstract class MigrationTool {
 
     public final void execute() throws MigrationException {
         try {
+            Migration annotation = getAnnotation();
+            if (StringUtils.isNotEmpty(annotation.deprecatedSince())) {
+                throw new MigrationException("Migration '" + annotation.id() + "' can't be run since version '"
+                        + annotation.deprecatedSince() + "'. Please, run this migration from a previous OpenCGA version.");
+            }
             run();
         } catch (MigrationException e) {
             throw e;
