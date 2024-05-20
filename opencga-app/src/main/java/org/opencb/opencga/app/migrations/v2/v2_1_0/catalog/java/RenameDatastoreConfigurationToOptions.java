@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
         date = 20210617,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class RenameDatastoreConfigurationToOptions extends MigrationTool {
 
     @Override

@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.CATALOG,
         date = 20220725,
         patch = 2,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class RecoverProbandSamplesInCases extends MigrationTool {
 
     @Override

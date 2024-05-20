@@ -4,7 +4,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 
 @Migration(id = "add_modificationDate_to_individual.internal", description = "Add internal modificationDate to Individual #1810",
         version = "2.2.0", language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG,
-        date = 20210812, deprecatedSince = "v3.0.0")
+        date = 20210812, deprecatedSince = "3.0.0")
 public class AddModificationDateToIndividualInternal extends AddInternalLastModified {
 
     @Override

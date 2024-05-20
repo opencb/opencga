@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Add new name field to Cohort #1902", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220228, deprecatedSince = "v3.0.0")
+        date = 20220228, deprecatedSince = "3.0.0")
 public class AddNameFieldInCohort extends MigrationTool {
 
     @Override

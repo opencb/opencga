@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.CATALOG,
         language = Migration.MigrationLanguage.JAVA,
         date = 20230313,
-        deprecatedSince = "v3.0.0"
+        deprecatedSince = "3.0.0"
 )
 public class CalculatePedigreeGraphMigration extends MigrationTool {
 

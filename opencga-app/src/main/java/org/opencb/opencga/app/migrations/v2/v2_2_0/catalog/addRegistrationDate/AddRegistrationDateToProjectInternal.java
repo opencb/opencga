@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "add_registrationDate_to_project.internal", description = "Add registrationDate to Project #1804", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG,
-        date = 20210720, deprecatedSince = "v3.0.0")
+        date = 20210720, deprecatedSince = "3.0.0")
 public class AddRegistrationDateToProjectInternal extends MigrationTool {
 
     @Override

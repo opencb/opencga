@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.CATALOG,
         offline = true,
         date = 20220512,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class AutoIncrementVersion extends MigrationTool {
 
     @Override

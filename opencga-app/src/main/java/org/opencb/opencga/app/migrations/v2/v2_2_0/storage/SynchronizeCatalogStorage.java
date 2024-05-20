@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.Migration;
         description = "Synchronize catalog storage #1850 #1851", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        date = 20220118, deprecatedSince = "v3.0.0")
+        date = 20220118, deprecatedSince = "3.0.0")
 public class SynchronizeCatalogStorage extends StorageMigrationTool {
 
     @Override

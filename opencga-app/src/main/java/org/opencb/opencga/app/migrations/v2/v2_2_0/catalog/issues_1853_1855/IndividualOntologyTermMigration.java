@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Change sex and ethnicity types for OntologyTermAnnotation #1855", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20211203, deprecatedSince = "v3.0.0")
+        date = 20211203, deprecatedSince = "3.0.0")
 public class IndividualOntologyTermMigration extends MigrationTool {
 
     @Override

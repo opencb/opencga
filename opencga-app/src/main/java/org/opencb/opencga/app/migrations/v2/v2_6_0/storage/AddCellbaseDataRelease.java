@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.migration.Migration;
         language = Migration.MigrationLanguage.JAVA,
         patch = 2,
         date = 20230104,
-        deprecatedSince = "v3.0.0"
+        deprecatedSince = "3.0.0"
 )
 public class AddCellbaseDataRelease extends StorageMigrationTool {
 

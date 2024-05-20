@@ -6,7 +6,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "remove_file_references_from_sample", description = "Remove deleted file references from samples #1815", version = "2.0.6",
-        date = 20210901, deprecatedSince = "v3.0.0")
+        date = 20210901, deprecatedSince = "3.0.0")
 public class removeDeletedFileReferencesFromSample extends MigrationTool {
 
     @Override

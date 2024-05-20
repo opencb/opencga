@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.Migration;
         domain = Migration.MigrationDomain.STORAGE,
         patch = 7,
         date = 20210721,
-        deprecatedSince = "v3.0.0") // Needs to run after StudyClinicalConfigurationRelocation
+        deprecatedSince = "3.0.0") // Needs to run after StudyClinicalConfigurationRelocation
 public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
 
     @Override

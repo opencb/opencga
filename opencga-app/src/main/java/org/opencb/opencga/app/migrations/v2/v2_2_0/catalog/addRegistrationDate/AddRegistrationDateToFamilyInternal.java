@@ -4,7 +4,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 
 @Migration(id = "add_registrationDate_to_family.internal", description = "Add registrationDate to Family #1804", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG,
-        date = 20210720, deprecatedSince = "v3.0.0")
+        date = 20210720, deprecatedSince = "3.0.0")
 public class AddRegistrationDateToFamilyInternal extends AddRegistrationDate {
 
     @Override

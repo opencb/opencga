@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Add missing biotypes, #TASK-625", version = "2.2.1",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220412, deprecatedSince = "v3.0.0")
+        date = 20220412, deprecatedSince = "3.0.0")
 public class AddMissingBiotypes extends MigrationTool {
 
     @Override

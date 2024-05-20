@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Rename interpretation stats field #1819", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20211115, deprecatedSince = "v3.0.0")
+        date = 20211115, deprecatedSince = "3.0.0")
 public class RenameInterpretationFindingStats extends MigrationTool {
 
     @Override

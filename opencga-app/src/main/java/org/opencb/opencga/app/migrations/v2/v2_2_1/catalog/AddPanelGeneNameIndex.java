@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Add Panel gene.name index #TASK-602", version = "2.2.1",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220406, deprecatedSince = "v3.0.0")
+        date = 20220406, deprecatedSince = "3.0.0")
 public class AddPanelGeneNameIndex extends MigrationTool {
 
     @Override

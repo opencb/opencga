@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 2,
-        date = 20211119, deprecatedSince = "v3.0.0")
+        date = 20211119, deprecatedSince = "3.0.0")
 public class RenameSampleQualityControlFields extends MigrationTool {
 
     @Override

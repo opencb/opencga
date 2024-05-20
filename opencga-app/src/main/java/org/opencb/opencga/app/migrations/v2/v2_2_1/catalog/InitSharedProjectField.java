@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Initialise sharedProjects #TASK-702", version = "2.2.1",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220502, deprecatedSince = "v3.0.0")
+        date = 20220502, deprecatedSince = "3.0.0")
 public class InitSharedProjectField extends MigrationTool {
 
     @Override

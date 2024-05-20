@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.migration.Migration;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20220502,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class InitSampleIndexConfiguration extends StorageMigrationTool {
 
     @Override

@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
         date = 20210614,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class VariantFileStatsRelocation extends MigrationTool {
 
     @Override

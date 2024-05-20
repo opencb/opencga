@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Rename FileQualityControl fields #1844", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20211119, deprecatedSince = "v3.0.0")
+        date = 20211119, deprecatedSince = "3.0.0")
 public class RenameFileQualityControlFields extends MigrationTool {
 
     @Override

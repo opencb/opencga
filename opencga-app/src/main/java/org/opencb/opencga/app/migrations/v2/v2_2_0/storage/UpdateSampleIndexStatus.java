@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.Migration;
         description = " Improve sample-index multi-schema management. #1901", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        date = 20220302, deprecatedSince = "v3.0.0")
+        date = 20220302, deprecatedSince = "3.0.0")
 public class UpdateSampleIndexStatus extends StorageMigrationTool {
 
     @Override

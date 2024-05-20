@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20220422,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 
 public class MoveCellbaseFromProjectInternalToProject extends MigrationTool {
 

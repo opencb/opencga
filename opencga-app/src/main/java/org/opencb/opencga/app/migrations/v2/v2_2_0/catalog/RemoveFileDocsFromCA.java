@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Store references of File in Clinical Analysis and not full File documents #1837", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20211102, deprecatedSince = "v3.0.0")
+        date = 20211102, deprecatedSince = "3.0.0")
 public class RemoveFileDocsFromCA extends MigrationTool {
 
     @Override

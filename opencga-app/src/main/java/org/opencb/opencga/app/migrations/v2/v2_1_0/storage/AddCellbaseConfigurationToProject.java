@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.STORAGE,
         patch = 3,
         date = 20210616,
-        deprecatedSince = "v3.0.0")
+        deprecatedSince = "3.0.0")
 public class AddCellbaseConfigurationToProject extends MigrationTool {
 
     @Override

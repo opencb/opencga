@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Remove parallel array indexes #CU-20jc4tx", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20220310, deprecatedSince = "v3.0.0")
+        date = 20220310, deprecatedSince = "3.0.0")
 public class RemoveParallelIndexes extends MigrationTool {
 
     @Override

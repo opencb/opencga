@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         domain = Migration.MigrationDomain.CATALOG,
         language = Migration.MigrationLanguage.JAVA,
         date = 20221109,
-        deprecatedSince = "v3.0.0"
+        deprecatedSince = "3.0.0"
 )
 public class SignatureFittingsMigration extends MigrationTool {
     @Override

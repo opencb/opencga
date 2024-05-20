@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.MigrationException;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "update_qc_file_sample_fields", description = "Update QC fields from Sample and File #1730", version = "2.1.0",
-        language = Migration.MigrationLanguage.JAVASCRIPT, date = 20210531, patch = 4, deprecatedSince = "v3.0.0")
+        language = Migration.MigrationLanguage.JAVASCRIPT, date = 20210531, patch = 4, deprecatedSince = "3.0.0")
 public class Migration4 extends MigrationTool {
 
     @Override

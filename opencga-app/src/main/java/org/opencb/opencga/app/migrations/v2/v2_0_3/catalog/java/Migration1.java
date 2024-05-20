@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "recalculate_roles", description = "Recalculate roles from Family #1763", version = "2.0.3", date = 20210528,
-    deprecatedSince = "v3.0.0")
+    deprecatedSince = "3.0.0")
 public class Migration1 extends MigrationTool {
 
     @Override

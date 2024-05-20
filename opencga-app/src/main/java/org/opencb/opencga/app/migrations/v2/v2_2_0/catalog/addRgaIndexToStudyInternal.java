@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        date = 20210719, deprecatedSince = "v3.0.0")
+        date = 20210719, deprecatedSince = "3.0.0")
 public class addRgaIndexToStudyInternal extends MigrationTool {
 
     @Override
