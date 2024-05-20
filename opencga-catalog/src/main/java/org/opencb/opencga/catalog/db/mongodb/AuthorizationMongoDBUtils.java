@@ -41,7 +41,7 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.
 public class AuthorizationMongoDBUtils {
 
     static final String OPENCGA = "opencga";
-    private static final String PRIVATE_ACL = "_acl";
+    public static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
 
@@ -80,7 +80,7 @@ public class AuthorizationMongoDBUtils {
     }
 
     public static boolean checkStudyPermission(String organizationId, Document study, String user, String studyPermission) {
-        if (isOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
+        if (isAtLeastOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
             return true;
         }
 
@@ -100,7 +100,7 @@ public class AuthorizationMongoDBUtils {
         }
     }
 
-    public static boolean isOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
+    public static boolean isAtLeastOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
         if (isOpencgaAdministrator(organizationId, user)) {
             return true;
         }

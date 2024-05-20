@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
@@ -180,6 +181,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void refreshTokenTest() throws Exception {
+        String refreshToken = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getRefreshToken();
+        AuthenticationResponse authenticationResponse = catalogManager.getUserManager().refreshToken(refreshToken);
+        assertNotNull(authenticationResponse);
+        assertNotNull(authenticationResponse.getToken());
+    }
+
+    @Test
     public void anonymousUserLoginTest() throws CatalogException {
         AuthenticationResponse authResponse = catalogManager.getUserManager().loginAnonymous(organizationId);
         assertNotNull(authResponse.getToken());
@@ -246,6 +255,65 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expectMessage("organization");
         catalogManager.getUserManager().get(organizationId, Arrays.asList(normalUserId1, normalUserId2, normalUserId3), new QueryOptions(),
                 studyAdminToken1);
+    }
+
+    @Test
+    public void testGetProjectsFromUserInfo() throws CatalogException {
+        String userId = organizationId;
+        catalogManager.getUserManager().create(userId, "test", "mail@mail.com", TestParamConstants.PASSWORD, organizationId, null,
+                opencgaToken);
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("test")), ownerToken);
+        String token = catalogManager.getUserManager().login(organizationId, userId, TestParamConstants.PASSWORD).getToken();
+
+        DataResult<User> user = catalogManager.getUserManager().get(organizationId, userId, new QueryOptions(), token);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(organizationId, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), normalToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId3, new QueryOptions(), normalToken3);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgOwnerUserId, new QueryOptions(), ownerToken);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, orgAdminUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, studyAdminUserId1, new QueryOptions(), studyAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
+
+        user = catalogManager.getUserManager().get(null, normalUserId1, new QueryOptions(), orgAdminToken1);
+        assertTrue(CollectionUtils.isNotEmpty(user.first().getProjects()));
+        System.out.println(user.first().getProjects().size());
     }
 
     @Test
@@ -470,6 +538,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
         acls = (List<Map<String, Object>>) studyDataResult.first().getAttributes().get("OPENCGA_ACL");
         assertEquals(2, acls.size());
         assertTrue(acls.stream().map(x -> String.valueOf(x.get("member"))).collect(Collectors.toSet()).contains("@group_cancer_some_thing_else"));
+    }
+
+    @Test
+    public void getUserInfoTest() throws CatalogException {
+        OpenCGAResult<User> result = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, orgAdminUserId1, QueryOptions.empty(), orgAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, studyAdminUserId1, QueryOptions.empty(), studyAdminToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(2, result.first().getProjects().size());
+
+        result = catalogManager.getUserManager().get(organizationId, normalUserId1, QueryOptions.empty(), normalToken1);
+        assertEquals(1, result.getNumResults());
+        assertNotNull(result.first().getProjects());
+        assertEquals(1, result.first().getProjects().size());
     }
 
     /**

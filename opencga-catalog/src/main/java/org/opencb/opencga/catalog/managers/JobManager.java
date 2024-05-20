@@ -798,7 +798,7 @@ public class JobManager extends ResourceManager<Job> {
         try {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -886,7 +886,7 @@ public class JobManager extends ResourceManager<Job> {
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId1 = study.getUid();
-            checkPermissions = !authorizationManager.isStudyAdministrator(organizationId, studyId1, userId);
+            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId1, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1499,7 +1499,7 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult<JobTop> top(String organizationId, Query baseQuery, int limit, String token) throws CatalogException {
         JwtPayload jwtPayload = userManager.validateToken(token);
         String userId = jwtPayload.getUserId(organizationId);
-        authorizationManager.checkIsOrganizationOwnerOrAdmin(organizationId, userId);
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
         List<String> studies = studyManager.searchInOrganization(organizationId, new Query(), StudyManager.INCLUDE_STUDY_IDS, token)
                 .getResults()
                 .stream()
