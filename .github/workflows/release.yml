@@ -68,12 +68,12 @@ jobs:
     secrets: inherit
 
   # Add the deploy-maven and deploy-python jobs they depend on the build-hdp job
-  deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: build-hdp
-    with:
-      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
-    secrets: inherit
+#  deploy-maven:
+#    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+#    needs: build-hdp
+#    with:
+#      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+#    secrets: inherit
 
 #  deploy-python:
 #    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
@@ -86,7 +86,7 @@ jobs:
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, build-hdi, deploy-docker-hdi, build-emr, deploy-docker-emr, build-emr613, deploy-docker-emr613, deploy-maven ]
+    needs: [ build-hdp, deploy-docker-hdp, build-hdi, deploy-docker-hdi, build-emr, deploy-docker-emr, build-emr613, deploy-docker-emr613 ]
     with:
       artifact: build-folder
       file: |
