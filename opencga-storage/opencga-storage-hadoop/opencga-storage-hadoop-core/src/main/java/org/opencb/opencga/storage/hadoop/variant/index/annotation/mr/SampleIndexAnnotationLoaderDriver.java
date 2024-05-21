@@ -138,6 +138,8 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             }
         }
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
 
         SampleIndexAnnotationLoaderMapper.setHasGenotype(job, hasGenotype);
         SampleIndexAnnotationLoaderMapper.setMultiFileSamples(job, multiFileSamples);

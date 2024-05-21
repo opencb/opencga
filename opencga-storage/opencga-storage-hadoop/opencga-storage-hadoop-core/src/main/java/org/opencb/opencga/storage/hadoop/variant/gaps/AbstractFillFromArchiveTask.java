@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.UNSUPPORTED_VARIANT_TYPE_SET;
 
 /**
  * Created on 31/10/17.
@@ -348,7 +348,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
     protected static boolean isVariantAlreadyLoaded(VcfSliceProtos.VcfSlice slice, VcfSliceProtos.VcfRecord vcfRecord) {
         VariantType variantType = VcfRecordProtoToVariantConverter.getVariantType(vcfRecord.getType());
         // The variant is not loaded if is a NO_VARIATION (fast check first)
-        if (!TARGET_VARIANT_TYPE_SET.contains(variantType)) {
+        if (UNSUPPORTED_VARIANT_TYPE_SET.contains(variantType)) {
             return false;
         }
 

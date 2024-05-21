@@ -221,7 +221,8 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.POSITION).append(',')
                     .append(VariantColumn.REFERENCE).append(',')
                     .append(VariantColumn.ALTERNATE).append(',')
-                    .append(VariantColumn.TYPE);
+                    .append(VariantColumn.TYPE).append(',')
+                    .append(VariantColumn.ALLELES);
 
             for (VariantQueryProjection.StudyVariantQueryProjection study : projection.getStudies().values()) {
                 int studyId = study.getId();
@@ -599,10 +600,17 @@ public class VariantSqlQueryParser {
         Iterator<Variant> iterator = variants.iterator();
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
+
+            String reference = variant.getReference();
+            String alternate = VariantPhoenixKeyFactory.buildSymbolicAlternate(variant);
+            if (VariantPhoenixKeyFactory.mightHashAlleles(variant)) {
+                reference = VariantPhoenixKeyFactory.hashAllele(reference);
+                alternate = VariantPhoenixKeyFactory.hashAllele(alternate);
+            }
             sb.append("('").append(checkStringValue(variant.getChromosome())).append("', ")
                     .append(variant.getStart()).append(", ")
-                    .append('\'').append(checkStringValue(variant.getReference())).append("', ")
-                    .append('\'').append(checkStringValue(VariantPhoenixKeyFactory.buildSymbolicAlternate(variant))).append("') ");
+                    .append('\'').append(checkStringValue(reference)).append("', ")
+                    .append('\'').append(checkStringValue(alternate)).append("') ");
             if (iterator.hasNext()) {
                 sb.append(',');
             }
@@ -709,9 +717,9 @@ public class VariantSqlQueryParser {
 
     protected void addVariantFilters(ParsedVariantQuery variantQuery, QueryOptions options, List<String> filters) {
         Query query = variantQuery.getQuery();
-        addQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
+        addQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters, VariantSqlQueryParser::hashAlleles);
 
-        addQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
+        addQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters, VariantSqlQueryParser::hashAlleles);
 
         addQueryFilter(query, TYPE, VariantColumn.TYPE, filters);
 
@@ -1079,6 +1087,16 @@ public class VariantSqlQueryParser {
             }
             filters.add(releaseFilters.toString());
         }
+    }
+
+    private static List<String> hashAlleles(String r) {
+        String[] split = r.split(",");
+        List<String> list = new ArrayList<>(split.length * 2);
+        for (String s : split) {
+            list.add(s);
+            list.add(VariantPhoenixKeyFactory.hashAllele(s));
+        }
+        return list;
     }
 
     private void addFileFilterFieldFilter(QueryOperation filtersOperation, List<String> filterValues, StringBuilder sb,

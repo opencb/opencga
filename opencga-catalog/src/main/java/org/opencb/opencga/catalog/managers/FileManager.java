@@ -30,10 +30,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.IOManager;
@@ -1538,7 +1535,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return delete(studyStr, fileIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -1549,13 +1546,15 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileIds", fileIds)
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
+        boolean physicalDelete = queryOptions.getBoolean(Constants.SKIP_TRASH, false);
 
         auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<File> result = OpenCGAResult.empty(File.class);
@@ -1833,10 +1832,10 @@ public class FileManager extends AnnotationSetManager<File> {
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             auditManager.audit(userId, Enums.Action.UNLINK, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
+            throw new CatalogException("Could not unlink file '" + fileId + "'", e);
         }
     }
 
@@ -3099,6 +3098,16 @@ public class FileManager extends AnnotationSetManager<File> {
 
             // TODO: Validate no file/folder within any registered directory is not registered in OpenCGA
         }
+
+        Query clinicalQuery = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FILES_UID.key(), file.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+        OpenCGAResult<Long> count = clinicalDBAdaptor.count(clinicalQuery);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogException("The file " + file.getName() + " is part of " + count.getNumMatches() + " clinical analyses");
+        }
+
 
         // Check the original files are not being indexed at the moment
         if (!indexFiles.isEmpty()) {

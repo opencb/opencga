@@ -1136,9 +1136,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isInvalid);
     }
 
-    public Iterable<CohortMetadata> getCalculatedOrInvalidCohorts(int studyId) {
+    public Iterable<CohortMetadata> getCalculatedOrPartialCohorts(int studyId) {
         return () -> Iterators.filter(cohortIterator(studyId),
-                cohortMetadata -> cohortMetadata.isStatsReady() || cohortMetadata.isInvalid());
+                cohortMetadata -> {
+                    TaskMetadata.Status status = cohortMetadata.getStatsStatus();
+                    return status == TaskMetadata.Status.READY
+                            || status == TaskMetadata.Status.RUNNING
+                            || status == TaskMetadata.Status.ERROR;
+                });
     }
 
     public CohortMetadata setSamplesToCohort(int studyId, String cohortName, Collection<Integer> samples) throws StorageEngineException {

@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -33,7 +34,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -49,8 +52,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by hpccoll1 on 01/06/15.
@@ -123,32 +125,76 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
 
         /** Create cohorts **/
-        HashSet<String> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next().getName());
-        cohort1.add(iterator.next().getName());
+        HashSet<String> cohort1Samples = new HashSet<>();
+        cohort1Samples.add(iterator.next().getName());
+        cohort1Samples.add(iterator.next().getName());
 
-        HashSet<String> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next().getName());
-        cohort2.add(iterator.next().getName());
+        HashSet<String> cohort2Samples = new HashSet<>();
+        cohort2Samples.add(iterator.next().getName());
+        cohort2Samples.add(iterator.next().getName());
 
         Map<String, Set<String>> cohorts = new HashMap<>();
-        cohorts.put("cohort1", cohort1);
-        cohorts.put("cohort2", cohort2);
+        cohorts.put("cohort1", cohort1Samples);
+        cohorts.put("cohort2", cohort2Samples);
+
+        // Just cohort ALL is expected
+        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(1, result.first().getStudies().get(0).getStats().size());
+        assertEquals(0, result.getEvents().size());
+
+        metadataManager.registerCohort(studyMetadata.getName(), "cohort1", cohort1Samples);
+
+        // Still just cohort ALL is expected, as cohort1 is not ready nor partial
+        result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(1, result.first().getStudies().get(0).getStats().size());
+        assertEquals(0, result.getEvents().size());
 
         //Calculate stats
         stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort1.cohort2.stats"));
 
         checkCohorts(dbAdaptor, studyMetadata);
 
-        List<Integer> cohort1Samples = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1").getSamples();
-        CohortMetadata cohort = metadataManager.addSamplesToCohort(studyMetadata.getId(), "cohort2", cohort1Samples);
-        assertTrue(cohort.isInvalid());
+        // All 3 cohorts are ready and expected
+        result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(3, result.first().getStudies().get(0).getStats().size());
+        assertEquals(0, result.getEvents().size());
 
-        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        List<Integer> cohort1SampleIds = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1").getSamples();
+        CohortMetadata cohort2 = metadataManager.addSamplesToCohort(studyMetadata.getId(), "cohort2", cohort1SampleIds);
+        assertTrue(cohort2.isInvalid());
+
+        // Cohort2 is invalid, but still all cohorts are expected, but with a warning event
+        result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(3, result.first().getStudies().get(0).getStats().size());
         assertEquals(1, result.getEvents().size());
         assertEquals("Please note that the Cohort Stats for '1000g:cohort2' are currently outdated." +
                 " The statistics have been calculated with 2 samples, while the total number of samples in the cohort is 4." +
                 " To display updated statistics, please execute variant-stats-index.", result.getEvents().get(0).getMessage());
+
+        VariantStorageEngine engineMock = Mockito.spy(variantStorageEngine);
+        VariantStatisticsManager statsManagerMock = Mockito.spy(variantStorageEngine.newVariantStatisticsManager());
+        Mockito.doReturn(statsManagerMock).when(engineMock).newVariantStatisticsManager();
+        Mockito.doAnswer(invocation -> {
+            invocation.callRealMethod();
+            throw new StorageEngineException("Mock error calculating stats");
+        }).when(statsManagerMock).preCalculateStats(Mockito.any(), Mockito.any(), Mockito.anyList(), Mockito.anyBoolean(), Mockito.any());
+
+        options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("stats_mock_fail").toString());
+        try {
+            engineMock.calculateStats(studyMetadata.getName(), Collections.singletonList(cohort2.getName()), options);
+            fail("Expected to fail mock");
+        } catch (Exception e) {
+            assertEquals("Mock error calculating stats", e.getMessage());
+        }
+
+        cohort2 = metadataManager.getCohortMetadata(studyMetadata.getId(), cohort2.getName());
+        assertEquals(TaskMetadata.Status.RUNNING, cohort2.getStatsStatus());
+
+        result = variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(3, result.first().getStudies().get(0).getStats().size());
+        assertEquals(1, result.getEvents().size());
+        assertEquals("Please note that the Cohort Stats for '1000g:cohort2' are currently being calculated.",
+                result.getEvents().get(0).getMessage());
     }
 
     @Test

@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -785,7 +786,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
                     break;
                 case REMOVE:
-                    document.getPullAll().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
+                    List<Document> documentList = fixRelatedFilesForRemoval(relatedFileDocument);
+                    document.getPull().put(QueryParams.RELATED_FILES.key(), documentList);
                     break;
                 case ADD:
                     document.getAddToSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
@@ -884,6 +886,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return document;
+    }
+
+    private List<Document> fixRelatedFilesForRemoval(List<Document> relatedFiles) {
+        if (CollectionUtils.isEmpty(relatedFiles)) {
+            return Collections.emptyList();
+        }
+
+        List<Document> relatedFilesCopy = new ArrayList<>(relatedFiles.size());
+        for (Document relatedFile : relatedFiles) {
+            relatedFilesCopy.add(new Document("file", new Document("uid", relatedFile.get("file", Document.class).get("uid"))));
+        }
+        return relatedFilesCopy;
     }
 
     @Override
@@ -1007,7 +1021,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 Document tmpFile = iterator.next();
                 long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
 
+                removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
                 dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
+                dbAdaptorFactory.getClinicalAnalysisDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
                 // Set status
                 nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
@@ -1032,6 +1048,28 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
             logger.debug("File {}({}) deleted", path, fileUid);
             return endWrite(tmpStartTime, numFiles, 0, 0, numFiles, Collections.emptyList());
+        }
+    }
+
+    void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document fileDoc)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        File file = fileConverter.convertToDataModelType(fileDoc);
+        FileRelatedFile relatedFile = new FileRelatedFile(file, null);
+        ObjectMap parameters = new ObjectMap(QueryParams.RELATED_FILES.key(), Collections.singletonList(relatedFile));
+        ObjectMap actionMap = new ObjectMap(QueryParams.RELATED_FILES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.RELATED_FILES_FILE_UID.key(), fileUid);
+        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, studyUid, parameters, query, options);
+        Document updateDoc = updateDocument.toFinalUpdateDocument();
+        if (!updateDoc.isEmpty()) {
+            Bson bsonQuery = parseQuery(query);
+            OpenCGAResult<File> result = transactionalUpdate(clientSession, studyUid, bsonQuery, updateDocument);
+            if (result.getNumUpdated() > 0) {
+                logger.debug("File '{}' removed from related files array from {} files.", file.getPath(), result.getNumUpdated());
+            }
         }
     }
 
@@ -1479,13 +1517,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                             addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         }
                         break;
-                    case FORMAT:
-                    case BIOFORMAT:
-                        // Replace the value for an uppercase string as we know it will always be in that way
-                        String uppercaseValue = myQuery.getString(queryParam.key()).toUpperCase();
-                        myQuery.put(queryParam.key(), uppercaseValue);
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
-                        break;
                     case UUID:
                     case EXTERNAL:
                     case TYPE:
@@ -1493,9 +1524,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case ID:
                     case PATH:
                     case RELEASE:
+                    case FORMAT:
+                    case BIOFORMAT:
                     case TAGS:
                     case SIZE:
                     case SOFTWARE_NAME:
+                    case RELATED_FILES_FILE_UID:
                     case JOB_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
