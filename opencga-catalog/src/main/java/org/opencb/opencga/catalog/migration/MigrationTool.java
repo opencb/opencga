@@ -81,8 +81,7 @@ public abstract class MigrationTool {
         try {
             Migration annotation = getAnnotation();
             if (StringUtils.isNotEmpty(annotation.deprecatedSince())) {
-                throw new MigrationException("Migration '" + annotation.id() + "' can't be run since version '"
-                        + annotation.deprecatedSince() + "'. Please, run this migration from a previous OpenCGA version.");
+                throw MigrationException.deprecatedMigration(annotation);
             }
             run();
         } catch (MigrationException e) {
