@@ -3,14 +3,18 @@ package org.opencb.opencga.app.migrations.v2_12_5.storage;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -53,6 +57,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
 
     private void checkStudy(VariantStorageEngine engine, String study) throws StorageEngineException, CatalogException {
         VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+        boolean repeatMigration = params.getBoolean("repeat-migration");
 
         logger.info("Checking study '{}'", study);
         int studyId = metadataManager.getStudyId(study);
@@ -217,58 +222,116 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                         .append("dateStr", TimeUtils.getTime())
                         .append("date", Date.from(Instant.now()));
                 for (Integer sampleId : invalidSampleIndexes) {
-                    ObjectMap thisEvent = new ObjectMap(event);
-                    String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
-                            logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
-                        } else {
-                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
-                            for (Integer sampleIndexVersion : sampleMetadata.getSampleIndexVersions()) {
-                                sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, sampleIndexVersion);
-                            }
-                            sampleMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
-                        }
-                    }).getName();
-                    catalogManager.getSampleManager().update(study, sampleName,
-                            new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
+                    invalidateSecondarySampleIndex(study, sampleId, event, metadataManager, studyId, repeatMigration);
                 }
                 Set<Integer> invalidSamples = new HashSet<>();
                 for (Integer fileId : invalidFiles) {
-                    ObjectMap thisEvent = new ObjectMap(event);
-                    String filePath = metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> {
-                        invalidSamples.addAll(fileMetadata.getSamples());
-                        if (fileMetadata.getAttributes().containsKey("TASK-6078")) {
-                            logger.info("File '{}'({}) already has the attribute 'TASK-6078'. Skip", fileMetadata.getName(), fileMetadata.getId());
-                        } else {
-                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(fileMetadata.getStatus());
-                            fileMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            fileMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
-                        }
-                    }).getPath();
-                    String fileUri = Paths.get(filePath).toUri().toString();
-                    Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), fileUri);
-                    String catalogFileId = catalogManager.getFileManager()
-                            .search(study, query, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), token)
-                            .first().getId();
-                    catalogManager.getFileManager().update(study, catalogFileId,
-                            new FileUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
+                    invalidateFileIndex(study, fileId, event, metadataManager, studyId, invalidSamples, repeatMigration);
                 }
                 for (Integer sampleId : invalidSamples) {
-                    ObjectMap thisEvent = new ObjectMap(event);
-                    String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        if (sampleMetadata.getAttributes().containsKey("TASK-6078")) {
-                            logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip", sampleMetadata.getName(), sampleMetadata.getId());
-                        } else {
-                            Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
-                            sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
-                            sampleMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
-                        }
-                    }).getName();
-                    catalogManager.getSampleManager().update(study, sampleName,
-                            new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
+                    invalidateSampleIndex(study, sampleId, event, metadataManager, studyId, repeatMigration);
                 }
+
+                Set<Integer> allSampleIds = new HashSet<>();
+                allSampleIds.addAll(affectedSamples);
+                allSampleIds.addAll(invalidSamples);
+                List<String> allSampleNames = allSampleIds.stream()
+                        .map(sampleId -> metadataManager.getSampleName(studyId, sampleId))
+                        .collect(Collectors.toList());
+
+                if (!allSampleNames.isEmpty()) {
+                    new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager)
+                            .synchronizeCatalogSamplesFromStorage(study, allSampleNames, token);
+                }
+
             }
         }
+    }
+
+    private void invalidateFileIndex(String study, Integer fileId, ObjectMap event, VariantStorageMetadataManager metadataManager, int studyId, Set<Integer> invalidSamples, boolean repeatMigration) throws StorageEngineException, CatalogException {
+        ObjectMap thisEvent = new ObjectMap(event);
+        String filePath = metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> {
+            invalidSamples.addAll(fileMetadata.getSamples());
+            if (fileMetadata.getAttributes().containsKey("TASK-6078") && !repeatMigration) {
+                logger.info("File '{}'({}) already has the attribute 'TASK-6078'. Skip",
+                        fileMetadata.getName(), fileMetadata.getId());
+            } else {
+                Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(fileMetadata.getStatus());
+                fileMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
+                fileMetadata.getAttributes().put("TASK-6078", thisEvent.append("oldStatus", oldStatus));
+            }
+        }).getPath();
+        String fileUri = Paths.get(filePath).toUri().toString();
+        Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), fileUri);
+        File file = catalogManager.getFileManager()
+                .search(study, query, new QueryOptions(), token)
+                .first();
+        catalogManager.getFileManager().update(study, file.getId(),
+                new FileUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
+        catalogManager.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
+                .setStatus(new VariantIndexStatus(IndexStatus.INVALID, "Invalid status - TASK-6078 - affected_invalid_sample - "
+                        + "File must be deleted and then indexed")), token);
+    }
+
+    private void invalidateSecondarySampleIndex(String study, Integer sampleId, ObjectMap event, VariantStorageMetadataManager metadataManager, int studyId, boolean repeatMigration) throws StorageEngineException, CatalogException {
+        ObjectMap thisEvent = new ObjectMap(event);
+        String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+            if (sampleMetadata.getAttributes().containsKey("TASK-6078") && !repeatMigration) {
+                logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip",
+                        sampleMetadata.getName(), sampleMetadata.getId());
+            } else {
+                Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
+                Map<String, Object> oldAttributes = new HashMap<>(sampleMetadata.getAttributes());
+
+                for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                    sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                }
+                for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                }
+                for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                }
+
+                sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
+                thisEvent.append("oldStatus", oldStatus);
+                thisEvent.append("oldAttributes", oldAttributes);
+                thisEvent.append("newStatus", sampleMetadata.getStatus());
+                sampleMetadata.getAttributes().put("TASK-6078", thisEvent);
+            }
+        }).getName();
+        catalogManager.getSampleManager().update(study, sampleName,
+                new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
+    }
+
+    private void invalidateSampleIndex(String study, Integer sampleId, ObjectMap event, VariantStorageMetadataManager metadataManager, int studyId, boolean repeatMigration) throws StorageEngineException, CatalogException {
+        ObjectMap thisEvent = new ObjectMap(event);
+        String sampleName = metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+            if (sampleMetadata.getAttributes().containsKey("TASK-6078") && !repeatMigration) {
+                logger.info("Sample '{}'({}) already has the attribute 'TASK-6078'. Skip",
+                        sampleMetadata.getName(), sampleMetadata.getId());
+            } else {
+                Map<String, TaskMetadata.Status> oldStatus = new HashMap<>(sampleMetadata.getStatus());
+                Map<String, Object> oldAttributes = new HashMap<>(sampleMetadata.getAttributes());
+                sampleMetadata.setIndexStatus(TaskMetadata.Status.INVALID);
+
+                for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                    sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                }
+                for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                }
+                for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                }
+                thisEvent.append("oldStatus", oldStatus);
+                thisEvent.append("oldAttributes", oldAttributes);
+                thisEvent.append("newStatus", sampleMetadata.getStatus());
+                sampleMetadata.getAttributes().put("TASK-6078", thisEvent);
+            }
+        }).getName();
+        catalogManager.getSampleManager().update(study, sampleName,
+                new SampleUpdateParams().setAttributes(new ObjectMap("TASK-6078", thisEvent)), QueryOptions.empty(), token);
     }
 
     private Set<Set<Integer>> getFileWithSharedSamples(VariantStorageEngine engine, int studyId) throws StorageEngineException {
