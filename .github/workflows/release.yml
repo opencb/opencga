@@ -88,7 +88,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
     needs: [ build-hdp, deploy-docker-hdp, build-hdi, deploy-docker-hdi, build-emr, deploy-docker-emr, build-emr613, deploy-docker-emr613 ]
     with:
-      artifact: build-folder
+      artifact: build-folder-hdp
       file: |
         opencga-client-${{ needs.build-hdp.outputs.version }}.tar.gz
         clients/R/opencgaR_${{ needs.build-hdp.outputs.version }}.tar.gz
