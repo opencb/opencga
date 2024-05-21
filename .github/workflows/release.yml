@@ -12,12 +12,14 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-hdp
 
   deploy-docker-hdp:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-hdp
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ needs.build-hdp.outputs.version }}
+      build_folder: build-folder-hdp
     secrets: inherit
 
   # Add the build-hdi and deploy-docker-hdi jobs
@@ -25,12 +27,14 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P hdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-hdi
 
   deploy-docker-hdi:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-hdi
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ needs.build-hdi.outputs.version }}
+      build_folder: build-folder-hdi
     secrets: inherit
 
   # Add the build-emr and deploy-docker-emr jobs
@@ -38,12 +42,14 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P emr6.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-emr
 
   deploy-docker-emr:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-emr
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ needs.build-emr.outputs.version }}
+      build_folder: build-folder-emr
     secrets: inherit
 
   # Add the build-emr613 and deploy-docker-emr613 jobs
@@ -51,12 +57,14 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P emr6.13,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-emr613
 
   deploy-docker-emr613:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-emr613
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ needs.build-emr613.outputs.version }}
+      build_folder: build-folder-emr613
     secrets: inherit
 
   # Add the deploy-maven and deploy-python jobs they depend on the build-hdp job
@@ -67,18 +75,18 @@ jobs:
       maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
     secrets: inherit
 
-  deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
-    needs: build-hdp
-    with:
-      cli: ./clients/python/python-build.sh push
-      artifact: build-folder
-    secrets: inherit
+#  deploy-python:
+#    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+#    needs: build-hdp
+#    with:
+#      cli: ./clients/python/python-build.sh push
+#      artifact: build-folder
+#    secrets: inherit
 
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, build-hdi, deploy-docker-hdi, build-emr, deploy-docker-emr, build-emr613, deploy-docker-emr613, deploy-maven, deploy-python ]
+    needs: [ build-hdp, deploy-docker-hdp, build-hdi, deploy-docker-hdi, build-emr, deploy-docker-emr, build-emr613, deploy-docker-emr613, deploy-maven ]
     with:
       artifact: build-folder
       file: |
