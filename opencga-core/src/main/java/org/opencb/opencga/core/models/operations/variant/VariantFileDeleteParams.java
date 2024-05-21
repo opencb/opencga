@@ -34,6 +34,7 @@ public class VariantFileDeleteParams extends ToolParams {
 
     private List<String> file;
     private boolean resume;
+    private boolean force;
 
     public List<String> getFile() {
         return file;
@@ -50,6 +51,15 @@ public class VariantFileDeleteParams extends ToolParams {
 
     public VariantFileDeleteParams setResume(boolean resume) {
         this.resume = resume;
+        return this;
+    }
+
+    public boolean isForce() {
+        return force;
+    }
+
+    public VariantFileDeleteParams setForce(boolean force) {
+        this.force = force;
         return this;
     }
 }

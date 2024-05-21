@@ -55,6 +55,7 @@ public class VariantFileDeleteOperationTool extends OperationTool {
             throw new ToolException("Missing file/s");
         }
         params.put(VariantStorageOptions.RESUME.key(), variantFileDeleteParams.isResume());
+        params.put(VariantStorageOptions.FORCE.key(), variantFileDeleteParams.isForce());
     }
 
     @Override
