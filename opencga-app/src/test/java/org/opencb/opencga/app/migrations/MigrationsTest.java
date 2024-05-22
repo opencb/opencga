@@ -16,7 +16,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 
 import java.net.URL;
 import java.util.Arrays;
@@ -29,12 +28,13 @@ public class MigrationsTest {
 
     @Test
     public void testVariantSetupMigration() throws Exception {
-        setup("v3.0.0");
-        VariantStorageMetadataManager mm = DummyVariantStorageEngine.getVariantMetadataManager();
+        setup("v3.0.0", false);
         String studyName = "test@1000G:phase1";
-        StudyMetadata studyMetadata = mm.createStudy(studyName);
-        int fileId = mm.registerFile(studyMetadata.getId(), "folder/file.vcf", Arrays.asList("s1", "s2"));
-        mm.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(fileId));
+
+        VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();
+        StudyMetadata studyMetadata = metadataManager.createStudy(studyName);
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), "folder/file.vcf", Arrays.asList("s1", "s2"));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(fileId));
 
         for (Study study : opencga.getCatalogManager().getStudyManager().searchInOrganization("test", new Query(), new QueryOptions(), opencga.getAdminToken()).getResults()) {
             Assert.assertNull(study.getInternal().getConfiguration().getVariantEngine().getSetup());
@@ -65,11 +65,15 @@ public class MigrationsTest {
     }
 
     private void setup(String dataset) throws Exception {
+        setup(dataset, false);
+    }
+
+    private void setup(String dataset, boolean storageHadoop) throws Exception {
         if (opencga != null) {
             opencga.after();
             opencga = null;
         }
-        opencga = new OpenCGATestExternalResource(false);
+        opencga = new OpenCGATestExternalResource(storageHadoop);
         opencga.before();
         URL resource = getClass().getResource("/datasets/opencga/" + dataset + "/");
         opencga.restore(resource);

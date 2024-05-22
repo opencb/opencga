@@ -259,22 +259,9 @@
             <type>test-jar</type>
         </dependency>
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
-            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
-            <version>${opencga.hadoop.thirdparty.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.yaml</groupId>
-                    <artifactId>snakeyaml</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
@@ -770,9 +757,14 @@
                                             <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
                                             <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
                                         </exec>
+                                        <echo>Ensure that only one opencga-hadoop-shaded*.jar and opencga-storage-hadoop-compat*.jar libs are included</echo>
                                         <exec executable="bash" failonerror="true">
                                             <arg value="-c"/>
                                             <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
+                                        </exec>
+                                        <exec executable="bash" failonerror="true">
+                                            <arg value="-c"/>
+                                            <arg value="find ${build.dir}/libs/ -name 'opencga-storage-hadoop-compat-hbase*' | wc -l | grep -q '^1$'"/>
                                         </exec>
                                     </target>
                                 </configuration>

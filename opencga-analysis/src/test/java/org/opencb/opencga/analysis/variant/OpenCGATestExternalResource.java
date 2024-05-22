@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -380,6 +381,17 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
         catalogManagerExternalResource.resetCatalogManager();
     }
+
+    public final VariantStorageEngine getVariantStorageEngineByProject(String projectFqn) throws Exception {
+        DataStore dataStore = getVariantStorageManager().getDataStoreByProjectId(projectFqn, getAdminToken());
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
+        }
+        return variantStorageEngine;
+    }
+
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {
 //
