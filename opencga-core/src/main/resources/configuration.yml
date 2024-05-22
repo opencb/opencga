@@ -5,6 +5,8 @@ logDir: ${OPENCGA.INSTALLATION.DIR}/logs
 databasePrefix: ${OPENCGA.DB.PREFIX}
 workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
+
+# Maximum number of login attempts before banning a user account
 maxLoginAttempts: ${OPENCGA.MAX_LOGIN_ATTEMPTS}
 
 panel:
