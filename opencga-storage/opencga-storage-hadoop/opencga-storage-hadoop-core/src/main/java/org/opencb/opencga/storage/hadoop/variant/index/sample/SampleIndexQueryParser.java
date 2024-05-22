@@ -274,7 +274,7 @@ public class SampleIndexQueryParser {
         //} else if (isValidParam(query, FILE)) {
             // Add FILEs filter ?
         } else {
-            throw new IllegalStateException("Unable to query SamplesIndex");
+            throw new IllegalStateException("Unable to query SamplesIndex. Missing sample filter! Query: " + query.toJson());
         }
         boolean requireFamilyIndex = !mendelianErrorSet.isEmpty();
         SampleIndexSchema schema = schemaFactory.getSchema(studyId, sampleGenotypeQuery.keySet(), false, requireFamilyIndex);
