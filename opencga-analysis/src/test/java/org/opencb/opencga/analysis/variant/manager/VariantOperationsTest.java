@@ -299,10 +299,10 @@ public class VariantOperationsTest {
     public static void dummyVariantSetup(VariantStorageManager variantStorageManager, String study, String token)
             throws CatalogException, StorageEngineException {
         variantStorageManager.variantSetup(study, new VariantSetupParams()
-                        .setAverageFileSize(100L)
-                        .setExpectedFilesNumber(5)
-                        .setExpectedSamplesNumber(5)
-                        .setNumberOfVariantsPerSample(1000), token);
+                        .setAverageFileSize("100B")
+                        .setExpectedFiles(5)
+                        .setExpectedSamples(5)
+                        .setVariantsPerSample(1000), token);
     }
 
     public void setUpCatalogManager() throws Exception {
@@ -335,8 +335,8 @@ public class VariantOperationsTest {
         setupParams
                 .setFileType(VariantSetupParams.FileType.GENOME_VCF)
                 .setDataDistribution(VariantSetupParams.DataDistribution.MULTI_SAMPLE_FILES)
-                .setExpectedFilesNumber(20)
-                .setExpectedSamplesNumber(100);
+                .setExpectedFiles(20)
+                .setExpectedSamples(100);
         String study2 = "study2";
         catalogManager.getStudyManager().create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token);
 

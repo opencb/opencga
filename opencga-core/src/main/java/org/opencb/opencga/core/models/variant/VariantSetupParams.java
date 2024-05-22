@@ -4,27 +4,27 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantSetupParams extends ToolParams {
 
-    private Integer expectedSamplesNumber;
+    private Integer expectedSamples;
 
-    private Integer expectedFilesNumber;
+    private Integer expectedFiles;
 
     private FileType fileType;
 
-    private Long averageFileSize;
+    private String averageFileSize;
 
-    private Integer numberOfVariantsPerSample;
+    private Integer variantsPerSample;
 
-    private Float samplesPerFile;
+    private Float averageSamplesPerFile;
 
     private DataDistribution dataDistribution;
 
     public VariantSetupParams(VariantSetupParams params) {
-        this.expectedSamplesNumber = params.expectedSamplesNumber;
-        this.expectedFilesNumber = params.expectedFilesNumber;
+        this.expectedSamples = params.expectedSamples;
+        this.expectedFiles = params.expectedFiles;
         this.fileType = params.fileType;
         this.averageFileSize = params.averageFileSize;
-        this.numberOfVariantsPerSample = params.numberOfVariantsPerSample;
-        this.samplesPerFile = params.samplesPerFile;
+        this.variantsPerSample = params.variantsPerSample;
+        this.averageSamplesPerFile = params.averageSamplesPerFile;
         this.dataDistribution = params.dataDistribution;
     }
 
@@ -61,21 +61,21 @@ public class VariantSetupParams extends ToolParams {
         EXOME
     }
 
-    public Integer getExpectedSamplesNumber() {
-        return expectedSamplesNumber;
+    public Integer getExpectedSamples() {
+        return expectedSamples;
     }
 
-    public VariantSetupParams setExpectedSamplesNumber(Integer expectedSamplesNumber) {
-        this.expectedSamplesNumber = expectedSamplesNumber;
+    public VariantSetupParams setExpectedSamples(Integer expectedSamples) {
+        this.expectedSamples = expectedSamples;
         return this;
     }
 
-    public Integer getExpectedFilesNumber() {
-        return expectedFilesNumber;
+    public Integer getExpectedFiles() {
+        return expectedFiles;
     }
 
-    public VariantSetupParams setExpectedFilesNumber(Integer expectedFilesNumber) {
-        this.expectedFilesNumber = expectedFilesNumber;
+    public VariantSetupParams setExpectedFiles(Integer expectedFiles) {
+        this.expectedFiles = expectedFiles;
         return this;
     }
 
@@ -88,30 +88,30 @@ public class VariantSetupParams extends ToolParams {
         return this;
     }
 
-    public Long getAverageFileSize() {
+    public String getAverageFileSize() {
         return averageFileSize;
     }
 
-    public VariantSetupParams setAverageFileSize(Long averageFileSize) {
+    public VariantSetupParams setAverageFileSize(String averageFileSize) {
         this.averageFileSize = averageFileSize;
         return this;
     }
 
-    public Integer getNumberOfVariantsPerSample() {
-        return numberOfVariantsPerSample;
+    public Integer getVariantsPerSample() {
+        return variantsPerSample;
     }
 
-    public VariantSetupParams setNumberOfVariantsPerSample(Integer numberOfVariantsPerSample) {
-        this.numberOfVariantsPerSample = numberOfVariantsPerSample;
+    public VariantSetupParams setVariantsPerSample(Integer variantsPerSample) {
+        this.variantsPerSample = variantsPerSample;
         return this;
     }
 
-    public Float getSamplesPerFile() {
-        return samplesPerFile;
+    public Float getAverageSamplesPerFile() {
+        return averageSamplesPerFile;
     }
 
-    public VariantSetupParams setSamplesPerFile(Float samplesPerFile) {
-        this.samplesPerFile = samplesPerFile;
+    public VariantSetupParams setAverageSamplesPerFile(Float averageSamplesPerFile) {
+        this.averageSamplesPerFile = averageSamplesPerFile;
         return this;
     }
 

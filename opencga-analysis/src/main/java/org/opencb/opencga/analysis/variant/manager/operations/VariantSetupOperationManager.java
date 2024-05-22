@@ -5,7 +5,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
@@ -57,26 +56,26 @@ public class VariantSetupOperationManager extends OperationManager {
             switch (params.getFileType()) {
                 case GENOME_gVCF:
                     if (params.getAverageFileSize() == null) {
-                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("1GiB"));
+                        params.setAverageFileSize("1GiB");
                     }
-                    if (params.getNumberOfVariantsPerSample() == null) {
-                        params.setNumberOfVariantsPerSample(5000000);
+                    if (params.getVariantsPerSample() == null) {
+                        params.setVariantsPerSample(5000000);
                     }
                     break;
                 case GENOME_VCF:
                     if (params.getAverageFileSize() == null) {
-                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("500MiB"));
+                        params.setAverageFileSize("500MiB");
                     }
-                    if (params.getNumberOfVariantsPerSample() == null) {
-                        params.setNumberOfVariantsPerSample(5000000);
+                    if (params.getVariantsPerSample() == null) {
+                        params.setVariantsPerSample(5000000);
                     }
                     break;
                 case EXOME:
                     if (params.getAverageFileSize() == null) {
-                        params.setAverageFileSize(IOUtils.fromHumanReadableToByte("100MiB"));
+                        params.setAverageFileSize("100MiB");
                     }
-                    if (params.getNumberOfVariantsPerSample() == null) {
-                        params.setNumberOfVariantsPerSample(100000);
+                    if (params.getVariantsPerSample() == null) {
+                        params.setVariantsPerSample(100000);
                     }
                     break;
                 default:
@@ -84,28 +83,28 @@ public class VariantSetupOperationManager extends OperationManager {
             }
         }
         // Unable to tell. Use a default value for numberOfVariantsPerSample
-        if (params.getNumberOfVariantsPerSample() == null) {
-            params.setNumberOfVariantsPerSample(5000000);
+        if (params.getVariantsPerSample() == null) {
+            params.setVariantsPerSample(5000000);
         }
 
-        if (params.getSamplesPerFile() == null) {
+        if (params.getAverageSamplesPerFile() == null) {
             if (params.getDataDistribution() == null) {
-                params.setSamplesPerFile(params.getExpectedSamplesNumber().floatValue() / params.getExpectedFilesNumber().floatValue());
+                params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue() / params.getExpectedFiles().floatValue());
             } else {
                 switch (params.getDataDistribution()) {
                     case SINGLE_SAMPLE_FILES:
-                        params.setSamplesPerFile(1f);
+                        params.setAverageSamplesPerFile(1f);
                         break;
                     case MULTI_SAMPLE_FILES:
-                        params.setSamplesPerFile(params.getExpectedSamplesNumber().floatValue() / params.getExpectedFilesNumber().floatValue());
+                        params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue() / params.getExpectedFiles().floatValue());
                         break;
                     case MULTIPLE_FILE_PER_SAMPLE:
                         // Hard to tell. Let's assume 2 samples per file
-                        params.setSamplesPerFile(2f);
+                        params.setAverageSamplesPerFile(2f);
                         break;
                     case MULTI_SAMPLE_FILES_SPLIT_BY_CHROMOSOME:
                     case MULTI_SAMPLE_FILES_SPLIT_BY_REGION:
-                        params.setSamplesPerFile(params.getExpectedSamplesNumber().floatValue());
+                        params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue());
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown dataDistribution " + params.getDataDistribution());
@@ -132,10 +131,10 @@ public class VariantSetupOperationManager extends OperationManager {
             throw new IllegalArgumentException("Study " + studyStr + " is already setup");
         }
 
-        if (params.getExpectedFilesNumber() == null || params.getExpectedFilesNumber() <= 0) {
+        if (params.getExpectedFiles() == null || params.getExpectedFiles() <= 0) {
             throw new IllegalArgumentException("Missing expectedFilesNumber");
         }
-        if (params.getExpectedSamplesNumber() == null || params.getExpectedSamplesNumber() <= 0) {
+        if (params.getExpectedSamples() == null || params.getExpectedSamples() <= 0) {
             throw new IllegalArgumentException("Missing expectedSamplesNumber");
         }
 

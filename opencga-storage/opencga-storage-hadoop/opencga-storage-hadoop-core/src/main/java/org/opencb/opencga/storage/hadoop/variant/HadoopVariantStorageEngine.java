@@ -1093,19 +1093,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         long expectedHBaseRegionSize = IOUtils.fromHumanReadableToByte("7.5GiB");
 
-        options.put(EXPECTED_SAMPLES_NUMBER.key(), params.getExpectedSamplesNumber());
-        options.put(EXPECTED_FILES_NUMBER.key(), params.getExpectedFilesNumber());
+        options.put(EXPECTED_SAMPLES_NUMBER.key(), params.getExpectedSamples());
+        options.put(EXPECTED_FILES_NUMBER.key(), params.getExpectedFiles());
 
         // Variant pre-split
         int defaultVariantPreSplit = configuredOptions
                 .getInt(VARIANT_TABLE_PRESPLIT_SIZE.key(), VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
         float variantsFileToHBaseMultiplier = 1.3f;
-        float variantsTableSize = params.getExpectedFilesNumber() * params.getAverageFileSize() * variantsFileToHBaseMultiplier;
+        Long averageFileSize = IOUtils.fromHumanReadableToByte(params.getAverageFileSize());
+        float variantsTableSize = params.getExpectedFiles() * averageFileSize * variantsFileToHBaseMultiplier;
         int variantPreSplit = (int) (variantsTableSize / expectedHBaseRegionSize);
         options.put(VARIANT_TABLE_PRESPLIT_SIZE.key(), Math.max(defaultVariantPreSplit, variantPreSplit));
 
         // Archive pre-split
-        Long averageFileSize = params.getAverageFileSize();
         int filesPerBatch = configuredOptions
                 .getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
         float archiveFileToHBaseMultiplier = 1.2f;
@@ -1115,14 +1115,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         // SampleIndex pre-split
         long averageSizePerVariant;
-        if (params.getNumberOfVariantsPerSample() > 3500000) {
+        if (params.getVariantsPerSample() > 3500000) {
             // With this many variants per sample, most of them won't have much data
             averageSizePerVariant = IOUtils.fromHumanReadableToByte("13B");
         } else {
             // With a small number of variants per sample, most of them will have a lot of data
             averageSizePerVariant = IOUtils.fromHumanReadableToByte("25B");
         }
-        long sampleIndexSize = params.getNumberOfVariantsPerSample() * averageSizePerVariant;
+        long sampleIndexSize = params.getVariantsPerSample() * averageSizePerVariant;
         int samplesPerSplit = (int) (expectedHBaseRegionSize / sampleIndexSize);
         options.put(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(), samplesPerSplit);
 
