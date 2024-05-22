@@ -20,4 +20,9 @@ public class MigrationException extends CatalogException {
         return new MigrationException("Migration '" + migration.id() + "' requires database to be offline. Please, ensure the database "
                 + "cannot be accessed and run try again with '--offline' flag.");
     }
+
+    public static MigrationException outdatedMigration(Migration migration, String version) {
+        return new MigrationException("Migration '" + migration.id() + "' is outdated since version " + version + ". Please, update the "
+                + "migration from the previous latest version.");
+    }
 }
