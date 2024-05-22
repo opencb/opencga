@@ -44,6 +44,8 @@ public class Configuration {
     private String workspace;
     private String jobDir;
 
+    private int maxLoginAttempts;
+
     private Monitor monitor;
     private HealthCheck healthCheck;
     private Audit audit;
@@ -112,9 +114,17 @@ public class Configuration {
             throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
         }
 
+        addDefaultValueIfMissing(configuration);
+
         // We must always overwrite configuration with environment parameters
         overwriteWithEnvironmentVariables(configuration);
         return configuration;
+    }
+
+    private static void addDefaultValueIfMissing(Configuration configuration) {
+        if (configuration.getMaxLoginAttempts() <= 0) {
+            configuration.setMaxLoginAttempts(5);
+        }
     }
 
     private static void overwriteWithEnvironmentVariables(Configuration configuration) {
@@ -135,6 +145,9 @@ public class Configuration {
                         break;
                     case "OPENCGA_MONITOR_PORT":
                         configuration.getMonitor().setPort(Integer.parseInt(value));
+                        break;
+                    case "OPENCGA.MAX_LOGIN_ATTEMPTS":
+                        configuration.setMaxLoginAttempts(Integer.parseInt(value));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
                     case "OPENCGA_EXECUTION_ID":
@@ -198,11 +211,15 @@ public class Configuration {
         sb.append(", logDir='").append(logDir).append('\'');
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", workspace='").append(workspace).append('\'');
+        sb.append(", jobDir='").append(jobDir).append('\'');
+        sb.append(", maxLoginAttempts=").append(maxLoginAttempts);
         sb.append(", monitor=").append(monitor);
+        sb.append(", healthCheck=").append(healthCheck);
         sb.append(", audit=").append(audit);
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
+        sb.append(", analysis=").append(analysis);
         sb.append(", panel=").append(panel);
         sb.append(", server=").append(server);
         sb.append('}');
@@ -275,6 +292,15 @@ public class Configuration {
 
     public Configuration setJobDir(String jobDir) {
         this.jobDir = jobDir;
+        return this;
+    }
+
+    public int getMaxLoginAttempts() {
+        return maxLoginAttempts;
+    }
+
+    public Configuration setMaxLoginAttempts(int maxLoginAttempts) {
+        this.maxLoginAttempts = maxLoginAttempts;
         return this;
     }
 

@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -782,7 +781,7 @@ public class UserManager extends AbstractManager {
                     // We can only lock the account if it is not the root user
                     int failedAttempts = userOpenCGAResult.first().getInternal().getFailedAttempts();
                     ObjectMap updateParams = new ObjectMap(UserDBAdaptor.QueryParams.INTERNAL_FAILED_ATTEMPTS.key(), failedAttempts + 1);
-                    if (failedAttempts >= (Constants.MAXIMUM_LOGIN_ATTEMPTS - 1)) {
+                    if (failedAttempts >= (configuration.getMaxLoginAttempts() - 1)) {
                         // Ban the account
                         updateParams.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.BANNED);
                     }

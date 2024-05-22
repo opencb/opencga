@@ -6,9 +6,7 @@ databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 
 jobDir: "/tmp/opencga/JOBS"
-
-admin:
-  secretKey: "asidnadh19rh230qncfascd1.rffzasf.asd.ad.12ddeASDAsd12e1d.adsx"
+maxLoginAttempts: 5
 
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
@@ -72,29 +70,6 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
-  searchEngine:   ## Solr configuration, by default is the same than storage
-    hosts:
-    - "http://localhost:8983/solr/"
-    user: ""
-    password: ""
-    options:
-      mode: "core"
-      timeout: 30000
-      insertBatchSize: 2000
-
-authentication:
-  expiration: 1000
-#LDAP configuration example
-#  authenticationOrigins:
-#  - id: ldap            # Any id
-#    type: LDAP          # At the moment, we only support LDAP
-#    host: ldap://localhost:9000
-#    options:
-#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
-
-optimizations:
-  simplifyPermissions: false
 
 server:
   rest:

@@ -1347,6 +1347,7 @@
                 <OPENCGA.ANALYSIS.SCRATCH.DIR></OPENCGA.ANALYSIS.SCRATCH.DIR>
                 <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
+                <OPENCGA.MAX_LOGIN_ATTEMPTS>5</OPENCGA.MAX_LOGIN_ATTEMPTS>
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>https://ws.opencb.org/opencga-prod</OPENCGA.CLIENT.REST.HOST>
