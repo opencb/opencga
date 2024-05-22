@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -39,20 +40,20 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 26/08/15
@@ -72,7 +73,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private ToolRunner toolRunner;
 
 
-    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
+    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
+            = new HadoopVariantStorageTest.HadoopExternalResource();
 
     public OpenCGATestExternalResource() {
         this(false);
@@ -236,6 +238,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         StorageEngineFactory.configure(storageConfiguration);
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
+        if (storageEngine.equals(DummyVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            DummyVariantStorageEngine.configure(getStorageEngineFactory(), true);
+        }
 //        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
 //        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
@@ -357,6 +362,23 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(tmpOutDir);
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+    }
+
+    public void restore(URL resource) throws Exception {
+        if (resource.getProtocol().equals("jar")) {
+            Reflections reflections = new Reflections(resource.getPath().replace('/','.'), new ResourcesScanner());
+            Set<String> resources = reflections.getResources(x -> true);
+            for (String file : resources) {
+                catalogManagerExternalResource.getResourceUri(file.replace('.', '/'));
+            }
+            MongoBackupUtils.restore(getCatalogManager(), opencgaHome, opencgaHome
+                    .resolve("resources")
+                    .resolve(resource.getPath())
+                    .resolve("mongodb"));
+        } else {
+            MongoBackupUtils.restore(getCatalogManager(), opencgaHome, Paths.get(resource.toURI()).resolve("mongodb"));
+        }
+        catalogManagerExternalResource.resetCatalogManager();
     }
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {
