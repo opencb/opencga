@@ -74,11 +74,11 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
     private final MongoDBCollection deleteInterpretationCollection;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationConverter interpretationConverter;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) {
+                                        OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
@@ -86,7 +86,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         this.archiveInterpretationCollection = archiveInterpretationCollection;
         this.deleteInterpretationCollection = deleteInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
     }
 
@@ -106,6 +106,10 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     public MongoDBCollection getInterpretationCollection() {
         return interpretationCollection;
+    }
+
+    public MongoDBCollection getArchiveInterpretationCollection() {
+        return archiveInterpretationCollection;
     }
 
     @Override
@@ -236,7 +240,7 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -942,8 +946,8 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
             qOptions = new QueryOptions();
         }
 
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
-                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(),
+                QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,

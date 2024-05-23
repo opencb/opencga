@@ -759,7 +759,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // Remove 'SO:' prefix to Store SO Accessions as integers and also store the gene - SO acc relation
                     for (SequenceOntologyTerm sequenceOntologyTerm : conseqType.getSequenceOntologyTerms()) {
-                        int soIdInt = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
+                        int soIdInt;
+                        try {
+                            soIdInt = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
+                        } catch (NumberFormatException e) {
+                            soIdInt = ConsequenceTypeMappings.termToAccession.get(sequenceOntologyTerm.getName());
+                        }
                         soAccessions.add(soIdInt);
 
                         if (StringUtils.isNotEmpty(gene)) {

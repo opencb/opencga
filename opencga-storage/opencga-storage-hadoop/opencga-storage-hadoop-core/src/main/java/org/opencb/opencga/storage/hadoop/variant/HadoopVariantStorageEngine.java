@@ -1261,15 +1261,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public void testConnection() throws StorageEngineException {
         try {
             Configuration conf = getHadoopConfiguration();
-            try {
-                // HBase 2.x
-//                HBaseAdmin.available(conf);
-                HBaseAdmin.class.getMethod("available", Configuration.class).invoke(null, conf);
-            } catch (NoSuchMethodException e) {
-                // HBase 1.x
-//                HBaseAdmin.checkHBaseAvailable(conf);
-                HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
-            }
+            HBaseAdmin.available(conf);
 //            new PhoenixHelper(conf).newJdbcConnection().getMetaData().getTables(null, null, null, null);
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);

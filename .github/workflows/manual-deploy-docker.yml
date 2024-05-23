@@ -10,6 +10,16 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
+      hadoop:
+        type: choice
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        required: false
+        default: hdp3.1
+        options:
+          - hdp3.1
+          - hdi5.1
+          - emr6.1
+          - emr6.13
 
 jobs:
   build:
@@ -18,12 +28,12 @@ jobs:
     outputs:
       version: ${{ steps.get_project_version.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
           ref: "${{ inputs.branch }}"
       - name: Set up JDK 8
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '8'
@@ -32,11 +42,11 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1,RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6'
-      - uses: actions/upload-artifact@v3
+        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      - uses: actions/upload-artifact@v4
         with:
           name: build-folder
           path: build

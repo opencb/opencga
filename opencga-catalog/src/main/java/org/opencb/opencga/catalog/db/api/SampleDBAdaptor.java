@@ -62,7 +62,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
@@ -116,8 +116,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         COHORT_IDS("cohortIds", TEXT_ARRAY, ""),
         SOMATIC("somatic", BOOLEAN, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

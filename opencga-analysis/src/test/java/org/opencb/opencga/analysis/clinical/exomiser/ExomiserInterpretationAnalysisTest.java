@@ -1,17 +1,15 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.junit.*;
-import org.eclipse.jetty.util.Scanner;
-import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,8 +31,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import static com.mongodb.assertions.Assertions.assertFalse;
 import static org.hamcrest.CoreMatchers.is;

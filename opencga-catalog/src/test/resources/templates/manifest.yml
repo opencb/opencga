@@ -1,5 +1,6 @@
 configuration:
-  version: 2.2.0
+  organizationId: test
+  version: 3.0.0
   index: false
   projectId: project
 study:

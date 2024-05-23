@@ -50,36 +50,15 @@ public class VersionedMongoDBAdaptor {
      * @return a boolean indicating whether the complex query was generated or not.
      * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
      */
-    boolean generateUidVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
+    boolean generateIdVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
         if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
             return false;
         }
-        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(ID) && !query.containsKey(PRIVATE_UUID)) {
-            return false;
-        }
-        int numIds = 0;
-        numIds += query.containsKey(ID) ? 1 : 0;
-        numIds += query.containsKey(PRIVATE_UID) ? 1 : 0;
-        numIds += query.containsKey(PRIVATE_UUID) ? 1 : 0;
-
-        if (numIds > 1) {
-            List<Integer> versionList = query.getAsIntegerList(VERSION);
-            if (versionList.size() > 1) {
-                throw new CatalogDBException("Cannot query by more than one version when more than one id type is being queried");
-            }
+        if (!query.containsKey(ID)) {
             return false;
         }
 
-        String idQueried = PRIVATE_UID;
-        idQueried = query.containsKey(ID) ? ID : idQueried;
-        idQueried = query.containsKey(PRIVATE_UUID) ? PRIVATE_UUID : idQueried;
-
-        List<?> idList;
-        if (PRIVATE_UID.equals(idQueried)) {
-            idList = query.getAsLongList(PRIVATE_UID);
-        } else {
-            idList = query.getAsStringList(idQueried);
-        }
+        List<?> idList = query.getAsStringList(ID);
         List<Integer> versionList = query.getAsIntegerList(VERSION);
 
         if (versionList.size() > 1 && idList.size() > 1 && versionList.size() != idList.size()) {
@@ -90,9 +69,9 @@ public class VersionedMongoDBAdaptor {
         for (int i = 0; i < versionList.size(); i++) {
             Document docQuery = new Document(VERSION, versionList.get(i));
             if (idList.size() == 1) {
-                docQuery.put(idQueried, idList.get(0));
+                docQuery.put(ID, idList.get(0));
             } else {
-                docQuery.put(idQueried, idList.get(i));
+                docQuery.put(ID, idList.get(i));
             }
             bsonQuery.add(docQuery);
         }
@@ -100,7 +79,7 @@ public class VersionedMongoDBAdaptor {
         if (!bsonQuery.isEmpty()) {
             bsonQueryList.add(Filters.or(bsonQuery));
 
-            query.remove(idQueried);
+            query.remove(ID);
             query.remove(VERSION);
 
             return true;
@@ -118,7 +97,7 @@ public class VersionedMongoDBAdaptor {
     }
 
     public interface VersionedModelExecution<T> {
-        T execute(List<Document> entries) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+        T execute(List<Document> entryList) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
     public interface NonVersionedModelExecution<T> {
@@ -138,8 +117,21 @@ public class VersionedMongoDBAdaptor {
     protected void insert(ClientSession session, Document document) {
         String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
+        document.put(VERSION, 1);
+        document.put(LAST_OF_VERSION, true);
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
+    }
+
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, Collections.emptyList(), update, Collections.emptyList(), null, null);
+    }
+
+    protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, List<String> includeFields,
+                           VersionedModelExecution<OpenCGAResult<E>> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(session, sourceQuery, includeFields, update, Collections.emptyList(), null, null);
     }
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update,
@@ -168,7 +160,7 @@ public class VersionedMongoDBAdaptor {
 
         // 1. Increment version
         // 1.1 Only increase version of those documents not already increased by same transaction id
-        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION, PRIVATE_TRANSACTION_ID));
+        Set<String> includeFields = new HashSet<>(Arrays.asList(PRIVATE_UID, VERSION, PRIVATE_TRANSACTION_ID));
         if (fieldsToInclude != null) {
             includeFields.addAll(fieldsToInclude);
         }
@@ -179,6 +171,7 @@ public class VersionedMongoDBAdaptor {
         try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
+                entryList.add(result);
 
                 entryList.add(result);
 
@@ -193,7 +186,7 @@ public class VersionedMongoDBAdaptor {
 
                     Document collectionUpdate = new Document();
                     Document archiveCollectionUpdate = new Document();
-                    processReleaseSnapshotChanges(result, collectionUpdate, archiveCollectionUpdate);
+                    processLastOfVersionChanges(result, collectionUpdate, archiveCollectionUpdate);
 
                     Bson bsonQuery = Filters.and(
                             Filters.eq(PRIVATE_UID, uid),
@@ -239,7 +232,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
+                        Filters.eq(ID, fixedResult.get(ID)),
                         Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
                 logger.debug("Copying current document to archive: query : {}", tmpBsonQuery.toBsonDocument());
@@ -251,7 +244,7 @@ public class VersionedMongoDBAdaptor {
         if (!uidsChanged.isEmpty()) {
             Query query = new Query(PRIVATE_UID, uidsChanged);
             if (postVersionIncrementExecution != null) {
-                List<String> includeList = new ArrayList<>(Arrays.asList(PRIVATE_UID, PRIVATE_UUID, ID, PRIVATE_STUDY_UID, VERSION));
+                List<String> includeList = new ArrayList<>(Arrays.asList(ID, VERSION));
                 if (postVersionIncrementExecution != null) {
                     includeList.addAll(postVersionIncrementAdditionalIncludeFields);
                 }
@@ -263,9 +256,6 @@ public class VersionedMongoDBAdaptor {
                 try (DBIterator<E> iterator = dbIterator.iterator(session, query, options)) {
                     postVersionIncrementExecution.execute(iterator);
                 }
-//                try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
-//                    postVersionIncrementExecution.execute(iterator);
-//                }
             }
         }
 
@@ -289,7 +279,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
+                        Filters.eq(ID, result.get(ID)),
                         Filters.eq(VERSION, result.get(VERSION))
                 );
                 archiveCollection.update(tmpBsonQuery, result, upsertOptions);
@@ -303,14 +293,14 @@ public class VersionedMongoDBAdaptor {
      * Revert to a previous version.
      *
      * @param clientSession ClientSession for transactional operations.
-     * @param uid           UID of the element to be recovered.
+     * @param id            ID of the element to be recovered.
      * @param version       Version to be recovered.
      * @return the new latest document that will be written in the database.
      * @throws CatalogDBException in case of any issue.
      */
-    protected Document revertToVersion(ClientSession clientSession, long uid, int version) throws CatalogDBException {
+    protected Document revertToVersion(ClientSession clientSession, String id, int version) throws CatalogDBException {
         Bson query = Filters.and(
-                Filters.eq(PRIVATE_UID, uid),
+                Filters.eq(ID, id),
                 Filters.eq(VERSION, version)
         );
         DataResult<Document> result = archiveCollection.find(clientSession, query, EXCLUDE_MONGO_ID);
@@ -319,28 +309,26 @@ public class VersionedMongoDBAdaptor {
         }
         Document document = result.first();
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(RELEASE_FROM_VERSION, VERSION, LAST_OF_RELEASE));
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, VERSION);
         // Find out latest version available
-        result = collection.find(clientSession, Filters.eq(PRIVATE_UID, uid), options);
+        result = collection.find(clientSession, Filters.eq(ID, id), options);
         if (result.getNumResults() == 0) {
-            throw new CatalogDBException("Unexpected error. Could not find 'uid': " + uid);
+            throw new CatalogDBException("Unexpected error. Could not find 'id': " + id);
         }
         int lastVersion = result.first().getInteger(VERSION);
 
         // Delete previous version from active collection
-        collection.remove(clientSession, Filters.eq(PRIVATE_UID, uid), QueryOptions.empty());
+        collection.remove(clientSession, Filters.eq(ID, id), QueryOptions.empty());
 
         // Edit previous version from archive collection
         query = Filters.and(
-                Filters.eq(PRIVATE_UID, uid),
+                Filters.eq(ID, id),
                 Filters.eq(VERSION, lastVersion)
         );
-        archiveCollection.update(clientSession, query, Updates.set(LAST_OF_RELEASE, false), QueryOptions.empty());
+        archiveCollection.update(clientSession, query, Updates.set(LAST_OF_VERSION, false), QueryOptions.empty());
 
         // Edit private fields from document to be restored
         document.put(VERSION, lastVersion + 1);
-        document.put(RELEASE_FROM_VERSION, result.first().get(RELEASE_FROM_VERSION));
-        document.put(LAST_OF_RELEASE, result.first().get(LAST_OF_RELEASE));
 
         // Add restored element to main and archive collection
         collection.insert(clientSession, document, QueryOptions.empty());
@@ -352,6 +340,7 @@ public class VersionedMongoDBAdaptor {
     protected void delete(ClientSession session, Bson query) {
         // Remove any old documents from the "delete" collection matching the criteria
         deletedCollection.remove(session, query, QueryOptions.empty());
+
 
         // Remove document from main collection
         collection.remove(session, query, QueryOptions.empty());
@@ -366,7 +355,9 @@ public class VersionedMongoDBAdaptor {
         }
         for (Document document : archiveCollection.find(session, query, QueryOptions.empty()).getResults()) {
             Document internal = document.get("internal", Document.class);
-            internal.put("status", status);
+            if (internal != null) {
+                internal.put("status", status);
+            }
 
             deletedCollection.insert(session, document, QueryOptions.empty());
         }
@@ -376,38 +367,20 @@ public class VersionedMongoDBAdaptor {
     }
 
     /**
-     * Given the current document, it puts in collectionUpdate and archiveCollectionUpdate the changes that need to be applied.
-     * It takes care of the private fields that allow performing queries by snapshot:
-     * LAST_OF_VERSION, LAST_OF_RELEASE, RELEASE_FROM_VERSION
+     * Given the current document, it writes the changes that need to be applied in collectionUpdate and archiveCollectionUpdate.
+     * It takes care of the private fields: LAST_OF_VERSION
      *
      * @param document                Current document.
      * @param collectionUpdate        Empty document where we will put the changes to be applied to the main collection.
      * @param archiveCollectionUpdate Empty document where we will put the changes to be applied to the archive collection.
      */
-    private void processReleaseSnapshotChanges(Document document, Document collectionUpdate, Document archiveCollectionUpdate) {
+    private void processLastOfVersionChanges(Document document, Document collectionUpdate, Document archiveCollectionUpdate) {
         int version = document.get(VERSION, Number.class).intValue();
-        List<Integer> releaseFromVersion = document.getList(RELEASE_FROM_VERSION, Integer.class);
 
-        // Current release number
-        int release;
-        if (releaseFromVersion.size() > 1) {
-            release = releaseFromVersion.get(releaseFromVersion.size() - 1);
-
-            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
-            // current release number out
-            releaseFromVersion.remove(releaseFromVersion.size() - 1);
-        } else {
-            release = releaseFromVersion.get(0);
-
-            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
-            // last version of the release
-            archiveCollectionUpdate.put(LAST_OF_RELEASE, false);
-        }
-        archiveCollectionUpdate.put(RELEASE_FROM_VERSION, releaseFromVersion);
+        // And set the document in archive with the flag LAST_OF_VERSION to false
         archiveCollectionUpdate.put(LAST_OF_VERSION, false);
 
         // We update the information for the new version of the document
-        collectionUpdate.put(RELEASE_FROM_VERSION, Collections.singletonList(release));
         collectionUpdate.put(VERSION, version + 1);
     }
 

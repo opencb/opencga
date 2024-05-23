@@ -327,7 +327,14 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
             try {
                 phoenixHelper.execute(con, sql);
             } catch (Exception e) {
-                if (!phoenixHelper.tableExists(con, variantsTableName)) {
+                boolean tableExists;
+                try {
+                    tableExists = phoenixHelper.tableExists(con, variantsTableName);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                    tableExists = false;
+                }
+                if (!tableExists) {
                     throw e;
                 } else {
                     logger.info(DEFAULT_TABLE_TYPE + " {} already exists", variantsTableName);
@@ -339,16 +346,13 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
         }
     }
 
-    public void dropTable(boolean ifExists) throws SQLException {
-        phoenixHelper.dropTable(con, variantsTableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, ifExists, true);
-    }
-
-    public static void dropTable(HBaseManager hBaseManager, String variantsTableName, boolean ifExists)
-            throws SQLException, ClassNotFoundException {
+    public static void dropView(HBaseManager hBaseManager, String variantsTableName, boolean ifExists)
+            throws SQLException, ClassNotFoundException, IOException {
         // VariantStorageMetadataManager not needed for dropping table
         try (VariantPhoenixSchemaManager manager =
                      new VariantPhoenixSchemaManager(hBaseManager.getConf(), variantsTableName, null, hBaseManager)) {
-            manager.dropTable(ifExists);
+            manager.phoenixHelper.dropTable(hBaseManager.getConnection(), manager.con, manager.variantsTableName,
+                    PTableType.VIEW, ifExists, true);
         }
     }
 

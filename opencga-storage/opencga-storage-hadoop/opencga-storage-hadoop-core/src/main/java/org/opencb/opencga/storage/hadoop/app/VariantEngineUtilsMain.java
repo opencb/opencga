@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.app;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
@@ -171,7 +171,7 @@ public class VariantEngineUtilsMain extends AbstractMain {
                             LOGGER.info("[DRY-RUN] drop phoenix view '{}'", table);
                         } else {
                             LOGGER.info("Drop phoenix view '{}'", table);
-                            VariantPhoenixSchemaManager.dropTable(hBaseManager, table, true);
+                            VariantPhoenixSchemaManager.dropView(hBaseManager, table, true);
                         }
                     }
                 }

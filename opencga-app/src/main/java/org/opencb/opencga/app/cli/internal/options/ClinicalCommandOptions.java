@@ -35,6 +35,7 @@ public class ClinicalCommandOptions {
     public final RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
     public final RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
     public final ExomiserInterpretationCommandOptions exomiserInterpretationCommandOptions;
+    public final ImportClinicalAnalysesCommandOptions importClinicalAnalysesCommandOptions;
     public final TsvLoad tsvLoad;
 
     public JCommander jCommander;
@@ -56,6 +57,7 @@ public class ClinicalCommandOptions {
         this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
         this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
         this.exomiserInterpretationCommandOptions = new ExomiserInterpretationCommandOptions();
+        this.importClinicalAnalysesCommandOptions = new ImportClinicalAnalysesCommandOptions();
         this.tsvLoad = new TsvLoad();
     }
 
@@ -338,6 +340,22 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
+    }
+
+    @Parameters(commandNames = {ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND},
+            commandDescription = "Import clinical analyses from a folder")
+    public class ImportClinicalAnalysesCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String IMPORT_COMMAND = "import";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input directory where clinical analysis JSON files are located", arity = 1)
+        public String input;
     }
 
     @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")
