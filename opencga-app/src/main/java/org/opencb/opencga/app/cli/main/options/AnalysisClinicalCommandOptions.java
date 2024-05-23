@@ -649,8 +649,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID.", required = false, arity = 1)
         public String clinicalAnalysis;
+    
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version.", required = false, arity = 1)
+        public String exomiserVersion = "14.0.0";
     
     }
 

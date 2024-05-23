@@ -523,4 +523,9 @@ public class FieldConstants {
             + AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE;
     public static final String ALIGNMENT_QC_OVERWRITE_DESCRIPTION = "To overwrite the QC metrics already computed.";
 
+    // Exomiser
+    public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
+    public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
+    public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version.";
+    public static final String EXOMISER_DEFAULT_VERSION = "14.0.0";
 }
