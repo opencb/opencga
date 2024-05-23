@@ -1100,7 +1100,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         int defaultVariantPreSplit = configuredOptions
                 .getInt(VARIANT_TABLE_PRESPLIT_SIZE.key(), VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
         float variantsFileToHBaseMultiplier = 1.3f;
-        Long averageFileSize = IOUtils.fromHumanReadableToByte(params.getAverageFileSize());
+        Long averageFileSize = IOUtils.fromHumanReadableToByte(params.getAverageFileSize(), true);
         float variantsTableSize = params.getExpectedFiles() * averageFileSize * variantsFileToHBaseMultiplier;
         int variantPreSplit = (int) (variantsTableSize / expectedHBaseRegionSize);
         options.put(VARIANT_TABLE_PRESPLIT_SIZE.key(), Math.max(defaultVariantPreSplit, variantPreSplit));

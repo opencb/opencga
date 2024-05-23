@@ -37,6 +37,7 @@ import java.util.zip.GZIPInputStream;
  */
 public class MongoBackupUtils {
 
+    private static final String TEMPORAL_FOLDER_HERE = "TEMPORAL_FOLDER_HERE";
     private static Logger logger = LoggerFactory.getLogger(MongoBackupUtils.class);
 
     public static void dump(CatalogManager catalogManager, Path opencgaHome) throws CatalogDBException {
@@ -135,14 +136,13 @@ public class MongoBackupUtils {
         try (Stream<Path> stream = Files.list(restoreFolder)) {
             stream.forEach(file -> organizationIds.add(file.getFileName().toString()));
         }
-        System.out.println("organizationIds = " + organizationIds);
         if (organizationIds.isEmpty()) {
             throw new CatalogDBException("No organization found in the restore folder '" + restoreFolder + "'");
         }
         restore(catalogManager, opencgaHome, restoreFolder, organizationIds);
     }
 
-    public static void restore(CatalogManager catalogManager, Path opencgaHome, Object source, Collection<String> organizationIds)
+    private static void restore(CatalogManager catalogManager, Path opencgaHome, Object source, Collection<String> organizationIds)
             throws Exception {
         logger.info("Restore opencga from source " + source + " for organizations " + organizationIds);
         StopWatch stopWatch = StopWatch.createStarted();
@@ -211,8 +211,8 @@ public class MongoBackupUtils {
 
                         // Write actual temporal folder in database
                         String uri = document.getString("uri");
-                        String temporalFolder = opencgaHome.getFileName().toString();
-                        String replacedUri = uri.replace("TEMPORAL_FOLDER_HERE", temporalFolder);
+                        String uriPath = uri.substring(uri.indexOf(TEMPORAL_FOLDER_HERE) + TEMPORAL_FOLDER_HERE.length() + 1);
+                        String replacedUri = opencgaHome.resolve(uriPath).toUri().toString();
                         document.put("uri", replacedUri);
 
                         if (OrganizationMongoDBAdaptorFactory.FILE_COLLECTION.equals(collection)) {

@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
@@ -65,11 +66,12 @@ public class ClinicalAnalysisUtilsTest {
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        VariantStorageManager variantStorageManager = new VariantStorageManager(opencga.getCatalogManager(), opencga.getStorageEngineFactory());
+        VariantStorageManager variantStorageManager = opencga.getVariantStorageManager();
 
         Path outDir = Paths.get("target/test-data").resolve("junit_clinical_analysis_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(outDir);
 
+        VariantOperationsTest.dummyVariantSetup(variantStorageManager, clinicalTest.studyFqn, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
         variantStorageManager.index(clinicalTest.studyFqn, "HG004.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
