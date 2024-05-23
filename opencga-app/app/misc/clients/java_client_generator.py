@@ -99,7 +99,6 @@ class JavaClientGenerator(RestClientGenerator):
         text.append('/**')
         text.append(' * This class contains methods for the {} webservices.'.format(
             self.categories[self.get_category_name(category)]))
-        text.append(' *{}Client version: {}'.format(' ' * 4, self.version))
         text.append(' *{}PATH: {}'.format(' ' * 4, self.get_category_path(category)))
         text.append(' */')
         text.append('public class {}Client extends {} {{'.format(self.categories[self.get_category_name(category)], parentClientClass))
