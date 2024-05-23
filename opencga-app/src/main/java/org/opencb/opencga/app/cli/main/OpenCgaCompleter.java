@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
-* Copyright 2015-2024-04-25 OpenCB
-=======
-* Copyright 2015-2024-04-10 OpenCB
->>>>>>> develop
+* Copyright 2015-2024-05-23 OpenCB
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -114,16 +110,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-<<<<<<< HEAD
-    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
-=======
     private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
     private List<Candidate> filesList = asList( "acl-update","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
->>>>>>> develop
             .stream()
             .map(Candidate::new)
             .collect(toList());

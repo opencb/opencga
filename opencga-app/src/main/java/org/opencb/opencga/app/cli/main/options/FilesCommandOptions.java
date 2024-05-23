@@ -935,11 +935,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--file"}, description = "File id, UUID or name.", required = true, arity = 1)
         public String file; 
     
-<<<<<<< HEAD
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-=======
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
->>>>>>> develop
         public String study; 
     
         @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
