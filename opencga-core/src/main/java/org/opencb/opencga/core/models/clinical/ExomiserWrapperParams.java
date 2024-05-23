@@ -1,14 +1,23 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_DEFAULT_VERSION;
+
 public class ExomiserWrapperParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser parameters";
 
+    @DataField(id = "sample", description = FieldConstants.EXOMISER_SAMPLE_DESCRIPTION, required = true)
     private String sample;
+
+    @DataField(id = "exomiserVersion", description = FieldConstants.EXOMISER_VERSION_DESCRIPTION, defaultValue = EXOMISER_DEFAULT_VERSION)
     private String exomiserVersion;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public ExomiserWrapperParams() {

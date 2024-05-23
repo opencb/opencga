@@ -33,8 +33,6 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
     public final static String DESCRIPTION = "The Exomiser is a Java program that finds potential disease-causing variants"
             + " from whole-exome or whole-genome sequencing data.";
 
-    public final static String DEFAULT_EXOMISER_VERSION = "14.0.0";
-
     // It must match the tool prefix in the tool keys for exomiser in the configuration file
     public final static String EXOMISER_PREFIX = "exomiser-";
 
@@ -51,6 +49,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study");
         }
+
     }
 
     @Override

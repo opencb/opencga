@@ -36,6 +36,7 @@ import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -98,8 +99,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new ToolException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
@@ -121,8 +121,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Check exomiser version
         if (StringUtils.isEmpty(exomiserVersion)) {
             // Missing exomiser version use the default one
-            logger.warn("Missing exomiser version, using the default {}", ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION);
-            exomiserVersion = ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION;
+            logger.warn("Missing exomiser version, using the default {}", FieldConstants.EXOMISER_DEFAULT_VERSION);
+            exomiserVersion = FieldConstants.EXOMISER_DEFAULT_VERSION;
         }
 
         // Update executor params with OpenCGA home and session ID

@@ -69,6 +69,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.core.api.FieldConstants.*;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
@@ -1841,11 +1842,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        @Parameter(names = {"--sample"}, description = EXOMISER_SAMPLE_DESCRIPTION, required = true)
         public String sample;
 
-        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version.")
-        public String exomiserVersion = ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION;
+        @Parameter(names = {"--exomiser-version"}, description = EXOMISER_VERSION_DESCRIPTION)
+        public String exomiserVersion = EXOMISER_DEFAULT_VERSION;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
