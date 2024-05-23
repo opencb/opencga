@@ -339,7 +339,8 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ExomiserInterpretationAnalysis exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysis();
         exomiserInterpretationAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         exomiserInterpretationAnalysis.setStudyId(cliOptions.study)
-                .setClinicalAnalysisId(cliOptions.clinicalAnalysis);
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
+                .setExomiserVersion(cliOptions.exomiserVersion);
 //        exomiserInterpretationAnalysis.setPrimary(cliOptions.primary);
         exomiserInterpretationAnalysis.start();
     }

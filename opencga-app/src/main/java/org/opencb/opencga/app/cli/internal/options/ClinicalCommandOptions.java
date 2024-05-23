@@ -13,6 +13,7 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -337,6 +338,9 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
+
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version.")
+        public String exomiserVersion = ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
