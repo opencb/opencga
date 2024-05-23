@@ -16,6 +16,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.config.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
@@ -29,9 +30,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis.*;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
         tool = ExomiserWrapperAnalysis.ID,
@@ -45,11 +49,13 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private final static String EXOMISER_PROPERTIES_TEMPLATE_FILENAME = "application.properties";
     private static final String EXOMISER_OUTPUT_OPTIONS_FILENAME = "output.yml";
 
-    public final static String DOCKER_IMAGE_NAME = "exomiser/exomiser-cli";
-    public final static String DOCKER_IMAGE_VERSION = "13.1.0";
+    // These constants must match in the file application.properties to be replaced
+    private static final String HG38_DATA_VERSION_MARK = "put_here_hg38_data_version";
+    private static final String PHENOTYPE_DATA_VERSION_MARK = "put_here_phenotype_data_version";
 
     private String studyId;
     private String sampleId;
+    private String exomiserVersion;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -155,10 +161,14 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Error copying Exomiser analysis file", e);
         }
 
-        // Copy the application.properties
+        // Copy the application.properties and update data according to Exomiser version
         try {
-            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(),
-                    getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile());
+            Path target = getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
+            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(), target.toFile());
+            Command cmd = new Command("sed -i \"s/" + HG38_DATA_VERSION_MARK + "/" + getHg38DataVersion() + "/g\" " + target);
+            cmd.run();
+            cmd = new Command("sed -i \"s/" + PHENOTYPE_DATA_VERSION_MARK + "/" + getPhenotypeDataVersion() + "/g\" " + target);
+            cmd.run();
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser properties file", e);
         }
@@ -359,7 +369,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private Path getExomiserDataPath(Path openCgaHome) throws ToolException {
-        Path exomiserDataPath = openCgaHome.resolve("analysis/resources/exomiser");
+        Path exomiserDataPath = openCgaHome.resolve("analysis/resources/" + ExomiserWrapperAnalysis.ID);
         if (!exomiserDataPath.toFile().exists()) {
             if (!exomiserDataPath.toFile().mkdirs()) {
                 throw new ToolException("Error creating the Exomiser data directory");
@@ -368,33 +378,34 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Mutex management to avoid multiple downloadings at the same time
         // the first to come, download data, others have to wait for
-        File readyFile = exomiserDataPath.resolve("READY").toFile();
-        File preparingFile = exomiserDataPath.resolve("PREPARING").toFile();
+        File readyFile = exomiserDataPath.resolve("READY-" + exomiserVersion).toFile();
+        File preparingFile = exomiserDataPath.resolve("PREPARING-" + exomiserVersion).toFile();
 
         // If all is ready, then return
         if (readyFile.exists()) {
-            logger.info("{}: Exomiser data is already downloaded, so Exomiser analysis is ready to be executed.", ID);
+            logger.info("Exomiser {} data is already downloaded, so Exomiser analysis is ready to be executed.", exomiserVersion);
             return exomiserDataPath;
         }
 
         // If it is preparing, then wait for ready and then return
         if (preparingFile.exists()) {
             long startTime = System.currentTimeMillis();
-            logger.info("{}: Exomiser data is downloading, waiting for it...", ID);
+            logger.info("Exomiser {} data is downloading, waiting for it...", exomiserVersion);
             while (!readyFile.exists()) {
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     // Nothing to do here
+                    preparingFile.delete();
                     throw new ToolException(e);
                 }
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime > 18000000) {
-                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser data is not ready yet: maximum"
-                            + " waiting time exceeded");
+                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser " + exomiserVersion + " data is not"
+                            + " ready yet: maximum waiting time exceeded");
                 }
             }
-            logger.info("{}: Exomiser data is now downloaded: Exomiser analysis is ready to be executed", ID);
+            logger.info("Exomiser {} data is now downloaded: Exomiser analysis is ready to be executed", exomiserVersion);
             return exomiserDataPath;
         }
 
@@ -402,38 +413,49 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         try {
             preparingFile.createNewFile();
         } catch (IOException e) {
-            throw new ToolException("Error creating the Exomiser data directory");
+            preparingFile.delete();
+            throw new ToolException("Error creating the Exomiser " + exomiserVersion + " data directory");
         }
 
-        // Download and unzip files
+        // Download resources and unzip files
         try {
-            downloadAndUnzip(exomiserDataPath, "2109_hg38.zip");
-            downloadAndUnzip(exomiserDataPath, "2109_phenotype.zip");
+            downloadAndUnzip(exomiserDataPath, HG38_RESOURCE_KEY);
+            downloadAndUnzip(exomiserDataPath, PHENOTYPE_RESOURCE_KEY);
         } catch (ToolException e) {
             // If something wrong happened, the preparing file has to be deleted
             preparingFile.delete();
-            throw new ToolException("Something wrong happened when preparing Exomiser data", e);
+            throw new ToolException("Something wrong happened when preparing Exomiser " + exomiserVersion + " data", e);
         }
 
         // Mutex management, signal exomiser data is ready
         try {
             readyFile.createNewFile();
         } catch (IOException e) {
-            throw new ToolException("Error preparing Exomiser data", e);
+            throw new ToolException("Error preparing Exomiser " + exomiserVersion + " data", e);
         }
         preparingFile.delete();
 
         return exomiserDataPath;
     }
 
+    private String getHg38DataVersion() throws ToolException {
+        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, HG38_RESOURCE_KEY);
+        return Paths.get(resource).getFileName().toString().split("_")[0];
+    }
+
+    private String getPhenotypeDataVersion() throws ToolException {
+        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, PHENOTYPE_RESOURCE_KEY);
+        return Paths.get(resource).getFileName().toString().split("_")[0];
+    }
+
     @Override
     public String getDockerImageName() {
-        return DOCKER_IMAGE_NAME;
+        return getDockerImageName(EXOMISER_PREFIX + exomiserVersion);
     }
 
     @Override
     public String getDockerImageVersion() {
-        return DOCKER_IMAGE_VERSION;
+        return getDockerImageVersion(EXOMISER_PREFIX + exomiserVersion);
     }
 
     public String getStudyId() {
@@ -445,21 +467,38 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         return this;
     }
 
-    private void downloadAndUnzip(Path exomiserDataPath, String filename) throws ToolException {
-        URL url = null;
-
-        // Download data
-        try {
-            url = new URL("http://resources.opencb.org/opencb/opencga/analysis/exomiser/" + filename);
+    private void downloadAndUnzip(Path exomiserDataPath, String resourceKey) throws ToolException {
+        String filename;
+        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, resourceKey);
+        if (resource.startsWith("file://")) {
+            // Copy resouce
+            try {
+                Path sourcePath = Paths.get(resource);
+                filename = sourcePath.getFileName().toString();
+                Files.copy(sourcePath, exomiserDataPath.resolve(filename));
+            } catch (IOException e) {
+                throw new ToolException("Error copying Exomiser data from " + resource, e);
+            }
+        } else {
+            // Download resource
+            String url;
+            if (resource.startsWith("http://") || resource.startsWith("https://") || resource.startsWith("ftp://")) {
+                url = resource;
+            } else {
+                url = getConfiguration().getAnalysis().getResourceUrl() + resource;
+            }
             logger.info("{}: Downloading Exomiser data: {} in {}", ID, url, exomiserDataPath);
-            ResourceUtils.downloadThirdParty(url, exomiserDataPath);
-        } catch (IOException e) {
-            throw new ToolException("Error downloading Exomiser data from " + url, e);
+            try {
+                ResourceUtils.downloadThirdParty(new URL(url), exomiserDataPath);
+                filename = Paths.get(url).getFileName().toString();
+            } catch (IOException e) {
+                throw new ToolException("Error downloading Exomiser data from " + url, e);
+            }
         }
 
         // Unzip
         try {
-            logger.info("{}: Decompressing Exomiser data: {}", ID, filename);
+            logger.info("Decompressing Exomiser {} data: {}", exomiserDataPath, filename);
             new Command("unzip -o -d " + exomiserDataPath + " " + exomiserDataPath + "/" + filename)
                     .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve("stdout_unzip_"
                             + filename + ".txt").toFile())))
@@ -467,7 +506,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                             + filename + ".txt").toFile())))
                     .run();
         } catch (FileNotFoundException e) {
-            throw new ToolException("Error unzipping Exomiser data: " + filename, e);
+            throw new ToolException("Error unzipping Exomiser " + exomiserVersion + " data: " + filename, e);
         }
 
         // Free disk space
@@ -481,6 +520,15 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public ExomiserWrapperAnalysisExecutor setSampleId(String sampleId) {
         this.sampleId = sampleId;
+        return this;
+    }
+
+    public String getExomiserVersion() {
+        return exomiserVersion;
+    }
+
+    public ExomiserWrapperAnalysisExecutor setExomiserVersion(String exomiserVersion) {
+        this.exomiserVersion = exomiserVersion;
         return this;
     }
 }

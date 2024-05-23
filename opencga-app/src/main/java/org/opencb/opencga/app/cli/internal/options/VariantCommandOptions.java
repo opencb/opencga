@@ -1844,6 +1844,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
+        @Parameter(names = {"--exomiser-version"}, description = "Exomiser version.")
+        public String exomiserVersion = ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }

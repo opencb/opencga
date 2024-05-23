@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -18,12 +18,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
-public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
+import static org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis.EXOMISER_PREFIX;
+
+public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";
@@ -32,11 +31,50 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     public static final String STDERR_FILENAME = "stderr.txt";
 
     public String getDockerImageName() {
-        return "opencb/opencga-ext-tools";
+        return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[0];
     }
 
     public String getDockerImageVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
+        if (getConfiguration().getAnalysis().getOpencgaExtTools().contains(":")) {
+            return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[1];
+        } else {
+            return GitRepositoryState.getInstance().getBuildVersion();
+        }
+    }
+
+    public String getDockerImageName(String toolKey) {
+        for (Map.Entry<String, Tool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(toolKey)) {
+                return entry.getValue().getDockerId().split(":")[0];
+            }
+        }
+        return null;
+    }
+
+    public String getDockerImageVersion(String toolKey) {
+        for (Map.Entry<String, Tool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(toolKey)) {
+                if (entry.getValue().getDockerId().contains(":")) {
+                    return entry.getValue().getDockerId().split(":")[1];
+                } else {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected String getToolResource(String toolKey, String resourceKey) throws ToolException {
+        // Get resources from the configuration file
+        if (!getConfiguration().getAnalysis().getTools().containsKey(toolKey)) {
+            throw new ToolException("Error getting tool " +  toolKey + ": it does not exist in the configuration file");
+        }
+        Tool tool = getConfiguration().getAnalysis().getTools().get(toolKey);
+        if (!tool.getResources().containsKey(resourceKey)) {
+            throw new ToolException("Error getting resource " + resourceKey + " of tool " + toolKey + ": it does not exist in the"
+                    + " configuration file");
+        }
+        return tool.getResources().get(resourceKey);
     }
 
     private Logger privateLogger = LoggerFactory.getLogger(DockerWrapperAnalysisExecutor.class);

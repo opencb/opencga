@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -68,6 +69,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
     private String studyId;
     private String clinicalAnalysisId;
     private String sampleId;
+    private String exomiserVersion;
 
     private ClinicalAnalysis clinicalAnalysis;
 
@@ -116,6 +118,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         }
         sampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
 
+        // Check exomiser version
+        if (StringUtils.isEmpty(exomiserVersion)) {
+            // Missing exomiser version use the default one
+            logger.warn("Missing exomiser version, using the default {}", ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION);
+            exomiserVersion = ExomiserWrapperAnalysis.DEFAULT_EXOMISER_VERSION;
+        }
+
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
     }
@@ -125,24 +134,26 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         step(() -> {
 
             executorParams.put(EXECUTOR_ID, ExomiserWrapperAnalysisExecutor.ID);
-            getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
+            ExomiserWrapperAnalysisExecutor exomiserExecutor = getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setSampleId(sampleId)
-                    .execute();
+                    .setExomiserVersion(exomiserVersion);
+            exomiserExecutor.execute();
 
-            saveInterpretation(studyId, clinicalAnalysis);
+            saveInterpretation(studyId, clinicalAnalysis, exomiserExecutor.getDockerImageName(), exomiserExecutor.getDockerImageVersion());
         });
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis) throws ToolException, StorageEngineException,
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, String dockerImage, String dockerImageVersion)
+            throws ToolException, StorageEngineException,
             CatalogException, IOException {
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), GitRepositoryState.getInstance().getBuildVersion(),
                 GitRepositoryState.getInstance().getCommitId(), Collections.singletonList(
                 new Software()
                         .setName("Exomiser")
-                        .setRepository("Docker: " + ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_NAME)
-                        .setVersion(ExomiserWrapperAnalysisExecutor.DOCKER_IMAGE_VERSION)));
+                        .setRepository("Docker: " + dockerImage)
+                        .setVersion(dockerImageVersion)));
 
         // Analyst
         ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(studyId, token);
@@ -450,6 +461,15 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
 
     public ExomiserInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public String getExomiserVersion() {
+        return exomiserVersion;
+    }
+
+    public ExomiserInterpretationAnalysis setExomiserVersion(String exomiserVersion) {
+        this.exomiserVersion = exomiserVersion;
         return this;
     }
 }

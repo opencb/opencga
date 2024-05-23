@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -79,11 +80,14 @@ public class ExomiserInterpretationAnalysisTest  {
         ClinicalAnalysis clinicalAnalysis = caResult.getResults().get(0);
         assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
 
-        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+        System.out.println("outDir = " + outDir);
 
+        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
-                .setClinicalAnalysisId(clinicalTest.CA_ID2);
+                .setClinicalAnalysisId(clinicalTest.CA_ID2)
+                .setExomiserVersion("13.1.0");
 
         ExecutionResult result = exomiser.start();
 
@@ -109,7 +113,8 @@ public class ExomiserInterpretationAnalysisTest  {
 
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
-                .setClinicalAnalysisId(clinicalTest.CA_ID3);
+                .setClinicalAnalysisId(clinicalTest.CA_ID3)
+                .setExomiserVersion("13.1.0");
 
         ExecutionResult result = exomiser.start();
 
