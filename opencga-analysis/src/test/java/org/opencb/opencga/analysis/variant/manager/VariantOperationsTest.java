@@ -65,6 +65,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -94,8 +96,9 @@ public class VariantOperationsTest {
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
+    public static final String PROJECT_FQN = ORGANIZATION + '@' + PROJECT;
     public static final String STUDY = "study";
-    public static final String STUDY_FQN = ORGANIZATION + '@' + PROJECT + ':' + STUDY;
+    public static final String STUDY_FQN = PROJECT_FQN + ':' + STUDY;
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
@@ -331,14 +334,11 @@ public class VariantOperationsTest {
 
     @Test
     public void testSetup() throws Exception {
-        VariantSetupParams setupParams = new VariantSetupParams();
-        setupParams
-                .setFileType(VariantSetupParams.FileType.GENOME_VCF)
-                .setDataDistribution(VariantSetupParams.DataDistribution.MULTI_SAMPLE_FILES)
-                .setExpectedFiles(20)
-                .setExpectedSamples(100);
         String study2 = "study2";
-        catalogManager.getStudyManager().create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token);
+        String study2fqn = catalogManager.getStudyManager()
+                .create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token)
+                .first().getFqn();
+        File file = opencga.createFile(study2, "variant-test-file.vcf.gz", token);
 
         try {
             toolRunner.execute(VariantIndexOperationTool.class, study2,
@@ -352,8 +352,54 @@ public class VariantOperationsTest {
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString("The variant storage has not been setup for study"));
         }
 
+        try {
+            VariantSetupParams setupParams = new VariantSetupParams()
+                    .setFileType(VariantSetupParams.FileType.GENOME_VCF)
+                    .setDataDistribution(VariantSetupParams.DataDistribution.MULTIPLE_SAMPLES_PER_FILE)
+                    .setExpectedFiles(20)
+                    .setExpectedSamples(100)
+                    .setNormalizeExtensions(Arrays.asList("VS", "SV"));
+            variantStorageManager.variantSetup(study2, setupParams, token);
+            fail("should have failed");
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("Unsupported normalize extensions"));
+        }
+
+        try {
+            VariantSetupParams setupParams = new VariantSetupParams()
+                    .setFileType(VariantSetupParams.FileType.GENOME_VCF)
+                    .setDataDistribution(VariantSetupParams.DataDistribution.MULTIPLE_SAMPLES_PER_FILE)
+                    .setExpectedSamples(100)
+                    .setNormalizeExtensions(Arrays.asList("VS", "SV"));
+            variantStorageManager.variantSetup(study2, setupParams, token);
+            fail("should have failed");
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("Missing expectedFiles"));
+        }
+
+        VariantSetupParams setupParams = new VariantSetupParams()
+                .setFileType(VariantSetupParams.FileType.GENOME_VCF)
+                .setDataDistribution(VariantSetupParams.DataDistribution.MULTIPLE_FILES_PER_SAMPLE)
+                .setExpectedFiles(20)
+                .setAverageSamplesPerFile(2.5f)
+                .setExpectedSamples(10)
+                .setNormalizeExtensions(Arrays.asList("SV", "VAF"));
         VariantSetupResult result = variantStorageManager.variantSetup(study2, setupParams, token);
         assertEquals(VariantSetupResult.Status.READY, result.getStatus());
+
+        toolRunner.execute(VariantIndexOperationTool.class, study2,
+                new VariantIndexParams()
+                        .setFile(file.getId())
+                        .setLoadHomRef(YesNoAuto.YES.name()),
+                Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+
+        VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject(PROJECT_FQN).getMetadataManager();
+        int studyId = metadataManager.getStudyId(study2fqn);
+        int sampleId = metadataManager.getSampleId(studyId, "NA19600");
+        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+        assertEquals(VariantStorageEngine.SplitData.MULTI, sampleMetadata.getSplitData());
 
         try {
             variantStorageManager.variantSetup(STUDY, setupParams, token);

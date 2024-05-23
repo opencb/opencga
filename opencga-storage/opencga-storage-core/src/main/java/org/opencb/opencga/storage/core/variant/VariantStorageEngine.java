@@ -24,9 +24,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.tools.variant.normalizer.extensions.VariantNormalizerExtensionFactory;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
@@ -154,7 +156,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
             boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
             if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
-                throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
+                if (loadSplitDataStr.equalsIgnoreCase("multi")) {
+                    return MULTI;
+                } else {
+                    throw new IllegalArgumentException("Unable to mix " + LOAD_MULTI_FILE_DATA.key() + "=true and "
+                            + LOAD_SPLIT_DATA.key() + "='" + loadSplitDataStr + "'");
+                }
             }
             if (StringUtils.isEmpty(loadSplitDataStr) && !multiFile) {
                 return null;
@@ -1408,6 +1415,38 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public ObjectMap inferConfigurationParams(VariantSetupParams params) {
         ObjectMap options = new ObjectMap();
 
+        List<String> normalizeExtensions = params.getNormalizeExtensions();
+        if (normalizeExtensions != null && !normalizeExtensions.isEmpty()) {
+            if (!normalizeExtensions.equals(Collections.singletonList(ParamConstants.ALL))) {
+                List<String> unsupportedExtensions = new ArrayList<>();
+                for (String normalizeExtension : normalizeExtensions) {
+                    if (!VariantNormalizerExtensionFactory.ALL_EXTENSIONS.contains(normalizeExtension)) {
+                        unsupportedExtensions.add(normalizeExtension);
+                    }
+                }
+                if (!unsupportedExtensions.isEmpty()) {
+                    throw new IllegalArgumentException("Unsupported normalize extensions: " + unsupportedExtensions + ". Supported "
+                            + "extensions are: " + VariantNormalizerExtensionFactory.ALL_EXTENSIONS);
+                }
+            }
+            options.put(NORMALIZATION_EXTENSIONS.key(), normalizeExtensions);
+        }
+        if (params.getDataDistribution() != null) {
+            switch (params.getDataDistribution()) {
+                case FILES_SPLIT_BY_CHROMOSOME:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.CHROMOSOME);
+                    break;
+                case FILES_SPLIT_BY_REGION:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.REGION);
+                    break;
+                case MULTIPLE_FILES_PER_SAMPLE:
+                    options.put(LOAD_MULTI_FILE_DATA.key(), true);
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.MULTI);
+                    break;
+                default:
+                    break;
+            }
+        }
 
         return options;
     }

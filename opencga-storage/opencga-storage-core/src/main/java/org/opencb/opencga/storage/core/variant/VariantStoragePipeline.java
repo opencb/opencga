@@ -60,9 +60,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -77,6 +75,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -555,17 +554,19 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
-    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
+    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
         final int fileId;
         String virtualFile = options.getString(LOAD_VIRTUAL_FILE.key());
+        boolean loadSampleIndex = YesNoAuto.parse(options, LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
 
-        if (VariantStorageEngine.SplitData.isPartialSplit(options)) {
+        if (VariantStorageEngine.SplitData.isPartialSplit(splitData)) {
             if (StringUtils.isEmpty(virtualFile)) {
-                fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+                fileId = getMetadataManager().registerFile(studyId, variantFileMetadata);
 //                throw new StorageEngineException("Unable to load file with 'split-data'. Missing virtual file belonging! "
 //                        + "Please, define " + LOAD_VIRTUAL_FILE.key());
             } else {
-                fileId = getMetadataManager().registerPartialFile(studyId, virtualFile, fileMetadata);
+                fileId = getMetadataManager().registerPartialFile(studyId, virtualFile, variantFileMetadata);
             }
         } else {
             if (StringUtils.isNotEmpty(virtualFile)) {
@@ -574,10 +575,85 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                         + " to " + VariantStorageEngine.SplitData.REGION
                         + " or " + VariantStorageEngine.SplitData.CHROMOSOME);
             } else {
-                fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+                fileId = getMetadataManager().registerFile(studyId, variantFileMetadata);
             }
         }
         setFileId(fileId);
+        FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, getFileId());
+
+        int version = getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+        Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
+        Set<Integer> processedSamples = new LinkedHashSet<>();
+        Set<Integer> samplesWithoutSplitData = new LinkedHashSet<>();
+        for (String sample : variantFileMetadata.getSampleIds()) {
+            Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
+            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, sampleId);
+            if (splitData != null && sampleMetadata.getSplitData() != null) {
+                if (splitData != sampleMetadata.getSplitData()) {
+                    throw new StorageEngineException("Incompatible split data methods. "
+                            + "Unable to mix requested " + splitData
+                            + " with existing " + sampleMetadata.getSplitData());
+                }
+            }
+            if (sampleMetadata.isIndexed()) {
+                if (sampleMetadata.getFiles().size() == 1 && sampleMetadata.getFiles().contains(fileMetadata.getId())) {
+                    // It might happen that the sample is marked as INDEXED, but not the file.
+                    // If the sample only belongs to this file (i.e. it's only file is this file), then ignore
+                    // the overwrite the current sample metadata index status
+                    sampleMetadata = getMetadataManager().updateSampleMetadata(studyId, sampleId,
+                            sm -> sm.setIndexStatus(fileMetadata.getIndexStatus()));
+                }
+            }
+            if (sampleMetadata.isIndexed()) {
+                alreadyIndexedSamples.add(sample);
+                if (sampleMetadata.isAnnotated()
+                        || !loadSampleIndex && sampleMetadata.getSampleIndexStatus(version) == TaskMetadata.Status.READY
+                        || sampleMetadata.getSampleIndexAnnotationStatus(version) == TaskMetadata.Status.READY
+                        || sampleMetadata.getFamilyIndexStatus(version) == TaskMetadata.Status.READY
+                        || sampleMetadata.isFamilyIndexDefined()) {
+                    processedSamples.add(sampleMetadata.getId());
+                }
+            }
+
+            if (splitData != null && splitData != sampleMetadata.getSplitData()) {
+                samplesWithoutSplitData.add(sampleId);
+            }
+        }
+
+        if (!alreadyIndexedSamples.isEmpty()) {
+            if (splitData != null) {
+                logger.info("Loading split data");
+            } else {
+                String fileName = Paths.get(variantFileMetadata.getPath()).getFileName().toString();
+                throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
+            }
+            for (Integer sampleId : processedSamples) {
+                getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    if (!loadSampleIndex) {
+                        for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                        }
+                    }
+                    for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                        sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+                        sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+                    sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                });
+            }
+        }
+
+        if (splitData != null) {
+            // Register loadSplitData
+            for (Integer sampleId : samplesWithoutSplitData) {
+                getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    sampleMetadata.setSplitData(splitData);
+                });
+            }
+        }
     }
 
     /**

@@ -92,18 +92,18 @@ public class VariantSetupOperationManager extends OperationManager {
                 params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue() / params.getExpectedFiles().floatValue());
             } else {
                 switch (params.getDataDistribution()) {
-                    case SINGLE_SAMPLE_FILES:
+                    case SINGLE_SAMPLE_PER_FILE:
                         params.setAverageSamplesPerFile(1f);
                         break;
-                    case MULTI_SAMPLE_FILES:
+                    case MULTIPLE_SAMPLES_PER_FILE:
                         params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue() / params.getExpectedFiles().floatValue());
                         break;
-                    case MULTIPLE_FILE_PER_SAMPLE:
+                    case MULTIPLE_FILES_PER_SAMPLE:
                         // Hard to tell. Let's assume 2 samples per file
                         params.setAverageSamplesPerFile(2f);
                         break;
-                    case MULTI_SAMPLE_FILES_SPLIT_BY_CHROMOSOME:
-                    case MULTI_SAMPLE_FILES_SPLIT_BY_REGION:
+                    case FILES_SPLIT_BY_CHROMOSOME:
+                    case FILES_SPLIT_BY_REGION:
                         params.setAverageSamplesPerFile(params.getExpectedSamples().floatValue());
                         break;
                     default:
@@ -132,10 +132,10 @@ public class VariantSetupOperationManager extends OperationManager {
         }
 
         if (params.getExpectedFiles() == null || params.getExpectedFiles() <= 0) {
-            throw new IllegalArgumentException("Missing expectedFilesNumber");
+            throw new IllegalArgumentException("Missing expectedFiles");
         }
         if (params.getExpectedSamples() == null || params.getExpectedSamples() <= 0) {
-            throw new IllegalArgumentException("Missing expectedSamplesNumber");
+            throw new IllegalArgumentException("Missing expectedSamples");
         }
 
         if (params.getAverageFileSize() == null && params.getFileType() == null) {

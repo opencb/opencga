@@ -3,6 +3,8 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.List;
+
 public class VariantSetupParams extends ToolParams {
 
     @DataField(description = "Expected number of samples that will be loaded. Used to infer some parameters. "
@@ -38,6 +40,9 @@ public class VariantSetupParams extends ToolParams {
     @DataField(description = "Data distribution of the files. This parameter is used to infer the number of samples per file.")
     private DataDistribution dataDistribution;
 
+    @DataField(description = "List of normalization extensions")
+    private List<String> normalizeExtensions;
+
     public VariantSetupParams(VariantSetupParams params) {
         this.expectedSamples = params.expectedSamples;
         this.expectedFiles = params.expectedFiles;
@@ -46,6 +51,7 @@ public class VariantSetupParams extends ToolParams {
         this.variantsPerSample = params.variantsPerSample;
         this.averageSamplesPerFile = params.averageSamplesPerFile;
         this.dataDistribution = params.dataDistribution;
+        this.normalizeExtensions = params.normalizeExtensions;
     }
 
     public VariantSetupParams() {
@@ -58,30 +64,30 @@ public class VariantSetupParams extends ToolParams {
         //   - Cancer germline
         //   - RD germline without family calling
         @DataField(description = "Single sample VCF files. One file per sample. e.g. Platinum gVCF, Cancer germline, RD germline without family calling")
-        SINGLE_SAMPLE_FILES,
+        SINGLE_SAMPLE_PER_FILE,
 
         // Multi samples VCF files. One file with multiple samples.
         // e.g.
         //   - Corpasome
         //   - RD germline with family calling
         @DataField(description = "Multi samples VCF files. One file with multiple samples. e.g. Corpasome, RD germline with family calling")
-        MULTI_SAMPLE_FILES,
+        MULTIPLE_SAMPLES_PER_FILE,
 
         // Multiple files per sample. Each file might have multiple samples.
         // e.g.
         //   - Somatic study with multiple callers
         @DataField(description = "Multiple files per sample. Each file might have multiple samples. e.g. Somatic study with multiple callers")
-        MULTIPLE_FILE_PER_SAMPLE,
+        MULTIPLE_FILES_PER_SAMPLE,
 
         // Large aggregated/joined/merged files. Each file has all samples. Each file contains a specific set of chromosomes.
         // e.g.
         //   - 1000 genomes
         @DataField(description = "Large aggregated/joined/merged files. Each file has all samples. Each file contains a specific set of chromosomes. e.g. 1000 genomes")
-        MULTI_SAMPLE_FILES_SPLIT_BY_CHROMOSOME,
+        FILES_SPLIT_BY_CHROMOSOME,
 
         // Large aggregated/joined/merged files. Each file has all samples. Each file contains an arbitrary region.
         @DataField(description = "Large aggregated/joined/merged files. Each file has all samples. Each file contains an arbitrary region.")
-        MULTI_SAMPLE_FILES_SPLIT_BY_REGION,
+        FILES_SPLIT_BY_REGION,
     }
 
     public enum FileType {
@@ -153,6 +159,15 @@ public class VariantSetupParams extends ToolParams {
 
     public VariantSetupParams setDataDistribution(DataDistribution dataDistribution) {
         this.dataDistribution = dataDistribution;
+        return this;
+    }
+
+    public List<String> getNormalizeExtensions() {
+        return normalizeExtensions;
+    }
+
+    public VariantSetupParams setNormalizeExtensions(List<String> normalizeExtensions) {
+        this.normalizeExtensions = normalizeExtensions;
         return this;
     }
 }
