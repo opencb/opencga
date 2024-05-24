@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 @Migration(id = "illegal_concurrent_file_loadings" ,
         description = "Detect illegal concurrent file loadings and fix them by setting 'status' to 'INVALID' or 'READY'",
         version = "2.12.5",
-        manual = true,
         domain = Migration.MigrationDomain.STORAGE,
         language = Migration.MigrationLanguage.JAVA,
         date = 20240424
