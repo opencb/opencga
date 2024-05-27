@@ -483,4 +483,14 @@ public enum GenotypeClass implements Predicate<String> {
         }
         return genotype;
     }
+
+    public static Set<GenotypeClass> classify(String gt) {
+        Set<GenotypeClass> genotypeClasses = new HashSet<>();
+        for (GenotypeClass value : values()) {
+            if (value.test(gt)) {
+                genotypeClasses.add(value);
+            }
+        }
+        return genotypeClasses;
+    }
 }

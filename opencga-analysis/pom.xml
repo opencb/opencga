@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -66,31 +66,50 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-core</artifactId>
-            <type>test-jar</type>
             <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
+            <artifactId>opencga-storage-hadoop-compat-${opencga-storage-hadoop-compat.id}</artifactId>
             <version>${project.parent.version}</version>
-            <classifier>shaded</classifier>
+            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <version>${project.parent.version}</version>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga.hadoop.thirdparty</groupId>
+            <artifactId>${opencga-hadoop-shaded.artifactId}</artifactId>
+            <version>${opencga.hadoop.thirdparty.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -105,7 +124,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.commons</groupId>
@@ -158,10 +176,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -232,15 +246,115 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- TODO Review -->
         <dependency>
+            <!-- Need dependency for running hadoop tests. -->
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!--
+         Special jetty dependencies for storage-hadoop tests to work.
+         This can't be moved to the main pom, as it would affect all the modules, and the final build would be incorrect.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty.http2</groupId>
+                <artifactId>http2-hpack</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-xml</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-rewrite</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-project</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-alpn-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-alpn-java-client</artifactId>
+                <version>${jetty-for-hadoop-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -271,10 +385,17 @@
                             <!-- This plugin is having a weird issue with biodata libraries. It fails if biodata is declared before. -->
                             <ignoredUsedUndeclaredDependencies>
                                 <ignoredUsedUndeclaredDependency>
-                                    com.google.code.findbugs:jsr305:jar:3.0.2
+                                    com.google.code.findbugs:jsr305
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.opencb.opencga.hadoop.thirdparty:*
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
-                            <ignoredNonTestScopedDependencies><ignoredNonTestScopedDependency>*</ignoredNonTestScopedDependency></ignoredNonTestScopedDependencies>
+                            <ignoredNonTestScopedDependencies>
+                                <ignoredNonTestScopedDependency>
+                                    org.opencb.commons:commons-datastore-mongodb
+                                </ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>

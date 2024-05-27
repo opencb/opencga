@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class VariableSetCreateParams {
 
@@ -57,7 +56,8 @@ public class VariableSetCreateParams {
         Set<Variable> variableSet = variables != null
                 ? new HashSet<>(variables)
                 : new HashSet<>();
-        return new VariableSet(id, name, unique, confidential, false, description, variableSet, entities, 1, new ObjectMap());
+        return new VariableSet(id, name, unique != null ? unique : true, confidential != null ? confidential : false, false, description,
+                variableSet, entities, 1, new ObjectMap());
     }
 
     @Override

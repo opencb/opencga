@@ -10,6 +10,9 @@ public class ExecutorProvider {
     public static OpencgaCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         OpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
+            case "organizations":
+                commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
+                break;
             case "users":
                 commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
                 break;

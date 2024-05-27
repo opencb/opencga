@@ -86,7 +86,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     private final ClinicalAnalysisConverter clinicalConverter;
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
-                                          Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+                                          Configuration configuration, OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ClinicalAnalysisMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalCollection = clinicalCollection;
@@ -142,18 +142,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         parameters.put(PANELS.key(), panelParamList);
     }
 
-    static void fixFilesForRemoval(ObjectMap parameters) {
-        if (parameters.get(FILES.key()) == null) {
+    static void fixFilesForRemoval(ObjectMap parameters, String key) {
+        if (parameters.get(key) == null) {
             return;
         }
 
         List<Document> fileParamList = new LinkedList<>();
-        for (Object file : parameters.getAsList(FILES.key())) {
+        for (Object file : parameters.getAsList(key)) {
             if (file instanceof File) {
                 fileParamList.add(new Document("uid", ((File) file).getUid()));
             }
         }
-        parameters.put(FILES.key(), fileParamList);
+        parameters.put(key, fileParamList);
     }
 
     static void fixAnalystsForRemoval(ObjectMap parameters) {
@@ -249,7 +249,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String clinicalAnalysisId = result.first().getId();
 
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, result.first(), parameters, variableSetList,
+            return runTransaction(clientSession -> transactionalUpdate(clientSession, result.first(), parameters, variableSetList,
                     clinicalAuditList, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
@@ -275,14 +275,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         throw new NotImplementedException("Use other update method passing the ClinicalAuditList");
     }
 
-    OpenCGAResult privateUpdate(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
-                                List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+    OpenCGAResult transactionalUpdate(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters,
+                                      List<VariableSet> variableSetList, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         String clinicalAnalysisId = clinical.getId();
         long clinicalAnalysisUid = clinical.getUid();
 
-        DataResult<?> result = updateAnnotationSets(clientSession, clinicalAnalysisUid, parameters, variableSetList, queryOptions, false);
+        DataResult<?> result = updateAnnotationSets(clientSession, clinical.getStudyUid(), clinicalAnalysisUid, parameters, variableSetList,
+                queryOptions, false);
 
         // Perform the update
         Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
@@ -336,6 +337,42 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    @Override
+    OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, ClinicalAnalysis entry, ObjectMap parameters,
+                                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        throw new NotImplementedException("Please call to the other transactionalUpdate method passing the ClinicalAudit list");
+    }
+
+    @Override
+    OpenCGAResult<ClinicalAnalysis> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query,
+                                                        UpdateDocument updateDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+
+        Document updateOperation = updateDocument.toFinalUpdateDocument();
+        if (!updateOperation.isEmpty()) {
+            logger.debug("Update clinical analysis. Query: {}, Update: {}", query.toBsonDocument(), updateDocument);
+            DataResult<?> update = clinicalCollection.update(clientSession, query, updateOperation, null);
+
+            if (updateDocument.getSet().getBoolean(LOCKED.key(), false)) {
+                // Propagate locked value to Interpretations
+                logger.debug("Propagating case lock to all the Interpretations");
+                MongoDBIterator<ClinicalAnalysis> iterator = clinicalCollection.iterator(clientSession, query, null, clinicalConverter,
+                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+                while (iterator.hasNext()) {
+                    ClinicalAnalysis clinical = iterator.next();
+                    dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical, true);
+                }
+            }
+
+            logger.debug("{} clinical analyses successfully updated", update.getNumUpdated());
+            return endWrite(tmpStartTime, update.getNumMatches(), update.getNumUpdated(), Collections.emptyList());
+        } else {
+            throw new CatalogDBException("Nothing to update");
+        }
     }
 
     UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, Query query,
@@ -410,12 +447,86 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+
+        if (parameters.containsKey(REPORT_UPDATE.key())) {
+            ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
+            reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
+            String[] stringParams = {ReportQueryParams.TITLE.key(), ReportQueryParams.OVERVIEW.key(), ReportQueryParams.LOGO.key(),
+                    ReportQueryParams.SIGNED_BY.key(), ReportQueryParams.SIGNATURE.key(), ReportQueryParams.DATE.key(), };
+            filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
+
+            String[] objectParams = {ReportQueryParams.DISCUSSION.key()};
+            filterObjectParams(reportParameters, document.getSet(), objectParams, REPORT.key() + ".");
+
+            String[] commentParams = {ReportQueryParams.COMMENTS.key()};
+            ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction
+                    .from(actionMap, ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+            switch (basicOperation) {
+                case REMOVE:
+                    fixCommentsForRemoval(reportParameters);
+                    filterObjectParams(reportParameters, document.getPull(), commentParams, REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), commentParams, REPORT.key() + ".");
+                    break;
+                case REPLACE:
+                    filterReplaceParams(reportParameters.getAsList(ReportQueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                            ClinicalComment::getDate, QueryParams.REPORT.key() + "." + QueryParams.COMMENTS_DATE.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+
+            String[] filesParams = new String[]{ReportQueryParams.FILES.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.FILES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(reportParameters, document.getSet(), filesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getSet(),  QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.FILES.key());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(reportParameters, ReportQueryParams.FILES.key());
+                    filterObjectParams(reportParameters, document.getPull(), filesParams, QueryParams.REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), filesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getAddToSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.FILES.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+
+            String[] supportingEvidencesParams = new String[]{ReportQueryParams.SUPPORTING_EVIDENCES.key()};
+            operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.SUPPORTING_EVIDENCES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(reportParameters, document.getSet(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(reportParameters, ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    filterObjectParams(reportParameters, document.getPull(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    break;
+                case ADD:
+                    filterObjectParams(reportParameters, document.getAddToSet(), supportingEvidencesParams, QueryParams.REPORT.key() + ".");
+                    clinicalConverter.validateFilesToUpdate(document.getAddToSet(), QueryParams.REPORT.key() + "."
+                            + ReportQueryParams.SUPPORTING_EVIDENCES.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
+        }
+
         clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
         clinicalConverter.validateReportToUpdate(document.getSet());
-
-        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
         String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
@@ -463,7 +574,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 clinicalConverter.validateFilesToUpdate(document.getSet());
                 break;
             case REMOVE:
-                fixFilesForRemoval(parameters);
+                fixFilesForRemoval(parameters, FILES.key());
                 filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
@@ -783,7 +894,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
                 ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
         return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, clinicalConverter, iteratorFilter, dbAdaptorFactory, studyUid,
@@ -798,7 +909,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_CLINICAL_ANNOTATIONS.name(),
                 ClinicalAnalysisPermissions.VIEW_ANNOTATIONS.name());
         return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
@@ -824,7 +935,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(ID, PRIVATE_UID, PRIVATE_STUDY_UID));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions, Arrays.asList(ID, PRIVATE_UID, PRIVATE_STUDY_UID));
         qOptions = removeInnerProjections(qOptions, PROBAND.key());
         qOptions = removeInnerProjections(qOptions, FAMILY.key());
         qOptions = removeInnerProjections(qOptions, PANELS.key());
@@ -946,7 +1057,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
         }
 
-        long clinicalUid = getNewUid();
+        long clinicalUid = getNewUid(clientSession);
 
         clinicalAnalysis.setAudit(clinicalAudit);
 
@@ -1092,8 +1203,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 }
 
                 ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), familyCopy);
-                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().privateUpdate(clientSession, clinicalAnalysis,
-                        params, Collections.emptyList(), null, QueryOptions.empty());
+                OpenCGAResult<?> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().transactionalUpdate(clientSession,
+                        clinicalAnalysis, params, Collections.emptyList(), null, QueryOptions.empty());
                 if (result.getNumUpdated() != 1) {
                     throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
                             + "family version of '" + family.getId() + "'");
@@ -1150,7 +1261,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             actionMap.put(PANELS.key(), ParamUtils.BasicUpdateAction.SET);
             QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
             ObjectMap params = new ObjectMap(PANELS.key(), panelList);
-            privateUpdate(clientSession, clinicalAnalysis, params, Collections.emptyList(), null, updateOptions);
+            transactionalUpdate(clientSession, clinicalAnalysis, params, Collections.emptyList(), null, updateOptions);
 
             // Update references from Interpretations
             dbAdaptorFactory.getInterpretationDBAdaptor().updateInterpretationPanelReferences(clientSession, clinicalAnalysis, panel);

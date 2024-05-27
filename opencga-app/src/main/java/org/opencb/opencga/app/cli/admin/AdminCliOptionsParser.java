@@ -27,7 +27,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.models.user.Account;
 
 import java.util.List;
 
@@ -63,14 +62,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
         JCommander catalogSubCommands = jCommander.getCommands().get("catalog");
-        catalogSubCommands.addCommand("demo", catalogCommandOptions.demoCatalogCommandOptions);
+//        catalogSubCommands.addCommand("demo", catalogCommandOptions.demoCatalogCommandOptions);
         catalogSubCommands.addCommand("install", catalogCommandOptions.installCatalogCommandOptions);
         catalogSubCommands.addCommand("status", catalogCommandOptions.statusCatalogCommandOptions);
         catalogSubCommands.addCommand("delete", catalogCommandOptions.deleteCatalogCommandOptions);
         catalogSubCommands.addCommand("index", catalogCommandOptions.indexCatalogCommandOptions);
-        catalogSubCommands.addCommand("clean", catalogCommandOptions.cleanCatalogCommandOptions);
-        catalogSubCommands.addCommand("stats", catalogCommandOptions.statsCatalogCommandOptions);
-        catalogSubCommands.addCommand("dump", catalogCommandOptions.dumpCatalogCommandOptions);
+//        catalogSubCommands.addCommand("clean", catalogCommandOptions.cleanCatalogCommandOptions);
+//        catalogSubCommands.addCommand("stats", catalogCommandOptions.statsCatalogCommandOptions);
+//        catalogSubCommands.addCommand("dump", catalogCommandOptions.dumpCatalogCommandOptions);
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
@@ -123,6 +122,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("search", this.migrationCommandOptions.getSearchCommandOptions());
         migrationSubCommands.addCommand("run", this.migrationCommandOptions.getRunCommandOptions());
         migrationSubCommands.addCommand("run-manual", this.migrationCommandOptions.getRunManualCommandOptions());
+        migrationSubCommands.addCommand("v3.0.0", this.migrationCommandOptions.getOrganizationCommandOptions());
 
         this.storageCommandOptions = new StorageCommandOptions(jCommander, commonCommandOptions);
         this.jCommander.addCommand("storage", this.storageCommandOptions);
@@ -198,14 +198,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     @Parameters(commandNames = {"catalog"}, commandDescription = "Implements different tools interact with Catalog database")
     public class CatalogCommandOptions extends CommandOptions {
 
-        public final DemoCatalogCommandOptions demoCatalogCommandOptions;
+//        public final DemoCatalogCommandOptions demoCatalogCommandOptions;
         public final StatusCatalogCommandOptions statusCatalogCommandOptions;
         public final InstallCatalogCommandOptions installCatalogCommandOptions;
         public final DeleteCatalogCommandOptions deleteCatalogCommandOptions;
         public final IndexCatalogCommandOptions indexCatalogCommandOptions;
-        public final CleanCatalogCommandOptions cleanCatalogCommandOptions;
-        public final StatsCatalogCommandOptions statsCatalogCommandOptions;
-        public final DumpCatalogCommandOptions dumpCatalogCommandOptions;
+//        public final CleanCatalogCommandOptions cleanCatalogCommandOptions;
+//        public final StatsCatalogCommandOptions statsCatalogCommandOptions;
+//        public final DumpCatalogCommandOptions dumpCatalogCommandOptions;
         public final ExportCatalogCommandOptions exportCatalogCommandOptions;
         public final ImportCatalogCommandOptions importCatalogCommandOptions;
         public final DaemonCatalogCommandOptions daemonCatalogCommandOptions;
@@ -213,14 +213,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
-            this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
+//            this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
             this.statusCatalogCommandOptions = new StatusCatalogCommandOptions();
             this.deleteCatalogCommandOptions = new DeleteCatalogCommandOptions();
             this.indexCatalogCommandOptions = new IndexCatalogCommandOptions();
-            this.cleanCatalogCommandOptions = new CleanCatalogCommandOptions();
-            this.statsCatalogCommandOptions = new StatsCatalogCommandOptions();
-            this.dumpCatalogCommandOptions = new DumpCatalogCommandOptions();
+//            this.cleanCatalogCommandOptions = new CleanCatalogCommandOptions();
+//            this.statsCatalogCommandOptions = new StatsCatalogCommandOptions();
+//            this.dumpCatalogCommandOptions = new DumpCatalogCommandOptions();
             this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
@@ -359,20 +359,20 @@ public class AdminCliOptionsParser extends CliOptionsParser {
      *  CATALOG SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
-    public class DemoCatalogCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
-                + "set to 'demo'.")
-        public String prefix;
-
-        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
-        public boolean force;
-
-    }
+//    @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
+//    public class DemoCatalogCommandOptions {
+//
+//        @ParametersDelegate
+//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+//
+//        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
+//                + "set to 'demo'.")
+//        public String prefix;
+//
+//        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+//        public boolean force;
+//
+//    }
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install Catalog database and collections together with the indexes")
     public class InstallCatalogCommandOptions extends CatalogDatabaseCommandOptions {
@@ -382,9 +382,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"--email"}, description = "Administrator e-mail", arity = 1)
         public String email;
-
-        @Parameter(names = {"--organization"}, description = "Administrator organization", arity = 1)
-        public String organization;
 
         @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).")
         public String secretKey;
@@ -423,40 +420,43 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--reset"}, description = "Remove existing indexes before creting the new one")
-        public boolean reset;
+        @Parameter(names = {"--organization"}, description = "Organization id. If empty, will execute for all organizations.", arity = 1)
+        public String organizationId;
+
+//        @Parameter(names = {"--reset"}, description = "Remove existing indexes before creating the new one")
+//        public boolean reset;
     }
 
-    @Parameters(commandNames = {"clean"}, commandDescription = "Query audit data from Catalog database")
-    public class CleanCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+//    @Parameters(commandNames = {"clean"}, commandDescription = "Query audit data from Catalog database")
+//    public class CleanCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+//
+//        @ParametersDelegate
+//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+//
+//        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to clean up")
+//        public String filter = "ALL";
+//
+//    }
 
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+//    @Parameters(commandNames = {"stats"}, commandDescription = "Print some summary stats of Catalog database")
+//    public class StatsCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+//
+//        @ParametersDelegate
+//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+//
+//        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections for the stats")
+//        public String collections = "ALL";
+//    }
 
-        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to clean up")
-        public String filter = "ALL";
-
-    }
-
-    @Parameters(commandNames = {"stats"}, commandDescription = "Print some summary stats of Catalog database")
-    public class StatsCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections for the stats")
-        public String collections = "ALL";
-    }
-
-    @Parameters(commandNames = {"dump"}, commandDescription = "Create a dump of Catalog database")
-    public class DumpCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to be dumped", arity = 1)
-        public String collections = "ALL";
-    }
+//    @Parameters(commandNames = {"dump"}, commandDescription = "Create a dump of Catalog database")
+//    public class DumpCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+//
+//        @ParametersDelegate
+//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+//
+//        @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to be dumped", arity = 1)
+//        public String collections = "ALL";
+//    }
 
     @Parameters(commandNames = {"export"}, commandDescription = "Export a project up to the specified release")
     public class ExportCatalogCommandOptions extends CatalogDatabaseCommandOptions {
@@ -488,6 +488,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
 
         @Parameter(names = {"--directory"}, description = "Directory containing the files generated by the export command line.", arity = 1,
                 required = true)
@@ -541,6 +544,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
+
         @Parameter(names = {"-u", "--id"}, description = "User id", required = true, arity = 1)
         public String userId;
 
@@ -550,13 +556,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--user-password"}, description = "User password", required = true, arity = 1)
         public String userPassword;
 
-        @Parameter(names = {"--type"}, description = "User account type of the user (guest or full).", arity = 1)
-        public Account.AccountType type = Account.AccountType.FULL;
-
         @Parameter(names = {"--email"}, description = "User email", required = true, arity = 1)
         public String userEmail;
 
-        @Parameter(names = {"--organization"}, description = "User organization", required = false, arity = 1)
+        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
         @Parameter(names = {"--quota"}, description = "User disk quota", required = false, arity = 1)
@@ -570,6 +573,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
+
         @Parameter(names = {"-u", "--user"}, description = DEPRECATED + "Use --id and --resource-type instead.", arity = 1)
         public String user;
 
@@ -579,7 +585,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--id"}, description = "Comma separated list of resource ids (users or applications) or single group id to be imported.", arity = 1)
         public String id;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the users or group will be associated to."
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study where the users or group will be associated to."
                 + " Parameter --study-group is needed to perform this action.", arity = 1)
         public String study;
 
@@ -591,15 +597,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
                 + " to be used to import users from.", arity = 1, required = true)
         public String authOrigin;
 
-        @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public String type = Account.AccountType.GUEST.name();
-
         @Parameter(names = {"--resource-type"}, description = "Resource to be imported. One of 'user', 'group' or 'application'", arity = 1)
         public String resourceType = "user";
 
-        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, one year starting from the "
-                + "import day", arity = 1)
-        public String expDate;
+//        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, one year starting from the "
+//                + "import day", arity = 1)
+//        public String expDate;
     }
 
     @Parameters(commandNames = {"sync"}, commandDescription = "Sync a group of users from an authentication origin with a group in a study from catalog")
@@ -608,13 +611,16 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
+
         @Parameter(names = {"--from"}, description = "Group defined in the authenticated origin to be synchronised", arity = 1)
         public String from;
 
         @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", arity = 1)
         public String to;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.",
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study where the list of users will be associated to.",
                 required = true, arity = 1)
         public String study;
 
@@ -627,16 +633,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
                 + "is active.", arity = 0)
         public boolean syncAll;
 
-        @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public Account.AccountType type = Account.AccountType.GUEST;
-
         @Parameter(names = {"--force"}, description = "Flag to force the synchronisation into groups that already exist and were not " +
                 "previously synchronised.", arity = 0)
         public boolean force;
 
-        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
-                + "import day", arity = 1)
-        public String expDate;
+//        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
+//                + "import day", arity = 1)
+//        public String expDate;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the user Catalog database entry and the workspace")
@@ -645,6 +648,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
 
         @Parameter(names = {"-u", "--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
@@ -786,6 +791,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class MetaKeyCommandOptions extends CatalogDatabaseCommandOptions {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--organization"}, description = "Organization id", arity = 1)
+        public String organizationId;
 
         @Parameter( names = {"--key"}, description = "Update secret key in OpenCGA", arity = 1)
         public String updateSecretKey;

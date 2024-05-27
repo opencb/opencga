@@ -37,14 +37,16 @@ public class ToolFactory {
     private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
     private static List<Class<? extends OpenCgaTool>> toolsList;
 
-    private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools() {
+    public static final String DEFAULT_PACKAGE = "org.opencb.opencga";
+
+    private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools(List<String> packages) {
         if (toolsCache == null) {
             Reflections reflections = new Reflections(new ConfigurationBuilder()
                     .setScanners(
                             new SubTypesScanner(),
                             new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Tool.class.getName()))
                     )
-                    .addUrls(getUrls())
+                    .addUrls(getUrlsFromPackages(packages))
                     .filterInputsBy(input -> input != null && input.endsWith(".class"))
             );
 
@@ -85,15 +87,26 @@ public class ToolFactory {
         }
         return toolsCache;
     }
+    static Collection<URL> getUrlsFromPackages(List<String> packages) {
+        Collection<URL> urls = new LinkedList<>();
+        for (String pack :packages){
+            for (URL url : ClasspathHelper.forPackage(pack)) {
+                String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+                if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-hadoop-shaded"))) {
+                    urls.add(url);
+                }
+            }
+        }
+        return urls;
+    }
 
     static Collection<URL> getUrls() {
-        // TODO: What if there are third party libraries that implement Tools?
         //  Currently they must contain "opencga" in the jar name.
         //  e.g.  acme-rockets-opencga-5.4.0.jar
         Collection<URL> urls = new LinkedList<>();
         for (URL url : ClasspathHelper.forPackage("org.opencb.opencga")) {
             String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
-            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-hadoop-shaded"))) {
                 urls.add(url);
             }
         }
@@ -101,6 +114,10 @@ public class ToolFactory {
     }
 
     public final Class<? extends OpenCgaTool> getToolClass(String toolId) throws ToolException {
+        return getToolClass(toolId, Collections.singletonList(DEFAULT_PACKAGE));
+    }
+
+    public final Class<? extends OpenCgaTool> getToolClass(String toolId, List<String> packages) throws ToolException {
         Objects.requireNonNull(toolId);
 
         Class<? extends OpenCgaTool> aClass = null;
@@ -112,7 +129,7 @@ public class ToolFactory {
         } catch (ClassNotFoundException ignore) {
         }
         if (aClass == null) {
-            aClass = loadTools().get(toolId);
+            aClass = loadTools(packages).get(toolId);
         }
         if (aClass == null) {
             throw new ToolException("Tool '" + toolId + "' not found");
@@ -121,11 +138,19 @@ public class ToolFactory {
     }
 
     public Tool getTool(String toolId) throws ToolException {
-        return getToolClass(toolId).getAnnotation(Tool.class);
+        return getTool(toolId, Collections.singletonList(DEFAULT_PACKAGE));
+    }
+
+    public Tool getTool(String toolId, List<String> packages) throws ToolException {
+        return getToolClass(toolId, packages).getAnnotation(Tool.class);
     }
 
     public final OpenCgaTool createTool(String toolId) throws ToolException {
-        return createTool(getToolClass(toolId));
+        return createTool(toolId, Collections.singletonList(DEFAULT_PACKAGE));
+    }
+
+    public final OpenCgaTool createTool(String toolId, List<String> packages) throws ToolException {
+        return createTool(getToolClass(toolId, packages));
     }
 
     public final OpenCgaTool createTool(Class<? extends OpenCgaTool> aClass) throws ToolException {
@@ -141,12 +166,22 @@ public class ToolFactory {
     }
 
     public Collection<Class<? extends OpenCgaTool>> getTools() {
-        loadTools();
+        loadTools(Collections.singletonList(DEFAULT_PACKAGE));
+        return toolsList;
+    }
+
+    public Collection<Class<? extends OpenCgaTool>> getTools(List<String> packages) {
+        loadTools(packages);
         return toolsList;
     }
 
     public Map<String, Set<Class<? extends OpenCgaTool>>> getDuplicatedTools() {
-        loadTools();
+        loadTools(Collections.singletonList(DEFAULT_PACKAGE));
+        return duplicatedTools;
+    }
+
+    public Map<String, Set<Class<? extends OpenCgaTool>>> getDuplicatedTools(List<String> packages) {
+        loadTools(packages);
         return duplicatedTools;
     }
 }

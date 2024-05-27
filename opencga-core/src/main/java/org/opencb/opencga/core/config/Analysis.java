@@ -18,10 +18,10 @@ package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 
 public class Analysis {
+
+    private List<String> packages;
 
     private String scratchDir;
 
@@ -30,8 +30,18 @@ public class Analysis {
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
+        packages = new ArrayList<>();
         execution = new Execution();
         frameworks = new ArrayList<>();
+    }
+
+    public List<String> getPackages() {
+        return packages;
+    }
+
+    public Analysis setPackages(List<String> packages) {
+        this.packages = packages;
+        return this;
     }
 
     public String getScratchDir() {

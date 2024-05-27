@@ -26,7 +26,7 @@ import java.util.Collections;
 
 public class CliCompletionMain {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         try {
             String output = System.getProperty("app.home") + "/bin/utils";
             if (args != null && args.length > 0) {
@@ -44,8 +44,9 @@ public class CliCompletionMain {
             InternalCliOptionsParser internalCliOptionsParser = new InternalCliOptionsParser();
             CommandLineUtils.generateBashAutoComplete(internalCliOptionsParser.getJCommander(), output + "/opencga-internal",
                     "opencga-internal", Collections.singletonList("-D"));
-        } catch (IOException e) {
+        } catch (RuntimeException | IOException e) {
             e.printStackTrace();
+            throw e;
         }
     }
 }

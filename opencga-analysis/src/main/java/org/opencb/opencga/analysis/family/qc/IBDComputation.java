@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.math3.ode.nonstiff.RungeKuttaFieldIntegrator;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -34,19 +32,16 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 

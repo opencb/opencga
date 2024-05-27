@@ -107,9 +107,6 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
-        @Parameter(names = {"--overwrite"}, description = "Overwrite index file", arity = 0)
-        public boolean overwrite = false;
-
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }
@@ -335,14 +332,14 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String file;
+        @Parameter(names = {"--bam-file-id"}, description = "BAM file ID", required = true, arity = 1)
+        public String bamFileId;
+
+        @Parameter(names = {"--bai-file-id"}, description = "BAI file ID; if not provided, it will search the most recent one", arity = 1)
+        public String baiFileId;
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
-
-        @Parameter(names = {"--overwrite"}, description = "Overwrite coverage file", arity = 0)
-        public boolean overwrite = false;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
@@ -470,7 +467,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = BWA_COMMAND_DESCRIPTION)
@@ -538,7 +535,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = DEEPTOOLS_COMMAND_DESCRIPTION)

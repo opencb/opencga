@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
@@ -71,9 +70,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "aggregationstats":
-                queryResponse = aggregationStats();
                 break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
@@ -149,34 +145,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), SampleAclUpdateParams.class);
         }
         return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
-    }
-
-    private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in Samples command line");
-
-        SamplesCommandOptions.AggregationStatsCommandOptions commandOptions = samplesCommandOptions.aggregationStatsCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("source", commandOptions.source);
-        queryParams.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        queryParams.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        queryParams.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        queryParams.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        queryParams.putIfNotEmpty("status", commandOptions.status);
-        queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        queryParams.putIfNotEmpty("release", commandOptions.release);
-        queryParams.putIfNotEmpty("version", commandOptions.version);
-        queryParams.putIfNotNull("somatic", commandOptions.somatic);
-        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
-        queryParams.putIfNotNull("default_values", commandOptions.default_values);
-        queryParams.putIfNotEmpty("field", commandOptions.field);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getSampleClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {

@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Collections;

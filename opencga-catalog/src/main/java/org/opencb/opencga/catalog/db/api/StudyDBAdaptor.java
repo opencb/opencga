@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -27,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -82,19 +84,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         return queryResults;
     }
 
-    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
-
     OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
-
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -197,9 +188,9 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    OpenCGAResult<Study> nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
+    OpenCGAResult<Study> nativeInsert(Map<String, Object> study) throws CatalogDBException;
 
-    OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Study> insert(Project project, Study study, List<File> files, QueryOptions options) throws CatalogDBException;
 
     boolean hasStudyPermission(long studyId, String user, StudyPermissions.Permissions permission) throws CatalogDBException;
 
@@ -208,12 +199,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getId(long projectId, String studyAlias) throws CatalogDBException;
-
-    long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getProjectIdByStudyUid(long studyUid) throws CatalogDBException;
-
-    String getOwnerId(long studyId) throws CatalogDBException;
 
     OpenCGAResult<Study> createGroup(long studyId, Group group) throws CatalogDBException;
 
@@ -395,14 +380,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    OpenCGAResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> addFieldToVariableSet(long studyUid, long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     OpenCGAResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<VariableSet> removeFieldFromVariableSet(long studyUid, long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     OpenCGAResult<VariableSet> getVariableSet(long variableSetUid, QueryOptions options) throws CatalogDBException;
 
@@ -429,9 +414,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
-
-    OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -445,6 +428,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", OBJECT, ""),
         SOURCES("sources", TEXT_ARRAY, ""),
+        NOTES("notes", OBJECT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -468,8 +452,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         PROJECT_UUID("projectUuid", TEXT, ""),
         ADDITIONAL_INFO("additionalInfo", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
@@ -481,9 +463,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
-
-        OWNER("_ownerId", TEXT, ""),
-        COHORTS("cohorts", TEXT_ARRAY, ""),
 
         DELETED("deleted", BOOLEAN, ""),
 

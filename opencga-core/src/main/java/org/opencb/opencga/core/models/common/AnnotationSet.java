@@ -16,13 +16,10 @@
 
 package org.opencb.opencga.core.models.common;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -31,38 +28,16 @@ import java.util.Map;
 public class AnnotationSet {
 
     private String id;
-    @Deprecated
-    private String name;
     private String variableSetId;
     private Map<String, Object> annotations;
-    @Deprecated
-    private String creationDate;
-    @Deprecated
-    private int release;
-    @Deprecated
-    private Map<String, Object> attributes;
-
 
     public AnnotationSet() {
     }
 
     public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations) {
-        this(id, variableSetId, annotations, TimeUtils.getTime(), 1, Collections.emptyMap());
-    }
-
-    public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations, Map<String, Object> attributes) {
-        this(id, variableSetId, annotations, TimeUtils.getTime(), 1, attributes);
-    }
-
-    public AnnotationSet(String id, String variableSetId, Map<String, Object> annotations, String creationDate, int release,
-                         Map<String, Object> attributes) {
         this.id = id;
-        this.name = id;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
-        this.creationDate = creationDate;
-        this.release = release;
-        this.attributes = attributes;
     }
 
     @Override
@@ -71,9 +46,6 @@ public class AnnotationSet {
         sb.append("id='").append(id).append('\'');
         sb.append(", variableSetId=").append(variableSetId);
         sb.append(", annotations=").append(annotations);
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", release=").append(release);
-        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -89,15 +61,13 @@ public class AnnotationSet {
         }
 
         AnnotationSet that = (AnnotationSet) o;
-        return new EqualsBuilder().append(variableSetId, that.variableSetId).append(release, that.release).append(id, that.id)
-                .append(annotations, that.annotations).append(creationDate, that.creationDate).append(attributes, that.attributes)
+        return new EqualsBuilder().append(variableSetId, that.variableSetId).append(id, that.id).append(annotations, that.annotations)
                 .isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(id).append(variableSetId).append(annotations).append(creationDate).append(release)
-                .append(attributes).toHashCode();
+        return new HashCodeBuilder(17, 37).append(id).append(variableSetId).append(annotations).toHashCode();
     }
 
     public String getId() {
@@ -106,17 +76,6 @@ public class AnnotationSet {
 
     public AnnotationSet setId(String id) {
         this.id = id;
-        this.name = StringUtils.isEmpty(this.name) ? this.id : this.name;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public AnnotationSet setName(String name) {
-        this.name = name;
-        this.id = StringUtils.isEmpty(this.id) ? this.name : this.id;
         return this;
     }
 
@@ -135,33 +94,6 @@ public class AnnotationSet {
 
     public AnnotationSet setAnnotations(Map<String, Object> annotations) {
         this.annotations = annotations;
-        return this;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public AnnotationSet setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public AnnotationSet setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public AnnotationSet setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
         return this;
     }
 
