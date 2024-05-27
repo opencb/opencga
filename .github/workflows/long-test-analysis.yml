@@ -14,8 +14,8 @@ jobs:
       matrix:
         hadoop: [ "hdp3.1", "hdi5.1", "emr6.1", "emr6.13" ]
     uses: ./.github/workflows/test-analysis.yml
-    secrets: inherit
     with:
       test_profile: runShortTests,runMediumTests,runLongTests
       hadoop: ${{ matrix.hadoop }}
+    secrets: inherit
 
