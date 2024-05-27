@@ -1,0 +1,32 @@
+name: Pull request approve workflow
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+
+  test:
+    uses: ./.github/workflows/test-analysis.yml
+    needs: build
+    with:
+      test_profile: runShortTests,runMediumTests,runLongTests
+    secrets: inherit
+
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: test
+    with:
+      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+    secrets: inherit
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
+    secrets: inherit
