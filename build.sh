@@ -103,7 +103,11 @@ function manage_dependency() {
     fi
   elif [ "$COMMAND" == "test" ]; then
     log "Testing $REPO branch $BRANCH_NAME."
-    mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
+    if [ "$REPO" == "cellbase" ]; then
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST="$DB_CELLBASE"
+    else
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
+    fi
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
@@ -144,6 +148,7 @@ function print_usage() {
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish dockers of OpenCGA and OpenCGA-enterprise."
+  echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
   echo ""
@@ -353,7 +358,7 @@ function print_log_summary() {
 
 # Initialize the global variable LOG_SUMMARY
 LOG_SUMMARY=""
-
+DB_CELLBASE="localhost:27017"
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
@@ -386,21 +391,26 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
-  -H | --storage-hadoop )
+  -c | --cellbase-db)
+    DB_CELLBASE="$value"
+    shift # past argument
+    shift # past value
+    ;;
+  -H | --storage-hadoop)
     STORAGE_HADOOP_DEPS="$value"
     shift # past argument
     shift # past value
     ;;
-  -s | --test-save-reports )
+  -s | --test-save-reports)
       SAVE_REPORTS="true"
       COMMAND="test"
       shift # past argument
       ;;
-  -d | --docker )
+  -d | --docker)
       DOCKER="true"
       shift # past argument
       ;;
-    -l | --test-level )
+    -l | --test-level)
       if [ -z "$value" ];  then
             echo "Test level is empty. The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
             exit 1
@@ -410,25 +420,25 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
-  -T | --task )
+  -T | --task)
     TASK_REFERENCE="$value"
     shift # past argument
     shift # past value
     ;;
-  -b | --prepare-branches )
+  -b | --prepare-branches)
     PREPARE_BRANCHES="true"
     shift # past argument
     ;;
-  -f | --test-fail-never )
+  -f | --test-fail-never)
     FAIL_NEVER="--fail-never"
     COMMAND="test"
     shift # past argument
     ;;
-  -t | --test )
+  -t | --test)
    COMMAND="test"
     shift # past argument
     ;;
-  -d | --debug )
+  -d | --debug)
     DEBUG="true"
     shift # past argument
     ;;
