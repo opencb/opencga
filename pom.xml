@@ -6,7 +6,7 @@
 
     <groupId>com.zettagenomics.opencga-enterprise</groupId>
     <artifactId>opencga-enterprise</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -19,13 +19,13 @@
     </modules>
 
     <properties>
-        <opencga.version>3.1.0-SNAPSHOT</opencga.version>
-        <pyopencga.version>2.1.0_dev</pyopencga.version>
-        <opencgar.version>2.1.0_dev</opencgar.version>
-        <cellbase.version>6.1.0-SNAPSHOT</cellbase.version>
-        <biodata.version>3.1.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>5.1.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.1.0-SNAPSHOT</iva.version>
+        <opencga.version>3.2.0-SNAPSHOT</opencga.version>
+        <pyopencga.version>2.2.0_dev</pyopencga.version>
+        <opencgar.version>2.2.0_dev</opencgar.version>
+        <cellbase.version>6.2.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.2.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.2.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>2.2.0-SNAPSHOT</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
