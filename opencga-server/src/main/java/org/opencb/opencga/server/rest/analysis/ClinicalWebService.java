@@ -398,6 +398,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response info(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CLINICAL_VERSION_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_VERSION_PARAM) String version,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -447,6 +448,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.CLINICAL_DUE_DATE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_DUE_DATE_PARAM) String dueDate,
             @ApiParam(value = ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM) String qualityControl,
             @ApiParam(value = ParamConstants.CLINICAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.CLINICAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
@@ -487,6 +489,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.CLINICAL_DUE_DATE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_DUE_DATE_PARAM) String dueDate,
             @ApiParam(value = ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM) String qualityControl,
             @ApiParam(value = ParamConstants.CLINICAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.CLINICAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CLINICAL_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,

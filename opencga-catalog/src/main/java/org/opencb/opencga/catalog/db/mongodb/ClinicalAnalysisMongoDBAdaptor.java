@@ -82,16 +82,23 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
     private static final String PRIVATE_DUE_DATE = "_dueDate";
     private final MongoDBCollection clinicalCollection;
+    private final MongoDBCollection archiveClinicalCollection;
     private final MongoDBCollection deletedClinicalCollection;
     private final ClinicalAnalysisConverter clinicalConverter;
 
-    public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
-                                          Configuration configuration, OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
+
+    public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection archiveClinicalCollection,
+                                          MongoDBCollection deletedClinicalCollection, Configuration configuration,
+                                          OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(ClinicalAnalysisMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalCollection = clinicalCollection;
+        this.archiveClinicalCollection = archiveClinicalCollection;
         this.deletedClinicalCollection = deletedClinicalCollection;
         this.clinicalConverter = new ClinicalAnalysisConverter();
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(clinicalCollection, archiveClinicalCollection,
+                deletedClinicalCollection);
     }
 
     @Override
@@ -282,61 +289,63 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String clinicalAnalysisId = clinical.getId();
         long clinicalAnalysisUid = clinical.getUid();
 
-        DataResult<?> result = updateAnnotationSets(clientSession, clinical.getStudyUid(), clinicalAnalysisUid, parameters, variableSetList,
-                queryOptions, false);
+        Query tmpQuery = new Query()
+                .append(STUDY_UID.key(), clinical.getStudyUid())
+                .append(QueryParams.UID.key(), clinicalAnalysisUid);
+        Bson bsonQuery = parseQuery(tmpQuery);
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, (entryList) -> {
+            DataResult<?> result = updateAnnotationSets(clientSession, clinical.getStudyUid(), clinicalAnalysisUid, parameters,
+                    variableSetList, queryOptions, false);
 
-        // Perform the update
-        Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
-        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, clinicalAuditList, query, queryOptions);
+            // Perform the update
+            UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, clinicalAuditList, tmpQuery, queryOptions);
 
-        Document updateOperation = updateDocument.toFinalUpdateDocument();
-        List<Event> events = new ArrayList<>();
-        if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
-            DataResult<?> update;
+            Document updateOperation = updateDocument.toFinalUpdateDocument();
+            List<Event> events = new ArrayList<>();
+            if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
+                DataResult<?> update;
 
-            if (!updateOperation.isEmpty()) {
-                Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
-
-                logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(), updateDocument);
-                update = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
-
-                if (update.getNumMatches() == 0) {
-                    throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
-                }
-                if (update.getNumUpdated() == 0) {
-                    events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
-                }
-
-                if (parameters.getBoolean(LOCKED.key())) {
-                    // Propagate locked value to Interpretations
-                    logger.debug("Propagating case lock to all the Interpretations");
-                    dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
-                            parameters.getBoolean(LOCKED.key()));
-                }
-
-                logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
-            }
-
-            if (!updateDocument.getNestedUpdateList().isEmpty()) {
-                for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
-
-                    Bson bsonQuery = parseQuery(nestedDocument.getQuery().append(QueryParams.UID.key(), clinicalAnalysisUid));
-                    logger.debug("Update nested element from Clinical Analysis. Query: {}, Update: {}",
-                            bsonQuery.toBsonDocument(), nestedDocument.getSet());
-
-                    update = clinicalCollection.update(clientSession, bsonQuery, nestedDocument.getSet(), null);
+                if (!updateOperation.isEmpty()) {
+                    logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(), updateDocument);
+                    update = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
 
                     if (update.getNumMatches() == 0) {
                         throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
                     }
+                    if (update.getNumUpdated() == 0) {
+                        events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
+                    }
+
+                    if (parameters.getBoolean(LOCKED.key())) {
+                        // Propagate locked value to Interpretations
+                        logger.debug("Propagating case lock to all the Interpretations");
+                        dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
+                                parameters.getBoolean(LOCKED.key()));
+                    }
+
+                    logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
                 }
+
+                if (!updateDocument.getNestedUpdateList().isEmpty()) {
+                    // Nested documents are used to update reports
+                    for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
+                        Bson tmpBsonQuery = parseQuery(nestedDocument.getQuery().append(QueryParams.UID.key(), clinicalAnalysisUid));
+                        logger.debug("Update nested element from Clinical Analysis. Query: {}, Update: {}",
+                                tmpBsonQuery.toBsonDocument(), nestedDocument.getSet());
+                        update = clinicalCollection.update(clientSession, tmpBsonQuery, nestedDocument.getSet(), null);
+
+                        if (update.getNumMatches() == 0) {
+                            throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
+                        }
+                    }
+                }
+
+            } else if (result.getNumUpdated() == 0) {
+                throw new CatalogDBException("Nothing to update");
             }
 
-        } else if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException("Nothing to update");
-        }
-
-        return endWrite(tmpStartTime, 1, 1, events);
+            return endWrite(tmpStartTime, 1, 1, events);
+        }, null, null);
     }
 
     @Override
@@ -354,22 +363,24 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         Document updateOperation = updateDocument.toFinalUpdateDocument();
         if (!updateOperation.isEmpty()) {
-            logger.debug("Update clinical analysis. Query: {}, Update: {}", query.toBsonDocument(), updateDocument);
-            DataResult<?> update = clinicalCollection.update(clientSession, query, updateOperation, null);
+            return versionedMongoDBAdaptor.update(clientSession, query, entryList -> {
+                logger.debug("Update clinical analysis. Query: {}, Update: {}", query.toBsonDocument(), updateDocument);
+                DataResult<?> update = clinicalCollection.update(clientSession, query, updateOperation, null);
 
-            if (updateDocument.getSet().getBoolean(LOCKED.key(), false)) {
-                // Propagate locked value to Interpretations
-                logger.debug("Propagating case lock to all the Interpretations");
-                MongoDBIterator<ClinicalAnalysis> iterator = clinicalCollection.iterator(clientSession, query, null, clinicalConverter,
-                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
-                while (iterator.hasNext()) {
-                    ClinicalAnalysis clinical = iterator.next();
-                    dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical, true);
+                if (updateDocument.getSet().getBoolean(LOCKED.key(), false)) {
+                    // Propagate locked value to Interpretations
+                    logger.debug("Propagating case lock to all the Interpretations");
+                    MongoDBIterator<ClinicalAnalysis> iterator = clinicalCollection.iterator(clientSession, query, null, clinicalConverter,
+                            ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+                    while (iterator.hasNext()) {
+                        ClinicalAnalysis clinical = iterator.next();
+                        dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical, true);
+                    }
                 }
-            }
 
-            logger.debug("{} clinical analyses successfully updated", update.getNumUpdated());
-            return endWrite(tmpStartTime, update.getNumMatches(), update.getNumUpdated(), Collections.emptyList());
+                logger.debug("{} clinical analyses successfully updated", update.getNumUpdated());
+                return endWrite(tmpStartTime, update.getNumMatches(), update.getNumUpdated(), Collections.emptyList());
+            }, null, null);
         } else {
             throw new CatalogDBException("Nothing to update");
         }
@@ -765,52 +776,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             }
         }
 
+        // Add Audit to ClinicalAnalysis
+        transactionalUpdate(clientSession, clinicalAnalysis, new ObjectMap(), Collections.emptyList(), clinicalAuditList,
+                QueryOptions.empty());
+
+        // And delete ClinicalAnalysis
         Query query = new Query()
-                .append(STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                .append(QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid())
                 .append(UID.key(), clinicalAnalysis.getUid());
-        OpenCGAResult<Document> result = nativeGet(clientSession, query, QueryOptions.empty());
-        if (result.getNumResults() == 0) {
-            throw new CatalogDBException("Internal error: Clinical Analysis '" + clinicalAnalysis.getId() + "' not found.");
-        }
+        Bson bsonQuery = parseQuery(query);
+        versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
 
-        String clinicalId = result.first().getString(QueryParams.ID.key());
-        long clinicalUid = result.first().getLong(PRIVATE_UID);
-        long studyUid = result.first().getLong(PRIVATE_STUDY_UID);
-
-        logger.debug("Deleting Clinical Analysis {} ({})", clinicalId, clinicalUid);
-
-        // Delete any documents that might have been already deleted with that id
-        Bson bsonQuery = new Document()
-                .append(QueryParams.ID.key(), clinicalId)
-                .append(PRIVATE_STUDY_UID, studyUid);
-        deletedClinicalCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
-
-        // Set status to DELETED
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
-                result.first());
-
-        // Add audit
-        List<Document> auditList = result.first().getList(AUDIT.key(), Document.class);
-        for (ClinicalAudit clinicalAudit : clinicalAuditList) {
-            auditList.add(getMongoDBDocument(clinicalAudit, "ClinicalAudit"));
-        }
-        result.first().put(AUDIT.key(), auditList);
-
-        // Insert the document in the DELETE collection
-        deletedClinicalCollection.insert(clientSession, replaceDotsInKeys(result.first()), null);
-        logger.debug("Inserted Clinical Analysis uid '{}' in DELETE collection", clinicalUid);
-
-        // Remove the document from the main Clinical collection
-        bsonQuery = parseQuery(new Query(QueryParams.UID.key(), clinicalUid));
-        DataResult<?> remove = clinicalCollection.remove(clientSession, bsonQuery, null);
-        if (remove.getNumMatches() == 0) {
-            throw new CatalogDBException("Clinical Analysis " + clinicalId + " not found");
-        }
-        if (remove.getNumDeleted() == 0) {
-            throw new CatalogDBException("Clinical Analysis " + clinicalId + " could not be deleted");
-        }
-
-        logger.debug("Clinical Analysis {}({}) deleted", clinicalId, clinicalUid);
+        logger.debug("Clinical Analysis {}({}) deleted", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
@@ -944,12 +921,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
-
-        if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return clinicalCollection.iterator(clientSession, bson, null, null, qOptions);
-        } else {
-            return deletedClinicalCollection.iterator(clientSession, bson, null, null, qOptions);
-        }
+        MongoDBCollection collection = getQueryCollection(query, clinicalCollection, archiveClinicalCollection, deletedClinicalCollection);
+        return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     @Override
@@ -1082,7 +1055,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         clinicalDocument.put(PRIVATE_DUE_DATE, TimeUtils.toDate(clinicalAnalysis.getDueDate()));
 
         logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
-        clinicalCollection.insert(clientSession, clinicalDocument, null);
+        versionedMongoDBAdaptor.insert(clientSession, clinicalDocument);
         logger.debug("ClinicalAnalysis '{}' successfully inserted", clinicalAnalysis.getId());
 
         return clinicalAnalysis;
@@ -1309,12 +1282,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             queryCopy.remove(ParamConstants.ACL_PARAM);
         }
 
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
+
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
-                if (Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
+                if (Constants.ALL_VERSIONS.equals(entry.getKey()) || Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
                     continue;
                 }
                 throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
@@ -1387,6 +1366,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case PRIORITY_ID:
                     case FLAGS_ID:
                     case QUALITY_CONTROL_SUMMARY:
+                    case VERSION:
                     case RELEASE:
                     case COMMENTS_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -1397,6 +1377,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             } catch (Exception e) {
                 logger.error("Error with {}: {}", entry.getKey(), entry.getValue());
                 throw new CatalogDBException(e);
+            }
+        }
+
+        // If the user doesn't look for a concrete version...
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
+            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
+                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
+            } else {
+                // Otherwise, we will always look for the latest version
+                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
             }
         }
 

@@ -435,6 +435,9 @@ public class ParamConstants {
     public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
     public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
     public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String CLINICAL_VERSION_PARAM = "version";
+    public static final String CLINICAL_VERSION_DESCRIPTION = "Comma separated list of clinical versions. 'all' to get all the clinical"
+            + " versions. Not supported if multiple clinical ids are provided";
     public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
     public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder" + REGEX_SUPPORT;
     public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";

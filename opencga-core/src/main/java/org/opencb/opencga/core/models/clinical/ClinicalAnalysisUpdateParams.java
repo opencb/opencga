@@ -133,7 +133,7 @@ public class ClinicalAnalysisUpdateParams {
                 report, request, responsible,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
-                1,
+                1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, annotationSets, attributes,
                 status != null ? status.toStatus() : null);

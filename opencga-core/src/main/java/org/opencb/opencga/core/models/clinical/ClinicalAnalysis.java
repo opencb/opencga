@@ -179,6 +179,14 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
+    /**
+     * Generic: Autoincremental version assigned to the registered entry.
+     *
+     * @apiNote Immutable
+     */
+    @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
+    private int version;
+
     @DataField(id = "qualityControl", indexed = true,
             description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private ClinicalAnalysisQualityControl qualityControl;
@@ -227,9 +235,9 @@ public class ClinicalAnalysis extends Annotable {
                             List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
                             List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
                             ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
-                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
-                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, List<AnnotationSet> annotationSets,
-                            Map<String, Object> attributes, Status status) {
+                            String dueDate, int release, int version, List<ClinicalComment> comments,
+                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            List<AnnotationSet> annotationSets, Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -254,6 +262,7 @@ public class ClinicalAnalysis extends Annotable {
         this.dueDate = dueDate;
         this.qualityControl = qualityControl;
         this.release = release;
+        this.version = version;
         this.comments = comments;
         this.audit = audit;
         this.internal = internal;
@@ -289,6 +298,7 @@ public class ClinicalAnalysis extends Annotable {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", version=").append(version);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
@@ -529,6 +539,15 @@ public class ClinicalAnalysis extends Annotable {
 
     public ClinicalAnalysis setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public ClinicalAnalysis setVersion(int version) {
+        this.version = version;
         return this;
     }
 
