@@ -933,6 +933,57 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void versioningTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, QueryOptions.empty(), ownerToken);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        findingList.add(cv1);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        findingList.add(cv2);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setPrimaryFindings(findingList)
+                );
+        ClinicalAnalysis clinical = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(1, clinical.getVersion());
+        assertEquals(1, clinical.getInterpretation().getVersion());
+
+        // Update clinical analysis
+        clinical = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setDescription("my new description"), INCLUDE_RESULT, ownerToken).first();
+        assertEquals("my new description", clinical.getDescription());
+        assertEquals(2, clinical.getVersion());
+        assertEquals(1, clinical.getInterpretation().getVersion());
+
+        // Update interpretation
+        Interpretation interpretation = catalogManager.getInterpretationManager().update(studyFqn, clinicalAnalysis.getId(),
+                clinical.getInterpretation().getId(), new InterpretationUpdateParams().setDescription("my new interpretation description"),
+                null, INCLUDE_RESULT, ownerToken).first();
+        assertEquals("my new interpretation description", interpretation.getDescription());
+        assertEquals(2, interpretation.getVersion());
+
+        // Get clinical Analysis
+        clinical = catalogManager.getClinicalAnalysisManager().get(studyFqn, clinicalAnalysis.getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals("my new description", clinical.getDescription());
+        assertEquals(3, clinical.getVersion());
+        assertEquals("my new interpretation description", clinical.getInterpretation().getDescription());
+        assertEquals(2, clinical.getInterpretation().getVersion());
+    }
+
+    @Test
     public void createRepeatedInterpretationPrimaryFindings() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")
