@@ -95,7 +95,7 @@ function manage_dependency() {
   git checkout "$BRANCH_NAME"
   if [ "$COMMAND" == "build" ];then
     log "Building $REPO branch $BRANCH_NAME."
-    mvn clean install -T 2 -DskipTests
+    mvn clean install -T 2 -DskipTests --no-transfer-progress
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
     else
@@ -104,9 +104,10 @@ function manage_dependency() {
   elif [ "$COMMAND" == "test" ]; then
     log "Testing $REPO branch $BRANCH_NAME."
     if [ "$REPO" == "cellbase" ]; then
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST="$DB_CELLBASE"
+      log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
     else
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
     fi
     if [[ "$?" -ne 0 ]] ; then
       log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
@@ -244,7 +245,7 @@ function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
       log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2
+      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
         print_log_summary
@@ -253,7 +254,7 @@ function build_opencga() {
         log_summary "$COMMAND opencga Success!"
       fi
   elif [ "$COMMAND" == "test" ];then
-      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip
+      mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
         print_log_summary
@@ -272,7 +273,7 @@ function build_opencga_enterprise() {
 
   if [ "$COMMAND" == "build" ];then
     mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
+    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
         print_log_summary
@@ -282,7 +283,7 @@ function build_opencga_enterprise() {
       fi
   elif [ "$COMMAND" == "test" ]; then
       mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER}
+      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
         print_log_summary
@@ -438,7 +439,7 @@ while [[ $# -gt 0 ]]; do
    COMMAND="test"
     shift # past argument
     ;;
-  -d | --debug)
+  --debug)
     DEBUG="true"
     shift # past argument
     ;;
