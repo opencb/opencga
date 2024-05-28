@@ -1393,15 +1393,35 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
+        // Get the clinical status that are CLOSED
+        Set<String> closedStatus = new HashSet<>();
+        for (ClinicalStatusValue clinicalStatusValue : clinicalConfiguration.getStatus().get(clinicalAnalysis.getType())) {
+            if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
+                closedStatus.add(clinicalStatusValue.getId());
+            }
+        }
+
+        // If the current clinical analysis:
+        // - is locked
+        // - the user wants to update the locked status
+        // - the user wants to update the status to/from a closed status
+        boolean adminPermissionsChecked = false;
+        if (clinicalAnalysis.isLocked() || closedStatus.contains(clinicalAnalysis.getInternal().getStatus().getId())
+                || updateParamsClone.getLocked() != null
+                || (updateParams.getStatus() != null && closedStatus.contains(updateParams.getStatus().getId()))) {
+            authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
+                    ClinicalAnalysisPermissions.ADMIN);
+            adminPermissionsChecked = true;
+        }
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (updateParamsClone.getAnnotationSets() != null) {
+        if (!adminPermissionsChecked && updateParamsClone.getAnnotationSets() != null) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
-        if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                || parameters.size() > 1) {
+        if (!adminPermissionsChecked && ((parameters.size() == 1
+                && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) || parameters.size() > 1)) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.WRITE);
         }
