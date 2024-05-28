@@ -410,7 +410,7 @@ while [[ $# -gt 0 ]]; do
       DOCKER="true"
       shift # past argument
       ;;
-    -l | --test-level)
+  -l | --test-level)
       if [ -z "$value" ];  then
             echo "Test level is empty. The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
             exit 1
