@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -61,9 +62,7 @@ import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.user.Account;
@@ -1642,6 +1641,64 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 ownerToken).first();
         assertEquals("My description", ca.getDescription());
         assertEquals("URGENT", ca.getPriority().getId());
+    }
+
+    @Test
+    public void adminPermissionTest() throws CatalogException {
+        // Add ADMIN permissions to the user2
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2,
+                new StudyAclParams(StudyPermissions.Permissions.ADMIN_CLINICAL_ANALYSIS.name(), null), ParamUtils.AclAction.SET, ownerToken);
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+
+        // Update ClinicalAnalysis with user1
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setDescription("My description"), INCLUDE_RESULT, normalToken1).first();
+        assertEquals("My description", clinicalAnalysis.getDescription());
+
+        // Update ClinicalAnalysis with user2
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setDescription("My description 2"), INCLUDE_RESULT, normalToken2).first();
+        assertEquals("My description 2", clinicalAnalysis.getDescription());
+
+        // Set status to CLOSED with user1 - FAIL
+        assertThrows(CatalogAuthorizationException.class, () ->
+                catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                        new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, normalToken1)
+        );
+
+        // Set status to CLOSED with user2 - WORKS
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, normalToken2).first();
+        assertEquals("CLOSED", clinicalAnalysis.getStatus().getId());
+        assertTrue(clinicalAnalysis.isLocked());
+
+        // Unset status from CLOSED to other with user1 - FAIL
+        assertThrows(CatalogAuthorizationException.class, () ->
+                catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                        new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("READY_FOR_INTERPRETATION")), INCLUDE_RESULT, normalToken1)
+        );
+
+        // Unset status from CLOSED to other with user2 - WORKS
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("READY_FOR_INTERPRETATION")), INCLUDE_RESULT, normalToken2).first();
+        assertEquals("READY_FOR_INTERPRETATION", clinicalAnalysis.getStatus().getId());
+
+        // Set status to CLOSED with study admin - WORKS
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("CLOSED")), INCLUDE_RESULT, studyAdminToken1).first();
+        assertEquals("CLOSED", clinicalAnalysis.getStatus().getId());
+
+        // Unset status from CLOSED to other with study admin - WORKS
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("READY_FOR_INTERPRETATION")).setLocked(false), INCLUDE_RESULT,
+                studyAdminToken1).first();
+        assertEquals("READY_FOR_INTERPRETATION", clinicalAnalysis.getStatus().getId());
+
+        // Update ClinicalAnalysis with user1 - WORKS
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
+                new ClinicalAnalysisUpdateParams().setDescription("My description 3"), INCLUDE_RESULT, normalToken1).first();
+        assertEquals("My description 3", clinicalAnalysis.getDescription());
     }
 
     @Test
