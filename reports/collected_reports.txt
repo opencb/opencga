@@ -1,6 +1,5 @@
-
-/tmp/tmp.KSrfyy4R2gopencga-enterprise-20240529221724-java-common-libs/java-common-libs java-common-libs
-/tmp/tmp.n1EGzumnbbopencga-enterprise-20240529221831-biodata/biodata biodata
-/tmp/tmp.wRzdurFoNHopencga-enterprise-20240529222206-cellbase/cellbase cellbase
-/workspace/opencga-enterprise/opencga-home opencga
+/home/juanfe/proves/java-common-libs java-common-libs
+/home/juanfe/proves/biodata biodata
+/home/juanfe/proves/cellbase cellbase
+/workspace/opencga opencga
 /workspace/opencga-enterprise opencga-enterprise

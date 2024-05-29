@@ -98,5 +98,7 @@ venv
 # Java annotation processor (APT)
 .factorypath
 
+# Reports
 test/
 reports/test/
+reports/collected_reports.txt

@@ -256,7 +256,7 @@ function build_opencga() {
         log_summary "$COMMAND opencga Success!"
       fi
   elif [ "$COMMAND" == "test" ];then
-      local pwd=$(pwd)
+      local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
@@ -468,7 +468,8 @@ done
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
-echo > "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+rm "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+touch "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
 ## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
   log_summary "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"

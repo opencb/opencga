@@ -42,10 +42,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     PROJECT_NAME=$(echo "$line" | cut -d ' ' -f 2)
 
     # Buscar y copiar todas las carpetas site a la carpeta test, exceptuando el directorio reports
-    find "$PROJECT_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/reports/*' | while read -r site_dir; do
+    find "$PROJECT_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/reports/*' ! -path '*/opencga-home/*' | while read -r site_dir; do
         module_dir=$(dirname "$(dirname "$site_dir")")
         module_name=$(basename "$module_dir")
-        dest_dir="$TEST_DIR/$PROJECT_NAME-$module_name-site"
+        dest_dir="$TEST_DIR/${PROJECT_NAME}dir-$module_name-site"
         cp -r "$site_dir" "$dest_dir"
     done
 done < "$INPUT_FILE"
@@ -167,12 +167,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                     <ul class=\"submenu\" id=\"submenu-$PROJECT_NAME\">" >> "$INDEX_FILE"
 
     # Añadir enlaces a los ficheros surefire-report.html en el menú
-    for site_dir in "$TEST_DIR/$PROJECT_NAME-"*-site; do
+    for site_dir in "$TEST_DIR/${PROJECT_NAME}dir-"*-site; do
         if [ -d "$site_dir" ]; then
-            MODULE_NAME=$(basename "$site_dir" | sed "s/$PROJECT_NAME-//" | sed 's/-site$//')
+            MODULE_NAME=$(basename "$site_dir" | sed "s/${PROJECT_NAME}dir-//" | sed 's/-site$//')
             REPORT_PATH="$site_dir/surefire-report.html"
             if [ -f "$REPORT_PATH" ]; then
-                echo "                        <li><a href=\"#\" onclick=\"document.getElementById('content').innerHTML='<iframe src=\'$(basename "$site_dir")/surefire-report.html\'></iframe>'\">$MODULE_NAME surefire-report</a></li>" >> "$INDEX_FILE"
+                echo "                        <li><a href=\"#\" onclick=\"document.getElementById('content').innerHTML='<iframe src=\'$(basename "$site_dir")/surefire-report.html\'></iframe>'\">$MODULE_NAME</a></li>" >> "$INDEX_FILE"
             fi
         fi
     done
