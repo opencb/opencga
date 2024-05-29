@@ -103,9 +103,11 @@ function manage_dependency() {
     fi
   elif [ "$COMMAND" == "test" ]; then
     log "Testing $REPO branch $BRANCH_NAME."
+    local pwd=$(pwd)
+    echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
     if [ "$REPO" == "cellbase" ]; then
-      log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DCELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
+      log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
     else
       mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
     fi
@@ -254,6 +256,8 @@ function build_opencga() {
         log_summary "$COMMAND opencga Success!"
       fi
   elif [ "$COMMAND" == "test" ];then
+      local pwd=$(pwd)
+      echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
@@ -262,8 +266,6 @@ function build_opencga() {
       else
         log_summary "$COMMAND opencga Success!"
       fi
-      "$OPENCGA_ENTERPRISE_HOME_DIR"/collect_reports.sh
-      cp -r ./test "$TESTS_DIR/opencga-enterprise"
   fi
 }
 
@@ -292,6 +294,8 @@ function build_opencga_enterprise() {
         log_summary "$COMMAND opencga-enterprise Success!"
       fi
   elif [ "$COMMAND" == "test" ]; then
+      local pwd=$(pwd)
+      echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
@@ -301,8 +305,6 @@ function build_opencga_enterprise() {
       else
         log_summary "$COMMAND opencga-enterprise Success!"
       fi
-      "$OPENCGA_ENTERPRISE_HOME_DIR"/collect_reports.sh
-      cp -r ./test "$TESTS_DIR/opencga-enterprise"
   fi
 }
 
@@ -312,20 +314,21 @@ function publish_reports() {
   if [ "$SAVE_REPORTS" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
-    if [[ -n $TASK_REFERENCE ]]; then
-      BRANCH_FOLDER=$TASK_REFERENCE
-    else
-      BRANCH_FOLDER=$(git branch --show-current)
-    fi
-    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
-    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
-    if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
-    else
-      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT "
-    fi
+    "$OPENCGA_ENTERPRISE_HOME_DIR"/reports/collect_reports.sh "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+#    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
+#    if [[ -n $TASK_REFERENCE ]]; then
+#      BRANCH_FOLDER=$TASK_REFERENCE
+#    else
+#      BRANCH_FOLDER=$(git branch --show-current)
+#    fi
+#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+#    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
+#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+#    if [[ "$?" -ne 0 ]] ; then
+#      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
+#    else
+#      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT "
+#    fi
   fi
 }
 
@@ -384,7 +387,6 @@ TASK_REFERENCE=""
 DOCKER=""
 COMMAND="build"
 SAVE_REPORTS="false"
-
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -466,6 +468,7 @@ done
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
+echo > "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
 ## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
   log_summary "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
