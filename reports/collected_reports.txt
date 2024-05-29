@@ -1,5 +1,0 @@
-/home/juanfe/proves/java-common-libs java-common-libs
-/home/juanfe/proves/biodata biodata
-/home/juanfe/proves/cellbase cellbase
-/workspace/opencga opencga
-/workspace/opencga-enterprise opencga-enterprise
