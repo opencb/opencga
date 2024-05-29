@@ -99,6 +99,6 @@ venv
 .factorypath
 
 # Reports
-test/
+tests/
 reports/test/
 reports/collected_reports.txt
