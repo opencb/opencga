@@ -657,6 +657,39 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void updateProjectPermissionTest() throws CatalogException {
+        ObjectMap params = new ObjectMap()
+                .append(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description");
+        Project project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, ownerToken).first();
+        assertEquals("my new description", project.getDescription());
+
+        params.put(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description 2");
+        project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken2).first();
+        assertEquals("my new description 2", project.getDescription());
+
+        params.put(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), "my new description 3");
+        project = catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, studyAdminToken1).first();
+        assertEquals("my new description 3", project.getDescription());
+
+        // Make normalUser1 admin of first study
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
+        // And remove normalUser1 from the admins group of the second study (just in case)
+        catalogManager.getStudyManager().updateGroup(studyFqn2, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
+
+        CatalogAuthorizationException catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, normalToken1));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, normalToken2));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+    }
+
+    @Test
     public void updatePrivateParamsFromProjectTest() throws CatalogException {
         catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), opencgaToken);
         catalogManager.getProjectManager().setDatastoreVariant(projectFqn1, new DataStore(), ownerToken);
