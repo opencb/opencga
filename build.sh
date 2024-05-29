@@ -262,9 +262,19 @@ function build_opencga() {
       else
         log_summary "$COMMAND opencga Success!"
       fi
-      cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+      "$OPENCGA_ENTERPRISE_HOME_DIR"/collect_reports.sh
+      cp -r ./test "$TESTS_DIR/opencga-enterprise"
   fi
 }
+
+function create_index_html() {
+  INDEX_FILE="$TESTS_DIR/index.html"
+  echo "<html><body><h1>Test Reports</h1><ul>" > "$INDEX_FILE"
+  echo "<li><a href=\"opencga/index.html\">opencga surefire-report</a></li>" >> "$INDEX_FILE"
+  echo "<li><a href=\"opencga-enterprise/index.html\">opencga-enterprise surefire-report</a></li>" >> "$INDEX_FILE"
+  echo "</ul></body></html>" >> "$INDEX_FILE"
+}
+
 
 # Function to build or/and test the opencga-enterprise
 function build_opencga_enterprise() {
@@ -291,7 +301,8 @@ function build_opencga_enterprise() {
       else
         log_summary "$COMMAND opencga-enterprise Success!"
       fi
-      cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+      "$OPENCGA_ENTERPRISE_HOME_DIR"/collect_reports.sh
+      cp -r ./test "$TESTS_DIR/opencga-enterprise"
   fi
 }
 
