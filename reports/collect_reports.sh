@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Verificar que se pase el argumento necesario
+# Verify that the necessary argument is passed
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <input_file>"
     exit 1
@@ -12,12 +12,12 @@ ROOT_DIR=$(pwd)
 REPORTS_DIR="$ROOT_DIR/reports"
 TEST_DIR="$REPORTS_DIR/test"
 IMAGES_DIR="$REPORTS_DIR/images"
-LOGO_URL="$IMAGES_DIR/Group-3.webp"  # Cambia esto a la URL de tu logo
+LOGO_URL="$IMAGES_DIR/Group-3.webp"
 
-# Obtener la fecha de ejecución
+# Get the execution date
 EXECUTION_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-# Obtener el nombre y la versión del proyecto Maven padre
+# Get the project name and version from the parent pom.xml
 PARENT_POM="$ROOT_DIR/pom.xml"
 if [ -f "$PARENT_POM" ]; then
     PROJECT_NAME=$(mvn help:evaluate -Dexpression=project.name -q -DforceStdout)
@@ -29,19 +29,19 @@ fi
 
 TITLE="$PROJECT_NAME $PROJECT_VERSION - Test Reports"
 
-# Crear directorio test si no existe
+# Create the test directory if it does not exist
 mkdir -p "$TEST_DIR"
 
-# Borrar el contenido previo del directorio test
+# Remove all files in the test directory
 rm -rf "$TEST_DIR"/*
 
-# Leer el fichero de entrada y procesar cada línea
+# Read the input file to copy the site directories to the test folder
 while IFS= read -r line || [[ -n "$line" ]]; do
-    # Obtener el directorio del proyecto y el nombre del proyecto
+    # Get the project directory and project name
     PROJECT_DIR=$(echo "$line" | cut -d ' ' -f 1)
     PROJECT_NAME=$(echo "$line" | cut -d ' ' -f 2)
 
-    # Buscar y copiar todas las carpetas site a la carpeta test, exceptuando el directorio reports
+    # Find all site directories and copy them to the test directory
     find "$PROJECT_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/reports/*' ! -path '*/opencga-home/*' | while read -r site_dir; do
         module_dir=$(dirname "$(dirname "$site_dir")")
         module_name=$(basename "$module_dir")
@@ -50,7 +50,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     done
 done < "$INPUT_FILE"
 
-# Crear el fichero index.html
+# Create the index.html file
 INDEX_FILE="$TEST_DIR/index.html"
 cat <<EOL > "$INDEX_FILE"
 <!DOCTYPE html>
@@ -72,9 +72,9 @@ cat <<EOL > "$INDEX_FILE"
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 10px;
+            padding: 40px;
             color: white;
-            background-color: #000E30;
+            background-color: #343a40;
         }
         header .left {
             display: flex;
@@ -84,13 +84,18 @@ cat <<EOL > "$INDEX_FILE"
             height: 50px;
             margin-right: 20px;
         }
+        header .right {
+            align-content: space-between;
+            align-self: flex-end;
+            justify-content: flex-end
+        }
         header h1 {
             margin: 0;
             font-size: 1.5em;
         }
         header .date {
             font-size: 0.9em;
-            align-self: flex-end;
+            float:right;
         }
         main {
             display: flex;
@@ -147,18 +152,20 @@ cat <<EOL > "$INDEX_FILE"
     <header>
         <div class="left">
             <img src="$LOGO_URL" alt="Logo">
-            <h1>$PROJECT_NAME - $PROJECT_VERSION</h1>
         </div>
-        <div class="date">$EXECUTION_DATE</div>
+        <div class="right">
+            <h1>$PROJECT_NAME - $PROJECT_VERSION</h1>
+            <div class="date">$EXECUTION_DATE</div>
+        </div>
     </header>
     <main>
         <nav>
             <ul>
 EOL
 
-# Leer el fichero de entrada nuevamente para generar el menú
+# Read the input file again to generate the menu
 while IFS= read -r line || [[ -n "$line" ]]; do
-    # Obtener el directorio del proyecto y el nombre del proyecto
+    # Get the project directory and project name
     PROJECT_DIR=$(echo "$line" | cut -d ' ' -f 1)
     PROJECT_NAME=$(echo "$line" | cut -d ' ' -f 2)
 
@@ -166,7 +173,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                     <a onclick=\"toggleSubmenu('submenu-$PROJECT_NAME')\">$PROJECT_NAME</a>
                     <ul class=\"submenu\" id=\"submenu-$PROJECT_NAME\">" >> "$INDEX_FILE"
 
-    # Añadir enlaces a los ficheros surefire-report.html en el menú
+# Add links to surefire-report.html files in the menu
     for site_dir in "$TEST_DIR/${PROJECT_NAME}dir-"*-site; do
         if [ -d "$site_dir" ]; then
             MODULE_NAME=$(basename "$site_dir" | sed "s/${PROJECT_NAME}dir-//" | sed 's/-site$//')
@@ -181,7 +188,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                 </li>" >> "$INDEX_FILE"
 done < "$INPUT_FILE"
 
-# Cerrar las etiquetas HTML
+# Add the closing tags to the index.html file
 cat <<EOL >> "$INDEX_FILE"
             </ul>
         </nav>
