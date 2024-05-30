@@ -154,7 +154,7 @@ cat <<EOL > "$INDEX_FILE"
             <img src="$LOGO_URL" alt="Logo">
         </div>
         <div class="right">
-            <h1>$PROJECT_NAME - $PROJECT_VERSION</h1>
+            <h1>$PROJECT_NAME-$PROJECT_VERSION</h1>
             <div class="date">$EXECUTION_DATE</div>
         </div>
     </header>
