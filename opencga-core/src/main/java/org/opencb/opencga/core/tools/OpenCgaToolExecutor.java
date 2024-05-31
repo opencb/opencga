@@ -31,6 +31,7 @@ public abstract class OpenCgaToolExecutor {
     private ObjectMap executorParams;
     private Path outDir;
     private ExecutionResultManager arm;
+    private String commandLine;
 
     protected OpenCgaToolExecutor() {
     }
@@ -81,6 +82,15 @@ public abstract class OpenCgaToolExecutor {
         return getExecutorParams().getString("token");
     }
 
+    public String getCommandLine() {
+        return commandLine;
+    }
+
+    protected OpenCgaToolExecutor setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
+        return this;
+    }
+
     protected final void addWarning(String warning) throws ToolException {
         arm.addWarning(warning);
     }
@@ -88,5 +98,4 @@ public abstract class OpenCgaToolExecutor {
     protected final void addAttribute(String key, Object value) throws ToolException {
         arm.addStepAttribute(key, value);
     }
-
 }

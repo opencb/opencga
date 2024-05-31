@@ -315,7 +315,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("Docker command line: " + sb.toString());
+        logger.info("Docker command line: " + sb);
         runCommandLine(sb.toString());
     }
 

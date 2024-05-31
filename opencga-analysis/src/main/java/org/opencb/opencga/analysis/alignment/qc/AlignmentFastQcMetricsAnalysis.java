@@ -96,7 +96,7 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 
-    public static FastQcMetrics parseResults(Path outDir) throws ToolException {
+    public static FastQcMetrics parseResults(Path outDir, String confJobDir) throws ToolException {
         Path fastQcPath = null;
         Path imgPath = null;
         for (java.io.File file : outDir.toFile().listFiles()) {
@@ -116,8 +116,11 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                 // Replace absolute paths to relative paths
                 List<String> relativePaths = new ArrayList<>();
                 for (String path : fastQcMetrics.getFiles()) {
-                    int index = path.indexOf("JOBS/");
-                    relativePaths.add(index == -1 ? new java.io.File(path).getName() : path.substring(index));
+                    // Sanity check
+                    if (!path.startsWith(confJobDir)) {
+                        throw new ToolException("The FastQC file " + path + " is not in the configuration job folder "+ confJobDir);
+                    }
+                    relativePaths.add(path.substring(confJobDir.length() + 1));
                 }
                 fastQcMetrics.setFiles(relativePaths);
             } else {

@@ -7,7 +7,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -18,9 +17,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
@@ -158,6 +154,7 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     protected void runCommandLine(String cmdline) throws ToolException {
         checkDockerDaemonAlive();
         try {
+            setCommandLine(cmdline);
             new Command(cmdline)
                     .setOutputOutputStream(
                             new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))

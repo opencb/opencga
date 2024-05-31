@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import htsjdk.samtools.util.BufferedLineReader;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -26,8 +27,10 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -37,6 +40,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -48,13 +52,19 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @RunWith(Parameterized.class)
 @Category(MediumTests.class)
@@ -270,7 +280,7 @@ public class AlignmentAnalysisTest {
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
         File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();
-         assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
+        assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
 
         AlignmentGeneCoverageStatsParams params = new AlignmentGeneCoverageStatsParams();
         params.setBamFile(bamFile.getId());
@@ -284,5 +294,81 @@ public class AlignmentAnalysisTest {
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
         assertEquals(10, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
+    }
+
+    @Test
+    public void testAlignmentQc() throws IOException, ToolException, CatalogException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_alignment_qc"));
+
+        // setup BAM files
+        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
+        //String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
+        //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+                null, null), false, token).first();
+
+        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+
+        toolRunner.execute(AlignmentQcAnalysis.class, params, new ObjectMap(), outdir,
+                "test-alignment-qc-job-id", token);
+
+        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+                null, null), false, token).first();
+
+        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
+        System.out.println("outdir = " + outdir);
+    }
+
+
+    @Test
+    public void testBlobFuse2() throws IOException {
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/tata.txt"));
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/toto.txt"));
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/titi.txt"));
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir"));
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir/helloworld.txt"));
+        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir/kk.txt"));
+    }
+
+    public void displayAttributes(Path path) throws IOException {
+        System.out.println();
+        System.out.println(path);
+
+        if (Files.exists(path)) {
+            System.out.println("\t- Exists");
+        }
+//        try (BufferedReader reader = new BufferedLineReader(path).newBufferedReader(path)) {
+//            System.out.println("\t- Exists by using FileUtils.newBufferedReader");
+//        }
+//        try (BufferedWriter writer = FileUtils.newBufferedWriter(path)) {
+//            System.out.println("\t- Exists by using FileUtils.newBufferedWriter");
+//        }
+        if (Files.isDirectory(path)) {
+            System.out.println("\t- Directory");
+        }
+        if (Files.isRegularFile(path)) {
+            System.out.println("\t- Regular file");
+        }
+        if (Files.isReadable(path)) {
+            System.out.println("\t- Readable");
+        }
+        if (Files.isWritable(path)) {
+            System.out.println("\t- Writable");
+        }
+        if (Files.isSymbolicLink(path)) {
+            System.out.println("\t- Symbolic link");
+        }
+//
+//
+//        FileSystemProvider provider = FileSystems.getDefault().provider()getFileSystem(new URI(path.toAbsolutePath().toString())).provider();
+//        BasicFileAttributes basicFileAttributes = provider.readAttributes(path, BasicFileAttributes.class);
+//        System.out.println("basicFileAttributes = " + basicFileAttributes);
+//        System.out.println("basicFileAttributes.isRegularFile() = " + basicFileAttributes.isRegularFile());
+//        System.out.println("basicFileAttributes.isDirectory() = " + basicFileAttributes.isDirectory());
+//        System.out.println("basicFileAttributes.isSymbolicLink() = " + basicFileAttributes.isSymbolicLink());
+//        System.out.println("basicFileAttributes.creationTime() = " + basicFileAttributes.creationTime());
     }
 }

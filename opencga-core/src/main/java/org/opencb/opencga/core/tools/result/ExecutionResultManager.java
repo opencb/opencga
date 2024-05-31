@@ -312,7 +312,7 @@ public class ExecutionResultManager {
         R apply(ExecutionResult execution) throws ToolException;
     }
 
-    private synchronized <R> R updateResult(ExecutionResultFunction<R> update) throws ToolException {
+    public synchronized <R> R updateResult(ExecutionResultFunction<R> update) throws ToolException {
         ExecutionResult execution = read();
         R apply = update.apply(execution);
         write(execution);
