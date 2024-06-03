@@ -16,22 +16,20 @@
 
 package org.opencb.opencga.core.config;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class Tool {
+public class AnalysisTool {
 
     private String dockerId;
     private String params;
     private Map<String, String> resources;
 
-    public Tool() {
+    public AnalysisTool() {
         resources = new HashMap<>();
     }
 
-    public Tool(String dockerId, String params, Map<String, String> resources) {
+    public AnalysisTool(String dockerId, String params, Map<String, String> resources) {
         this.dockerId = dockerId;
         this.params = params;
         this.resources = resources;
@@ -39,7 +37,7 @@ public class Tool {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Tool{");
+        final StringBuilder sb = new StringBuilder("AnalysisTool{");
         sb.append("dockerId='").append(dockerId).append('\'');
         sb.append(", params='").append(params).append('\'');
         sb.append(", resources=").append(resources);
@@ -51,7 +49,7 @@ public class Tool {
         return dockerId;
     }
 
-    public Tool setDockerId(String dockerId) {
+    public AnalysisTool setDockerId(String dockerId) {
         this.dockerId = dockerId;
         return this;
     }
@@ -60,7 +58,7 @@ public class Tool {
         return params;
     }
 
-    public Tool setParams(String params) {
+    public AnalysisTool setParams(String params) {
         this.params = params;
         return this;
     }
@@ -69,7 +67,7 @@ public class Tool {
         return resources;
     }
 
-    public Tool setResources(Map<String, String> resources) {
+    public AnalysisTool setResources(Map<String, String> resources) {
         this.resources = resources;
         return this;
     }

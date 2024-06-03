@@ -1,7 +1,6 @@
 package org.opencb.opencga.analysis.wrappers.exomiser;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -16,7 +15,6 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.config.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.family.Family;
@@ -35,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.commons.utils.FileUtils.copyFile;
 import static org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis.*;
 
 @ToolExecutor(id = ExomiserWrapperAnalysisExecutor.ID,
@@ -155,7 +154,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Copy the analysis
         try {
-            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile(),
+            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile(),
                     getOutDir().resolve(EXOMISER_ANALYSIS_TEMPLATE_FILENAME).toFile());
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser analysis file", e);
@@ -164,7 +163,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         // Copy the application.properties and update data according to Exomiser version
         try {
             Path target = getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
-            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(), target.toFile());
+            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(), target.toFile());
             Command cmd = new Command("sed -i \"s/" + HG38_DATA_VERSION_MARK + "/" + getHg38DataVersion() + "/g\" " + target);
             cmd.run();
             cmd = new Command("sed -i \"s/" + PHENOTYPE_DATA_VERSION_MARK + "/" + getPhenotypeDataVersion() + "/g\" " + target);
@@ -175,7 +174,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Copy the output options
         try {
-            FileUtils.copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile(),
+            copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile(),
                     getOutDir().resolve(EXOMISER_OUTPUT_OPTIONS_FILENAME).toFile());
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser output options file", e);

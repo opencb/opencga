@@ -8,7 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.config.Tool;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -19,8 +19,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.*;
-
-import static org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis.EXOMISER_PREFIX;
 
 public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
@@ -43,7 +41,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     public String getDockerImageName(String toolKey) {
-        for (Map.Entry<String, Tool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
+        for (Map.Entry<String, AnalysisTool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
             if (entry.getKey().equalsIgnoreCase(toolKey)) {
                 return entry.getValue().getDockerId().split(":")[0];
             }
@@ -52,7 +50,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     public String getDockerImageVersion(String toolKey) {
-        for (Map.Entry<String, Tool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
+        for (Map.Entry<String, AnalysisTool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
             if (entry.getKey().equalsIgnoreCase(toolKey)) {
                 if (entry.getValue().getDockerId().contains(":")) {
                     return entry.getValue().getDockerId().split(":")[1];
@@ -69,7 +67,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         if (!getConfiguration().getAnalysis().getTools().containsKey(toolKey)) {
             throw new ToolException("Error getting tool " +  toolKey + ": it does not exist in the configuration file");
         }
-        Tool tool = getConfiguration().getAnalysis().getTools().get(toolKey);
+        AnalysisTool tool = getConfiguration().getAnalysis().getTools().get(toolKey);
         if (!tool.getResources().containsKey(resourceKey)) {
             throw new ToolException("Error getting resource " + resourceKey + " of tool " + toolKey + ": it does not exist in the"
                     + " configuration file");

@@ -29,7 +29,7 @@ public class Analysis {
     private String resourceUrl;
 
     private String opencgaExtTools;
-    private Map<String, Tool> tools;
+    private Map<String, AnalysisTool> tools;
 
     private Execution execution;
 
@@ -78,11 +78,11 @@ public class Analysis {
         return this;
     }
 
-    public Map<String, Tool> getTools() {
+    public Map<String, AnalysisTool> getTools() {
         return tools;
     }
 
-    public Analysis setTools(Map<String, Tool> tools) {
+    public Analysis setTools(Map<String, AnalysisTool> tools) {
         this.tools = tools;
         return this;
     }
