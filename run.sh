@@ -331,17 +331,18 @@ function build_opencb_opencga() {
       log "-- Skipping opencga build"
     else
       log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 || (error "Opencga compilation ERROR" && exit 1)
+      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress \
+      || (error "Opencga compilation ERROR" && exit 1)
     fi
   elif [ "$COMMAND" == "test" ];then
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga tests"
     else
       mvn install surefire-report:report \
-        ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
+        ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" --no-transfer-progress \
         -Dcheckstyle.skip \
         || (error "Opencga tests ERROR" && exit 1)
-      cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+    #  cp "$OPENCGA_HOME_DIR"/opencga-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
     fi
   fi
 }
@@ -354,7 +355,7 @@ function build_opencga_enterprise() {
     mvn clean install -DskipTests -T 2 \
         -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        -Dopencga.war.name=opencga \
+        -Dopencga.war.name=opencga --no-transfer-progress \
         || (error "Opencga enterprise compilation ERROR" && exit 1)
   elif [ "$COMMAND" == "test" ]; then
     if [ "$SKIP_TESTS" == "true" ]; then
@@ -363,25 +364,46 @@ function build_opencga_enterprise() {
       mvn -B verify surefire-report:report \
         -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        "${FAIL_NEVER}" \
+        "${FAIL_NEVER}" --no-transfer-progress \
         || (error "Opencga enterprise tests ERROR" && exit 1)
     fi
-    cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
+   # cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
   fi
 }
 
 function publish() {
   if [ "$PUBLISH" == "true" ];then
-    export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
-    export AZCOPY_AUTO_LOGIN_TYPE="SPN"
-    export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
-    export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
-    azcopy login --service-principal
-    BRANCH_FOLDER=$(git branch --show-current)
-    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
-    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+    log "-- Publishing tests"
+    find "$OPENCGA_HOME_DIR" -maxdepth 5 -type d -path '*/target/site' | while read -r site_dir; do
+        module_dir=$(dirname "$(dirname "$site_dir")")
+        module_name=$(basename "$module_dir")
+        dest_dir="$TESTS_DIR/opencga-$module_name-site"
+        log "copying tests from $site_dir to $dest_dir"
+        cp -r "$site_dir" "$dest_dir"
+    done
+
+    find "$OPENCGA_ENTERPRISE_HOME_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/opencga-home/*' | while read -r site_dir; do
+        module_dir=$(dirname "$(dirname "$site_dir")")
+        module_name=$(basename "$module_dir")
+        dest_dir="$TESTS_DIR/opencga-enterprise-$module_name-site"
+        log "copying tests from $site_dir to $dest_dir"
+        cp -r "$site_dir" "$dest_dir"
+    done
+    log "-- End publishing tests"
   fi
+
+
+#  if [ "$PUBLISH" == "true" ];then
+#    export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
+#    export AZCOPY_AUTO_LOGIN_TYPE="SPN"
+#    export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
+#    export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
+#    azcopy login --service-principal
+#    BRANCH_FOLDER=$(git branch --show-current)
+#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+#    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
+#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
+#  fi
 }
 
 
