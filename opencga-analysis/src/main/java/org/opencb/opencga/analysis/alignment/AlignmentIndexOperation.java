@@ -19,15 +19,15 @@ package org.opencb.opencga.analysis.alignment;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalAlignmentIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -98,7 +98,7 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
             bamManager.createIndex(outputPath);
             bamManager.close();
 
-            if (!outputPath.toFile().exists()) {
+            if (!FileUtils.existsFile(outputPath.toFile())) {
                 throw new ToolException("Something wrong happened when computing index file for '" + indexParams.getFileId() + "'");
             }
 

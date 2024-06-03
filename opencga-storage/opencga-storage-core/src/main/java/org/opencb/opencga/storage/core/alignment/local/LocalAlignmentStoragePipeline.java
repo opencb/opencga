@@ -71,13 +71,13 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
         // 1) Check if the bai does not exist and create it
         BamManager bamManager = new BamManager(path);
-        if (!path.getParent().resolve(path.getFileName().toString() + ".bai").toFile().exists()) {
+        if (!FileUtils.existsFile(path.getParent().resolve(path.getFileName().toString() + ".bai").toFile())) {
             bamManager.createIndex();
         }
 
         // 2) Calculate stats and store in a file
         Path statsPath = workspace.resolve(path.getFileName() + ".stats");
-        if (!statsPath.toFile().exists()) {
+        if (!FileUtils.existsFile(statsPath.toFile())) {
             AlignmentGlobalStats stats = bamManager.stats();
             ObjectMapper objectMapper = new ObjectMapper();
             ObjectWriter objectWriter = objectMapper.writerFor(AlignmentGlobalStats.class);

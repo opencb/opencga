@@ -162,7 +162,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //            System.out.println("BW region coverage:\t" + regionCoverage.toString());
         } else {
             File bwFile = new File(path.toAbsolutePath() + ".bw");
-            if (bwFile.exists()) {
+            if (FileUtils.existsFile(bwFile)) {
                 regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, bwFile.toPath());
             } else {
                 BamManager bamManager = new BamManager(path);
@@ -201,7 +201,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         StopWatch watch = StopWatch.createStarted();
         long totalCounts;
         if (path.toFile().getName().endsWith(".bam")) {
-            if (new File(path.toString() + ".bw").exists()) {
+            if (FileUtils.existsFile(new File(path + ".bw"))) {
                 totalCounts = WigUtils.getTotalCounts(new BigWigManager(Paths.get(path + ".bw")).getBbFileReader());
             } else {
                 throw new AlignmentCoverageException("BigWig file not found and getTotalCount is not supported for BAM files.");
@@ -237,7 +237,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         StopWatch watch = StopWatch.createStarted();
 
         File statsFile = path.toFile();
-        if (!statsFile.exists()) {
+        if (!FileUtils.existsFile(statsFile)) {
             throw new ToolException("Stats file does not exist: " + statsFile.getAbsolutePath());
         }
 

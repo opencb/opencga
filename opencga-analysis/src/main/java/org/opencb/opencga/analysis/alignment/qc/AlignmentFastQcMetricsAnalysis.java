@@ -22,6 +22,7 @@ import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -111,7 +112,7 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
 
         FastQcMetrics fastQcMetrics = null;
         try {
-            if (fastQcPath != null && fastQcPath.toFile().exists()) {
+            if (fastQcPath != null && FileUtils.existsFile(fastQcPath.toFile())) {
 
                 fastQcMetrics = FastQcParser.parse(fastQcPath.toFile());
                 FastQcParser.addImages(imgPath, fastQcMetrics);

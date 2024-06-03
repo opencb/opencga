@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -159,15 +160,15 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
                     .execute();
 
             // Remove symbolic links if necessary
-            if (getOutDir().resolve(bamCatalogFile.getName()).toFile().exists()) {
+            if (FileUtils.existsFile(getOutDir().resolve(bamCatalogFile.getName()).toFile())) {
                 Files.delete(getOutDir().resolve(bamCatalogFile.getName()));
             }
-            if (getOutDir().resolve(baiCatalogFile.getName()).toFile().exists()) {
+            if (FileUtils.existsFile(getOutDir().resolve(baiCatalogFile.getName()).toFile())) {
                 Files.delete(getOutDir().resolve(baiCatalogFile.getName()));
             }
 
             // Check execution result
-            if (!bwPath.toFile().exists()) {
+            if (!FileUtils.existsFile(bwPath.toFile())) {
                 throw new ToolException("Something wrong happened running a coverage: BigWig file (" + bwPath.toFile().getName()
                         + ") was not create, please, check log files.");
             }

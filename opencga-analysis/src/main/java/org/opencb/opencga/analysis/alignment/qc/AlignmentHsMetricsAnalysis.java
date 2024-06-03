@@ -19,8 +19,7 @@ package org.opencb.opencga.analysis.alignment.qc;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysisExecutor;
@@ -29,8 +28,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentHsMetricsParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -123,7 +120,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .setCommand("BedToIntervalList")
                     .execute();
 
-            if (!baitFile.exists()) {
+            if (!FileUtils.existsFile(baitFile)) {
                 throw new ToolException("Something wrong happened when running picard/BedToIntervalList. Please, check the stderr file for"
                         + " more details.");
             }
@@ -141,7 +138,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .setCommand("CollectHsMetrics")
                     .execute();
 
-            if (!hsMetricsFile.exists()) {
+            if (!FileUtils.existsFile(hsMetricsFile)) {
                 throw new ToolException("Something wrong happened when running picard/CollectHsMetrics. Please, check the stderr file for"
                         + " more details.");
             }
