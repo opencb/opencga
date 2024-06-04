@@ -629,6 +629,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         }
 
         @Override
+        public void close() throws IOException {
+        }
+
+        @Override
         public String getStatus(String jobId) {
             return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
         }

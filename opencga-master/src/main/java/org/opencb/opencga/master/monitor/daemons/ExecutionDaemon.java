@@ -112,6 +112,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -134,21 +135,19 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 /**
  * Created by imedina on 16/06/16.
  */
-public class ExecutionDaemon extends MonitorParentDaemon {
+public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     public static final String OUTDIR_PARAM = "outdir";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
-    private String internalCli;
-    private JobManager jobManager;
-    private FileManager fileManager;
+    private final String internalCli;
+    private final JobManager jobManager;
+    private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
     private List<String> packages;
-
-    private Path defaultJobDir;
 
     private static final Map<String, String> TOOL_CLI_MAP;
 
@@ -257,8 +256,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         this.storageConfiguration = storageConfiguration;
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
-        this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
-
         pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
         queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
         runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
@@ -277,22 +274,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     @Override
-    public void run() {
-        while (!exit) {
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) {
-                if (!exit) {
-                    e.printStackTrace();
-                }
-            }
+    public void apply() throws Exception {
+        checkJobs();
+    }
 
-            try {
-                checkJobs();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
-            }
-        }
+    @Override
+    public void close() throws IOException {
+        batchExecutor.close();
 
         try {
             logger.info("Attempt to shutdown webhook executor");

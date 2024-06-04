@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -51,6 +52,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
     public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
     public static final String K8S_TTL_SECONDS_AFTER_FINISHED = "k8s.ttlSecondsAfterFinished";
+    public static final String K8S_TERMINATION_GRACE_PERIOD_SECONDS = "k8s.terminationGracePeriodSeconds";
+    public static final String K8S_LOG_TO_STDOUT = "k8s.logToStdout";
     public static final String K8S_DIND_ROOTLESS = "k8s.dind.rootless";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
@@ -109,6 +112,8 @@ public class K8SExecutor implements BatchExecutor {
     private final String imagePullPolicy;
     private final List<LocalObjectReference> imagePullSecrets;
     private final int ttlSecondsAfterFinished;
+    private final boolean logToStdout;
+    private long terminationGracePeriodSeconds;
 
     public K8SExecutor(Configuration configuration) {
         Execution execution = configuration.getAnalysis().getExecution();
@@ -129,6 +134,8 @@ public class K8SExecutor implements BatchExecutor {
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
+        this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 60);
+        this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
         nodeSelector = getMap(execution.getOptions(), K8S_NODE_SELECTOR);
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
@@ -271,6 +278,13 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
+    public void close() throws IOException {
+        podsWatcher.close();
+        jobsWatcher.close();
+        kubernetesClient.close();
+    }
+
+    @Override
     public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         String jobName = buildJobName(jobId);
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
@@ -290,6 +304,7 @@ public class K8SExecutor implements BatchExecutor {
                                         .addToAnnotations("cluster-autoscaler.kubernetes.io/safe-to-evict", "false")
                                         .build())
                                 .withSpec(new PodSpecBuilder()
+                                        .withTerminationGracePeriodSeconds(terminationGracePeriodSeconds)
                                         .withImagePullSecrets(imagePullSecrets)
                                         .addToContainers(new ContainerBuilder()
                                                 .withName("opencga")
@@ -330,19 +345,20 @@ public class K8SExecutor implements BatchExecutor {
 
     /**
      * Build a valid K8S job name.
-     *
+     * <p>
      * DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and
      * end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation
      * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
-     *
+     * <p>
      * Max length = 63
-     *
+     * <p>
      * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
      * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
      * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+     *
      * @param jobIdInput job Is
-     * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
+     * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      */
     protected static String buildJobName(String jobIdInput) {
         String jobId = jobIdInput.replace("_", "-");
@@ -404,12 +420,68 @@ public class K8SExecutor implements BatchExecutor {
 
     @Override
     public boolean kill(String jobId) throws Exception {
-        return false;
+        String k8sJobName = buildJobName(jobId);
+
+        switch (getStatus(jobId)) {
+            case Enums.ExecutionStatus.DONE:
+            case Enums.ExecutionStatus.ERROR:
+            case Enums.ExecutionStatus.ABORTED:
+                return false;
+            case Enums.ExecutionStatus.UNKNOWN:
+                logger.warn("Job '" + k8sJobName + "' not found!");
+                return false;
+            case Enums.ExecutionStatus.QUEUED:
+            case Enums.ExecutionStatus.PENDING:
+            case Enums.ExecutionStatus.RUNNING:
+                Job k8Job = getKubernetesClient()
+                        .batch()
+                        .jobs()
+                        .inNamespace(namespace)
+                        .withName(k8sJobName)
+                        .get();
+
+                return getKubernetesClient()
+                        .batch()
+                        .jobs()
+                        .delete(k8Job);
+            default:
+                return false;
+        }
     }
 
     @Override
     public boolean isExecutorAlive() {
         return false;
+    }
+
+    /**
+     * We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job.
+     *
+     * @param commandLine Basic command line
+     * @param stdout      File where the standard output will be redirected
+     * @param stderr      File where the standard error will be redirected
+     * @return The complete command line
+     */
+    @Override
+    public String getCommandLine(String commandLine, Path stdout, Path stderr) {
+        // Do "exec" the main command to keep the PID 1 on the main process to allow grace kills.
+        commandLine = "exec " + commandLine;
+        // https://stackoverflow.com/questions/692000/how-do-i-write-standard-error-to-a-file-while-using-tee-with-a-pipe
+        if (stderr != null) {
+            if (logToStdout) {
+                commandLine = commandLine + " 2> >( tee -a \"" + stderr.toAbsolutePath() + "\")";
+            } else {
+                commandLine = commandLine + " 2>> " + stderr.toAbsolutePath();
+            }
+        }
+        if (stdout != null) {
+            if (logToStdout) {
+                commandLine = commandLine + " > >( tee -a \"" + stdout.toAbsolutePath() + "\")";
+            } else {
+                commandLine = commandLine + " >> " + stdout.toAbsolutePath();
+            }
+        }
+        return commandLine;
     }
 
     private String getStatusForce(String k8sJobName) {
@@ -421,7 +493,7 @@ public class K8SExecutor implements BatchExecutor {
                 .get();
 
         if (k8Job == null) {
-            logger.warn("Job " + k8sJobName + " not found!");
+            logger.warn("Job '" + k8sJobName + "' not found!");
             // Job has been deleted. manually?
             return Enums.ExecutionStatus.ABORTED;
         }
@@ -486,7 +558,7 @@ public class K8SExecutor implements BatchExecutor {
         } else if (k8Job.getStatus().getActive() != null && k8Job.getStatus().getActive() > 0) {
 //            status = Enums.ExecutionStatus.RUNNING;
             status = Enums.ExecutionStatus.QUEUED;
-        }  else {
+        } else {
             status = Enums.ExecutionStatus.UNKNOWN;
         }
         logger.debug("k8Job '{}}' status = '{}'", k8sJobName, status);
@@ -514,6 +586,7 @@ public class K8SExecutor implements BatchExecutor {
         }
         return ts;
     }
+
     private <T> T buildObject(Object o, Class<T> clazz) {
         if (o == null) {
             return null;

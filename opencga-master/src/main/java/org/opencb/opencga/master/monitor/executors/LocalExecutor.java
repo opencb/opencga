@@ -59,6 +59,11 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
+    public void close() throws IOException {
+        threadPool.shutdown();
+    }
+
+    @Override
     public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
         Runnable runnable = () -> {

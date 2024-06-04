@@ -416,7 +416,7 @@ public class JobManager extends ResourceManager<Job> {
             if (!job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.PENDING)
                     && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.QUEUED)
                     && job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING)) {
-                throw new CatalogException("Cannot kill job in status " + job.getInternal().getStatus().getId());
+                throw new CatalogException("Cannot kill job '" + jobId + "' in status " + job.getInternal().getStatus().getId());
             }
 
             ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_KILL_JOB_REQUESTED.key(), true);
