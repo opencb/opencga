@@ -100,9 +100,22 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
     }
 
     @Override
-    public OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException {
-        return get(null, options);
+    public OpenCGAResult<Organization> get(String user, QueryOptions options) throws CatalogDBException {
+        return get(null, user, options);
     }
+
+    @Override
+    public OpenCGAResult<Organization> get(QueryOptions options) throws CatalogDBException {
+        return get(null, null, options);
+    }
+
+    OpenCGAResult<Organization> get(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        try (DBIterator<Organization> dbIterator = iterator(clientSession, user, options)) {
+            return endQuery(startTime, dbIterator);
+        }
+    }
+
 
     @Override
     public OpenCGAResult<Organization> update(String organizationId, ObjectMap parameters, QueryOptions queryOptions)
@@ -139,10 +152,10 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         List<Event> events = new ArrayList<>();
         logger.debug("Update organization. Query: {}, Update: {}", queryBson.toBsonDocument(), organizationUpdate.toBsonDocument());
 
-        // Update study admins need to be before because we need to fetch the previous owner/admins in case of an update on these fields.
+        // Update study admins need to be executed before the actual update because we need to fetch the previous owner/admins in case
+        // of an update on these fields.
         updateStudyAdmins(clientSession, parameters, queryOptions);
         DataResult<?> updateResult = organizationCollection.update(clientSession, queryBson, organizationUpdate, null);
-
 
         if (updateResult.getNumMatches() == 0) {
             throw new CatalogDBException("Organization not found");
@@ -161,7 +174,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             return;
         }
 
-        Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        Organization organization = get(clientSession, null, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
 
         if (parameters.containsKey(QueryParams.OWNER.key())) {
             // Owner has changed
@@ -234,7 +247,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
                 throw new CatalogDBException("Could not update owner. User not found.");
             }
             // Fetch current owner
-            Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+            Organization organization = get(clientSession, null, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
             if (owner.equals(organization.getOwner())) {
                 logger.warn("Organization owner is already '{}'.", owner);
             } else {
@@ -299,13 +312,6 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         return document;
     }
 
-    OpenCGAResult<Organization> get(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        try (DBIterator<Organization> dbIterator = iterator(clientSession, options)) {
-            return endQuery(startTime, dbIterator);
-        }
-    }
-
     @Override
     public OpenCGAResult<Organization> delete(Organization organization) throws CatalogDBException {
         return null;
@@ -313,12 +319,12 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
 
     @Override
     public DBIterator<Organization> iterator(QueryOptions options) throws CatalogDBException {
-        return iterator(null, options);
+        return iterator(null, null, options);
     }
 
-    public DBIterator<Organization> iterator(ClientSession clientSession, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Organization> iterator(ClientSession clientSession, String user, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, options);
-        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, null);
+        return new OrganizationCatalogMongoDBIterator<>(mongoCursor, clientSession, organizationConverter, dbAdaptorFactory, options, user);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, QueryOptions options) {
@@ -328,13 +334,17 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterQueryOptions(qOptions, OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions,
+                OrganizationManager.INCLUDE_ORGANIZATION_IDS.getAsStringList(QueryOptions.INCLUDE));
+        if (!qOptions.getBoolean(IS_ORGANIZATION_ADMIN_OPTION)) {
+            qOptions = filterQueryOptionsToExcludeKeys(qOptions, Arrays.asList(QueryParams.CONFIGURATION.key()));
+        }
 
         return organizationCollection.iterator(clientSession, new Document(), null, null, qOptions);
     }
 
     public List<String> getOwnerAndAdmins(ClientSession clientSession) throws CatalogDBException {
-        Organization organization = get(clientSession, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        Organization organization = get(clientSession, null, OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
         List<String> members = new ArrayList<>(organization.getAdmins().size() + 1);
         if (StringUtils.isNotEmpty(organization.getOwner())) {
             members.add(organization.getOwner());

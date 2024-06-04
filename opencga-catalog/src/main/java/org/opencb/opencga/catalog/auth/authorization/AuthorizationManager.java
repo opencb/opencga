@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -118,7 +119,7 @@ public interface AuthorizationManager {
         return isOpencgaAdministrator(payload.getOrganization(), payload.getUserId());
     }
 
-    boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException;
+    boolean isOpencgaAdministrator(String organization, String userId) throws CatalogAuthorizationException;
 
     default void checkIsOpencgaAdministrator(JwtPayload payload) throws CatalogException {
         checkIsOpencgaAdministrator(payload, null);

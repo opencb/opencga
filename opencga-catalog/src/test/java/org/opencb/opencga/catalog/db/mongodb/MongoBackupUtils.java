@@ -42,7 +42,8 @@ public class MongoBackupUtils {
 
     public static void dump(CatalogManager catalogManager, Path opencgaHome) throws CatalogDBException {
         StopWatch stopWatch = StopWatch.createStarted();
-        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
+                catalogManager.getIoManagerFactory())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(dbAdaptorFactory.getOrganizationIds().get(0))
                     .getMongoDataStore().getMongoClient();
             MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");
@@ -90,7 +91,8 @@ public class MongoBackupUtils {
     public static void restore(CatalogManager catalogManager, Path opencgaHome)
             throws CatalogDBException, IOException, CatalogIOException, URISyntaxException {
         StopWatch stopWatch = StopWatch.createStarted();
-        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration())) {
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
+                catalogManager.getIoManagerFactory())) {
             MongoClient mongoClient = dbAdaptorFactory.getOrganizationMongoDBAdaptorFactory(ParamConstants.ADMIN_ORGANIZATION)
                     .getMongoDataStore().getMongoClient();
             MongoDatabase dumpDatabase = mongoClient.getDatabase("test_dump");

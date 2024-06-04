@@ -65,7 +65,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor {
+public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBAdaptor {
 
     private final MongoDBCollection userCollection;
     private final MongoDBCollection deletedUserCollection;
@@ -302,13 +302,14 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
-        QueryOptions userOptions = filterQueryOptions(options, Collections.singletonList(ID));
+        QueryOptions userOptions = filterQueryOptionsToIncludeKeys(options, Collections.singletonList(ID));
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
         if (includeProjects(options)) {
             QueryOptions sharedProjectOptions = extractNestedOptions(options, PROJECTS.key());
-            sharedProjectOptions = filterQueryOptions(sharedProjectOptions, Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(),
-                    "studies." + StudyDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
+            sharedProjectOptions = filterQueryOptionsToIncludeKeys(sharedProjectOptions,
+                    Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.FQN.key(),
+                            "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
             extractSharedProjects(userDataResult, sharedProjectOptions);
         }
 
@@ -352,21 +353,16 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     studyMap.put(study.getFqn(), study);
                     studyProjectMap.put(study.getFqn(), project.getFqn());
 
-                    String owner = study.getFqn().split("@")[0];
-
                     if (study.getGroups() != null) {
                         for (Group group : study.getGroups()) {
                             if (StudyManager.MEMBERS.equals(group.getId())) {
                                 // Add all the users that should be able to see the study to the map
                                 for (String userId : group.getUserIds()) {
-                                    // Exclude owner of the project
-                                    if (!owner.equals(userId)) {
-                                        if (users.contains(userId)) {
-                                            if (!userStudyMap.containsKey(userId)) {
-                                                userStudyMap.put(userId, new ArrayList<>());
-                                            }
-                                            userStudyMap.get(userId).add(study.getFqn());
+                                    if (users.contains(userId)) {
+                                        if (!userStudyMap.containsKey(userId)) {
+                                            userStudyMap.put(userId, new ArrayList<>());
                                         }
+                                        userStudyMap.get(userId).add(study.getFqn());
                                     }
                                 }
                                 break;
@@ -377,7 +373,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             }
         }
 
-        // Add sharedProject information
+        // Add project information
         for (User user : userDataResult.getResults()) {
             if (userStudyMap.containsKey(user.getId())) {
                 Map<String, List<Study>> projectStudyMap = new HashMap<>();
@@ -433,7 +429,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         Map<String, Object> userParameters = new HashMap<>();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key()};
         filterStringParams(parameters, userParameters, acceptedParams);
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {

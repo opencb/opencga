@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -38,14 +39,10 @@ import org.opencb.opencga.catalog.utils.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.organizations.Organization;
-import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
-import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
-import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
@@ -76,7 +73,7 @@ public class CatalogManager implements AutoCloseable {
     private AuthenticationFactory authenticationFactory;
 
     private AdminManager adminManager;
-    private NotesManager notesManager;
+    private NoteManager noteManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -104,13 +101,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void init() throws CatalogException {
+        logger.debug("CatalogManager configureIOManager");
+        configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory);
-        logger.debug("CatalogManager configureIOManager");
-        configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
     }
@@ -134,8 +131,9 @@ public class CatalogManager implements AutoCloseable {
     private void configureManagers(Configuration configuration) throws CatalogException {
         initializeAdmin(configuration);
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
-            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
-                    .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+            QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
+            options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
+            Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
             if (organization != null) {
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
@@ -144,7 +142,7 @@ public class CatalogManager implements AutoCloseable {
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
-        notesManager = new NotesManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        noteManager = new NoteManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         organizationManager = new OrganizationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 authenticationFactory, configuration);
@@ -268,13 +266,8 @@ public class CatalogManager implements AutoCloseable {
         catalogIOManager.createDefaultOpenCGAFolders();
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
-                Collections.singletonList(new AuthenticationOrigin()
-                        .setId(CatalogAuthenticationManager.INTERNAL)
-                        .setType(AuthenticationOrigin.AuthenticationType.OPENCGA)
-                        .setAlgorithm(algorithm)
-                        .setExpiration(3600L)
-                        .setSecretKey(secretKey)),
-                new Optimizations());
+                Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
+                new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
@@ -381,8 +374,8 @@ public class CatalogManager implements AutoCloseable {
         return adminManager;
     }
 
-    public NotesManager getNotesManager() {
-        return notesManager;
+    public NoteManager getNotesManager() {
+        return noteManager;
     }
 
     public OrganizationManager getOrganizationManager() {

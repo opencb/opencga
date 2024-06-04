@@ -64,7 +64,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 /**
  * Created by pfurio on 08/01/16.
  */
-public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
+public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAdaptor {
 
     private static final String PRIVATE_PRIORITY = "_priority";
     private static final String PRIVATE_STUDY_UIDS = "_studyUids";
