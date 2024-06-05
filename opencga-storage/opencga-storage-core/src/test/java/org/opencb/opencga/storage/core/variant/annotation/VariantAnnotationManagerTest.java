@@ -4,7 +4,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assume;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -17,10 +19,13 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 
@@ -235,6 +240,72 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         testQueries(variantStorageEngine);
 
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionWithCosmicAnnotation() throws Exception {
+        // Setup COSMIC directory
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.saveAnnotation("v1", new ObjectMap());
+
+        // Check that cosmic variants are annotated
+        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation("v1", new Query(), new QueryOptions());
+        checkCosmicVariants(annotationDataResult, COSMIC_VARIANTS.size());
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionWithoutCosmicAnnotation() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.saveAnnotation("v1", new ObjectMap());
+
+        // Check that cosmic variants are annotated
+        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation("v1", new Query(), new QueryOptions());
+        checkCosmicVariants(annotationDataResult, 0);
+    }
+
+    public void checkCosmicVariants(DataResult<VariantAnnotation> annotationDataResult, int expected) {
+        int cosmicCount = 0;
+        for (VariantAnnotation va : annotationDataResult.getResults()) {
+            String variantId = va.getChromosome() + ":" + va.getStart() + ":" + va.getReference() + ":" + va.getAlternate();
+            if (COSMIC_VARIANTS.contains(variantId)) {
+                if (va.getTraitAssociation() != null) {
+                    for (EvidenceEntry entry : va.getTraitAssociation()) {
+                        if (CosmicVariantAnnotatorExtensionTask.ID.equals(entry.getSource().getName())) {
+                            cosmicCount++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        assertEquals(expected, cosmicCount);
     }
 
     public void testQueries(VariantStorageEngine variantStorageEngine) throws StorageEngineException {

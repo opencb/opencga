@@ -126,12 +126,12 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         Assert.assertTrue(CollectionUtils.isEmpty(outputVariantAnnotations.get(1).getTraitAssociation()));
     }
 
-    private Path initCosmicPath() throws IOException {
+    public static Path initCosmicPath() throws IOException {
         Path cosmicPath = getTempPath();
         if (!cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
-        Path cosmicFile = Paths.get(getClass().getResource("/custom_annotation/cosmic.small.tsv.gz").getPath());
+        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/cosmic.small.tsv.gz").getPath());
         Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
         Files.copy(cosmicFile, targetPath);
 
@@ -142,7 +142,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         return targetPath;
     }
 
-    private Path getTempPath() {
+    public static Path getTempPath() {
         return Paths.get("target/test-data").resolve(TimeUtils.getTimeMillis() + "_" + RandomStringUtils.random(8, true, false));
     }
 }
