@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
@@ -15,9 +16,9 @@ public class VariantAnnotatorExtensionsFactory {
         for (String extensionId : options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key())) {
             VariantAnnotatorExtensionTask task = null;
             switch (extensionId) {
-//                case CosmicVariantAnnotatorExtensionTask.ID:
-//                    task = new CosmicVariantAnnotatorExtensionTask(options);
-//                    break;
+                case CosmicVariantAnnotatorExtensionTask.ID:
+                    task = new CosmicVariantAnnotatorExtensionTask(options);
+                    break;
                 default:
                     String extensionClass = options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_PREFIX.key() + extensionId);
                     if (extensionClass != null) {
@@ -41,10 +42,10 @@ public class VariantAnnotatorExtensionsFactory {
             Class<?> clazz = Class.forName(className);
             return (VariantAnnotatorExtensionTask) clazz.getConstructor(ObjectMap.class).newInstance(options);
         } catch (ClassNotFoundException
-                 | NoSuchMethodException
-                 | InstantiationException
-                 | IllegalAccessException
-                 | InvocationTargetException e) {
+                | NoSuchMethodException
+                | InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException e) {
             throw new IllegalArgumentException("Unable to create VariantAnnotatorExtensionTask from class " + className, e);
         }
     }

@@ -2,14 +2,15 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.cosmic.CosmicParser;
-import org.opencb.biodata.models.common.DataVersion;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -17,7 +18,6 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -28,9 +28,12 @@ import java.util.List;
 
 public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExtensionTask {
 
+    public static final String ID = "cosmic";
+
     private ObjectMap options;
 
-    private Path cosmicFolder;
+    private String cosmicVersion;
+    private String assembly;
 
     private ObjectReader objectReader;
 
@@ -50,46 +53,28 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     @Override
     public List<URI> setup(URI output) throws Exception {
-        // Check input path
-        cosmicFolder = Paths.get(output.getPath());
-        if (cosmicFolder == null || !Files.exists(cosmicFolder)) {
-            throw new IllegalArgumentException("Path " + output + " does not exist");
+        // Sanity check
+        Path cosmicFile = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        if (!Files.exists(cosmicFile)) {
+            throw new IllegalArgumentException("COSMIC file " + cosmicFile + " does not exist");
         }
-        if (!cosmicFolder.toFile().isDirectory()) {
-            throw new IllegalArgumentException("Path " + output + " must be a directory with two files: the raw COSMIC file and the"
-                    + " metadata file 'cosmicVersion.json'");
+        cosmicVersion = (String) options.getOrDefault(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), null);
+        if (StringUtils.isEmpty(cosmicVersion)) {
+            throw new IllegalArgumentException("Missing COSMIC version");
+        }
+        assembly = (String) options.getOrDefault(VariantStorageOptions.ASSEMBLY.key(), null);
+        if (StringUtils.isEmpty(assembly)) {
+            throw new IllegalArgumentException("Missing assembly");
         }
 
         // Clean and init RocksDB
-        dbLocation = cosmicFolder.toAbsolutePath().resolve(COSMIC_ANNOTATOR_INDEX_NAME);
+        dbLocation = Paths.get(output.getPath()).toAbsolutePath().resolve(COSMIC_ANNOTATOR_INDEX_NAME);
         if (Files.exists(dbLocation)) {
             // Skipping setup but init RocksDB
             logger.info("Skipping setup, it was already done");
             initRockDB(false);
         } else {
             logger.info("Setup and populate RocksDB");
-            File versionFile = cosmicFolder.resolve(COSMIC_VERSION_FILENAME).toFile();
-            if (!versionFile.exists()) {
-                throw new IllegalArgumentException("Path " + output + " does not contain the COSMIC metadata file: "
-                        + COSMIC_VERSION_FILENAME);
-            }
-            DataVersion dataVersion;
-            try {
-                dataVersion = JacksonUtils.getDefaultObjectMapper().readValue(versionFile, DataVersion.class);
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Error parsing the metadata file " + versionFile.getAbsolutePath(), e);
-            }
-            String cosmicFilename;
-            try {
-                cosmicFilename = dataVersion.getFiles().get(0);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Error getting the COSMIC file from the metadata file "
-                        + versionFile.getAbsolutePath(), e);
-            }
-            File cosmicFile = cosmicFolder.resolve(cosmicFilename).toFile();
-            if (!cosmicFile.exists()) {
-                throw new IllegalArgumentException("COSMIC file " + cosmicFile.getAbsolutePath() + " does not exist");
-            }
 
             // Init RocksDB
             initRockDB(true);
@@ -97,8 +82,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             // Call COSMIC parser
             try {
                 CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
-                CosmicParser.parse(cosmicFile.toPath(), dataVersion.getVersion(), dataVersion.getName(), dataVersion.getAssembly(),
-                        callback);
+                CosmicParser.parse(cosmicFile, cosmicVersion, ID, assembly, callback);
             } catch (IOException e) {
                 throw new ToolException(e);
             }
@@ -108,14 +92,9 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     @Override
     public void checkAvailable() throws IllegalArgumentException {
-        if (!isAvailable()) {
+        if (dbLocation == null || !Files.exists(dbLocation)) {
             throw new IllegalArgumentException("COSMIC annotator extension is not available");
         }
-    }
-
-    @Override
-    public boolean isAvailable() {
-        return (dbLocation != null && Files.exists(dbLocation));
     }
 
     @Override
@@ -125,15 +104,9 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     @Override
     public ObjectMap getMetadata() {
-        File versionFile = cosmicFolder.resolve(COSMIC_VERSION_FILENAME).toFile();
-        if (!versionFile.exists()) {
-            throw new IllegalArgumentException("Metadata file " + versionFile + " does not exist");
-        }
-        try {
-            return JacksonUtils.getDefaultObjectMapper().readValue(versionFile, ObjectMap.class);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return new ObjectMap("data", ID)
+                .append("version", cosmicVersion)
+                .append("assembly", assembly);
     }
 
     @Override
