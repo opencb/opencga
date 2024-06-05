@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.cosmic.CosmicParserCallback;
 import org.opencb.biodata.models.sequence.SequenceLocation;
 import org.opencb.biodata.models.variant.Variant;
@@ -31,7 +32,10 @@ public class CosmicExtensionTaskCallback implements CosmicParserCallback {
 
     public CosmicExtensionTaskCallback(RocksDB rdb) {
         this.rdb = rdb;
-        this.variantNormalizer = new VariantNormalizer();
+        this.variantNormalizer = new VariantNormalizer(new VariantNormalizer.VariantNormalizerConfig()
+                .setReuseVariants(true)
+                .setNormalizeAlleles(true)
+                .setDecomposeMNVs(false));
         this.defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
     }
 
@@ -51,7 +55,7 @@ public class CosmicExtensionTaskCallback implements CosmicParserCallback {
             }
             return false;
         } catch (NonStandardCompliantSampleField | RocksDBException | JsonProcessingException e) {
-            e.printStackTrace();
+            logger.warn(StringUtils.join(e.getStackTrace(), "\n"));
             return false;
         }
     }
