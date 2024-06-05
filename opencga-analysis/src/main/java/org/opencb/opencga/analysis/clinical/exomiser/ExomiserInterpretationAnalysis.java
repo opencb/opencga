@@ -30,6 +30,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
@@ -121,8 +122,8 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         // Check exomiser version
         if (StringUtils.isEmpty(exomiserVersion)) {
             // Missing exomiser version use the default one
-            logger.warn("Missing exomiser version, using the default {}", FieldConstants.EXOMISER_DEFAULT_VERSION);
-            exomiserVersion = FieldConstants.EXOMISER_DEFAULT_VERSION;
+            exomiserVersion = ConfigurationUtils.getToolDefaultVersion(ExomiserWrapperAnalysis.ID, configuration);
+            logger.warn("Missing exomiser version, using the default {}", exomiserVersion);
         }
 
         // Update executor params with OpenCGA home and session ID

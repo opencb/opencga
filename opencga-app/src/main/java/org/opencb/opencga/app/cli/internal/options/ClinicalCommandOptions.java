@@ -13,7 +13,6 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
-import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -24,7 +23,8 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
-import static org.opencb.opencga.core.api.FieldConstants.*;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -342,7 +342,7 @@ public class ClinicalCommandOptions {
         public String clinicalAnalysis;
 
         @Parameter(names = {"--exomiser-version"}, description = EXOMISER_VERSION_DESCRIPTION)
-        public String exomiserVersion = EXOMISER_DEFAULT_VERSION;
+        public String exomiserVersion;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;

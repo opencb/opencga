@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.wrappers.exomiser;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
@@ -50,6 +51,13 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing study");
         }
 
+        // Check exomiser version
+        if (StringUtils.isEmpty(analysisParams.getExomiserVersion())) {
+            // Missing exomiser version use the default one
+            String exomiserVersion = ConfigurationUtils.getToolDefaultVersion(ExomiserWrapperAnalysis.ID, configuration);
+            logger.warn("Missing exomiser version, using the default {}", exomiserVersion);
+            analysisParams.setExomiserVersion(exomiserVersion);
+        }
     }
 
     @Override
@@ -60,6 +68,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(ExomiserWrapperAnalysisExecutor.class)
                     .setStudyId(study)
                     .setSampleId(analysisParams.getSample())
+                    .setExomiserVersion(analysisParams.getExomiserVersion())
                     .execute();
         });
     }

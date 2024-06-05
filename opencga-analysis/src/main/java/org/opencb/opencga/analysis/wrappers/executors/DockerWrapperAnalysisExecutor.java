@@ -28,11 +28,11 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
 
-    public String getDockerImageName() {
+    public String getDockerImageName() throws ToolException {
         return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[0];
     }
 
-    public String getDockerImageVersion() {
+    public String getDockerImageVersion() throws ToolException {
         if (getConfiguration().getAnalysis().getOpencgaExtTools().contains(":")) {
             return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[1];
         } else {
@@ -40,37 +40,35 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         }
     }
 
-    public String getDockerImageName(String toolKey) {
-        for (Map.Entry<String, AnalysisTool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(toolKey)) {
-                return entry.getValue().getDockerId().split(":")[0];
+    protected AnalysisTool getAnalysisTool(String toolId, String version) throws ToolException {
+        for (AnalysisTool tool : getConfiguration().getAnalysis().getTools()) {
+            if (toolId.equals(tool.getId()) && version.equals(tool.getVersion())) {
+                return tool;
             }
         }
-        return null;
+        throw new ToolException("Missing analyis tool (ID = " + toolId + ", version = " + version + ") in configuration file");
     }
 
-    public String getDockerImageVersion(String toolKey) {
-        for (Map.Entry<String, AnalysisTool> entry : getConfiguration().getAnalysis().getTools().entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(toolKey)) {
-                if (entry.getValue().getDockerId().contains(":")) {
-                    return entry.getValue().getDockerId().split(":")[1];
-                } else {
-                    return null;
-                }
-            }
+    public String getDockerImageName(String toolId, String version) throws ToolException {
+        AnalysisTool tool = getAnalysisTool(toolId, version);
+        return tool.getDockerId().split(":")[0];
+    }
+
+    public String getDockerImageVersion(String toolId, String version) throws ToolException {
+        AnalysisTool tool = getAnalysisTool(toolId, version);
+        if (tool.getDockerId().contains(":")) {
+            return tool.getDockerId().split(":")[1];
+        } else {
+            return null;
         }
-        return null;
     }
 
-    protected String getToolResource(String toolKey, String resourceKey) throws ToolException {
+    protected String getToolResource(String toolId, String version, String resourceKey) throws ToolException {
         // Get resources from the configuration file
-        if (!getConfiguration().getAnalysis().getTools().containsKey(toolKey)) {
-            throw new ToolException("Error getting tool " +  toolKey + ": it does not exist in the configuration file");
-        }
-        AnalysisTool tool = getConfiguration().getAnalysis().getTools().get(toolKey);
+        AnalysisTool tool = getAnalysisTool(toolId, version);
         if (!tool.getResources().containsKey(resourceKey)) {
-            throw new ToolException("Error getting resource " + resourceKey + " of tool " + toolKey + ": it does not exist in the"
-                    + " configuration file");
+            throw new ToolException("Error getting resource " + resourceKey + " of analysis tool (ID = " + toolId + ", version =  "
+                    + version + "): it does not exist in the configuration file");
         }
         return tool.getResources().get(resourceKey);
     }
@@ -118,7 +116,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return mountMap;
     }
 
-    protected void appendCommand(String command, StringBuilder sb) {
+    protected void appendCommand(String command, StringBuilder sb) throws ToolException {
         // Docker image and version
         sb.append(getDockerImageName());
         if (StringUtils.isNotEmpty(getDockerImageVersion())) {

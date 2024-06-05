@@ -527,5 +527,4 @@ public class FieldConstants {
     public static final String EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION = "Clinical analysis ID.";
     public static final String EXOMISER_SAMPLE_DESCRIPTION = "Sample ID.";
     public static final String EXOMISER_VERSION_DESCRIPTION = "Exomiser version.";
-    public static final String EXOMISER_DEFAULT_VERSION = "14.0.0";
 }

@@ -21,6 +21,9 @@ import java.util.Map;
 
 public class AnalysisTool {
 
+    private String id;
+    private String version;
+    private boolean defaultVersion;
     private String dockerId;
     private String params;
     private Map<String, String> resources;
@@ -29,7 +32,10 @@ public class AnalysisTool {
         resources = new HashMap<>();
     }
 
-    public AnalysisTool(String dockerId, String params, Map<String, String> resources) {
+    public AnalysisTool(String id, String version, boolean defaultVersion, String dockerId, String params, Map<String, String> resources) {
+        this.id = id;
+        this.version = version;
+        this.defaultVersion = defaultVersion;
         this.dockerId = dockerId;
         this.params = params;
         this.resources = resources;
@@ -38,11 +44,41 @@ public class AnalysisTool {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisTool{");
-        sb.append("dockerId='").append(dockerId).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", defaultVersion=").append(defaultVersion);
+        sb.append(", dockerId='").append(dockerId).append('\'');
         sb.append(", params='").append(params).append('\'');
         sb.append(", resources=").append(resources);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public AnalysisTool setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public AnalysisTool setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public boolean isDefaultVersion() {
+        return defaultVersion;
+    }
+
+    public AnalysisTool setDefaultVersion(boolean defaultVersion) {
+        this.defaultVersion = defaultVersion;
+        return this;
     }
 
     public String getDockerId() {

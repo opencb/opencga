@@ -31,6 +31,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 
 @Category(MediumTests.class)
 public class ExomiserInterpretationAnalysisTest  {
@@ -70,7 +71,8 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-        assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
+        String exomiserVersion = "13.1";
+        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + exomiserVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
@@ -87,7 +89,7 @@ public class ExomiserInterpretationAnalysisTest  {
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.CA_ID2)
-                .setExomiserVersion("13.1.0");
+                .setExomiserVersion(exomiserVersion);
 
         ExecutionResult result = exomiser.start();
 
@@ -100,7 +102,8 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
-        assumeThat(Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists(), is(true));
+        String exomiserVersion = "13.1";
+        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + exomiserVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_family"));
@@ -114,7 +117,7 @@ public class ExomiserInterpretationAnalysisTest  {
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.CA_ID3)
-                .setExomiserVersion("13.1.0");
+                .setExomiserVersion(exomiserVersion);
 
         ExecutionResult result = exomiser.start();
 

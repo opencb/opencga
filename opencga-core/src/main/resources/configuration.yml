@@ -118,12 +118,15 @@ analysis:
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
   opencgaExtTools: "opencb/opencga-ext-tools"
   tools:
-    exomiser-13.1.0:
+    - id: "exomiser"
+      version: "13.1"
       dockerId: "exomiser/exomiser-cli:13.1.0"
       resources:
         HG38: "exomiser/2109_hg38.zip"
         PHENOTYPE: "exomiser/2109_phenotype.zip"
-    exomiser-14.0.0:
+    - id: "exomiser"
+      version: "14.0"
+      defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
       resources:
         HG38: "exomiser/2402_hg38.zip"

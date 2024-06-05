@@ -4,8 +4,6 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_DEFAULT_VERSION;
-
 
 public class ExomiserInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Exomiser interpretation analysis params";
@@ -13,7 +11,7 @@ public class ExomiserInterpretationAnalysisParams extends ToolParams {
     @DataField(id = "clinicalAnalysis", description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION, required = true)
     private String clinicalAnalysis;
 
-    @DataField(id = "exomiserVersion", description = FieldConstants.EXOMISER_VERSION_DESCRIPTION, defaultValue = EXOMISER_DEFAULT_VERSION)
+    @DataField(id = "exomiserVersion", description = FieldConstants.EXOMISER_VERSION_DESCRIPTION)
     private String exomiserVersion;
 
     public ExomiserInterpretationAnalysisParams() {

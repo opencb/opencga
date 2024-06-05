@@ -438,23 +438,23 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     private String getHg38DataVersion() throws ToolException {
-        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, HG38_RESOURCE_KEY);
+        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, HG38_RESOURCE_KEY);
         return Paths.get(resource).getFileName().toString().split("_")[0];
     }
 
     private String getPhenotypeDataVersion() throws ToolException {
-        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, PHENOTYPE_RESOURCE_KEY);
+        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, PHENOTYPE_RESOURCE_KEY);
         return Paths.get(resource).getFileName().toString().split("_")[0];
     }
 
     @Override
-    public String getDockerImageName() {
-        return getDockerImageName(EXOMISER_PREFIX + exomiserVersion);
+    public String getDockerImageName() throws ToolException {
+        return getDockerImageName(ExomiserWrapperAnalysis.ID, exomiserVersion);
     }
 
     @Override
-    public String getDockerImageVersion() {
-        return getDockerImageVersion(EXOMISER_PREFIX + exomiserVersion);
+    public String getDockerImageVersion() throws ToolException {
+        return getDockerImageVersion(ExomiserWrapperAnalysis.ID, exomiserVersion);
     }
 
     public String getStudyId() {
@@ -468,7 +468,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     private void downloadAndUnzip(Path exomiserDataPath, String resourceKey) throws ToolException {
         String filename;
-        String resource = getToolResource(EXOMISER_PREFIX + exomiserVersion, resourceKey);
+        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, resourceKey);
         if (resource.startsWith("file://")) {
             // Copy resouce
             try {
