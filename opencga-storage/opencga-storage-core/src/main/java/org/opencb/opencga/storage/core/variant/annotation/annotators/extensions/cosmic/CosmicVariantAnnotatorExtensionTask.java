@@ -112,8 +112,14 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public List<VariantAnnotation> apply(List<VariantAnnotation> list) throws Exception {
         for (VariantAnnotation variantAnnotation : list) {
-            Variant variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
-                    variantAnnotation.getAlternate());
+            Variant variant;
+            try {
+                variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
+                        variantAnnotation.getAlternate());
+            } catch (Exception e) {
+                logger.warn("Skipping variant: " + e.getMessage());
+                continue;
+            }
             byte[] key = variant.toString().getBytes();
             byte[] dbContent = rdb.get(key);
             if (dbContent != null) {
