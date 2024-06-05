@@ -70,6 +70,30 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "User search method", response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType =
+                    "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType =
+                    "boolean", paramType = "query")
+    })
+    public Response search(
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
+            @ApiParam(value = ParamConstants.USER_ID_DESCRIPTION) @QueryParam(ParamConstants.USER_ID_PARAM) String userId,
+            @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
+        return run(() -> {
+            query.remove(ParamConstants.ORGANIZATION);
+            return catalogManager.getUserManager().search(organizationId, query, queryOptions, token);
+        });
+    }
+
+    @GET
     @Path("/{users}/info")
     @ApiOperation(value = "Return the user information including its projects and studies", response = User.class)
     @ApiImplicitParams({

@@ -71,7 +71,6 @@ public class AdminWSServer extends OpenCGAWSServer {
     public Response userSearch(
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
             @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER) String user,
-            @ApiParam(value = ParamConstants.USER_ACCOUNT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.USER_ACCOUNT_TYPE) String account,
             @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
         try {
             return createOkResponse(catalogManager.getAdminManager().userSearch(organizationId, query, queryOptions, token));
