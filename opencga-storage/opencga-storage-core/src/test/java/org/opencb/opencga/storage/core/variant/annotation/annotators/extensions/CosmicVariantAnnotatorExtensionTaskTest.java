@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 
 import java.io.IOException;
@@ -23,26 +24,40 @@ import java.util.List;
 
 public class CosmicVariantAnnotatorExtensionTaskTest {
 
+    private final String ASSEMBLY ="GRCh38";
     private final String COSMIC_VERSION = "v95";
 
     @Test
     public void testSetupCosmicVariantAnnotatorExtensionTask() throws Exception {
+        Path outPath = getTempPath();
+        if (!outPath.toFile().mkdirs()) {
+            throw new IOException("Error creating the output path: " + outPath.toAbsolutePath());
+        }
+        System.out.println("outPath = " + outPath.toAbsolutePath());
+
+        // Setup COSMIC directory
+        Path cosmicFile = initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
         ObjectMap options = new ObjectMap();
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
+        options.put(VariantStorageOptions.ASSEMBLY.key(), ASSEMBLY);
+
         CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(options);
 
         Assert.assertEquals(false, task.isAvailable());
 
-        // Setup COSMIC directory
-        Path cosmicPath = initCosmicPath();
-
         // Set-up COSMIC variant annotator extension task, once
-        task.setup(cosmicPath.toUri());
+        task.setup(outPath.toUri());
 
         // Set-up COSMIC variant annotator extension task, twice
-        task.setup(cosmicPath.toUri());
+        task.setup(outPath.toUri());
 
         ObjectMap metadata = task.getMetadata();
         Assert.assertEquals(COSMIC_VERSION, metadata.get("version"));
+        Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, metadata.get("data"));
+        Assert.assertEquals(ASSEMBLY, metadata.get("assembly"));
 
         Assert.assertEquals(true, task.isAvailable());
     }
@@ -55,17 +70,29 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
     }
 
     @Test
-    public void testAnnotationCosmicVariantAnnotatorExtensionTask() throws Exception {
+    public void testAnnotationCosmicVariantAnnotatorExtensionTaskUsingFactory() throws Exception {
+        Path outPath = getTempPath();
+        if (!outPath.toFile().mkdirs()) {
+            throw new IOException("Error creating the output path: " + outPath.toAbsolutePath());
+        }
+        System.out.println("outPath = " + outPath.toAbsolutePath());
+
+        // Setup COSMIC directory
+        Path cosmicFile = initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
         ObjectMap options = new ObjectMap();
-        CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(options);
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
+        options.put(VariantStorageOptions.ASSEMBLY.key(), ASSEMBLY);
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
+
+        CosmicVariantAnnotatorExtensionTask task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
 
         Assert.assertEquals(false, task.isAvailable());
 
-        // Setup COSMIC directory
-        Path cosmicPath = initCosmicPath();
-
         // Set-up COSMIC variant annotator extension task, once
-        task.setup(cosmicPath.toUri());
+        task.setup(outPath.toUri());
 
         List<VariantAnnotation> inputVariantAnnotations = new ArrayList<>();
         VariantAnnotation variantAnnotation1 = new VariantAnnotation();
@@ -105,13 +132,14 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
         Path cosmicFile = Paths.get(getClass().getResource("/custom_annotation/cosmic.small.tsv.gz").getPath());
-        DataVersion cosmicDataVersion = new DataVersion("variant", "cosmic", COSMIC_VERSION, "20231212",
-                "hsapiens", "GRCh38", Collections.singletonList(cosmicFile.getFileName().toString()),
-                Collections.singletonList("http://cosmic.org"), null);
-        JacksonUtils.getDefaultObjectMapper().writeValue(cosmicPath.resolve(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_FILENAME).toFile(), cosmicDataVersion);
-        Files.copy(cosmicFile, cosmicPath.resolve(cosmicDataVersion.getFiles().get(0)));
+        Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
+        Files.copy(cosmicFile, targetPath);
 
-        return cosmicPath;
+        if (!Files.exists(targetPath)) {
+            throw new IOException("Error copying COSMIC file to " + targetPath);
+        }
+
+        return targetPath;
     }
 
     private Path getTempPath() {
