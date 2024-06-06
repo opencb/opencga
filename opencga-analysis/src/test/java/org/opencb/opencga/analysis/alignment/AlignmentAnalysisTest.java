@@ -137,74 +137,8 @@ public class AlignmentAnalysisTest {
 
             setUpCatalogManager();
 
-//            file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
-//            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
-
-//            for (int i = 0; i < file.getSampleIds().size(); i++) {
-//                String id = file.getSampleIds().get(i);
-//                if (id.equals(son)) {
-//                    SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-//                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
-//                }
-//                if (i % 2 == 0) {
-//                    SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-//                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
-//                }
-//            }
-
-//            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
-//                            .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
-//                    null, null, null, token);
-//            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
-//                            .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
-//                    null, null, null, token);
-
-//            Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
-//            Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
-//            List<Individual> individuals = new ArrayList<>(4);
-//
-//            // Father
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Mother
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Son
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Daughter
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            catalogManager.getFamilyManager().create(
-//                    STUDY,
-//                    new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
-//                    individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
-//                    token);
-//
-//            // Cancer (SV)
-//            ObjectMap config = new ObjectMap();
-////            config.put(VariantStorageOptions.ANNOTATE.key(), true);
-//            config.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
-//
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T.copynumber.caveman.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.pindel.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//
-//            SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-//            catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
-
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
-//            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-//                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
-//            }
         }
         // Reset engines
         opencga.getStorageEngineFactory().close();
@@ -229,29 +163,6 @@ public class AlignmentAnalysisTest {
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
-
-        // Create 10 samples not indexed
-//        for (int i = 0; i < 10; i++) {
-//            Sample sample = new Sample().setId("SAMPLE_" + i);
-//            if (i % 2 == 0) {
-//                sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
-//            }
-//            catalogManager.getSampleManager().create(STUDY, sample, null, token);
-//        }
-//
-//        // Cancer
-//        List<Sample> samples = new ArrayList<>();
-//        catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
-//        Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
-//        samples.add(sample);
-////        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
-//        sample = new Sample().setId(germline_sample);
-//        samples.add(sample);
-////        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
-//        Individual individual = catalogManager.getIndividualManager()
-//                .create(CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                        samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
-//        assertEquals(2, individual.getSamples().size());
     }
 
     @Test
@@ -334,7 +245,8 @@ public class AlignmentAnalysisTest {
         bamFile = catalogManager.getFileManager().get(STUDY, Collections.singletonList(bamFile.getId()), QueryOptions.empty(), true, token).first();
         Assert.assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
 
-        Runtime.getRuntime().exec("chmod 777 " + readOnlyDir.toAbsolutePath());
+        Runtime.getRuntime().exec("chmod -R 777 " + readOnlyDir.toAbsolutePath());
+        System.out.println("readOnlyDir = " + readOnlyDir.toAbsolutePath());
     }
 
     @Test
