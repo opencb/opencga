@@ -40,7 +40,7 @@ public class VariantSetupParams extends ToolParams {
     @DataField(description = "Data distribution of the files. This parameter is used to infer the number of samples per file.")
     private DataDistribution dataDistribution;
 
-    @DataField(description = "List of normalization extensions")
+    @DataField(description = "List of normalization extensions that will be used to normalize the files.")
     private List<String> normalizeExtensions;
 
     public VariantSetupParams(VariantSetupParams params) {

@@ -481,6 +481,19 @@ class VariantOperation(_ParentRestClient):
 
         return self._delete(category='operation', resource='delete', subcategory='variant/secondaryIndex', **options)
 
+    def setup_variant(self, data=None, **options):
+        """
+        Execute Variant Setup to allow using the variant engine. This setup is
+            necessary before starting any variant operation.
+        PATH: /{apiVersion}/operation/variant/setup
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param dict data: Variant setup params.
+        """
+
+        return self._post(category='operation', resource='setup', subcategory='variant', data=data, **options)
+
     def delete_variant_stats(self, data=None, **options):
         """
         Deletes the VariantStats of a cohort/s from the database.
