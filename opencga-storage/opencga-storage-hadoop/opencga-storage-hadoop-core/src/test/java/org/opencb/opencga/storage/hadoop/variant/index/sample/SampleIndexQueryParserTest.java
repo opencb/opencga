@@ -1384,7 +1384,10 @@ public class SampleIndexQueryParserTest {
         checkIntergenic(true, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
         checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intergenic_variant"));
         checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant,missense_variant"));
-
+        checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT));
+        checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
+                .append(ANNOT_BIOTYPE.key(), "protein_coding"));
+        
         // Nonsense combination
         checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant").append(ANNOT_BIOTYPE.key(), "protein_coding"));
     }
@@ -1569,6 +1572,19 @@ public class SampleIndexQueryParserTest {
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(2, 4)));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.REGULATORY_REGION_VARIANT));
+        parseAnnotationIndexQuery(query, true);
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(query.isEmpty()); // regulatory_region_variant can't be used for CT filter alone
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.REGULATORY_REGION_VARIANT))
+                .append(ANNOT_BIOTYPE.key(), "protein_coding");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertTrue(query.isEmpty()); // regulatory_region_variant can be used together with biotype
 
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, false);
