@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -55,9 +56,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     public List<URI> setup(URI output) throws Exception {
         // Sanity check
         Path cosmicFile = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
-        if (!Files.exists(cosmicFile)) {
-            throw new IllegalArgumentException("COSMIC file " + cosmicFile + " does not exist");
-        }
+        FileUtils.checkFile(cosmicFile);
         cosmicVersion = (String) options.getOrDefault(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), null);
         if (StringUtils.isEmpty(cosmicVersion)) {
             throw new IllegalArgumentException("Missing COSMIC version");

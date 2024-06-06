@@ -142,6 +142,22 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         return targetPath;
     }
 
+    public static Path initInvalidCosmicPath() throws IOException {
+        Path cosmicPath = getTempPath();
+        if (!cosmicPath.toFile().mkdirs()) {
+            throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
+        }
+        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/myannot.vcf").getPath());
+        Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
+        Files.copy(cosmicFile, targetPath);
+
+        if (!Files.exists(targetPath)) {
+            throw new IOException("Error copying COSMIC file to " + targetPath);
+        }
+
+        return targetPath;
+    }
+
     public static Path getTempPath() {
         return Paths.get("target/test-data").resolve(TimeUtils.getTimeMillis() + "_" + RandomStringUtils.random(8, true, false));
     }

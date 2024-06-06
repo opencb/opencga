@@ -290,6 +290,125 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         checkCosmicVariants(annotationDataResult, 0);
     }
 
+    @Test
+    public void testCosmicAnnotatorExtensionMissingInvalidCosmicFile() throws Exception {
+        // Setup COSMIC directory
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initInvalidCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+
+        thrown.expect(VariantAnnotatorException.class);
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionMissingCosmicFile() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95");
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+
+        thrown.expect(VariantAnnotatorException.class);
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionMissingCosmicVersion() throws Exception {
+        // Setup COSMIC directory
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+
+        thrown.expect(VariantAnnotatorException.class);
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionMissingAssembly() throws Exception {
+        // Setup COSMIC directory
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+
+        thrown.expect(VariantAnnotatorException.class);
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+    }
+
+    @Test
+    public void testCosmicAnnotatorExtensionMismatchAssembly() throws Exception {
+        // Setup COSMIC directory
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
+        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
+                .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh37")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
+
+        URI annotOutdir = outputUri.resolve("annot1");
+        Files.createDirectories(Paths.get(annotOutdir));
+
+        thrown.expect(VariantAnnotatorException.class);
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+    }
+
     public void checkCosmicVariants(DataResult<VariantAnnotation> annotationDataResult, int expected) {
         int cosmicCount = 0;
         for (VariantAnnotation va : annotationDataResult.getResults()) {
