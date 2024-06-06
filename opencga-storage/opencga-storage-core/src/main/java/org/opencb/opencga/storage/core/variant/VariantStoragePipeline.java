@@ -417,7 +417,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     .then(new VariantSorterTask(100)) // Sort before generating reference blocks
                     .then(new VariantReferenceBlockCreatorTask(metadata.getHeader()));
         }
-        if (CollectionUtils.isNotEmpty(enabledExtensions)) {
+        if (CollectionUtils.isEmpty(enabledExtensions)) {
+            enabledExtensions = Collections.singleton(NORMALIZATION_EXTENSIONS.defaultValue());
+        }
+        if ((enabledExtensions.size() == 1 && enabledExtensions.contains(ParamConstants.NONE))) {
+            logger.info("Skip normalization extensions");
+        } else {
+            logger.info("Enable normalization extensions: {}", enabledExtensions);
             VariantNormalizerExtensionFactory extensionFactory;
             if (enabledExtensions.size() == 1 && enabledExtensions.contains(ParamConstants.ALL)) {
                 extensionFactory = new VariantNormalizerExtensionFactory();
@@ -425,7 +431,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 extensionFactory = new VariantNormalizerExtensionFactory(new HashSet<>(enabledExtensions));
             }
             Task<Variant, Variant> extension = extensionFactory.buildExtensions(metadata);
-            if (extension != null) {
+            if (extension == null) {
+                logger.info("No normalization extensions can be used.");
+            } else {
                 normalizer = normalizer.then(extension);
             }
         }
