@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.config;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -23,10 +24,11 @@ import java.util.List;
  */
 
 public class Authentication {
-    private Long expiration;
+    private Long expiration; // Expiration time in seconds
     private List<AuthenticationOrigin> authenticationOrigins;
 
     public Authentication() {
+        this(3600L, new LinkedList<>());
     }
 
     public Authentication(Long expiration, List<AuthenticationOrigin> authenticationOrigins) {

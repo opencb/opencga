@@ -16,18 +16,12 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created on 03/05/16
@@ -52,15 +46,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
         // Creating StorageManagerFactory
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
-    }
-
-    protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
-        return catalogManager.getStudyManager().search(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
-                        ".alias"), sessionId)
-                .getResults()
-                .stream()
-                .collect(Collectors.toMap(Study::getUid, Study::getId));
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, configuration);
     }
 
 }

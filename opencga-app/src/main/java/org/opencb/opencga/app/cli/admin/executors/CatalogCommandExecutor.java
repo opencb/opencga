@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -80,7 +80,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
             default:
                 logger.error("Subcommand not valid");
-                break;
+                break;//demo, dump , stats
         }
     }
 
@@ -107,7 +107,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
-        catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
+        catalogManager.getProjectManager().importReleases(commandOptions.organizationId, commandOptions.owner, commandOptions.directory, token);
     }
 
     private void status() throws CatalogException, JsonProcessingException {
@@ -121,45 +121,45 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         ObjectMap result = new ObjectMap();
         if (catalogManager.getDatabaseStatus()) {
             result.put("mongodbStatus", true);
-            result.put("catalogDBName", catalogManager.getCatalogDatabase());
+            String adminDatabase = catalogManager.getCatalogAdminDatabase();
+            result.put("catalogDBName", adminDatabase);
+            result.put("catalogDBNames", catalogManager.getCatalogDatabaseNames());
             result.put("databasePrefix", catalogManager.getConfiguration().getDatabasePrefix());
             if (commandOptions.uri) {
                 // check login
                 catalogManager.getUserManager().loginAsAdmin(getAdminPassword(true));
                 result.put("mongodbUri", MongoDBUtils.getMongoDBUri(configuration.getCatalog().getDatabase()));
+                result.put("mongodbUriRedacted", MongoDBUtils.getMongoDBUriRedacted(configuration.getCatalog().getDatabase()));
                 result.put("mongodbUriWithDatabase", MongoDBUtils.getMongoDBUri(
-                        configuration.getCatalog().getDatabase(), catalogManager.getCatalogDatabase()));
+                        configuration.getCatalog().getDatabase(), adminDatabase));
                 result.put("mongodbCliOpts", MongoDBUtils.getMongoDBCliOpts(configuration.getCatalog().getDatabase()));
                 result.put("mongodbCli", MongoDBUtils.getMongoDBCli(
-                        configuration.getCatalog().getDatabase(), catalogManager.getCatalogDatabase()));
+                        configuration.getCatalog().getDatabase(), adminDatabase));
             }
             if (catalogManager.existsCatalogDB()) {
                 result.put("installed", true);
-
-                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
-                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
-                Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
-
-                result.put("creationDate", metaDocument.get("creationDate"));
-                result.put("version", metaDocument.get("version"));
-
-                Object fullVersion = metaDocument.get("_fullVersion");
-                int version = 20000;
-                int release = 4;
-                int lastJavaUpdate = 0;
-                int lastJsUpdate = 0;
-                if (fullVersion != null) {
-                    version = ((Document) fullVersion).getInteger("version");
-                    release = ((Document) fullVersion).getInteger("release");
-                    lastJavaUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
-                    lastJsUpdate = ((Document) fullVersion).getInteger("lastJsUpdate");
-                }
-                result.put("versionNumeric", version);
-                result.put("release", release);
-                result.put("lastJsUpdate", lastJsUpdate);
-                result.put("lastJavaUpdate", lastJavaUpdate);
             } else {
-                result.put("installed", false);
+                String oldDatabase = configuration.getDatabasePrefix() + "_catalog";
+                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
+                MongoDataStore oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
+                try {
+                    if (oldDatastore.getCollectionNames().contains("metadata")) {
+                        Document metadata = oldDatastore.getCollection("metadata").find(new Document(), QueryOptions.empty()).first();
+                        if (metadata != null) {
+                            result.put("PENDING_3_0_0_MIGRATION", "Please, execute 'opencga-admin.sh migration v3.0.0' "
+                                    + "to update your database to the latest version.");
+//                            result.put("oldVersion", metadata.get("version"));
+
+                            result.put("catalogDBName", oldDatabase);
+                            result.put("catalogDBNames", Collections.singletonList(oldDatabase));
+
+                            result.put("installed", true);
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.debug("Error checking old database. Assume doesn't exist", e);
+                }
+                result.putIfAbsent("installed", false);
             }
         } else {
             result.put("mongodbStatus", false);
@@ -185,8 +185,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
-                    commandOptions.email, commandOptions.organization, commandOptions.force);
+            catalogManager.installCatalogDB("HS256", configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
+                    commandOptions.email, commandOptions.force);
         }
     }
 
@@ -194,8 +194,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
-                    .getHosts());
+            logger.info("Deleting databases {} from {}\n", catalogManager.getCatalogDatabaseNames(),
+                    configuration.getCatalog().getDatabase().getHosts());
             catalogManager.deleteCatalogDB(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
         }
     }
@@ -207,10 +207,18 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager()
                 .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
-        logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
-                catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
+        String organizationId = catalogCommandOptions.indexCatalogCommandOptions.organizationId;
+        if (StringUtils.isEmpty(organizationId)) {
+            logger.info("Checking and installing non-existing indexes in {} fom {}\n",
+                    catalogManager.getCatalogDatabaseNames(), configuration.getCatalog().getDatabase().getHosts());
 
-        catalogManager.installIndexes(token);
+            catalogManager.installIndexes(token);
+        } else {
+            logger.info("Checking and installing non-existing indexes in {} fom {}\n",
+                    catalogManager.getCatalogDatabase(organizationId), configuration.getCatalog().getDatabase().getHosts());
+
+            catalogManager.installIndexes(organizationId, token);
+        }
     }
 
     private void daemons() throws Exception {

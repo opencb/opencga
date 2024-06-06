@@ -46,8 +46,6 @@ import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -83,6 +81,7 @@ public class InternalMainTest {
 
 
     private CatalogManager catalogManager;
+    private final String organizationId = "test";
     private final String userId = "user";
     private final String dbNameVariants = "opencga_variants_test";
     private final String dbNameAlignments = "opencga_alignments_test";
@@ -102,9 +101,9 @@ public class InternalMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameVariants);
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, opencga.getAdminToken()).first();
+        catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", organizationId, null, opencga.getAdminToken());
 
-        sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
+        sessionId = catalogManager.getUserManager().login(organizationId, userId, "user").getToken();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 

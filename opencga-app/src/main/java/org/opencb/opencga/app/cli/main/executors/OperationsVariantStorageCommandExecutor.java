@@ -394,6 +394,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "file",commandOptions.file, true);
             putNestedIfNotNull(beanParams, "resume",commandOptions.resume, true);
+            putNestedIfNotNull(beanParams, "force",commandOptions.force, true);
 
             variantFileDeleteParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

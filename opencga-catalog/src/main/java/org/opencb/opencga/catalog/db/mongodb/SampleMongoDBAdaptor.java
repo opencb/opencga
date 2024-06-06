@@ -81,11 +81,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     private final MongoDBCollection deletedSampleCollection;
     private final SampleConverter sampleConverter;
     private final IndividualMongoDBAdaptor individualDBAdaptor;
-    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
+    private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
                                 MongoDBCollection deletedSampleCollection, Configuration configuration,
-                                MongoDBAdaptorFactory dbAdaptorFactory) {
+                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
@@ -93,7 +93,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.deletedSampleCollection = deletedSampleCollection;
         this.sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
+        this.versionedMongoDBAdaptor = new SnapshotVersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection,
+                deletedSampleCollection);
     }
 
     @Override
@@ -160,7 +161,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
-        long sampleUid = getNewUid();
+        long sampleUid = getNewUid(clientSession);
         sample.setUid(sampleUid);
         sample.setStudyUid(studyUid);
         sample.setVersion(1);
@@ -197,7 +198,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    public OpenCGAResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
@@ -1122,7 +1123,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1143,7 +1144,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1198,7 +1199,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             qOptions = new QueryOptions();
         }
         qOptions = removeAnnotationProjectionOptions(qOptions);
-        qOptions = filterQueryOptions(qOptions, SampleManager.INCLUDE_SAMPLE_IDS.getAsStringList(QueryOptions.INCLUDE));
+        qOptions = filterQueryOptionsToIncludeKeys(qOptions, SampleManager.INCLUDE_SAMPLE_IDS.getAsStringList(QueryOptions.INCLUDE));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
         fixAclProjection(qOptions);
 

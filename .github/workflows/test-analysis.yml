@@ -1,14 +1,29 @@
 name: Build and test the project
+run-name: "Build and test the project. Hadoop flavour: ${{ inputs.hadoop }}. Test profile: ${{ inputs.test_profile }}. Test module: ${{ inputs.module }}"
 
 on:
   workflow_call:
     inputs:
       test_profile:
+        description: 'Maven test profile. Any combination of : [runShortTests, runMediumTests, runLongTests]'
         type: string
         required: true
+      hadoop:
+        type: string
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        required: false
+        default: "hdp3.1"
       mvn_opts:
         type: string
-
+        required: false
+        default: ""
+      sonar:
+        type: boolean
+        required: false
+        default: true
+      module:
+        type: string
+        description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
         required: false
         default: ""
     secrets:
@@ -19,6 +34,7 @@ jobs:
   analysis:
     name: Execute Sonar Analysis
     runs-on: ubuntu-22.04
+    if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +49,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
@@ -41,7 +57,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: mvn -T 2 clean install -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 
   test:
     name: Execute JUnit and Jacoco tests
@@ -60,7 +76,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
@@ -71,8 +87,10 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
+      - name: Maven build
+        run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,hdp3.1,${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl '!:opencga-storage-hadoop-deps-emr6.1,!:opencga-storage-hadoop-deps-hdp2.6' ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         env:
@@ -81,9 +99,10 @@ jobs:
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
         with:
-          check_name: "Surefire tests report"
+          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.module }} ${{ inputs.test_profile }}"
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
+          fail_if_no_tests: false
 
 

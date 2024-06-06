@@ -71,4 +71,8 @@ public abstract class MonitorParentDaemon implements Runnable {
         return "J_" + jobId;
     }
 
+    public MonitorParentDaemon setBatchExecutor(BatchExecutor batchExecutor) {
+        this.batchExecutor = batchExecutor;
+        return this;
+    }
 }

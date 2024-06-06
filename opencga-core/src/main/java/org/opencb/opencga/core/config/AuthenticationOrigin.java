@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.config;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -51,21 +50,20 @@ public class AuthenticationOrigin {
     public static final String CONNECTION_TIMEOUT = "connectionTimeout";
 
     public AuthenticationOrigin() {
-        this("internal", AuthenticationType.OPENCGA.name(), "localhost", Collections.emptyMap());
     }
 
-    public AuthenticationOrigin(String id, String type, String host, Map<String, Object> options) {
+    public AuthenticationOrigin(String id, AuthenticationType type, String host, Map<String, Object> options) {
         this.id = id;
-        this.type = AuthenticationType.valueOf(type);
+        this.type = type;
         this.host = host;
         this.options = options;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Auth{");
+        final StringBuilder sb = new StringBuilder("AuthenticationOrigin{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", type='").append(type).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", host='").append(host).append('\'');
         sb.append(", options=").append(options);
         sb.append('}');
@@ -96,6 +94,21 @@ public class AuthenticationOrigin {
 
     public AuthenticationOrigin setHost(String host) {
         this.host = host;
+        return this;
+    }
+
+    @Deprecated
+    public AuthenticationOrigin setAlgorithm(String algorithm) {
+        return this;
+    }
+
+    @Deprecated
+    public AuthenticationOrigin setSecretKey(String secretKey) {
+        return this;
+    }
+
+    @Deprecated
+    public AuthenticationOrigin setExpiration(long expiration) {
         return this;
     }
 

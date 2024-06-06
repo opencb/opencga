@@ -346,8 +346,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
     }
 
     protected void loadFromAvro(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -409,8 +409,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
         logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 
@@ -457,8 +457,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexDBLoader.getSampleIndexVersion();
-            this.largestVariantLength = largestVariantTask.getMaxLength();
         }
+        this.largestVariantLength = largestVariantTask.getMaxLength();
         logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
     }
 

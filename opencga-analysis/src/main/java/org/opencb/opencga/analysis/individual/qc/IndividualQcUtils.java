@@ -29,7 +29,9 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -132,7 +134,12 @@ public class IndividualQcUtils {
     public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+
+        JwtPayload jwtPayload = new JwtPayload(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, jwtPayload);
+        String organizationId = studyFqn.getOrganizationId();
+
+        projectQueryResult = catalogManager.getProjectManager().search(organizationId, new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();

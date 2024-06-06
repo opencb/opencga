@@ -50,8 +50,9 @@ public class OpenCGAClient {
         this.init(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
-        AuthenticationResponse login = login(user, password);
+    public OpenCGAClient(String organizationId, String user, String password, ClientConfiguration clientConfiguration)
+            throws ClientException {
+        AuthenticationResponse login = login(organizationId, user, password);
         this.init(login, clientConfiguration);
     }
 
@@ -83,6 +84,10 @@ public class OpenCGAClient {
 
         this.clientConfiguration = clientConfiguration;
 
+    }
+
+    public OrganizationClient getOrganizationClient() {
+        return getClient(OrganizationClient.class, () -> new OrganizationClient(token, clientConfiguration));
     }
 
     public UserClient getUserClient() {
@@ -176,13 +181,14 @@ public class OpenCGAClient {
     /**
      * Logs in the user.
      *
+     * @param organizationId Organization id.
      * @param user     userId.
      * @param password Password.
      * @return AuthenticationResponse object.
      * @throws ClientException when it is not possible logging in.
      */
-    public AuthenticationResponse login(String user, String password) throws ClientException {
-        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
+    public AuthenticationResponse login(String organizationId, String user, String password) throws ClientException {
+        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(organizationId, user, password), null);
         updateTokenFromClients(login);
         this.userId = user;
         return login.firstResult();

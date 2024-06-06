@@ -66,7 +66,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String host;
     private boolean ldaps;
 
-    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
+    public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String algorithm, String secretKeyString, long expiration) {
         super(expiration);
         this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
         this.host = authenticationOrigin.getHost();
@@ -107,8 +107,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         logger.info("Init LDAP AuthenticationManager. Host: {}, env:{}", host, envToStringRedacted(getDefaultEnv()));
 
-        Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
-        this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.valueOf(algorithm);
+        Key secretKey = this.converStringToKeyObject(secretKeyString, signatureAlgorithm.getJcaName());
+        this.jwtManager = new JwtManager(signatureAlgorithm.getValue(), secretKey);
     }
 
     protected static String envToStringRedacted(Hashtable<String, Object> env) {
@@ -124,7 +125,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String organizationId, String userId, String password)
+            throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
         List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
@@ -143,17 +145,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw wrapException(e);
         }
 
-        return new AuthenticationResponse(createToken(userId, claims));
-    }
-
-    @Override
-    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
-        String userId = getUserId(refreshToken);
-        if (!"*".equals(userId)) {
-            return new AuthenticationResponse(createToken(userId));
-        } else {
-            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
-        }
+        return new AuthenticationResponse(createToken(organizationId, userId, claims));
     }
 
     @Override
@@ -186,9 +178,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
-            User user = new User(uid, displayName, mail, usersSearch, new Account().setType(Account.AccountType.GUEST)
+            User user = new User(uid, displayName, mail, usersSearch, new Account()
                     .setAuthentication(new Account.AuthenticationOrigin(originId, false)), new UserInternal(new UserStatus()),
-                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
+                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
 
             userList.add(user);
         }
@@ -205,28 +197,28 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
+    public void changePassword(String organizationId, String userId, String oldPassword, String newPassword) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to change the password.");
     }
 
     @Override
-    public OpenCGAResult resetPassword(String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String organizationId, String userId) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to reset the password.");
     }
 
     @Override
-    public void newPassword(String userId, String newPassword) throws CatalogException {
+    public void newPassword(String organizationId, String userId, String newPassword) throws CatalogException {
         throw new UnsupportedOperationException("Please, contact the LDAP administrator to renew the password.");
     }
 
     @Override
-    public String createToken(String userId, Map<String, Object> claims, long expiration) {
-        return jwtManager.createJWTToken(userId, claims, expiration);
+    public String createToken(String organizationId, String userId, Map<String, Object> claims, long expiration) {
+        return jwtManager.createJWTToken(organizationId, userId, claims, expiration);
     }
 
     @Override
-    public String createNonExpiringToken(String userId, Map<String, Object> claims) {
-        return jwtManager.createJWTToken(userId, claims, 0L);
+    public String createNonExpiringToken(String organizationId, String userId, Map<String, Object> claims) {
+        return jwtManager.createJWTToken(organizationId, userId, claims, 0L);
     }
 
     /* Private methods */

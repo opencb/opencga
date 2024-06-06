@@ -59,6 +59,7 @@ public @interface Tool {
 
     enum Scope {
         GLOBAL,
+        ORGANIZATION,
         PROJECT,
         STUDY
     }

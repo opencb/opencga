@@ -69,15 +69,15 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                                   AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
-                                                  MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+                                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, filter, dbAdaptorFactory, 0, null, options);
     }
 
     public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                                   AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
-                                                  MongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
+                                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user,
                                                   QueryOptions options) {
-        super(mongoCursor, clientSession, converter, filter, options);
+        super(mongoCursor, clientSession, converter, filter, null);
 
         this.user = user;
         this.studyUid = studyUid;

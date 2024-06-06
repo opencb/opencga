@@ -1313,7 +1313,7 @@ public class VariantWebService extends AnalysisWebService {
 //    @Consumes(MediaType.APPLICATION_JSON)
 //    @ApiOperation(value = "Validate a VCF file" + PENDING, response = QueryResponse.class)
 //    public Response validate(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Study [[organization@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
 //        return createPendingResponse();
 //        try {
