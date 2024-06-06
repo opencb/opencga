@@ -38,6 +38,7 @@ public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
     public final static String EXOMISER_PREFIX = "exomiser-";
 
     // It must match the resources key in the exomiser/tool section in the configuration file
+    public final static String HG19_RESOURCE_KEY = "HG19";
     public final static String HG38_RESOURCE_KEY = "HG38";
     public final static String PHENOTYPE_RESOURCE_KEY = "PHENOTYPE";
 

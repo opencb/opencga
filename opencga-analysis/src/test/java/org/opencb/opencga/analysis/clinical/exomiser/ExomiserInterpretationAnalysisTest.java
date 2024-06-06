@@ -71,8 +71,10 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-        String exomiserVersion = "13.1";
-        String resourceVersion = "2109";
+//        String exomiserVersion = "13.1";
+//        String resourceVersion = "2109";
+        String exomiserVersion = "14.0";
+        String resourceVersion = "2402";
         assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();
@@ -103,8 +105,10 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
-        String exomiserVersion = "13.1";
-        String resourceVersion = "2109";
+//        String exomiserVersion = "13.1";
+//        String resourceVersion = "2109";
+        String exomiserVersion = "14.0";
+        String resourceVersion = "2402";
         assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
 
         prepareExomiserData();

@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -89,6 +90,14 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
 
     protected StringBuilder initCommandLine() {
         return new StringBuilder("docker run --log-driver=none -a stdin -a stdout -a stderr ");
+    }
+
+    protected StringBuilder initCommandLine(String user) {
+        StringBuilder sb = initCommandLine();
+        if (StringUtils.isNotEmpty(user)) {
+            sb.append("--user ").append(user);
+        }
+        return sb;
     }
 
     protected Map<String, String> appendMounts(List<Pair<String, String>> inputFilenames, StringBuilder sb) {

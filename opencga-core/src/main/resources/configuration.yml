@@ -122,6 +122,7 @@ analysis:
       version: "13.1"
       dockerId: "exomiser/exomiser-cli:13.1.0"
       resources:
+        HG19: "exomiser/2109_hg19.zip"
         HG38: "exomiser/2109_hg38.zip"
         PHENOTYPE: "exomiser/2109_phenotype.zip"
     - id: "exomiser"
@@ -129,6 +130,7 @@ analysis:
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
       resources:
+        HG19: "exomiser/2402_hg19.zip"
         HG38: "exomiser/2402_hg38.zip"
         PHENOTYPE: "exomiser/2402_phenotype.zip"
   execution:

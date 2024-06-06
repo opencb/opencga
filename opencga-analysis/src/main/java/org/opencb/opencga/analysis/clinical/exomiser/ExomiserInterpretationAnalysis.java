@@ -275,8 +275,17 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 // Convert variants to clinical variants
                 for (Variant variant : variantResults.getResults()) {
                     ClinicalVariant clinicalVariant = clinicalVariantCreator.create(variant);
-                    List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>(variantTranscriptMap.get(normalizedToTsv
-                            .get(variant.toStringSimple())));
+                    List<ExomiserTranscriptAnnotation> exomiserTranscripts = new ArrayList<>();
+                    if (normalizedToTsv.containsKey(variant.toStringSimple())) {
+                        if (variantTranscriptMap.containsKey(normalizedToTsv.get(variant.toStringSimple()))) {
+                            exomiserTranscripts.addAll(variantTranscriptMap.get(normalizedToTsv.get(variant.toStringSimple())));
+                        } else {
+                            logger.warn("Variant {} (normalizedToTsv {}), not found in map variantTranscriptMap", variant.toStringSimple(),
+                                    normalizedToTsv.get(variant.toStringSimple()));
+                        }
+                    } else {
+                        logger.warn("Variant {} not found in map normalizedToTsv", variant.toStringSimple());
+                    }
                     for (String[] fields : variantTsvMap.get(variant.toStringSimple())) {
                         ClinicalProperty.ModeOfInheritance moi = getModeOfInheritance(fields[4]);
                         Map<String, Object> attributes = getAttributesFromTsv(fields);

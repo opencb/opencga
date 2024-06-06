@@ -9,6 +9,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
@@ -51,6 +52,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     // These constants must match in the file application.properties to be replaced
     private static final String HG38_DATA_VERSION_MARK = "put_here_hg38_data_version";
     private static final String PHENOTYPE_DATA_VERSION_MARK = "put_here_phenotype_data_version";
+    private static final String CLINVAR_WHITELIST_MARK = "put_here_clinvar_whitelist";
 
     private String studyId;
     private String sampleId;
@@ -59,13 +61,23 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public void run() throws ToolException {
+    public void run() throws ToolException, IOException, CatalogException {
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
         logger.info("{}: Checking individual for sample {} in study {}", ID, sampleId, studyId);
         Set<String> hpos = new HashSet<>();
         Individual individual = IndividualQcUtils.getIndividualBySampleId(studyId, sampleId, getVariantStorageManager().getCatalogManager(),
                 getToken());
+
+        // Check assembly
+        String assembly = IndividualQcUtils.getAssembly(studyId, getVariantStorageManager().getCatalogManager(), getToken());
+        if (assembly.equalsIgnoreCase("GRCh38")) {
+            assembly = "hg38";
+//        } else if (assembly.equalsIgnoreCase("GRCh37")) {
+//            assembly = "hg19";
+        } else {
+            throw new ToolException("Invalid assembly '" + assembly + "'. Supported assemblies are: GRCh38");
+        }
 
         // Set father and mother if necessary (family ?)
         if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
@@ -164,9 +176,21 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         try {
             Path target = getOutDir().resolve(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
             copyFile(openCgaHome.resolve("analysis/exomiser/" + EXOMISER_PROPERTIES_TEMPLATE_FILENAME).toFile(), target.toFile());
+            // Update hg38 data version
             Command cmd = new Command("sed -i \"s/" + HG38_DATA_VERSION_MARK + "/" + getHg38DataVersion() + "/g\" " + target);
             cmd.run();
+            // Update phenotype data version
             cmd = new Command("sed -i \"s/" + PHENOTYPE_DATA_VERSION_MARK + "/" + getPhenotypeDataVersion() + "/g\" " + target);
+            cmd.run();
+            // Update clinvar whitelist
+            String whitelist;
+            String clinvarWhitelistFilename = getHg38DataVersion() + "_hg38_clinvar_whitelist.tsv.gz";
+            if (Files.exists(exomiserDataPath.resolve(getHg38DataVersion() + "_" + assembly).resolve(clinvarWhitelistFilename))) {
+                whitelist = "exomiser.hg38.variant-white-list-path=" + clinvarWhitelistFilename;
+            } else {
+                whitelist = "#exomiser.hg38.variant-white-list-path=${exomiser.hg38.data-version}_hg38_clinvar_whitelist.tsv.gz";
+            }
+            cmd = new Command("sed -i \"s/" + CLINVAR_WHITELIST_MARK + "/" + whitelist + "/g\" " + target);
             cmd.run();
         } catch (IOException e) {
             throw new ToolException("Error copying Exomiser properties file", e);
@@ -181,7 +205,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         // Build the docker command line to run Exomiser
-        StringBuilder sb = initCommandLine();
+        String[] userAndGroup = FileUtils.getUserAndGroup(getOutDir(), true);
+        StringBuilder sb = initCommandLine(userAndGroup[0] + ":" + userAndGroup[1]);
 
         // Append mounts
         sb.append(" --mount type=bind,source=" + exomiserDataPath + ",target=/data")
@@ -197,11 +222,13 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             sb.append(" --ped /jobdir/").append(pedigreeFile.getName());
         }
         sb.append(" --vcf /jobdir/" + vcfPath.getFileName())
-                .append(" --assembly hg38 --output /jobdir/").append(EXOMISER_OUTPUT_OPTIONS_FILENAME)
+                .append(" --assembly ").append(assembly)
+                .append(" --output /jobdir/").append(EXOMISER_OUTPUT_OPTIONS_FILENAME)
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
         logger.info("{}: Docker command line: {}", ID, sb);
+        System.out.println(sb);
         runCommandLine(sb.toString());
     }
 
@@ -377,7 +404,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Mutex management to avoid multiple downloadings at the same time
         // the first to come, download data, others have to wait for
-        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, HG38_RESOURCE_KEY);
+        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, PHENOTYPE_RESOURCE_KEY);
         String resourceVersion = Paths.get(resource).getFileName().toString().split("[_]")[0];
         File readyFile = exomiserDataPath.resolve("READY-" + resourceVersion).toFile();
         File preparingFile = exomiserDataPath.resolve("PREPARING-" + resourceVersion).toFile();
