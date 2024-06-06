@@ -377,19 +377,22 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Mutex management to avoid multiple downloadings at the same time
         // the first to come, download data, others have to wait for
-        File readyFile = exomiserDataPath.resolve("READY-" + exomiserVersion).toFile();
-        File preparingFile = exomiserDataPath.resolve("PREPARING-" + exomiserVersion).toFile();
+        String resource = getToolResource(ExomiserWrapperAnalysis.ID, exomiserVersion, HG38_RESOURCE_KEY);
+        String resourceVersion = Paths.get(resource).getFileName().toString().split("[_]")[0];
+        File readyFile = exomiserDataPath.resolve("READY-" + resourceVersion).toFile();
+        File preparingFile = exomiserDataPath.resolve("PREPARING-" + resourceVersion).toFile();
 
         // If all is ready, then return
         if (readyFile.exists()) {
-            logger.info("Exomiser {} data is already downloaded, so Exomiser analysis is ready to be executed.", exomiserVersion);
+            logger.info("Exomiser {} data {} is already downloaded, so Exomiser analysis is ready to be executed.", exomiserVersion,
+                    resourceVersion);
             return exomiserDataPath;
         }
 
         // If it is preparing, then wait for ready and then return
         if (preparingFile.exists()) {
             long startTime = System.currentTimeMillis();
-            logger.info("Exomiser {} data is downloading, waiting for it...", exomiserVersion);
+            logger.info("Exomiser {} data {} is downloading, waiting for it...", exomiserVersion, resourceVersion);
             while (!readyFile.exists()) {
                 try {
                     Thread.sleep(10000);
@@ -400,8 +403,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 }
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime > 18000000) {
-                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser " + exomiserVersion + " data is not"
-                            + " ready yet: maximum waiting time exceeded");
+                    throw new ToolException("Unable to run the Exomiser analysis because of Exomiser " + exomiserVersion + " data "
+                            + resourceVersion + " is not ready yet: maximum waiting time exceeded");
                 }
             }
             logger.info("Exomiser {} data is now downloaded: Exomiser analysis is ready to be executed", exomiserVersion);
@@ -413,7 +416,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             preparingFile.createNewFile();
         } catch (IOException e) {
             preparingFile.delete();
-            throw new ToolException("Error creating the Exomiser " + exomiserVersion + " data directory");
+            throw new ToolException("Error creating the Exomiser " + exomiserVersion + " data " + resourceVersion + " directory");
         }
 
         // Download resources and unzip files
@@ -423,14 +426,14 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         } catch (ToolException e) {
             // If something wrong happened, the preparing file has to be deleted
             preparingFile.delete();
-            throw new ToolException("Something wrong happened when preparing Exomiser " + exomiserVersion + " data", e);
+            throw new ToolException("Something wrong happened when preparing Exomiser " + exomiserVersion + " data " + resourceVersion, e);
         }
 
         // Mutex management, signal exomiser data is ready
         try {
             readyFile.createNewFile();
         } catch (IOException e) {
-            throw new ToolException("Error preparing Exomiser " + exomiserVersion + " data", e);
+            throw new ToolException("Error preparing Exomiser " + exomiserVersion + " data " + resourceVersion, e);
         }
         preparingFile.delete();
 
