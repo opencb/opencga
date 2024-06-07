@@ -429,7 +429,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createUserUsingMailAsId() throws CatalogException {
-        catalogManager.getUserManager().create(new User().setId("hello.mail@mymail.org").setName("Hello"), TestParamConstants.PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("hello.mail@mymail.org").setName("Hello"), TestParamConstants.PASSWORD, ownerToken);
         AuthenticationResponse login = catalogManager.getUserManager().login(organizationId, "hello.mail@mymail.org", TestParamConstants.PASSWORD);
         assertNotNull(login);
         User user = catalogManager.getUserManager().get(organizationId, "hello.mail@mymail.org", new QueryOptions(), login.getToken()).first();

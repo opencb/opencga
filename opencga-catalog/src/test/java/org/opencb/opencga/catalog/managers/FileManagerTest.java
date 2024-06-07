@@ -199,7 +199,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void filterByFormatTest() throws CatalogException {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(2, search.getNumResults());
+        assertEquals(3, search.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "plain");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
@@ -213,12 +213,12 @@ public class FileManagerTest extends AbstractManagerTest {
         // Case sensitive in upper case
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^PLA/");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(2, search.getNumResults());
+        assertEquals(3, search.getNumResults());
 
         // Case insensitive search
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^pla/i");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(2, search.getNumResults());
+        assertEquals(3, search.getNumResults());
     }
 
     @Test
