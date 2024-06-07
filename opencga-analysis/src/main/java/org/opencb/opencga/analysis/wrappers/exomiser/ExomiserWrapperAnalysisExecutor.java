@@ -64,7 +64,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     public void run() throws ToolException, IOException, CatalogException {
         // Check HPOs, it will use a set to avoid duplicate HPOs,
         // and it will check both phenotypes and disorders
-        logger.info("{}: Checking individual for sample {} in study {}", ID, sampleId, studyId);
+        logger.info("Checking individual for sample {} in study {}", sampleId, studyId);
         Set<String> hpos = new HashSet<>();
         Individual individual = IndividualQcUtils.getIndividualBySampleId(studyId, sampleId, getVariantStorageManager().getCatalogManager(),
                 getToken());
@@ -89,7 +89,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                     getVariantStorageManager().getCatalogManager(), getToken()));
         }
 
-        logger.info("{}: Individual found: {}", ID, individual.getId());
+        logger.info("Individual found: {}", individual.getId());
         if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
             for (Phenotype phenotype : individual.getPhenotypes()) {
                 if (phenotype.getId().startsWith("HP:")) {
@@ -109,7 +109,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             throw new ToolException("Missing phenotypes, i.e. HPO terms, for individual/sample (" + individual.getId() + "/" + sampleId
                     + ")");
         }
-        logger.info("{}: Getting HPO for individual {}: {}", ID, individual.getId(), StringUtils.join(hpos, ","));
+        logger.info("Getting HPO for individual {}: {}", individual.getId(), StringUtils.join(hpos, ","));
 
         List<String> samples = new ArrayList<>();
         samples.add(sampleId);
@@ -150,8 +150,8 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
 
-        logger.info("{}: Exomiser exports variants using the query: {}", ID, query.toJson());
-        logger.info("{}: Exomiser exports variants using the query options: {}", ID, queryOptions.toJson());
+        logger.info("Exomiser exports variants using the query: {}", query.toJson());
+        logger.info("Exomiser exports variants using the query options: {}", queryOptions.toJson());
 
         try {
             getVariantStorageManager().exportData(vcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, query,
@@ -206,7 +206,9 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Build the docker command line to run Exomiser
         String[] userAndGroup = FileUtils.getUserAndGroup(getOutDir(), true);
-        StringBuilder sb = initCommandLine(userAndGroup[0] + ":" + userAndGroup[1]);
+        String dockerUser = userAndGroup[0] + ":" + userAndGroup[1];
+        logger.info("Docker user: {}", dockerUser);
+        StringBuilder sb = initCommandLine(dockerUser);
 
         // Append mounts
         sb.append(" --mount type=bind,source=" + exomiserDataPath + ",target=/data")
@@ -227,8 +229,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                 .append(" --spring.config.location=/jobdir/").append(EXOMISER_PROPERTIES_TEMPLATE_FILENAME);
 
         // Execute command and redirect stdout and stderr to the files
-        logger.info("{}: Docker command line: {}", ID, sb);
-        System.out.println(sb);
+        logger.info("Docker command line: {}", sb);
         runCommandLine(sb.toString());
     }
 
@@ -516,7 +517,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             } else {
                 url = getConfiguration().getAnalysis().getResourceUrl() + resource;
             }
-            logger.info("{}: Downloading Exomiser data: {} in {}", ID, url, exomiserDataPath);
+            logger.info("Downloading Exomiser data: {} in {}", url, exomiserDataPath);
             try {
                 ResourceUtils.downloadThirdParty(new URL(url), exomiserDataPath);
                 filename = Paths.get(url).getFileName().toString();
@@ -539,7 +540,7 @@ public class ExomiserWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
 
         // Free disk space
-        logger.info("{}: Deleting Exomiser data: {}", ID, filename);
+        logger.info("Deleting Exomiser data: {}", filename);
         exomiserDataPath.resolve(filename).toFile().delete();
     }
 
