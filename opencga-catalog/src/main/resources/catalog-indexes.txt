@@ -236,6 +236,7 @@
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"method.name": 1, "studyUid": 1}, "options": {}}

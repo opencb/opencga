@@ -23,7 +23,7 @@ public class VariantIndexStatus extends IndexStatus {
 
     public VariantIndexStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, status, message);
+            init(status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }

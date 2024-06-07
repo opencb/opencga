@@ -8,7 +8,7 @@ import java.util.*;
 
 public class ClinicalAnalysisStudyConfiguration {
 
-    private Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status;
+    private List<ClinicalStatusValue> status;
     private InterpretationStudyConfiguration interpretation;
     private List<ClinicalPriorityValue> priorities;
     private Map<ClinicalAnalysis.Type, List<FlagValue>> flags;
@@ -18,9 +18,9 @@ public class ClinicalAnalysisStudyConfiguration {
     public ClinicalAnalysisStudyConfiguration() {
     }
 
-    public ClinicalAnalysisStudyConfiguration(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status,
-                                              InterpretationStudyConfiguration interpretation, List<ClinicalPriorityValue> priorities,
-                                              Map<ClinicalAnalysis.Type, List<FlagValue>> flags, ClinicalConsentConfiguration consent) {
+    public ClinicalAnalysisStudyConfiguration(List<ClinicalStatusValue> status, InterpretationStudyConfiguration interpretation,
+                                              List<ClinicalPriorityValue> priorities, Map<ClinicalAnalysis.Type, List<FlagValue>> flags,
+                                              ClinicalConsentConfiguration consent) {
         this.status = status;
         this.interpretation = interpretation;
         this.priorities = priorities;
@@ -29,20 +29,22 @@ public class ClinicalAnalysisStudyConfiguration {
     }
 
     public static ClinicalAnalysisStudyConfiguration defaultConfiguration() {
-        Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status = new HashMap<>();
-        Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> interpretationStatus = new HashMap<>();
+        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(4);
+        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
         Map<ClinicalAnalysis.Type, List<FlagValue>> flags = new HashMap<>();
         List<ClinicalConsent> clinicalConsentList = new ArrayList<>();
 
-        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(4);
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("READY_FOR_INTERPRETATION", "The Clinical Analysis is ready for interpretations",
                         ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)
         );
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("READY_FOR_REPORT", "The Interpretation is finished and it is to create the report",
-                        ClinicalStatusValue.ClinicalStatusType.IN_PROGRESS)
+                        ClinicalStatusValue.ClinicalStatusType.ACTIVE)
+        );
+        clinicalStatusValueList.add(
+                new ClinicalStatusValue("DONE", "The Clinical Analysis is done", ClinicalStatusValue.ClinicalStatusType.DONE)
         );
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("CLOSED", "The Clinical Analysis is closed", ClinicalStatusValue.ClinicalStatusType.CLOSED)
@@ -50,21 +52,12 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED)
         );
-        status.put(ClinicalAnalysis.Type.FAMILY, clinicalStatusValueList);
-        status.put(ClinicalAnalysis.Type.AUTOCOMPARATIVE, clinicalStatusValueList);
-        status.put(ClinicalAnalysis.Type.CANCER, clinicalStatusValueList);
-        status.put(ClinicalAnalysis.Type.COHORT, clinicalStatusValueList);
-        status.put(ClinicalAnalysis.Type.SINGLE, clinicalStatusValueList);
 
-        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
-        interpretationStatusList.add(new ClinicalStatusValue("IN_PROGRESS", "Interpretation in progress", ClinicalStatusValue.ClinicalStatusType.IN_PROGRESS));
+        interpretationStatusList.add(new ClinicalStatusValue("NOT_STARTED", "Interpretation not started", ClinicalStatusValue.ClinicalStatusType.NOT_STARTED));
+        interpretationStatusList.add(new ClinicalStatusValue("IN_PROGRESS", "Interpretation in progress", ClinicalStatusValue.ClinicalStatusType.ACTIVE));
+        interpretationStatusList.add(new ClinicalStatusValue("DONE", "Interpretation done", ClinicalStatusValue.ClinicalStatusType.DONE));
         interpretationStatusList.add(new ClinicalStatusValue("READY", "Interpretation ready", ClinicalStatusValue.ClinicalStatusType.CLOSED));
         interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED));
-        interpretationStatus.put(ClinicalAnalysis.Type.FAMILY, interpretationStatusList);
-        interpretationStatus.put(ClinicalAnalysis.Type.AUTOCOMPARATIVE, interpretationStatusList);
-        interpretationStatus.put(ClinicalAnalysis.Type.CANCER, interpretationStatusList);
-        interpretationStatus.put(ClinicalAnalysis.Type.COHORT, interpretationStatusList);
-        interpretationStatus.put(ClinicalAnalysis.Type.SINGLE, interpretationStatusList);
 
         priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1, false));
         priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2, false));
@@ -91,8 +84,8 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", ""));
         clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
-        return new ClinicalAnalysisStudyConfiguration(status,
-                new InterpretationStudyConfiguration(interpretationStatus, Collections.emptyList(), Collections.emptyMap(),
+        return new ClinicalAnalysisStudyConfiguration(clinicalStatusValueList,
+                new InterpretationStudyConfiguration(interpretationStatusList, Collections.emptyList(), Collections.emptyMap(),
                         Collections.emptyList()), priorities, flags, new ClinicalConsentConfiguration(clinicalConsentList));
     }
 
@@ -108,11 +101,11 @@ public class ClinicalAnalysisStudyConfiguration {
         return sb.toString();
     }
 
-    public Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> getStatus() {
+    public List<ClinicalStatusValue> getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<ClinicalStatusValue>> status) {
+    public ClinicalAnalysisStudyConfiguration setStatus(List<ClinicalStatusValue> status) {
         this.status = status;
         return this;
     }

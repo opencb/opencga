@@ -27,7 +27,6 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -45,6 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -69,7 +69,7 @@ import java.util.stream.Collectors;
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public static final QueryOptions INCLUDE_CLINICAL_ANALYSIS = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-            Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
+            Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
@@ -219,7 +219,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         try {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
@@ -277,6 +277,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         interpretation.setId(clinicalAnalysis.getId() + "." + count);
+        interpretation.setName(ParamUtils.defaultString(interpretation.getName(), interpretation.getId()));
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -290,7 +291,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setPrimaryFindings(ParamUtils.defaultObject(interpretation.getPrimaryFindings(), Collections.emptyList()));
         interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
         interpretation.setComments(ParamUtils.defaultObject(interpretation.getComments(), Collections.emptyList()));
-        interpretation.setStatus(ParamUtils.defaultObject(interpretation.getStatus(), Status::new));
+        interpretation.setStatus(ParamUtils.defaultObject(interpretation.getStatus(), ClinicalStatus::new));
         interpretation.setRelease(studyManager.getCurrentRelease(study));
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
@@ -300,7 +301,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         if (CollectionUtils.isEmpty(interpretation.getPanels())) {
             interpretation.setPanels(clinicalAnalysis.getPanels());
         } else {
-            if (clinicalAnalysis.isPanelLock()) {
+            if (clinicalAnalysis.isPanelLocked()) {
                 // Check the panels are the same provided in the Clinical Analysis
                 Map<String, Panel> clinicalPanelIds = clinicalAnalysis.getPanels().stream()
                         .collect(Collectors.toMap(DiseasePanel::getId, panel -> panel));
@@ -331,9 +332,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         // Validate status
-        validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
+        validateStatusParameter(interpretation, interpretationConfiguration, userId, true);
         if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
-            List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus().get(clinicalAnalysis.getType());
+            List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus();
             for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                 if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
                         && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
@@ -413,6 +414,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationId);
 
+        InterpretationStudyConfiguration interpretationConfiguration =
+                study.getInternal().getConfiguration().getClinical().getInterpretation();
+        ClinicalStatusValue initStatus = null;
+        for (ClinicalStatusValue status : interpretationConfiguration.getStatus()) {
+            if (status.getType().equals(ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)) {
+                initStatus = status;
+                break;
+            }
+        }
+
         OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
         for (String interpretationStr : interpretationList) {
             String interpretationId = interpretationStr;
@@ -457,13 +468,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
+                InterpretationUpdateParams params = new InterpretationUpdateParams("", "", new ClinicalAnalystParam(),
                         InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                 .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
                                 : null,
-                        Collections.emptyList(), new StatusParam(), false, new ObjectMap());
+                        Collections.emptyList(), new StatusParam(initStatus.getId()), false, new ObjectMap());
 
                 ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
                         "Clear interpretation '" + interpretationId + "'", TimeUtils.getTime());
@@ -982,7 +993,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-            if (clinicalAnalysis.isPanelLock()) {
+            if (clinicalAnalysis.isPanelLocked()) {
                 throw new CatalogException("Updating panels from Interpretation is not allowed. 'panelLock' from ClinicalAnalysis is set "
                         + "to True.");
             }
@@ -1068,12 +1079,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.STATUS.key())) {
-            interpretation.setStatus(updateParams.getStatus().toStatus());
-            validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
+            interpretation.setStatus(updateParams.getStatus().toClinicalStatus());
+            validateStatusParameter(interpretation, interpretationConfiguration, userId, false);
             parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
 
             if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
-                List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus().get(clinicalAnalysis.getType());
+                List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
                             && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
@@ -1128,7 +1139,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Could not revert the Interpretation. Case is locked so no further modifications can be made to"
                         + " the Interpretation.");
             }
-            if (clinicalAnalysis.isPanelLock()) {
+            if (clinicalAnalysis.isPanelLocked()) {
                 throw new CatalogException("Could not revert the Interpretation. 'panelLock' is set to True, so no further modifications"
                         + " can be made to the Interpretation.");
             }
@@ -1515,17 +1526,15 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
-    private void validateStatusParameter(Interpretation interpretation, ClinicalAnalysis.Type type,
-                                         InterpretationStudyConfiguration interpretationConfiguration) throws CatalogException {
+    private void validateStatusParameter(Interpretation interpretation,  InterpretationStudyConfiguration interpretationConfiguration,
+                                         String userId, boolean initIfUndefined) throws CatalogException {
         // Status
-        if (interpretationConfiguration.getStatus() == null
-                || CollectionUtils.isEmpty(interpretationConfiguration.getStatus().get(type))) {
-            throw new CatalogException("Missing status configuration in study for type '" + type
-                    + "'. Please add a proper set of valid statuses.");
+        if (CollectionUtils.isEmpty(interpretationConfiguration.getStatus())) {
+            throw new CatalogException("Missing status configuration in study. Please add a proper set of valid statuses.");
         }
         if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
             Map<String, ClinicalStatusValue> statusMap = new HashMap<>();
-            for (ClinicalStatusValue status : interpretationConfiguration.getStatus().get(type)) {
+            for (ClinicalStatusValue status : interpretationConfiguration.getStatus()) {
                 statusMap.put(status.getId(), status);
             }
             if (!statusMap.containsKey(interpretation.getStatus().getId())) {
@@ -1534,7 +1543,25 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             ClinicalStatusValue clinicalStatusValue = statusMap.get(interpretation.getStatus().getId());
             interpretation.getStatus().setDescription(clinicalStatusValue.getDescription());
-            interpretation.getStatus().setDate(TimeUtils.getTime());
+            interpretation.getStatus().setType(clinicalStatusValue.getType());
+        } else {
+            if (initIfUndefined) {
+                // Look for first status of type NOT_STARTED
+                for (ClinicalStatusValue status : interpretationConfiguration.getStatus()) {
+                    if (status.getType() == ClinicalStatusValue.ClinicalStatusType.NOT_STARTED) {
+                        interpretation.getStatus().setId(status.getId());
+                        interpretation.getStatus().setDescription(status.getDescription());
+                        interpretation.getStatus().setType(status.getType());
+                        break;
+                    }
+                }
+            } else {
+                throw new CatalogException("Missing status id in Interpretation");
+            }
         }
+        interpretation.getStatus().setDate(TimeUtils.getTime());
+        interpretation.getStatus().setVersion(GitRepositoryState.getInstance().getBuildVersion());
+        interpretation.getStatus().setCommit(GitRepositoryState.getInstance().getCommitId());
+        interpretation.getStatus().setAuthor(userId);
     }
 }

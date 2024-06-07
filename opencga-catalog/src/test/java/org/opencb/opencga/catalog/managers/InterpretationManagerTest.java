@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -45,7 +44,7 @@ public class InterpretationManagerTest extends AbstractManagerTest {
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setStatus(new Status().setId(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION))
+                .setStatus(new ClinicalStatus().setId(ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION))
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
@@ -128,7 +127,7 @@ public class InterpretationManagerTest extends AbstractManagerTest {
 
         interpretation = catalogManager.getInterpretationManager().create(studyFqn, ca.getId(),
                 new Interpretation()
-                        .setStatus(new Status("REJECTED", "", "", "")),
+                        .setStatus(new ClinicalStatus("REJECTED", "", null, "", "", "", "")),
                 ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, ownerToken).first();
         assertEquals("REJECTED", interpretation.getStatus().getId());
         assertTrue(interpretation.isLocked());
@@ -247,7 +246,7 @@ public class InterpretationManagerTest extends AbstractManagerTest {
         catalogManager.getClinicalAnalysisManager().update(studyFqn, ca.getId(), updateParams, QueryOptions.empty(), ownerToken);
 
         updateParams = new ClinicalAnalysisUpdateParams()
-                .setPanelLock(true);
+                .setPanelLocked(true);
         catalogManager.getClinicalAnalysisManager().update(studyFqn, ca.getId(), updateParams, QueryOptions.empty(), ownerToken);
 
         // Create interpretation with just panel1

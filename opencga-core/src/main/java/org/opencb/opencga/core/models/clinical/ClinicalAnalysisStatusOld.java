@@ -21,7 +21,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import java.util.Arrays;
 import java.util.List;
 
-public class ClinicalAnalysisStatus extends InternalStatus {
+public class ClinicalAnalysisStatusOld extends InternalStatus {
 
     public static final String INCOMPLETE = "INCOMPLETE";
     public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
@@ -41,7 +41,7 @@ public class ClinicalAnalysisStatus extends InternalStatus {
             READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
             READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
 
-    public ClinicalAnalysisStatus(String status, String message) {
+    public ClinicalAnalysisStatusOld(String status, String message) {
         if (isValid(status)) {
             init(status, message);
         } else {
@@ -49,11 +49,11 @@ public class ClinicalAnalysisStatus extends InternalStatus {
         }
     }
 
-    public ClinicalAnalysisStatus(String status) {
+    public ClinicalAnalysisStatusOld(String status) {
         this(status, "");
     }
 
-    public ClinicalAnalysisStatus() {
+    public ClinicalAnalysisStatusOld() {
         this(READY_FOR_INTERPRETATION, "");
     }
 

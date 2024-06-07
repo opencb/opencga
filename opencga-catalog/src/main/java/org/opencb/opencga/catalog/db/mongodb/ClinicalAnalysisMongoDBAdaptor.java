@@ -418,7 +418,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedBooleanParams = {LOCKED.key(), PANEL_LOCK.key()};
+        String[] acceptedBooleanParams = {LOCKED.key(), PANEL_LOCKED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
@@ -1201,7 +1201,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         Query query = new Query()
                 .append(STUDY_UID.key(), panel.getStudyUid())
                 .append(PANELS_UID.key(), panel.getUid())
-                .append(PANEL_LOCK.key(), false)
+                .append(PANEL_LOCKED.key(), false)
                 .append(LOCKED.key(), false);
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 PANELS_UID.key(),
@@ -1339,7 +1339,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST,
+                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(ClinicalAnalysisStatusOld.STATUS_LIST,
                                 queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
@@ -1353,7 +1353,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case ID:
                     case UUID:
                     case TYPE:
-                    case PANEL_LOCK:
+                    case PANEL_LOCKED:
                     case LOCKED:
                     case FILES_UID:
                     case PROBAND_UID:

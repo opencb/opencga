@@ -21,18 +21,18 @@ import org.opencb.opencga.core.models.common.Internal;
 
 public class ClinicalAnalysisInternal extends Internal {
 
-    private ClinicalAnalysisStatus status;
+    private ClinicalAnalysisStatusOld status;
 
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, ClinicalAnalysisStatus status) {
+    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, ClinicalAnalysisStatusOld status) {
         super(null, registrationDate, modificationDate);
         this.status = status;
     }
 
     public static ClinicalAnalysisInternal init() {
-        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new ClinicalAnalysisStatus());
+        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new ClinicalAnalysisStatusOld());
     }
 
     @Override
@@ -45,11 +45,11 @@ public class ClinicalAnalysisInternal extends Internal {
         return sb.toString();
     }
 
-    public ClinicalAnalysisStatus getStatus() {
+    public ClinicalAnalysisStatusOld getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisInternal setStatus(ClinicalAnalysisStatus status) {
+    public ClinicalAnalysisInternal setStatus(ClinicalAnalysisStatusOld status) {
         this.status = status;
         return this;
     }
