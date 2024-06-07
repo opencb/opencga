@@ -11,10 +11,15 @@ on:
         type: string
         required: true
       hadoop:
-        type: string
+        type: choice
         description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
-        default: "hdp3.1"
+        default: hdp3.1
+        options:
+          - hdp3.1
+          - hdi5.1
+          - emr6.1
+          - emr6.13
 
 jobs:
   build:
@@ -40,7 +45,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder

@@ -77,6 +77,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "password":
                 queryResponse = password();
                 break;
+            case "search":
+                queryResponse = search();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -186,6 +189,24 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), PasswordChangeParams.class);
         }
         return openCGAClient.getUserClient().password(passwordChangeParams);
+    }
+
+    private RestResponse<User> search() throws Exception {
+        logger.debug("Executing search in Users command line");
+
+        UsersCommandOptions.SearchCommandOptions commandOptions = usersCommandOptions.searchCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotNull("limit", commandOptions.limit);
+        queryParams.putIfNotNull("skip", commandOptions.skip);
+        queryParams.putIfNotNull("count", commandOptions.count);
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
+
+        return openCGAClient.getUserClient().search(queryParams);
     }
 
     private RestResponse<User> info() throws Exception {
