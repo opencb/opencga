@@ -37,6 +37,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         public CreateCommandOptions createCommandOptions;
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
+        public SearchCommandOptions searchCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public ConfigsCommandOptions configsCommandOptions;
         public UpdateConfigsCommandOptions updateConfigsCommandOptions;
@@ -52,6 +53,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.configsCommandOptions = new ConfigsCommandOptions();
         this.updateConfigsCommandOptions = new UpdateConfigsCommandOptions();
@@ -133,6 +135,38 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--reset"}, description = "The body web service reset parameter", required = false, arity = 1)
         public String reset;
+    
+    }
+
+    @Parameters(commandNames = {"search"}, commandDescription ="User search method")
+    public class SearchCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
+        public Integer skip; 
+    
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list user IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--authentication-id"}, description = "Authentication origin ID", required = false, arity = 1)
+        public String authenticationId; 
     
     }
 

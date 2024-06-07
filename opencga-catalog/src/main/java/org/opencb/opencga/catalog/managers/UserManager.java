@@ -203,6 +203,47 @@ public class UserManager extends AbstractManager {
         return create(user, password, token);
     }
 
+    /**
+     * Search users from Organization. Token must belong to at least an Organization administrator.
+     *
+     * @param organizationId Organization id.
+     * @param query          Query object.
+     * @param options        QueryOptions object.
+     * @param token          JWT token.
+     * @return               OpenCGAResult with the list of users.
+     * @throws CatalogException if the token does not belong to an Organization administrator or there are any parameters wrong.
+     */
+    public OpenCGAResult<User> search(@Nullable String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(myOrganizationId));
+
+            // Fix query params
+            if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
+                query.put(UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key(), query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
+                query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);
+            }
+
+            OpenCGAResult<User> result = getUserDBAdaptor(myOrganizationId).get(query, options);
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (Exception e) {
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "User search", e.getMessage())));
+            throw e;
+        }
+    }
+
     public JwtPayload validateToken(String token) throws CatalogException {
         JwtPayload jwtPayload = new JwtPayload(token);
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
