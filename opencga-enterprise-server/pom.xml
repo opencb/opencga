@@ -13,8 +13,6 @@
     <artifactId>opencga-enterprise-server</artifactId>
     <packaging>war</packaging>
 
-    <name>opencga-enterprise-server Maven Webapp</name>
-    <url>http://maven.apache.org</url>
     <dependencies>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
@@ -23,6 +21,10 @@
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-catalog</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-cvdb</artifactId>
         </dependency>
 
         <!-- OpenCB dependencies -->
@@ -81,6 +83,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
@@ -108,14 +114,21 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
-            <classifier>shaded</classifier>
+            <artifactId>${opencga-storage-hadoop-lib.artifactId}</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
-            <artifactId>opencga-enterprise-cva</artifactId>
+            <artifactId>opencga-enterprise-cvdb</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

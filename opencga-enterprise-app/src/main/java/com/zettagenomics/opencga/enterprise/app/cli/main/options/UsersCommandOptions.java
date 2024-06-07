@@ -33,32 +33,82 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 public class UsersCommandOptions extends CustomUsersCommandOptions {
 
 
+        public AnonymousCommandOptions anonymousCommandOptions;
+        public CreateCommandOptions createCommandOptions;
         public LoginCommandOptions loginCommandOptions;
         public PasswordCommandOptions passwordCommandOptions;
+        public SearchCommandOptions searchCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public ConfigsCommandOptions configsCommandOptions;
         public UpdateConfigsCommandOptions updateConfigsCommandOptions;
         public FiltersCommandOptions filtersCommandOptions;
         public ResetPasswordCommandOptions resetPasswordCommandOptions;
-        public ProjectsCommandOptions projectsCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
 
 
     public UsersCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         super(commonCommandOptions,jCommander);
+        this.anonymousCommandOptions = new AnonymousCommandOptions();
+        this.createCommandOptions = new CreateCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.passwordCommandOptions = new PasswordCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.configsCommandOptions = new ConfigsCommandOptions();
         this.updateConfigsCommandOptions = new UpdateConfigsCommandOptions();
         this.filtersCommandOptions = new FiltersCommandOptions();
         this.resetPasswordCommandOptions = new ResetPasswordCommandOptions();
-        this.projectsCommandOptions = new ProjectsCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
     
     }
     
+    @Parameters(commandNames = {"anonymous"}, commandDescription ="Get an anonymous token to gain access to the system")
+    public class AnonymousCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = true, arity = 1)
+        public String organization; 
+    
+    }
+
+    @Parameters(commandNames = {"create"}, commandDescription ="Create a new user")
+    public class CreateCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
+    
+        @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
+        public String email;
+    
+        @Parameter(names = {"--password"}, description = "The body web service password parameter", required = false, arity = 1)
+        public String password;
+    
+        @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
+        public String organization;
+    
+    }
+
     @Parameters(commandNames = {"password"}, commandDescription ="Change the password of a user")
     public class PasswordCommandOptions {
     
@@ -70,6 +120,9 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--organization-id"}, description = "The body web service organizationId parameter", required = false, arity = 1)
+        public String organizationId;
     
         @Parameter(names = {"--user", "-u"}, description = "The body web service user parameter", required = false, arity = 1)
         public String user;
@@ -85,6 +138,38 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"search"}, commandDescription ="User search method")
+    public class SearchCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
+        public Integer limit; 
+    
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
+        public Integer skip; 
+    
+        @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
+        public boolean count = false; 
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list user IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--authentication-id"}, description = "Authentication origin ID", required = false, arity = 1)
+        public String authenticationId; 
+    
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Return the user information including its projects and studies")
     public class InfoCommandOptions {
     
@@ -96,6 +181,9 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
     
         @Parameter(names = {"--users"}, description = "Comma separated list of user IDs", required = true, arity = 1)
         public String users; 
@@ -167,29 +255,6 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"projects"}, commandDescription ="Retrieve the projects of the user")
-    public class ProjectsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String include; 
-    
-        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
-        public String exclude; 
-    
-        @Parameter(names = {"--limit"}, description = "Number of results to be returned", required = false, arity = 1)
-        public Integer limit; 
-    
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", required = false, arity = 1)
-        public Integer skip; 
-    
-        @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
-        public String user; 
-    
-    }
-
     @Parameters(commandNames = {"update"}, commandDescription ="Update some user attributes")
     public class UpdateCommandOptions {
     
@@ -219,9 +284,6 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
         @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
         public String email;
-    
-        @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
-        public String organization;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
