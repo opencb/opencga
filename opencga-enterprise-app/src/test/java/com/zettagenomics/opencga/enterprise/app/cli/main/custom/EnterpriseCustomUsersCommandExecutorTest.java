@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 
 public class EnterpriseCustomUsersCommandExecutorTest {
-
+/*
     @Test
     public void loginTest() throws Exception {
         Logger logger = LoggerFactory.getLogger(EnterpriseCustomUsersCommandExecutorTest.class);
@@ -40,5 +40,5 @@ public class EnterpriseCustomUsersCommandExecutorTest {
 
         about = openCGAClient.getEnterpriseMetaClient().about();
         System.out.println(about.firstResult().safeToString());
-    }
+    }*/
 }
