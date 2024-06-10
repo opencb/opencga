@@ -11,7 +11,7 @@ public class ClinicalAnalysisStudyConfiguration {
     private List<ClinicalStatusValue> status;
     private InterpretationStudyConfiguration interpretation;
     private List<ClinicalPriorityValue> priorities;
-    private Map<ClinicalAnalysis.Type, List<FlagValue>> flags;
+    private List<FlagValue> flags;
     private ClinicalConsentConfiguration consent;
 
 
@@ -19,7 +19,7 @@ public class ClinicalAnalysisStudyConfiguration {
     }
 
     public ClinicalAnalysisStudyConfiguration(List<ClinicalStatusValue> status, InterpretationStudyConfiguration interpretation,
-                                              List<ClinicalPriorityValue> priorities, Map<ClinicalAnalysis.Type, List<FlagValue>> flags,
+                                              List<ClinicalPriorityValue> priorities, List<FlagValue> flags,
                                               ClinicalConsentConfiguration consent) {
         this.status = status;
         this.interpretation = interpretation;
@@ -73,11 +73,6 @@ public class ClinicalAnalysisStudyConfiguration {
         flagValueList.add(new FlagValue("UNUSUAL_KARYOTYPE", ""));
         flagValueList.add(new FlagValue("SUSPECTED_MOSAICISM", ""));
         flagValueList.add(new FlagValue("LOW_QUALITY_SAMPLE", ""));
-        flags.put(ClinicalAnalysis.Type.FAMILY, flagValueList);
-        flags.put(ClinicalAnalysis.Type.AUTOCOMPARATIVE, flagValueList);
-        flags.put(ClinicalAnalysis.Type.CANCER, flagValueList);
-        flags.put(ClinicalAnalysis.Type.COHORT, flagValueList);
-        flags.put(ClinicalAnalysis.Type.SINGLE, flagValueList);
 
         clinicalConsentList.add(new ClinicalConsent("PRIMARY_FINDINGS", "Primary findings", ""));
         clinicalConsentList.add(new ClinicalConsent("SECONDARY_FINDINGS", "Secondary findings", ""));
@@ -86,7 +81,7 @@ public class ClinicalAnalysisStudyConfiguration {
 
         return new ClinicalAnalysisStudyConfiguration(clinicalStatusValueList,
                 new InterpretationStudyConfiguration(interpretationStatusList, Collections.emptyList(), Collections.emptyMap(),
-                        Collections.emptyList()), priorities, flags, new ClinicalConsentConfiguration(clinicalConsentList));
+                        Collections.emptyList()), priorities, flagValueList, new ClinicalConsentConfiguration(clinicalConsentList));
     }
 
     @Override
@@ -128,11 +123,11 @@ public class ClinicalAnalysisStudyConfiguration {
         return this;
     }
 
-    public Map<ClinicalAnalysis.Type, List<FlagValue>> getFlags() {
+    public List<FlagValue> getFlags() {
         return flags;
     }
 
-    public ClinicalAnalysisStudyConfiguration setFlags(Map<ClinicalAnalysis.Type, List<FlagValue>> flags) {
+    public ClinicalAnalysisStudyConfiguration setFlags(List<FlagValue> flags) {
         this.flags = flags;
         return this;
     }

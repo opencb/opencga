@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -117,7 +116,7 @@ public class InterpretationManagerTest extends AbstractManagerTest {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
         Interpretation interpretation = catalogManager.getInterpretationManager().create(studyFqn, ca.getId(),
                 new Interpretation(),  ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, ownerToken).first();
-        assertTrue(StringUtils.isEmpty(interpretation.getStatus().getId()));
+        assertEquals(ClinicalStatusValue.ClinicalStatusType.NOT_STARTED, interpretation.getStatus().getType());
         assertFalse(interpretation.isLocked());
 
         interpretation = catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), interpretation.getId(),

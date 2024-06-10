@@ -893,12 +893,11 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             throws CatalogException {
         // Flag definition
         if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFlags())) {
-            if (CollectionUtils.isEmpty(clinicalConfiguration.getFlags().get(clinicalAnalysis.getType()))) {
-                throw new CatalogException("Missing flags configuration in study for type '" + clinicalAnalysis.getType()
-                        + "'. Please add a proper set of valid priorities.");
+            if (CollectionUtils.isEmpty(clinicalConfiguration.getFlags())) {
+                throw new CatalogException("Missing flags configuration. Please add a proper set of valid flags.");
             }
             Map<String, FlagValue> supportedFlags = new HashMap<>();
-            for (FlagValue flagValue : clinicalConfiguration.getFlags().get(clinicalAnalysis.getType())) {
+            for (FlagValue flagValue : clinicalConfiguration.getFlags()) {
                 supportedFlags.put(flagValue.getId(), flagValue);
             }
 
@@ -912,8 +911,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     flag.setDescription(supportedFlags.get(flag.getId()).getDescription());
                     flag.setDate(TimeUtils.getTime());
                 } else {
-                    throw new CatalogException("Flag '" + flag.getId() + "' not supported. Supported flags for Clinical Analyses of "
-                            + "type '" + clinicalAnalysis.getType() + "' are: '" + String.join(", ", supportedFlags.keySet()) + "'.");
+                    throw new CatalogException("Flag '" + flag.getId() + "' not supported. Supported flags for Clinical Analyses are: '"
+                            + String.join(", ", supportedFlags.keySet()) + "'.");
                 }
             }
             clinicalAnalysis.setFlags(new ArrayList<>(flagMap.values()));

@@ -1764,9 +1764,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        FlagValue flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(1);
-        FlagValue flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(3);
-        FlagValue flag3 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(4);
+        FlagValue flag1 = configuration.getFlags().get(1);
+        FlagValue flag2 = configuration.getFlags().get(3);
+        FlagValue flag3 = configuration.getFlags().get(4);
 
         ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
@@ -1803,8 +1803,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         }
 
         // Set other flags
-        flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(0);
-        flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(2);
+        flag1 = configuration.getFlags().get(0);
+        flag2 = configuration.getFlags().get(2);
 
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
