@@ -86,11 +86,12 @@ public abstract class VariantAnnotationManager {
             current.setId(1);
             current.setName(CURRENT);
         }
+        boolean firstAnnotation = current.getAnnotator() == null;
 
         // Check using same annotator and same source version
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
         VariantAnnotatorProgram newAnnotator = newVariantAnnotationMetadata.getAnnotator();
-        if (currentAnnotator != null && !currentAnnotator.equals(newAnnotator)) {
+        if (!firstAnnotation && !currentAnnotator.equals(newAnnotator)) {
             String currentVersion = removePatchFromVersion(currentAnnotator.getVersion());
             String newVersion = removePatchFromVersion(newAnnotator.getVersion());
             if (!currentAnnotator.getName().equals(newAnnotator.getName())
@@ -136,7 +137,7 @@ public abstract class VariantAnnotationManager {
         if (newPrivateSources == null) {
             newPrivateSources = Collections.emptyList();
         }
-        if (!new HashSet<>(currentPrivateSources).equals(new HashSet<>(newPrivateSources))) {
+        if (!firstAnnotation && !new HashSet<>(currentPrivateSources).equals(new HashSet<>(newPrivateSources))) {
             String msg = "Private sources has changed. "
                     + "Existing annotation calculated with private sources " + currentPrivateSources
                     + ", attempting to annotate with " + newPrivateSources;

@@ -1,19 +1,3 @@
-/*
-* Copyright 2015-2024-03-06 OpenCB
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
@@ -229,6 +213,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
+        usersSubCommands.addCommand("search", usersCommandOptions.searchCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
@@ -283,6 +268,10 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("organizations", organizationsCommandOptions);
         JCommander organizationsSubCommands = jCommander.getCommands().get("organizations");
         organizationsSubCommands.addCommand("create", organizationsCommandOptions.createCommandOptions);
+        organizationsSubCommands.addCommand("notes-create", organizationsCommandOptions.createNotesCommandOptions);
+        organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
+        organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
+        organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 
@@ -298,6 +287,10 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
         studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
+        studiesSubCommands.addCommand("notes-create", studiesCommandOptions.createNotesCommandOptions);
+        studiesSubCommands.addCommand("notes-search", studiesCommandOptions.searchNotesCommandOptions);
+        studiesSubCommands.addCommand("notes-delete", studiesCommandOptions.deleteNotesCommandOptions);
+        studiesSubCommands.addCommand("notes-update", studiesCommandOptions.updateNotesCommandOptions);
         studiesSubCommands.addCommand("permissionrules", studiesCommandOptions.permissionRulesCommandOptions);
         studiesSubCommands.addCommand("permission-rules-update", studiesCommandOptions.updatePermissionRulesCommandOptions);
         studiesSubCommands.addCommand("templates-run", studiesCommandOptions.runTemplatesCommandOptions);
@@ -333,6 +326,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
         filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("move", filesCommandOptions.moveCommandOptions);
         filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
         filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);

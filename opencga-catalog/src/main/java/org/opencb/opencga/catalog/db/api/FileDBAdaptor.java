@@ -102,8 +102,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
 
@@ -285,32 +283,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult<File> getAllInStudy(long studyId, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    /***
-     * Retrieves all the files present in the folder.
-     *
-     * @param studyId Study id where the files will be extracted from.
-     * @param path Directory where the files will be extracted from.
-     * @param options Options to filter the file output.
-     * @return A OpenCGAResult object containing the files present in the folder of the given study.
-     * @throws CatalogDBException when the study or the path does not exist.
-     */
-    OpenCGAResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
-
-    /***
-     * Renames the file.
-     *
-     * @param fileId Id of the file to be renamed.
-     * @param filePath New file or directory name (containing the full path).
-     * @param fileUri New file uri (containing the full path).
-     * @param options Options to filter the file output.
-     * @return A OpenCGAResult object.
-     * @throws CatalogDBException when the filePath already exists.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
-     */
-    OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
