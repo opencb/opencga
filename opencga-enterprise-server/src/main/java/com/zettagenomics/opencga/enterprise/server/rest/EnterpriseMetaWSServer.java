@@ -12,11 +12,13 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
@@ -56,7 +58,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             synchronized (opencgaTokenAtomicRef) {
                 try {
                     OpenCGAResult<Organization> result;
-                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration)) {
+                    try (DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
                         result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(ParamConstants.ADMIN_ORGANIZATION)
                                 .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
 
@@ -69,20 +71,26 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
                             throw new CatalogException("Missing authentication origin for '" + ParamConstants.ADMIN_ORGANIZATION
                                     + "' organization.");
                         }
+                        if (organization.getConfiguration().getToken() == null) {
+                            throw new CatalogException("Internal error: Missing required information to generate"
+                                    + " tokens.");
+                        }
                         AuthenticationOrigin authOrigin = null;
                         for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
                             if (AuthenticationOrigin.AuthenticationType.OPENCGA.equals(authenticationOrigin.getType())
-                                    && CatalogAuthenticationManager.INTERNAL.equals(authenticationOrigin.getId())) {
+                                    && CatalogAuthenticationManager.OPENCGA.equals(authenticationOrigin.getId())) {
                                 authOrigin = authenticationOrigin;
                                 break;
                             }
                         }
                         if (authOrigin == null) {
-                            throw new CatalogException("Missing internal authentication origin in '"
-                                    + ParamConstants.ADMIN_ORGANIZATION + "' organization.");
+                            throw new CatalogException("Missing '" + CatalogAuthenticationManager.OPENCGA
+                                    + "'  authentication origin in '" + ParamConstants.ADMIN_ORGANIZATION
+                                    + "' organization.");
                         }
+                        TokenConfiguration tokenConf = organization.getConfiguration().getToken();
                         CatalogAuthenticationManager authManager = new CatalogAuthenticationManager(dbAdaptorFactory,
-                                null, authOrigin.getSecretKey(), authOrigin.getExpiration());
+                                null, tokenConf.getAlgorithm(), tokenConf.getSecretKey(), tokenConf.getExpiration());
                         opencgaToken = authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION,
                                 ParamConstants.OPENCGA_USER_ID, null);
                     }

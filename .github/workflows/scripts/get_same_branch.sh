@@ -4,7 +4,9 @@
 ##### FUNCTIONS TO PRINT COLOURED MESSAGES  #############
 #########################################################
 
+
 ENTERPRISE_BRANCH_NAME=$1
+
 #
 #if [[ -z $BRANCH_NAME  ]]; then
 #  echo "The first parameter is mandatory and must be a valid branch name."
@@ -32,6 +34,7 @@ ENTERPRISE_BRANCH_NAME=$1
 #install "java-common-libs"
 #install "biodata"
 #install "cellbase"
+
 
 
 function calculate_branch(){

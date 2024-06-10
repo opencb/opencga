@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -e
-set -o pipefail
-set -o nounset
+set -e  # Exit immediately if a command exits with a non-zero status
+set -o pipefail  # Return value of a pipeline is the value of the last (rightmost) command to exit with a non-zero status
+set -o nounset  # Treat unset variables as an error
 
 ## Functions
+# Function to print usage based on the command
 function printUsage() {
   case $COMMAND in
     build)
@@ -19,6 +20,7 @@ function printUsage() {
   esac
 }
 
+# Function to print main usage of the script
 function printMainUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -31,6 +33,7 @@ function printMainUsage() {
   echo ""
 }
 
+# Function to print usage for the build command
 function printBuildUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -48,6 +51,7 @@ function printBuildUsage() {
   echo ""
 }
 
+# Function to print usage for the test command
 function printTestUsage() {
   echo ""
   echo "Run opencga-enterprise."
@@ -57,17 +61,21 @@ function printTestUsage() {
   echo ""
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         Opencga project repo directory. By default, ./opencga-home"
-  echo "     -t     --tags                STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
+  echo "     -t     --task                STRING         Task that we are testing and that will serve as a reference for checkouts"
+  echo "     -l     --level               STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
   echo "     -f     --fail-never          FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run tests, it will download and compile all branches of the dependencies."
   echo "     -p     --publish             FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
+  echo "     -d     --docker              FLAG           Publish dockers of OpenCGA and OpenCGA-enterprise."
   echo "     -s     --skip-tests          FLAG           Publish the results on a reports server without rerunning the test."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
   echo ""
 }
 
+# Function to log messages
 function log() {
+
     if [[ "$#" -gt 0 ]]; then
       echo "$@" | log
       return
@@ -79,46 +87,71 @@ function log() {
     fi
 }
 
+# Function to log error messages
 function error() {
   log "=========================="
   log "[ERROR] - " "$@"
   log "=========================="
 }
 
+# Function to calculate the branch for dependencies
 function calculate_branch() {
-  ## This is opencga-enterprise
-  local CURRENT_BRANCH="$(git branch --show-current)"
-  ## If opencga-enterprise branch name is main, develop or TASK-XYZ then we return the same name.
-  ## Otherwise, we calculate the dependency branch from the dependency version.
-  if [[ "$CURRENT_BRANCH" != "release"* ]]; then
-    echo "$CURRENT_BRANCH"
+
+  local EXISTS=""
+  if [[ -n $TASK_REFERENCE ]]; then
+    local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
+  fi
+  if [[ -n $EXISTS ]]; then
+    log "Entering the if statement with $EXISTS"
+    echo $TASK_REFERENCE
   else
-    local VERSION=$(echo "$1" | cut -d "-" -f 1)
-    local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-    local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-    local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-    local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-    if [ -z "$HOTFIX" ]; then
-      echo "release-$MAJOR.$MINOR.x"
+    local TMP_DIR=$(pwd)
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR"
+    ## This is opencga-enterprise
+    local CURRENT_BRANCH="$(git branch --show-current)"
+    cd "$TMP_DIR"
+    ## If opencga-enterprise branch name is main, develop then we return the same name.
+    ## Otherwise, we calculate the dependency branch from the dependency version.
+    if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+      if [[ "$PATCH" == "0" ]]; then
+        echo "develop"
+      elif [ -z "$HOTFIX" ]; then
+        echo "release-$MAJOR.$MINOR.x"
+      else
+        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      fi
+    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
+      if [ -z "$HOTFIX" ]; then
+        echo "release-$MAJOR.$MINOR.x"
+      else
+        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      fi
     else
-      echo "release-$MAJOR.$MINOR.$PATCH.x"
+      echo "$CURRENT_BRANCH"
     fi
   fi
 }
 
-function install_dependency() {
+# Function to manage dependencies
+function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
-  local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
-  echo "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
   local TEMP_DIR="$(mktemp -d "--suffix=opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  git clone https://github.com/opencb/"$REPO".git -b "$BRANCH_NAME"
+  git clone https://github.com/opencb/"$REPO".git
   if [ -d "./$REPO" ]; then
-    cd "$REPO" || exit 2
-    log "Branch name $BRANCH_NAME already exists."
-    mvn clean install -T 2 -DskipTests || (error "The $REPO branch $BRANCH_NAME compilation process has failed!"; exit 1)
-    log "$REPO Compilation Successful!!!"
+      cd "$REPO" || exit 2
+      local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
    if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
@@ -127,9 +160,24 @@ function install_dependency() {
       log "The $REPO branch $BRANCH_NAME doesn't exist we use the version $REPO_VERSION from maven repo"
     fi
   fi
+  log "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
+  log_summary "$REPO $REPO_VERSION $BRANCH_NAME"
+  git checkout "$BRANCH_NAME"
+  if [ "$COMMAND" == "test" ];then
+    if [ "$SKIP_TESTS" == "true" ]; then
+      log "Skipping test compiling $REPO branch $BRANCH_NAME."
+      mvn clean install -T 2 -DskipTests || (error "The $REPO branch $BRANCH_NAME compilation process has failed!"; exit 1)
+      log "$REPO Compilation Successful!!!"
+    else
+      log "Testing $REPO branch $BRANCH_NAME."
+      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip || (error "Testing $REPO branch $BRANCH_NAME ERROR" && exit 1)
+      log "$REPO branch $BRANCH_NAME Test Successful!!!"
+    fi
+  fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
 
+# Function to validate test tags
 function validateTags() {
 
   #Split input string
@@ -144,6 +192,23 @@ function validateTags() {
     fi
   done
 
+}
+
+LOG_SUMMARY=""
+
+# Function to add messages to the log summary
+function log_summary() {
+  if [ -n "$LOG_SUMMARY" ]; then
+    LOG_SUMMARY="$LOG_SUMMARY""\n"
+  fi
+  LOG_SUMMARY="$LOG_SUMMARY""$@"
+}
+
+# Function to print all the log summary
+function print_log_summary() {
+  echo "=========================="
+  echo -e "$LOG_SUMMARY"
+  echo "=========================="
 }
 
 ###################################
@@ -161,6 +226,8 @@ SKIP_OPENCGA_BUILD=false
 SKIP_TESTS=false
 TESTS_DIR="$PWD/tests"
 LOG_FILE=""
+TASK_REFERENCE=""
+DOCKER=""
 
 ## 2. Parse and validate CLI options
 COMMAND=${1:-}
@@ -205,11 +272,20 @@ while [[ $# -gt 0 ]]; do
     shift # past value
     ;;
   -p | --publish )
-    PUBLISH="true"
-    shift # past argument
-    ;;
-  -t | --tags )
+      PUBLISH="true"
+      shift # past argument
+      ;;
+  -d | --docker )
+      DOCKER="true"
+      shift # past argument
+      ;;
+    -l | --level )
     TEST_TAG="$value"
+    shift # past argument
+    shift # past value
+    ;;
+  -t | --task )
+    TASK_REFERENCE="$value"
     shift # past argument
     shift # past value
     ;;
@@ -241,9 +317,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+## 3. Ensure where is the opencga-enterprise root directory and se it to a variable
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
+## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
   echo "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
   echo "OPENCGA_HOME_DIR $OPENCGA_HOME_DIR"
@@ -255,6 +333,8 @@ if [ "$DEBUG" == "true" ];then
   exit 0
 fi
 
+
+# Function to validate input parameters
 function validate() {
   validateTags "$TEST_TAG"
 
@@ -302,6 +382,21 @@ function validate() {
     exit 1
   fi
 
+
+  ## Validate that if the current branch is a task, the reference branch must be the same
+  local CURRENT_BRANCH="$(git branch --show-current)"
+  log "CURRENT_BRANCH $CURRENT_BRANCH"
+  log "TASK_REFERENCE $TASK_REFERENCE"
+
+  if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ -n $TASK_REFERENCE ]]; then
+      if [[ "$CURRENT_BRANCH" != "$TASK_REFERENCE" ]]; then
+      log "If the opencga-enterprise branch is a TASK branch, the name must be the same as the reference branch."
+      exit 1
+      fi
+    fi
+  fi
+
   ## Validate opencga-storage-hadoop
   mvn enforcer:enforce -q \
       --file "${OPENCGA_HOME_DIR}/pom.xml" \
@@ -310,21 +405,23 @@ function validate() {
       -pl :opencga || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
 }
 
-function prepareBranches() {
+# Function to download and compile java-common-libs, cellbase and biodata dependencies
+function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
-    install_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
+    manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
-    install_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
+    manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
-    install_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
+    manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   fi
 }
 
-function build_opencb_opencga() {
+# Function to build or/and test the opencga
+function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
     if [ "$SKIP_OPENCGA_BUILD" == "true" ] ; then
@@ -337,7 +434,7 @@ function build_opencb_opencga() {
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga tests"
     else
-      mvn install surefire-report:report \
+      mvn clean install surefire-report:report \
         ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" \
         -Dcheckstyle.skip \
         || (error "Opencga tests ERROR" && exit 1)
@@ -346,6 +443,7 @@ function build_opencb_opencga() {
   fi
 }
 
+# Function to build or/and test the opencga-enterprise
 function build_opencga_enterprise() {
   ## Move to opencga-enterprise to build or test
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
@@ -360,24 +458,28 @@ function build_opencga_enterprise() {
     if [ "$SKIP_TESTS" == "true" ]; then
       log "-- Skipping opencga enterprise tests"
     else
-      mvn -B verify surefire-report:report \
+      mvn clean install -B verify surefire-report:report \
         -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
         -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" \
-        "${FAIL_NEVER}" \
+        ${FAIL_NEVER} \
         || (error "Opencga enterprise tests ERROR" && exit 1)
     fi
     cp "$OPENCGA_ENTERPRISE_HOME_DIR"/opencga-enterprise-*/target/surefire-reports/TEST*.xml "$TESTS_DIR"
   fi
 }
 
-function publish() {
+# Function to upload the opencga and opencga-enterprise test reports to the Zettagenomics test report server
+#It is do it with azure and AZ_COPY command
+function publish_reports() {
   if [ "$PUBLISH" == "true" ];then
-    export AZCOPY_SPA_CLIENT_SECRET="kEp8Q~NkI3oQzB-BhUpcKmIRkBF1V-Bf7KFqqbrd"
-    export AZCOPY_AUTO_LOGIN_TYPE="SPN"
-    export AZCOPY_SPA_APPLICATION_ID="6814e731-f1e3-41d7-9d48-6a02989d79e1"
-    export AZCOPY_TENANT_ID="1f730307-f4e7-4a90-ad6b-ebba14be8e24"
-    azcopy login --service-principal
-    BRANCH_FOLDER=$(git branch --show-current)
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
+    if [[ -n $TASK_REFERENCE ]]; then
+      BRANCH_FOLDER=$TASK_REFERENCE
+    else
+      BRANCH_FOLDER=$(git branch --show-current)
+    fi
     VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
     COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
     azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
@@ -385,12 +487,40 @@ function publish() {
 }
 
 
+# Function to upload the docker of Oopencga-enterprise to https://hub.docker.com/repositories/zettagenomics
+function publish_docker() {
+  if [ "$DOCKER" == "true" ];then
+    ## Move to opencga-enterprise to build or test
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    if [[ -n $TASK_REFERENCE ]]; then
+      TAG=$TASK_REFERENCE
+    else
+      TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
+    fi
+    python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag "$TAG"
+  fi
+}
+
+
+## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
+
+# Validate input parameters
 validate
 
-prepareBranches
+# Prepare branches if needed
+prepare_branches
 
-build_opencb_opencga
+# Build opencb-opencga
+build_opencga
 
+# Build opencga-enterprise
 build_opencga_enterprise
 
-publish
+# Publish test reports
+publish_reports
+
+# Publish Docker images
+publish_docker
+
+# Print log summary
+print_log_summary
