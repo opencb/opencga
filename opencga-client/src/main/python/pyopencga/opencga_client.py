@@ -100,7 +100,7 @@ class OpencgaClient(object):
         for client in self.clients:
             client.on_retry = self.on_retry
 
-    def _make_login_handler(self, user, password):
+    def _make_login_handler(self, user, password, organization):
         """
         Returns a closure that performs the log-in. This will be called on retries
         if the current session ever expires.
@@ -113,16 +113,16 @@ class OpencgaClient(object):
             if refresh:
                 # TODO Change to refreshToken whenever it is properly implemented in OpenCGA
                 # data = {'refreshToken': self.refresh_token}
-                data = {'user': user, 'password': password}
+                data = {'user': user, 'password': password, 'organization': organization}
             else:
-                data = {'user': user, 'password': password}
+                data = {'user': user, 'password': password, 'organization': organization}
             tokens = User(self.configuration).login(data=data).get_result(0)
             self.token = tokens['token']
             self.refresh_token = tokens['refreshToken']
             return self.token
         return login_handler
 
-    def login(self, user=None, password=None):
+    def login(self, user=None, password=None, organization=None):
         if user is not None:
             if password is None:
                 password = getpass.getpass()
@@ -132,7 +132,7 @@ class OpencgaClient(object):
         except AssertionError:
             raise ValueError("User and password required")
 
-        self._login_handler = self._make_login_handler(user, password)
+        self._login_handler = self._make_login_handler(user, password, organization)
         self._login_handler()
         for client in self.clients:
             client.token = self.token
