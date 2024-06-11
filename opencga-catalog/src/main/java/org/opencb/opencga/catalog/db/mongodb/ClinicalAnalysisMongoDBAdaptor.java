@@ -1339,7 +1339,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(ClinicalAnalysisStatusOld.STATUS_LIST,
+                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
                                 queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;

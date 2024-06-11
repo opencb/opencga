@@ -157,7 +157,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setStatus(new ClinicalStatus().setId(ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION))
+                .setStatus(new ClinicalStatus().setId("READY_FOR_INTERPRETATION"))
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
@@ -2700,35 +2700,35 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         createDummyEnvironment(false, false);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(studyFqn,
-                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatusOld.DONE),
+                new Query(ParamConstants.STATUS_PARAM, "DONE"),
                 new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), ownerToken);
         assertEquals(0, search.getNumResults());
 
         search = catalogManager.getClinicalAnalysisManager().search(studyFqn,
-                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION),
+                new Query(ParamConstants.STATUS_PARAM, "READY_FOR_INTERPRETATION"),
                 new QueryOptions(), ownerToken);
         assertEquals(2, search.getNumResults());
         for (ClinicalAnalysis result : search.getResults()) {
-            assertEquals(ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION, result.getStatus().getId());
+            assertEquals("READY_FOR_INTERPRETATION", result.getStatus().getId());
         }
 
         catalogManager.getClinicalAnalysisManager().update(studyFqn, search.first().getId(),
-                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(ClinicalAnalysisStatusOld.REJECTED)), QueryOptions.empty(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam("REJECTED")), QueryOptions.empty(),
                 ownerToken);
         search = catalogManager.getClinicalAnalysisManager().search(studyFqn,
-                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION),
+                new Query(ParamConstants.STATUS_PARAM, "READY_FOR_INTERPRETATION"),
                 new QueryOptions(), ownerToken);
         assertEquals(1, search.getNumResults());
         for (ClinicalAnalysis result : search.getResults()) {
-            assertEquals(ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION, result.getStatus().getId());
+            assertEquals("READY_FOR_INTERPRETATION", result.getStatus().getId());
         }
 
         search = catalogManager.getClinicalAnalysisManager().search(studyFqn,
-                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatusOld.REJECTED),
+                new Query(ParamConstants.STATUS_PARAM, "REJECTED"),
                 new QueryOptions(), ownerToken);
         assertEquals(1, search.getNumResults());
         for (ClinicalAnalysis result : search.getResults()) {
-            assertEquals(ClinicalAnalysisStatusOld.REJECTED, result.getStatus().getId());
+            assertEquals("REJECTED", result.getStatus().getId());
         }
     }
 

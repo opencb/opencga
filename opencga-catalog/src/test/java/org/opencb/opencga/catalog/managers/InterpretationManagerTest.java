@@ -43,7 +43,7 @@ public class InterpretationManagerTest extends AbstractManagerTest {
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setStatus(new ClinicalStatus().setId(ClinicalAnalysisStatusOld.READY_FOR_INTERPRETATION))
+                .setStatus(new ClinicalStatus().setId("READY_FOR_INTERPRETATION"))
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));

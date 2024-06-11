@@ -51,10 +51,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.FlagAnnotation;
-import org.opencb.opencga.core.models.common.FlagValue;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -1658,8 +1655,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key())) {
             Map<String, Object> status = (Map<String, Object>) parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key());
-            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("name")))
-                    || !ClinicalAnalysisStatusOld.isValid(String.valueOf(status.get("name")))) {
+            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("id")))
+                    || !InternalStatus.isValid(String.valueOf(status.get("id")))) {
                 throw new CatalogException("Missing or invalid status");
             }
         }

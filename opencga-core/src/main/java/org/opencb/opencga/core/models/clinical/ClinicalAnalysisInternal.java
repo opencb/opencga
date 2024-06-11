@@ -18,21 +18,19 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ClinicalAnalysisInternal extends Internal {
-
-    private ClinicalAnalysisStatusOld status;
 
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, ClinicalAnalysisStatusOld status) {
-        super(null, registrationDate, modificationDate);
-        this.status = status;
+    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, InternalStatus status) {
+        super(status, registrationDate, modificationDate);
     }
 
     public static ClinicalAnalysisInternal init() {
-        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new ClinicalAnalysisStatusOld());
+        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus());
     }
 
     @Override
@@ -45,11 +43,11 @@ public class ClinicalAnalysisInternal extends Internal {
         return sb.toString();
     }
 
-    public ClinicalAnalysisStatusOld getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisInternal setStatus(ClinicalAnalysisStatusOld status) {
+    public ClinicalAnalysisInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }
