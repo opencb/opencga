@@ -77,7 +77,13 @@ public class AddNewClinicalStatusValues extends MigrationTool {
         String clinicalId = status != null ? status.getString("id") : null;
         if (status == null || StringUtils.isEmpty(clinicalId)) {
             logger.warn("Status is empty or does not contain 'id' field. Setting default status value for {} '{}'", entity, id);
-
+            for (ClinicalStatusValue clinicalStatusValue : statusValueList) {
+                if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)) {
+                    clinicalStatus.setId(clinicalStatusValue.getId());
+                    clinicalStatus.setDescription(clinicalStatusValue.getDescription());
+                    clinicalStatus.setType(clinicalStatusValue.getType());
+                }
+            }
         } else {
             for (ClinicalStatusValue clinicalStatusValue : statusValueList) {
                 if (clinicalStatusValue.getId().equals(clinicalId)) {
@@ -90,7 +96,6 @@ public class AddNewClinicalStatusValues extends MigrationTool {
             if (clinicalStatus.getType() == null) {
                 logger.warn("Status '{}' not found in the list of available status values. Status type cannot be set for {} '{}'",
                         clinicalId, entity, id);
-
             }
         }
         clinicalStatus.setDate(TimeUtils.getTime());
