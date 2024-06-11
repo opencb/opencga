@@ -6,7 +6,7 @@ import re
 from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.rest_clients.admin_client import Admin
 from pyopencga.rest_clients.alignment_client import Alignment
-from pyopencga.rest_clients.clinical_client import Clinical
+from pyopencga.rest_clients.clinical_analysis_client import ClinicalAnalysis
 from pyopencga.rest_clients.cohort_client import Cohort
 from pyopencga.rest_clients.family_client import Family
 from pyopencga.rest_clients.file_client import File
@@ -50,8 +50,14 @@ class OpencgaClient(object):
         self.logout()
 
     def _check_versions(self):
+        # Getting client and server versions
+        if sys.version_info >= (3, 8):
+            from importlib.metadata import version
+        else:
+            from importlib_metadata import version
+        client_version = version("pyopencga")
         server_version = self.meta.about().get_result(0)['Version'].split('-')[0]
-        client_version = re.findall(r'Client version: (.+)\n', str(self.meta.__doc__))[0]
+
         ansi_reset = "\033[0m"
         ansi_red = "\033[31m"
         ansi_yellow = "\033[33m"
@@ -60,7 +66,8 @@ class OpencgaClient(object):
                   ' Some client features may not be implemented in the server.\n'.format(client_version, server_version)
             sys.stdout.write('{}{}{}'.format(ansi_red, msg, ansi_reset))
         elif tuple(server_version.split('.')[:2]) > tuple(client_version.split('.')[:2]):
-            msg = '[INFO]: Client version ({}) is lower than server version ({}).\n'.format(client_version, server_version)
+            msg = '[INFO]: Client version ({}) is lower than server version ({}).' \
+                   ' Some client features may not work as intended.\n'.format(client_version, server_version)
             sys.stdout.write('{}{}{}'.format(ansi_yellow, msg, ansi_reset))
 
     def _create_clients(self):
@@ -76,7 +83,7 @@ class OpencgaClient(object):
         self.disease_panels = DiseasePanel(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.alignments = Alignment(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variants = Variant(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.clinical = Clinical(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.clinical = ClinicalAnalysis(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.operations = VariantOperation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variant_operations = self.operations  # DEPRECATED: use 'self.operations'
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
