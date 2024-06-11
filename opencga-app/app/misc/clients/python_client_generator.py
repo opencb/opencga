@@ -70,7 +70,6 @@ class PythonClientGenerator(RestClientGenerator):
         text.append('{}"""'.format(' ' * 4))
         text.append('{}This class contains methods for the \'{}\' webservices'.format(' ' * 4,
                                                                                       self.get_category_name(category)))
-        text.append('{}Client version: {}'.format(' ' * 4, self.version))
         text.append('{}PATH: {}'.format(' ' * 4, category['path']))
         text.append('{}"""'.format(' ' * 4))
         text.append('')

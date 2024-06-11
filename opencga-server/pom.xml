@@ -392,7 +392,9 @@
         <profile>
             <id>CodeGen</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>!skipCodeGen</name>
+                </property>
             </activation>
             <build>
                 <plugins>
