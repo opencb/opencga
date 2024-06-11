@@ -43,7 +43,6 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private Path dbLocation = null;
 
     public static final String COSMIC_ANNOTATOR_INDEX_NAME = "cosmicAnnotatorIndex";
-    public static final String COSMIC_VERSION_FILENAME  = "cosmicVersion.json";
 
     private static Logger logger = LoggerFactory.getLogger(CosmicVariantAnnotatorExtensionTask.class);
 
@@ -111,14 +110,8 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public List<VariantAnnotation> apply(List<VariantAnnotation> list) throws Exception {
         for (VariantAnnotation variantAnnotation : list) {
-            Variant variant;
-            try {
-                variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
-                        variantAnnotation.getAlternate());
-            } catch (Exception e) {
-                logger.warn("Skipping variant: " + e.getMessage());
-                continue;
-            }
+            Variant variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getEnd(),
+                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
             byte[] key = variant.toString().getBytes();
             byte[] dbContent = rdb.get(key);
             if (dbContent != null) {
@@ -165,8 +158,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
                 rdb = RocksDB.openReadOnly(dbOption, dbLocation.toAbsolutePath().toString());
             }
         } catch (RocksDBException e) {
-            // Do some error handling
-            throw new ToolException("", e);
+            throw new ToolException("Error initializing RocksDB", e);
         }
     }
 }
