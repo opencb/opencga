@@ -291,7 +291,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     }
 
     @Test
-    public void testCosmicAnnotatorExtensionMissingInvalidCosmicFile() throws Exception {
+    public void testCosmicAnnotatorExtensionInvalidCosmicFile() throws Exception {
         // Setup COSMIC directory
         Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initInvalidCosmicPath();
         System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
