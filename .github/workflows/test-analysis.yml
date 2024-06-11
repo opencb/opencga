@@ -36,6 +36,14 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ inputs.sonar }}
     steps:
+      - name: Retrieve secrets from Keeper
+        id: ksecrets
+        uses: Keeper-Security/ksm-action@master
+        with:
+          keeper-secret-config: ${{ secrets.KEEPER_SM_GH_OPENCB }}
+          secrets: |
+            ID_GITHUB_TOKEN/custom_field/GITHUB_TOKEN > env:GITHUB_TOKEN
+            ID_SONAR_TOKEN/custom_field/SONAR_TOKEN > env:SONAR_TOKEN
       - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
@@ -55,8 +63,8 @@ jobs:
           fi
       - name: Test and Analyze
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
         run: mvn -T 2 clean install -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 
   test:
