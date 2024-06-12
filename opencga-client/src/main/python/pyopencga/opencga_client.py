@@ -2,6 +2,10 @@ import getpass
 import time
 import sys
 import re
+if sys.version_info >= (3, 8):
+    from importlib.metadata import version
+else:
+    from importlib_metadata import version
 
 from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.rest_clients.admin_client import Admin
@@ -51,10 +55,6 @@ class OpencgaClient(object):
 
     def _check_versions(self):
         # Getting client and server versions
-        if sys.version_info >= (3, 8):
-            from importlib.metadata import version
-        else:
-            from importlib_metadata import version
         client_version = version("pyopencga")
         server_version = self.meta.about().get_result(0)['Version'].split('-')[0]
 
@@ -181,15 +181,14 @@ class OpencgaClient(object):
 
             # Description and path
             class_docstring = client.__doc__
-            cls_desc = re.findall('(.+)\n +Client version', class_docstring)[0]
-            cls_desc = cls_desc.strip().replace('This class contains methods', 'Client')
+            cls_desc = re.findall('(This class contains methods .+)\n', class_docstring)[0]
             cls_path = re.findall('PATH: (.+)\n', class_docstring)[0]
 
             # Methods
             methods = []
             method_names = [method_name for method_name in dir(client)
                             if callable(getattr(client, method_name))
-                            and not method_name.startswith('_')]
+                            and not method_name.startswith('_') and method_name != 'login_handler']
             for method_name in method_names:
                 if client_name is None:
                     continue
