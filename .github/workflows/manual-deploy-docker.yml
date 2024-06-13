@@ -51,9 +51,8 @@ jobs:
           name: build-folder
           path: build
 
-
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@TASK-6187
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ inputs.tag }}
