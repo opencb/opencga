@@ -70,6 +70,8 @@ import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyQualityControl;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
@@ -1081,6 +1083,10 @@ public class VariantAnalysisTest {
         params.setFamily("f1");
         params.setRelatednessMaf("1000G:ALL>0.1");
 
+        // Reset family QC
+        catalogManager.getFamilyManager().update(STUDY, params.getFamily(), new FamilyUpdateParams()
+                .setQualityControl(new FamilyQualityControl()), new QueryOptions(), token);
+
         toolRunner.execute(FamilyQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(STUDY, new Query("id", "f1"), QueryOptions.empty(), token);
@@ -1099,6 +1105,10 @@ public class VariantAnalysisTest {
         params.setFamily("f1");
         params.setRelatednessMaf("1000G:ALL>0.1");
         params.setHaploidCallMode(HAPLOID_CALL_MODE_HAPLOID_VALUE);
+
+        // Reset family QC
+        catalogManager.getFamilyManager().update(STUDY, params.getFamily(), new FamilyUpdateParams()
+                .setQualityControl(new FamilyQualityControl()), new QueryOptions(), token);
 
         toolRunner.execute(FamilyQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
@@ -1119,6 +1129,10 @@ public class VariantAnalysisTest {
         params.setRelatednessMaf("1000G:ALL>0.1");
         params.setHaploidCallMode(HAPLOID_CALL_MODE_MISSING_VALUE);
 
+        // Reset family QC
+        catalogManager.getFamilyManager().update(STUDY, params.getFamily(), new FamilyUpdateParams()
+                .setQualityControl(new FamilyQualityControl()), new QueryOptions(), token);
+
         toolRunner.execute(FamilyQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(STUDY, new Query("id", "f1"), QueryOptions.empty(), token);
@@ -1137,6 +1151,10 @@ public class VariantAnalysisTest {
         params.setFamily("f1");
         params.setRelatednessMaf("1000G:ALL>0.1");
         params.setHaploidCallMode(HAPLOID_CALL_MODE_REF_VALUE);
+
+        // Reset family QC
+        catalogManager.getFamilyManager().update(STUDY, params.getFamily(), new FamilyUpdateParams()
+                .setQualityControl(new FamilyQualityControl()), new QueryOptions(), token);
 
         toolRunner.execute(FamilyQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
