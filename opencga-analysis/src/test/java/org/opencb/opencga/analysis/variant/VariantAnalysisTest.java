@@ -44,6 +44,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
@@ -177,6 +178,9 @@ public class VariantAnalysisTest {
 
 
             setUpCatalogManager();
+
+            VariantOperationsTest.dummyVariantSetup(variantStorageManager, STUDY, token);
+            VariantOperationsTest.dummyVariantSetup(variantStorageManager, CANCER_STUDY, token);
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);

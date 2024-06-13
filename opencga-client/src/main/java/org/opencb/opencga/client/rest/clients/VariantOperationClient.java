@@ -35,12 +35,14 @@ import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleI
 import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
+import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.VariantConfigureParams;
 import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantPruneParams;
 import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -512,6 +514,20 @@ public class VariantOperationClient extends AbstractParentClient {
     public RestResponse<Job> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, Job.class);
+    }
+
+    /**
+     * Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.
+     * @param data Variant setup params.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<VariantSetupResult> setupVariant(VariantSetupParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant", null, "setup", params, POST, VariantSetupResult.class);
     }
 
     /**

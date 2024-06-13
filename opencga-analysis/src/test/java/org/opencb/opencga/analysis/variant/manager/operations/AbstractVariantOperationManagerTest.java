@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -170,6 +171,10 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
+
+
+        VariantOperationsTest.dummyVariantSetup(variantManager, studyFqn, sessionId);
+        VariantOperationsTest.dummyVariantSetup(variantManager, studyId2, sessionId);
     }
 
     @After

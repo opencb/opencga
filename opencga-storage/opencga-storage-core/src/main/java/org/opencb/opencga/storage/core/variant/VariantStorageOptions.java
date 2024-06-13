@@ -26,7 +26,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
     NORMALIZATION_SKIP("normalization.skip", false), // Do not run normalization
     NORMALIZATION_REFERENCE_GENOME("normalization.referenceGenome"),
-    NORMALIZATION_EXTENSIONS("normalization.extensions", ParamConstants.NONE),
+    NORMALIZATION_EXTENSIONS("normalization.extensions", ParamConstants.ALL),
 
     DEDUPLICATION_POLICY("deduplication.policy", "maxQual"),
     DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),

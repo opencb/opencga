@@ -46,10 +46,10 @@ public abstract class StorageMigrationTool extends MigrationTool {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(String organizationId) throws Exception {
+    protected final List<String> getVariantStorageProjects() throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
-        for (String studyFqn : getVariantStorageStudies(organizationId)) {
+        for (String studyFqn : getVariantStorageStudies()) {
             projects.add(catalogManager.getStudyManager().getProjectFqn(studyFqn));
         }
 
@@ -61,7 +61,7 @@ public abstract class StorageMigrationTool extends MigrationTool {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageStudies(String organizationId) throws Exception {
+    protected final List<String> getVariantStorageStudies() throws Exception {
         Set<String> studies = new LinkedHashSet<>();
         VariantStorageManager variantStorageManager = getVariantStorageManager();
         for (Study study : catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), new QueryOptions(QueryOptions.INCLUDE,
