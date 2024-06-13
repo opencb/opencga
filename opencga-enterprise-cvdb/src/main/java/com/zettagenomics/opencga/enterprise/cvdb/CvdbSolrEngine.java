@@ -519,7 +519,7 @@ public class CvdbSolrEngine {
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
             for (String include : queryOptions.getAsStringList(INCLUDE, ",")) {
-                String[] split = include.split(".");
+                String[] split = include.split("\\.");
                 if (isImplClinicalVariantField(split[0])) {
                     includeList.add("impl." + include);
                 } else {

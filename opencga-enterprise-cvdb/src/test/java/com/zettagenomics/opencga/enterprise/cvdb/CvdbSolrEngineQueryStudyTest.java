@@ -28,7 +28,6 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -246,7 +245,15 @@ public class CvdbSolrEngineQueryStudyTest {
         assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
         Phenotype phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
         assertEquals("VACTERL-like phenotypes", phenotype.getId());
-        assertTrue(StringUtils.isNotEmpty(phenotype.getSource()));
+        assertTrue(StringUtils.isEmpty(phenotype.getSource()));
+
+        queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes.source");
+        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
+        assertEquals(queryOptions.getInt(LIMIT), result.getNumResults());
+        assertTrue(CollectionUtils.isNotEmpty(result.first().getPrimaryFindings()));
+        phenotype = result.first().getPrimaryFindings().get(0).getEvidences().get(0).getPhenotypes().get(0);
+        assertEquals("non-standard", phenotype.getSource());
+        assertTrue(StringUtils.isEmpty(phenotype.getId()));
 
         queryOptions.put(INCLUDE, "id,primaryFindings.evidences.phenotypes");
         result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
