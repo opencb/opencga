@@ -75,6 +75,7 @@ class RClientGenerator(RestClientGenerator):
                                                        myEndpoint['path'],
                                                        ", ".join(endpoint_params)))
         path_params = set(class_path_params)
+        path_params = sorted(list(path_params))
         text.append("#'\n#' @md")
         text.append("#' @seealso \\url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation")
         text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}")
