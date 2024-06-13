@@ -66,10 +66,10 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
 
         if (CollectionUtils.isNotEmpty(qualityControl.getRelatedness())) {
             for (RelatednessReport relatedness : qualityControl.getRelatedness()) {
-                if (relatednessMethod.equals(relatedness.getMethod()) && relatednessMaf.equals(relatedness.getMaf())) {
+                if (IBDComputation.PLINK_IBD_METHOD.equals(relatedness.getMethod()) && relatednessMaf.equals(relatedness.getMaf())) {
                     // Nothing to update
-                    addWarning("Skipping relatedness analysis: it was already computed for method '" + relatednessMethod + "' and MAF '"
-                            + relatednessMaf + "'");
+                    addWarning("Skipping relatedness analysis: it was already computed for method '" + IBDComputation.PLINK_IBD_METHOD
+                            + "' and MAF '" + relatednessMaf + "'");
                     qualityControl = null;
                     return;
                 }

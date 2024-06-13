@@ -1197,7 +1197,6 @@ public class ParamConstants {
     public static final String ANALYSIS_VARIANT_RELATEDNESS_RUN_METHOD = "The body web service method parameter";
     public static final String ANALYSIS_VARIANT_RELATEDNESS_RUN_OUTDIR = "The body web service outdir parameter";
     public static final String ANALYSIS_VARIANT_FAMILY_QC_RUN_FAMILY = "The body web service family parameter";
-    public static final String ANALYSIS_VARIANT_FAMILY_QC_RUN_RELATEDNESSMETHOD = "The body web service relatednessMethod parameter";
     public static final String ANALYSIS_VARIANT_FAMILY_QC_RUN_RELATEDNESSMAF = "The body web service relatednessMaf parameter";
     public static final String ANALYSIS_VARIANT_FAMILY_QC_RUN_OUTDIR = "The body web service outdir parameter";
     public static final String ANALYSIS_VARIANT_INDIVIDUAL_QC_RUN_INDIVIDUAL = "The body web service individual parameter";

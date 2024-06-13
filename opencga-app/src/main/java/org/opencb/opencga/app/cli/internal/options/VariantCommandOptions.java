@@ -1587,9 +1587,6 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family"}, description = "Family ID.", required = true)
         public String family;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "PLINK/IBD";
-
         @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35,"
                 + " cohort:ALL>0.05")
         public String relatednessMaf = "cohort:ALL>0.05";

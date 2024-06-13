@@ -57,6 +57,8 @@ public class IBDComputation {
     private static final String FREQ_FILENAME = BASENAME + ".frq";
     private static final String PRUNE_IN_FILENAME = BASENAME + ".prune.in";
 
+    public static final String PLINK_IBD_METHOD = "PLINK/IBD";
+
     public static RelatednessReport compute(String study, Family family, List<String> samples, String maf, String haploidCallMode,
                                             Map<String, Map<String, Float>> thresholds, Path resourcesPath, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
@@ -142,7 +144,7 @@ public class IBDComputation {
         }
 
         RelatednessReport relatedness = new RelatednessReport()
-                .setMethod("PLINK/IBD")
+                .setMethod(PLINK_IBD_METHOD)
                 .setMaf(maf)
                 .setHaploidCallMode(haploidCallMode)
                 .setScores(parseRelatednessScores(outFile, family, thresholds));
