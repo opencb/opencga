@@ -22,18 +22,10 @@ import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalInterpretationSe
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.ClinicalDiscussion;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.common.Status;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalReport;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +36,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.zettagenomics.opencga.enterprise.cvdb.converters.ConverterUtils.decompressFromBase64;
 
 public class ClinicalInterpretationConverter extends SearchConverter<Interpretation, ClinicalInterpretationSearch> {
 
@@ -76,8 +66,18 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
             // Panels
             if (CollectionUtils.isNotEmpty(interpretation.getPanels())) {
                 // Add panel IDs
-                cis.setPanelIds(interpretation.getPanels().stream().map(p -> p.getId())
-                        .collect(Collectors.toList()));
+                List<String> panelsIds = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(interpretation.getPanels())) {
+                    for (Panel panel : interpretation.getPanels()) {
+                        if (StringUtils.isNotEmpty(panel.getId())) {
+                            panelsIds.add(panel.getId());
+                        }
+                        if (StringUtils.isNotEmpty(panel.getName())) {
+                            panelsIds.add(panel.getName());
+                        }
+                    }
+                }
+                cis.setPanelIds(panelsIds);
             }
 
             // Analyst
