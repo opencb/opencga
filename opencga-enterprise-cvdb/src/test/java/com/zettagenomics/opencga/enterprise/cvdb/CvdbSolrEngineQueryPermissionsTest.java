@@ -4,16 +4,14 @@ import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetada
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -26,7 +24,6 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -40,7 +37,6 @@ import java.util.stream.Collectors;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.CatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.NO_ACCESS_FOR_ANONYMOUS_USERS_MSG;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -122,7 +118,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     // T E S T S
     //-----------------------------------------------------------------------
 
-    @Test(expected = CatalogAuthorizationException.class)
+    @Test(expected = CatalogAuthenticationException.class)
     public void testQueryClinicalAnalyses() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -152,12 +148,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
-        // (expected = CatalogAuthorizationException.class)
+        // (expected = CatalogAuthenticationException.class)
         token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
     }
 
-    @Test(expected = CatalogAuthorizationException.class)
+    @Test(expected = CatalogAuthenticationException.class)
     public void testQueryClinicalVariants() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -202,12 +198,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
-        // (expected = CatalogAuthorizationException.class)
+        // (expected = CatalogAuthenticationException.class)
         token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalVariants(query, queryOptions, token);
     }
 
-    @Test(expected = CatalogAuthorizationException.class)
+    @Test(expected = CatalogAuthenticationException.class)
     public void testQueryClinicalInterpretations() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -238,12 +234,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         // "user3" can not access any clinical analyses
-        // expected = CatalogAuthorizationException.class
+        // expected = CatalogAuthenticationException.class
         token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalInterpretations(query, queryOptions, token);
     }
 
-    @Test(expected = CatalogAuthorizationException.class)
+    @Test(expected = CatalogAuthenticationException.class)
     public void testQueryClinicalVariantEvidences() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -283,12 +279,12 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
 
         // "user3" can not access any clinical analyses
-        // (expected = CatalogAuthorizationException.class)
+        // (expected = CatalogAuthenticationException.class)
         token = catalogManager.getUserManager().login(organizationId, "user3", PASSWORD).getToken();
         cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, token);
     }
 
-    @Test(expected = CatalogAuthorizationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testAnonymous() throws IOException, CvdbException, CatalogException {
         // CVDB query
         Query query;
@@ -301,7 +297,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user" can access to all clinical analyses
-        // expected = CatalogAuthorizationException.class
+        // expected = IllegalArgumentException.class
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
     }
 

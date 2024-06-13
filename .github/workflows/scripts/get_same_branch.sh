@@ -4,7 +4,9 @@
 ##### FUNCTIONS TO PRINT COLOURED MESSAGES  #############
 #########################################################
 
-BRANCH_NAME=$1
+
+ENTERPRISE_BRANCH_NAME=$1
+
 #
 #if [[ -z $BRANCH_NAME  ]]; then
 #  echo "The first parameter is mandatory and must be a valid branch name."
@@ -36,7 +38,7 @@ BRANCH_NAME=$1
 
 
 function calculate_branch(){
-  if [[ $BRANCH_NAME == "v"* ]]; then
+  if [[ $ENTERPRISE_BRANCH_NAME == "v"* ]]; then
     echo "v$1"
   else
     CURRENT_BRANCH="$(git branch --show-current)"
@@ -82,13 +84,13 @@ function install(){
   cd "$CURRENT_DIR" || exit
 }
 
-
+echo "Calculating dependencies branches for $ENTERPRISE_BRANCH_NAME"
 JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
 install "java-common-libs" $JCL_DEPENDENCY_VERSION
 BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
 install "biodata" $BIODATA_DEPENDENCY_VERSION
 CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
 install "cellbase" $CELLBASE_DEPENDENCY_VERSION
-#OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
-#install "opencga" $OPENCGA_DEPENDENCY_VERSION
+OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
+install "opencga" $OPENCGA_DEPENDENCY_VERSION
 

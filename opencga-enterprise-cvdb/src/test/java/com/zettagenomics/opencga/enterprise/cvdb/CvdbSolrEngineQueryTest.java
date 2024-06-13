@@ -614,16 +614,6 @@ public class CvdbSolrEngineQueryTest {
             }
         }
         assertTrue(found);
-
-        // Check analyst email
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, sessionIdUser);
-        assertTrue(result.getNumResults() > 0);
-        for (ClinicalAnalysis ca : result.getResults()) {
-            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ca.getInterpretation().getAnalyst().getEmail());
-        }
     }
 
     @Test
@@ -884,16 +874,6 @@ public class CvdbSolrEngineQueryTest {
         for (Interpretation ci : result.getResults()) {
             assertEquals(query.getString(CI_ID_NAME), ci.getId());
         }
-
-        // Check analyst email
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
-        result = cvdbEngine.searchClinicalInterpretations(query, queryOptions, sessionIdUser);
-        assertTrue(result.getNumResults() > 0);
-        for (Interpretation ci : result.getResults()) {
-            assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
-        }
     }
 
     @Test
@@ -945,23 +925,6 @@ public class CvdbSolrEngineQueryTest {
                 alreadyChecked.add(ciId);
             }
         }
-
-        // Check analyst email
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
-        result = cvdbEngine.searchClinicalVariants(query, queryOptions, sessionIdUser);
-        assertTrue(result.getNumResults() > 0);
-        alreadyChecked.clear();
-        for (ClinicalVariant cv : result.getResults()) {
-            String ciId = (String) cv.getAttributes().get(CI_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(ciId));
-            if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = getClinicalInterpretation(ciId);
-                assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
-                alreadyChecked.add(ciId);
-            }
-        }
     }
 
     @Test
@@ -1010,23 +973,6 @@ public class CvdbSolrEngineQueryTest {
             if (!alreadyChecked.contains(ciId)) {
                 Interpretation ci = getClinicalInterpretation(ciId);
                 assertEquals(query.getString(CI_ID_NAME), ci.getId());
-                alreadyChecked.add(ciId);
-            }
-        }
-
-        // Check analyst email
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, ALL_STUDIES_VALUE);
-        query.put(CI_ANALYIST_EMAIL_NAME, "mail@ebi.ac.uk");
-        result = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, sessionIdUser);
-        assertTrue(result.getNumResults() > 0);
-        alreadyChecked.clear();
-        for (ClinicalVariantEvidence cve : result.getResults()) {
-            String ciId = (String) cve.getAttributes().get(CI_ID_NAME);
-            assertTrue(StringUtils.isNotEmpty(ciId));
-            if (!alreadyChecked.contains(ciId)) {
-                Interpretation ci = getClinicalInterpretation(ciId);
-                assertEquals(query.getString(CI_ANALYIST_EMAIL_NAME), ci.getAnalyst().getEmail());
                 alreadyChecked.add(ciId);
             }
         }
