@@ -41,6 +41,11 @@ public final class AuthenticationFactory {
         Email email = new Email();
 
         Map<String, AuthenticationManager> tmpAuthenticationManagerMap = new HashMap<>();
+
+        long expiration = organization.getConfiguration().getToken().getExpiration();
+        String algorithm = organization.getConfiguration().getToken().getAlgorithm();
+        String secretKey = organization.getConfiguration().getToken().getSecretKey();
+
         if (organization.getConfiguration() != null
                 && CollectionUtils.isNotEmpty(organization.getConfiguration().getAuthenticationOrigins())) {
             for (AuthenticationOrigin authOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
@@ -48,15 +53,16 @@ public final class AuthenticationFactory {
                     switch (authOrigin.getType()) {
                         case LDAP:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new LDAPAuthenticationManager(authOrigin, authOrigin.getSecretKey(), authOrigin.getExpiration()));
+                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, expiration));
                             break;
                         case AzureAD:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin));
                             break;
                         case OPENCGA:
-                            tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, authOrigin.getSecretKey(),
-                                            authOrigin.getExpiration()));
+                            CatalogAuthenticationManager catalogAuthenticationManager =
+                                    new CatalogAuthenticationManager(catalogDBAdaptorFactory, email, algorithm, secretKey, expiration);
+                            tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.INTERNAL, catalogAuthenticationManager);
+                            tmpAuthenticationManagerMap.put(CatalogAuthenticationManager.OPENCGA, catalogAuthenticationManager);
                             break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in organization '{}'. "
