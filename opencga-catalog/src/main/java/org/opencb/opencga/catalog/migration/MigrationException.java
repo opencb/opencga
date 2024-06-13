@@ -20,4 +20,10 @@ public class MigrationException extends CatalogException {
         return new MigrationException("Migration '" + migration.id() + "' requires database to be offline. Please, ensure the database "
                 + "cannot be accessed and run try again with '--offline' flag.");
     }
+
+    public static MigrationException deprecatedMigration(Migration migration) {
+        return new MigrationException("Migration '" + migration.id() + "' can't be run since version '"
+                + migration.deprecatedSince() + "'. Please, run this migration from a previous OpenCGA version.");
+    }
+
 }

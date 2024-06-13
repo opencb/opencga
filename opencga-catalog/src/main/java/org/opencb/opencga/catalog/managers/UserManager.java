@@ -144,14 +144,13 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
             }
         } else {
-            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.INTERNAL, false));
+            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
         }
 
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
             JwtPayload jwtPayload = validateToken(token);
             // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isOpencgaAdministrator(organizationId, jwtPayload.getUserId(organizationId))
-                    && !authorizationManager.isOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
                 String errorMsg = "Please ask your administrator to create your account.";
                 auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
@@ -204,6 +203,47 @@ public class UserManager extends AbstractManager {
         return create(user, password, token);
     }
 
+    /**
+     * Search users from Organization. Token must belong to at least an Organization administrator.
+     *
+     * @param organizationId Organization id.
+     * @param query          Query object.
+     * @param options        QueryOptions object.
+     * @param token          JWT token.
+     * @return               OpenCGAResult with the list of users.
+     * @throws CatalogException if the token does not belong to an Organization administrator or there are any parameters wrong.
+     */
+    public OpenCGAResult<User> search(@Nullable String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String myOrganizationId = StringUtils.isNotEmpty(organizationId) ? organizationId : tokenPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(myOrganizationId, tokenPayload.getUserId(myOrganizationId));
+
+            // Fix query params
+            if (query.containsKey(ParamConstants.USER_AUTHENTICATION_ORIGIN)) {
+                query.put(UserDBAdaptor.QueryParams.ACCOUNT_AUTHENTICATION_ID.key(), query.get(ParamConstants.USER_AUTHENTICATION_ORIGIN));
+                query.remove(ParamConstants.USER_AUTHENTICATION_ORIGIN);
+            }
+
+            OpenCGAResult<User> result = getUserDBAdaptor(myOrganizationId).get(query, options);
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (Exception e) {
+            auditManager.auditSearch(myOrganizationId, tokenPayload.getUserId(myOrganizationId), Enums.Resource.USER, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "User search", e.getMessage())));
+            throw e;
+        }
+    }
+
     public JwtPayload validateToken(String token) throws CatalogException {
         JwtPayload jwtPayload = new JwtPayload(token);
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
@@ -211,7 +251,7 @@ public class UserManager extends AbstractManager {
 
         String authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.INTERNAL;
+            authOrigin = CatalogAuthenticationManager.OPENCGA;
         } else {
             OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(), INCLUDE_ACCOUNT);
             if (userResult.getNumResults() == 0) {
@@ -520,7 +560,7 @@ public class UserManager extends AbstractManager {
      * @return The requested users
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<User> get(String organizationId, List<String> userIdList, QueryOptions options, String token)
+    public OpenCGAResult<User> get(@Nullable String organizationId, List<String> userIdList, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkNotEmptyArray(userIdList, "userId");
         ParamUtils.checkParameter(token, "token");
@@ -533,7 +573,7 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
         JwtPayload jwtPayload = validateToken(token);
 
-        if (userIdList.size() == 1 && jwtPayload.getUserId().equals(userIdList.get(0)) && StringUtils.isEmpty(organizationId)) {
+        if (StringUtils.isEmpty(organizationId)) {
             organizationId = jwtPayload.getOrganization();
         }
         String userId = jwtPayload.getUserId(organizationId);
@@ -541,9 +581,10 @@ public class UserManager extends AbstractManager {
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationUuid);
         try {
-            // 1. If the user is an opencga administrator or the organization owner or admin - return info
-            if (authorizationManager.isOpencgaAdministrator(jwtPayload)
-                    || authorizationManager.isOrganizationOwnerOrAdmin(organizationId, userId)
+            // 1. If the user is an opencga administrator or the organization owner or admin
+            // 2. Or the user is requesting its own data
+            //    - return info
+            if (authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)
                     || (userIdList.size() == 1 && userId.equals(userIdList.get(0)))) {
                 Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), userIdList);
                 OpenCGAResult<User> userDataResult = getUserDBAdaptor(organizationId).get(query, options);
@@ -590,7 +631,7 @@ public class UserManager extends AbstractManager {
 
             userId = getValidUserId(userId, payload);
             for (String s : parameters.keySet()) {
-                if (!s.matches("name|email|organization|attributes")) {
+                if (!s.matches("name|email|attributes")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
@@ -771,7 +812,7 @@ public class UserManager extends AbstractManager {
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
-        if (!CatalogAuthenticationManager.INTERNAL.equals(authId)) {
+        if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
                 // If the user is not registered, an exception will be raised
@@ -782,7 +823,7 @@ public class UserManager extends AbstractManager {
                         .get(0);
                 user.setOrganization(organizationId);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL, OPENCGA);
+                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
 
@@ -809,7 +850,7 @@ public class UserManager extends AbstractManager {
             throw CatalogAuthenticationException.userNotFound(organizationId, ParamConstants.ANONYMOUS_USER_ID);
         }
 
-        String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.INTERNAL,
+        String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA,
                 ParamConstants.ANONYMOUS_USER_ID);
         return new AuthenticationResponse(token);
     }
@@ -817,12 +858,13 @@ public class UserManager extends AbstractManager {
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
-     * @param organizationId Organization id.
      * @param token          active token.
      * @return a new AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public AuthenticationResponse refreshToken(String organizationId, String token) throws CatalogException {
+    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+        JwtPayload payload = new JwtPayload(token);
+        String organizationId = payload.getOrganization();
         AuthenticationResponse response = null;
         CatalogAuthenticationException exception = null;
         String userId = "";
@@ -836,7 +878,7 @@ public class UserManager extends AbstractManager {
                 break;
             } catch (CatalogAuthenticationException e) {
                 logger.debug("Could not refresh token with '{}' provider: {}", entry.getKey(), e.getMessage(), e);
-                if (CatalogAuthenticationManager.INTERNAL.equals(entry.getKey())) {
+                if (CatalogAuthenticationManager.OPENCGA.equals(entry.getKey())) {
                     exception = e;
                 }
             }

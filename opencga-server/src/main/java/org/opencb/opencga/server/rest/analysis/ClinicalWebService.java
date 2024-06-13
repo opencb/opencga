@@ -276,6 +276,51 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
+    @Path("/{clinicalAnalysis}/report/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update clinical analysis report", response = ClinicalReport.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateReport(
+            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD")
+            @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of supporting evidences is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("supportingEvidencesAction") ParamUtils.BasicUpdateAction supportingEvidencesAction,
+            @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(name = "body", value = "JSON containing clinical report information", required = true) ClinicalReport params) {
+        try {
+            if (commentsAction == null) {
+                commentsAction = ParamUtils.AddRemoveReplaceAction.ADD;
+            }
+            if (supportingEvidencesAction == null) {
+                supportingEvidencesAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+            if (filesAction == null) {
+                filesAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), commentsAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), supportingEvidencesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), filesAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            return createOkResponse(clinicalManager.updateReport(studyStr, clinicalAnalysisStr, params, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @POST
     @Path("/annotationSets/load")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)

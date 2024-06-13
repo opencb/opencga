@@ -76,15 +76,23 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
         throw new CatalogAuthorizationException("Permission denied: Only the organization owner or administrators can update the project.");
     }
 
     @Override
+    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogAuthorizationException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return;
+        }
+        checkUserExists(organizationId, userId);
+    }
+
+    @Override
     public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
-        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
 
@@ -117,7 +125,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
             throws CatalogException {
-        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         } else {
             if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyId, userId, permission)) {
@@ -129,7 +137,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditStudy(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!this.isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("modify a study");
         }
     }
@@ -148,7 +156,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanUpdatePermissionRules(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("update the permission rules");
         }
     }
@@ -160,7 +168,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");
         }
 
-        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("create or remove groups.");
         }
     }
@@ -177,10 +185,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 && (action != ParamUtils.BasicUpdateAction.ADD && action != ParamUtils.BasicUpdateAction.REMOVE)) {
             throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for " + MEMBERS_GROUP + " group.");
         }
-        if (ADMINS_GROUP.equals(group) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (ADMINS_GROUP.equals(group) && !isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("assign or remove users to the " + ADMINS_GROUP + " group.");
         }
-        if (!isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("assign or remove users to groups.");
         }
     }
@@ -196,24 +204,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanAssignOrSeePermissions(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencgaAdministrator(organizationId, userId) && !isStudyAdministrator(organizationId, studyId, userId)) {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("assign or see all permissions");
         }
     }
 
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isOpencgaAdministrator(organizationId, userId) && !isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("create, update or delete variable sets.");
         }
     }
 
     @Override
-    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogException {
+    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogAuthorizationException {
         if (ParamConstants.ADMIN_ORGANIZATION.equals(organization) || userId.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
             // Check user exists in ADMIN ORGANIZATION
             String user = userId.replace(ParamConstants.ADMIN_ORGANIZATION + ":", "");
-            dbAdaptorFactory.getCatalogUserDBAdaptor(ParamConstants.ADMIN_ORGANIZATION).checkId(user);
+            checkUserExists(ParamConstants.ADMIN_ORGANIZATION, user);
             return true;
         }
         return false;
@@ -227,28 +235,51 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkIsOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
-        if (!isOrganizationOwnerOrAdmin(organizationId, userId)) {
+    public void checkIsAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (!isAtLeastOrganizationOwner(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwner();
+        }
+    }
+
+    @Override
+    public void checkIsAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
+        if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
         }
     }
 
     @Override
-    public boolean isOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogDBException {
+    public boolean isAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return true;
+        }
         OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
         Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
-        return organization.getOwner().equals(userId) || organization.getAdmins().contains(userId);
+        return organization.getOwner().equals(userId);
     }
 
     @Override
-    public void checkIsStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isStudyAdministrator(organizationId, studyId, userId)) {
+    public boolean isAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return true;
+        }
+        OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
+        Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        return userId.equals(organization.getOwner()) || organization.getAdmins().contains(userId);
+    }
+
+    @Override
+    public void checkIsAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("perform this action");
         }
     }
 
     @Override
-    public boolean isStudyAdministrator(String organizationId, long studyId, String user) throws CatalogException {
+    public boolean isAtLeastStudyAdministrator(String organizationId, long studyId, String user) throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, user)) {
+            return true;
+        }
         OpenCGAResult<Group> groupBelonging = getGroupBelonging(organizationId, studyId, user);
         for (Group group : groupBelonging.getResults()) {
             if (group.getId().equals(ADMINS_GROUP)) {
@@ -274,7 +305,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private boolean checkUserPermission(String organizationId, String userId, Query query, CoreDBAdaptor dbAdaptor)
             throws CatalogException {
-        if (isOpencgaAdministrator(organizationId, userId) || isOrganizationOwnerOrAdmin(organizationId, userId)) {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return true;
         } else {
             if (dbAdaptor.count(query, userId).getNumMatches() == 1) {
@@ -979,6 +1010,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
+    private void checkUserExists(String organizationId, String userId) throws CatalogAuthorizationException {
+        try {
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("User '" + userId + "' not authorized to see Org '" + organizationId + "'.", e);
+        }
+    }
 
     /**
      * Retrieves the groupId where the members belongs to.
