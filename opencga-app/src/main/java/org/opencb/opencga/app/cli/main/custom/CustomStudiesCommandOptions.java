@@ -65,5 +65,14 @@ public class CustomStudiesCommandOptions {
 
         @Parameter(names = {"--jobTags"}, description = "Job tags.", arity = 1)
         public String jobTags;
+
+        @Parameter(names = {"--jobScheduledStartTime"}, description = "Job scheduled start time.", arity = 1)
+        public String scheduledStartTime;
+
+        @Parameter(names = {"--jobPriority"}, description = "Job priority.", arity = 1)
+        public String priority;
+
+        @Parameter(names = {"--jobDryRun"}, description = "Job dry-run mode.", arity = 1)
+        public Boolean dryRun;
     }
 }

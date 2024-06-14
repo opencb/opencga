@@ -95,6 +95,15 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--command"}, description = "The body web service command parameter", required = false, arity = 1)
         public String command;
     
@@ -142,6 +151,15 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--bam-file-id"}, description = "The body web service bamFileId parameter", required = false, arity = 1)
         public String bamFileId;
     
@@ -179,6 +197,15 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--bam-file"}, description = "The body web service bamFile parameter", required = false, arity = 1)
         public String bamFile;
@@ -311,6 +338,15 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--command"}, description = "The body web service command parameter", required = false, arity = 1)
         public String command;
     
@@ -348,6 +384,15 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--input-file"}, description = "The body web service inputFile parameter", required = false, arity = 1)
         public String inputFile;
@@ -387,6 +432,15 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
     
@@ -421,6 +475,15 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--command"}, description = "The body web service command parameter", required = false, arity = 1)
         public String command;
@@ -459,6 +522,15 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--bam-file"}, description = "ID for the BAM file to process.", required = false, arity = 1)
         public String bamFile;
@@ -568,6 +640,15 @@ public class AnalysisAlignmentCommandOptions {
     
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
+    
+        @Parameter(names = {"--scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String scheduledStartTime; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
     
         @Parameter(names = {"--command"}, description = "The body web service command parameter", required = false, arity = 1)
         public String command;

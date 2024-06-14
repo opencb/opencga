@@ -20,33 +20,33 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | configureCellbase | /{apiVersion}/operation/cellbase/configure | project, annotationUpdate, annotationSaveId, body |
-#' | aggregateVariant | /{apiVersion}/operation/variant/aggregate | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | deleteVariantAnnotation | /{apiVersion}/operation/variant/annotation/delete | jobId, jobDescription, jobDependsOn, jobTags, project, annotationId |
-#' | indexVariantAnnotation | /{apiVersion}/operation/variant/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, project, study, body |
-#' | saveVariantAnnotation | /{apiVersion}/operation/variant/annotation/save | jobId, jobDescription, jobDependsOn, jobTags, project, body |
+#' | aggregateVariant | /{apiVersion}/operation/variant/aggregate | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | deleteVariantAnnotation | /{apiVersion}/operation/variant/annotation/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, annotationId |
+#' | indexVariantAnnotation | /{apiVersion}/operation/variant/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, study, body |
+#' | saveVariantAnnotation | /{apiVersion}/operation/variant/annotation/save | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, body |
 #' | configureVariant | /{apiVersion}/operation/variant/configure | project, study, body |
-#' | deleteVariant | /{apiVersion}/operation/variant/delete | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | aggregateVariantFamily | /{apiVersion}/operation/variant/family/aggregate | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | indexVariantFamily | /{apiVersion}/operation/variant/family/index | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | indexVariant | /{apiVersion}/operation/variant/index | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | launcherVariantIndex | /{apiVersion}/operation/variant/index/launcher | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | runVariantJulie | /{apiVersion}/operation/variant/julie/run | jobId, jobDescription, jobDependsOn, jobTags, project, body[*] |
-#' | repairVariantMetadata | /{apiVersion}/operation/variant/metadata/repair | jobId, jobDescription, jobDependsOn, jobTags, body |
-#' | synchronizeVariantMetadata | /{apiVersion}/operation/variant/metadata/synchronize | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | pruneVariant | /{apiVersion}/operation/variant/prune | jobId, jobDescription, jobDependsOn, jobTags, body |
-#' | deleteVariantSample | /{apiVersion}/operation/variant/sample/delete | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | indexVariantSample | /{apiVersion}/operation/variant/sample/index | jobId, jobDescription, jobDependsOn, jobTags, study, body |
+#' | deleteVariant | /{apiVersion}/operation/variant/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | aggregateVariantFamily | /{apiVersion}/operation/variant/family/aggregate | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | indexVariantFamily | /{apiVersion}/operation/variant/family/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | indexVariant | /{apiVersion}/operation/variant/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | launcherVariantIndex | /{apiVersion}/operation/variant/index/launcher | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | runVariantJulie | /{apiVersion}/operation/variant/julie/run | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, body[*] |
+#' | repairVariantMetadata | /{apiVersion}/operation/variant/metadata/repair | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, body |
+#' | synchronizeVariantMetadata | /{apiVersion}/operation/variant/metadata/synchronize | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | pruneVariant | /{apiVersion}/operation/variant/prune | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, body |
+#' | deleteVariantSample | /{apiVersion}/operation/variant/sample/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | indexVariantSample | /{apiVersion}/operation/variant/sample/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
 #' | variantSampleIndexConfigure | /{apiVersion}/operation/variant/sample/index/configure | study, skipRebuild, body |
-#' | deleteVariantScore | /{apiVersion}/operation/variant/score/delete | jobId, jobDescription, jobDependsOn, jobTags, study, name, resume, force |
-#' | indexVariantScore | /{apiVersion}/operation/variant/score/index | jobId, jobDescription, jobDependsOn, jobTags, study, body |
-#' | variantSecondaryAnnotationIndex | /{apiVersion}/operation/variant/secondary/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, project, study, body |
-#' | variantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index | jobId, jobDescription, jobDependsOn, jobTags, study, body |
+#' | deleteVariantScore | /{apiVersion}/operation/variant/score/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, name, resume, force |
+#' | indexVariantScore | /{apiVersion}/operation/variant/score/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
+#' | variantSecondaryAnnotationIndex | /{apiVersion}/operation/variant/secondary/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, study, body |
+#' | variantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
 #' | configureVariantSecondarySampleIndex | /{apiVersion}/operation/variant/secondary/sample/index/configure | study, skipRebuild, body |
-#' | secondaryIndexVariant | /{apiVersion}/operation/variant/secondaryIndex | jobId, jobDescription, jobDependsOn, jobTags, project, study, body |
-#' | deleteVariantSecondaryIndex | /{apiVersion}/operation/variant/secondaryIndex/delete | jobId, jobDescription, jobDependsOn, jobTags, study, samples |
-#' | deleteVariantStats | /{apiVersion}/operation/variant/stats/delete | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | indexVariantStats | /{apiVersion}/operation/variant/stats/index | study, jobId, jobDescription, jobDependsOn, jobTags, body[*] |
-#' | deleteVariantStudy | /{apiVersion}/operation/variant/study/delete | jobId, jobDescription, jobDependsOn, jobTags, study, body |
+#' | secondaryIndexVariant | /{apiVersion}/operation/variant/secondaryIndex | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, project, study, body |
+#' | deleteVariantSecondaryIndex | /{apiVersion}/operation/variant/secondaryIndex/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, samples |
+#' | deleteVariantStats | /{apiVersion}/operation/variant/stats/delete | study, jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | indexVariantStats | /{apiVersion}/operation/variant/stats/index | study, jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | deleteVariantStudy | /{apiVersion}/operation/variant/study/delete | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -72,6 +72,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant aggregate params.
         aggregateVariant=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL, subcategory="variant",
@@ -83,6 +86,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project Project [organization@]project where project can be either the ID or the alias.
         #' @param annotationId Annotation identifier.
         deleteVariantAnnotation=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -95,6 +101,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project Project [organization@]project where project can be either the ID or the alias.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant annotation index params.
@@ -108,6 +117,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project Project [organization@]project where project can be either the ID or the alias.
         #' @param data Variant annotation save params.
         saveVariantAnnotation=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -128,6 +140,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant delete file params.
         deleteVariant=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL, subcategory="variant",
@@ -139,6 +154,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant aggregate family params.
         aggregateVariantFamily=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -151,6 +169,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant family index params.
         indexVariantFamily=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -163,6 +184,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant index params.
         indexVariant=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL, subcategory="variant",
@@ -174,6 +198,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data .
         launcherVariantIndex=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -186,6 +213,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project project.
         #' @param data Julie tool params. Specify list of cohorts from multiple studies with {study}:{cohort}.
         runVariantJulie=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -198,6 +228,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant storage metadata repair params.
         repairVariantMetadata=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
                 subcategory="variant/metadata", subcategoryId=NULL, action="repair", params=params, httpMethod="POST",
@@ -209,6 +242,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant storage metadata synchronize params.
         synchronizeVariantMetadata=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -221,6 +257,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant prune params. Use dry-run to just generate a report with the orphan variants.
         pruneVariant=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL, subcategory="variant",
                 subcategoryId=NULL, action="prune", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -231,6 +270,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant delete sample params.
         deleteVariantSample=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -243,6 +285,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant sample index params.
         indexVariantSample=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -264,6 +309,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param name Unique name of the score within the study.
         #' @param resume Resume a previously failed remove.
@@ -278,6 +326,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant score index params. scoreName: Unique name of the score within the study. cohort1: Cohort used to compute the score. Use the cohort 'ALL' if all samples from the study where used to compute the score. cohort2: Second cohort used to compute the score, typically to compare against the first cohort. If only one cohort was used to compute the score, leave empty. inputColumns: Indicate which columns to load from the input file. Provide the column position (starting in 0) for the column with the score with 'SCORE=n'. Optionally, the PValue column with 'PVALUE=n'. The, to indicate the variant associated with the score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'. resume: Resume a previously failed indexation.
         indexVariantScore=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -290,6 +341,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project Project [organization@]project where project can be either the ID or the alias.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant secondary annotation index params.
@@ -303,6 +357,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant sample index params.
         variantSecondarySampleIndex=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -324,6 +381,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param project Project [organization@]project where project can be either the ID or the alias.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant secondary annotation index params.
@@ -337,6 +397,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param samples Samples to remove. Needs to provide all the samples in the secondary index.
         deleteVariantSecondaryIndex=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
@@ -350,6 +413,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant stats delete params.
         deleteVariantStats=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
                 subcategory="variant/stats", subcategoryId=NULL, action="delete", params=params, httpMethod="POST",
@@ -362,6 +428,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data Variant stats params.
         indexVariantStats=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
                 subcategory="variant/stats", subcategoryId=NULL, action="index", params=params, httpMethod="POST",
@@ -373,6 +442,9 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Variant delete study params.
         deleteVariantStudy=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,

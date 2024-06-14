@@ -160,6 +160,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
         jobsSubCommands.addCommand("info", jobsCommandOptions.infoCommandOptions);
         jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
+        jobsSubCommands.addCommand("kill", jobsCommandOptions.killCommandOptions);
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
         jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);

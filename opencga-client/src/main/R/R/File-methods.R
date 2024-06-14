@@ -24,11 +24,11 @@
 #' | bioformats | /{apiVersion}/files/bioformats |  |
 #' | create | /{apiVersion}/files/create | study, parents, body[*] |
 #' | distinct | /{apiVersion}/files/distinct | study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field[*] |
-#' | fetch | /{apiVersion}/files/fetch | jobId, jobDescription, jobDependsOn, jobTags, study, body[*] |
+#' | fetch | /{apiVersion}/files/fetch | jobId, jobDescription, jobDependsOn, jobTags, scheduledStartTime, priority, dryRun, study, body[*] |
 #' | formats | /{apiVersion}/files/formats |  |
 #' | link | /{apiVersion}/files/link | study, parents, body[*] |
-#' | runLink | /{apiVersion}/files/link/run | study, jobId, jobDependsOn, jobDescription, jobTags, body[*] |
-#' | runPostlink | /{apiVersion}/files/postlink/run | study, jobId, jobDependsOn, jobDescription, jobTags, body[*] |
+#' | runLink | /{apiVersion}/files/link/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
+#' | runPostlink | /{apiVersion}/files/postlink/run | study, jobId, jobDependsOn, jobDescription, jobTags, scheduledStartTime, priority, dryRun, body[*] |
 #' | search | /{apiVersion}/files/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release |
 #' | upload | /{apiVersion}/files/upload | file, fileName, fileFormat, bioformat, checksum, study, relativeFilePath, description, parents |
 #' | acl | /{apiVersion}/files/{files}/acl | files[*], study, member, silent |
@@ -130,6 +130,9 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param jobDescription Job description.
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param data Fetch parameters.
         fetch=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
@@ -156,6 +159,9 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data File parameters.
         runLink=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory="link",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
@@ -167,6 +173,9 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
         #' @param jobDescription Job description.
         #' @param jobTags Job tags.
+        #' @param scheduledStartTime Time when the job is scheduled to start.
+        #' @param priority Priority of the job.
+        #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data File parameters.
         runPostlink=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory="postlink",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),

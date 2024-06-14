@@ -255,6 +255,19 @@ public class JobClient extends AbstractParentClient {
     }
 
     /**
+     * Send a signal to kill a pending or running job.
+     * @param job Job ID or UUID.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> kill(String job, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("jobs", job, null, null, "kill", params, POST, Job.class);
+    }
+
+    /**
      * Show the first lines of a log file (up to a limit).
      * @param job Job ID or UUID.
      * @param params Map containing any of the following optional parameters.

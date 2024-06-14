@@ -570,6 +570,10 @@ public class ParamConstants {
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
     public static final String JOB_SCHEDULED_START_TIME_DESCRIPTION = FieldConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION;
     public static final String JOB_SCHEDULED_START_TIME = FieldConstants.JOB_SCHEDULED_START_TIME;
+    public static final String JOB_DRY_RUN = "dryRun";
+    public static final String JOB_DRY_RUN_DESCRIPTION = "Flag indicating that the job will be executed in dry-run mode. In this mode,"
+            + " OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will"
+            + " not actually run.";
 
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
