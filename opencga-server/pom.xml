@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>3.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -392,7 +392,9 @@
         <profile>
             <id>CodeGen</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>!skipCodeGen</name>
+                </property>
             </activation>
             <build>
                 <plugins>

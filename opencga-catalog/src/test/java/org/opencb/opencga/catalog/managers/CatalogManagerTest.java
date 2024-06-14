@@ -105,6 +105,35 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void searchUsersTest() throws CatalogException {
+        OpenCGAResult<User> search = catalogManager.getUserManager().search(organizationId, new Query(), QueryOptions.empty(), opencgaToken);
+        assertEquals(8, search.getNumResults());
+        for (User user : search.getResults()) {
+            if (noAccessUserId1.equals(user.getId())) {
+                assertEquals(0, user.getProjects().size());
+            } else if (user.getId().startsWith("normalUser")) {
+                assertEquals(1, user.getProjects().size());
+            } else {
+                assertEquals(2, user.getProjects().size());
+            }
+        }
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), ownerToken);
+        assertEquals(8, search.getNumResults());
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), orgAdminToken2);
+        assertEquals(8, search.getNumResults());
+
+        search = catalogManager.getUserManager().search(null, new Query(), QueryOptions.empty(), orgAdminToken1);
+        assertEquals(8, search.getNumResults());
+
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().search(null, new Query(),
+                QueryOptions.empty(), studyAdminToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().search(null, new Query(),
+                QueryOptions.empty(), normalToken1));
+    }
+
+    @Test
     public void testGetToken() throws Exception {
         String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         Map<String, Object> claims = new HashMap<>();
