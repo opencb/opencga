@@ -494,7 +494,7 @@ public class JobManager extends ResourceManager<Job> {
                 jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
             }
             return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, job.getId(),
-                    jobRetry.getScheduledStartTime(), attributes, token);
+                    jobRetry.getScheduledStartTime(), job.isDryRun(), attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
@@ -502,7 +502,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, null, null, null, token);
+        return submit(studyStr, toolId, priority, params, null, null, null, null, null, null, false, token);
     }
 
     public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority,
@@ -520,20 +520,20 @@ public class JobManager extends ResourceManager<Job> {
         if (studies.isEmpty()) {
             throw new CatalogException("Project '" + projectStr + "' not found!");
         }
-        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, token);
+        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, false, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags, @Nullable String jobParentId,
-                                     @Nullable String scheduledStartTime, String token) throws CatalogException {
+                                     @Nullable String scheduledStartTime, Boolean dryRun, String token) throws CatalogException {
         return submit(studyStr, toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, jobParentId, scheduledStartTime,
-                null, token);
+                dryRun, null, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags,
-                                     @Nullable String jobParentId, @Nullable String scheduledStartTime, Map<String, Object> attributes,
-                                     String token) throws CatalogException {
+                                     @Nullable String jobParentId, @Nullable String scheduledStartTime, Boolean dryRun,
+                                     Map<String, Object> attributes, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -551,8 +551,8 @@ public class JobManager extends ResourceManager<Job> {
                 .append("jobTags", jobTags)
                 .append("jobParentId", jobParentId)
                 .append("scheduledStartTime", scheduledStartTime)
+                .append("dryRun", dryRun)
                 .append("token", token);
-
         Job job = new Job();
         job.setId(jobId);
         job.setDescription(jobDescription);
@@ -564,6 +564,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setParentId(jobParentId);
         job.setScheduledStartTime(scheduledStartTime);
         job.setPriority(priority);
+        job.setDryRun(dryRun != null && dryRun);
         job.setDependsOn(jobDependsOn != null
                 ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
                 : Collections.emptyList());

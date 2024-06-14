@@ -444,7 +444,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found malformed variants"));
@@ -462,7 +462,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
@@ -483,7 +483,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
-                , outDir, null, sessionId);
+                , outDir, null, false, sessionId);
     }
 
     @Override

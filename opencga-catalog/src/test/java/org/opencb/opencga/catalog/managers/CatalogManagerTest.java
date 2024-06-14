@@ -1107,7 +1107,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Same params, different order, empty jobId
         OpenCGAResult<Job> result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 1),
-                "", "", Collections.emptyList(), Collections.emptyList(), null, null, ownerToken);
+                "", "", Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertEquals(job1, result.first().getId());
         assertEquals(1, result.getEvents().size());
         assertEquals("reuse", result.getEvents().get(0).getId());
@@ -1118,13 +1118,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Same params, but with jobId
         result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "MyJobId", "",
-                Collections.emptyList(), Collections.emptyList(), null, null, ownerToken);
+                Collections.emptyList(), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
         assertEquals("MyJobId", result.first().getId());
 
         // Same params, but with dependencies
         result = catalogManager.getJobManager().submit(study1, toolId, null, new ObjectMap("key2", 2).append("key", 2), "", "",
-                Collections.singletonList(job1), Collections.emptyList(), null, null, ownerToken);
+                Collections.singletonList(job1), Collections.emptyList(), null, null, false, ownerToken);
         assertNotEquals(job1, result.first().getId());
     }
 
@@ -1132,13 +1132,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
         Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), ownerToken).first();
         Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
-                Collections.singletonList(first.getUuid()), null, null, null, ownerToken).first();
+                Collections.singletonList(first.getUuid()), null, null, null, false, ownerToken).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
-                Collections.singletonList(first.getId()), null, null, null, ownerToken);
+                Collections.singletonList(first.getId()), null, null, null, false, ownerToken);
     }
 
     @Test
@@ -1204,9 +1204,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file2"), ownerToken).first();
 
         Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file3"), null, null,
-                Arrays.asList(job1.getId(), job2.getId()), null, null, null, ownerToken).first();
+                Arrays.asList(job1.getId(), job2.getId()), null, null, null, false, ownerToken).first();
         Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap("param", "file4"), null, null,
-                Arrays.asList(job1.getUuid(), job2.getUuid()), null, null, null, ownerToken).first();
+                Arrays.asList(job1.getUuid(), job2.getUuid()), null, null, null, false, ownerToken).first();
 
         assertEquals(2, job3.getDependsOn().size());
         assertEquals(job1.getUuid(), job3.getDependsOn().get(0).getUuid());

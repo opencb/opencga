@@ -277,7 +277,7 @@ public class AlignmentAnalysisTest {
         String geneName = "BRCA2";
         params.setGenes(Arrays.asList(geneName));
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, false, token);
 
         bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();

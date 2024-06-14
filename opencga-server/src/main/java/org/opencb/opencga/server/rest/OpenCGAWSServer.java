@@ -922,8 +922,13 @@ public class OpenCGAWSServer {
         } else {
             jobDependsOn = Collections.emptyList();
         }
+        Enums.Priority priority = Enums.Priority.MEDIUM;
+        if (!StringUtils.isEmpty(jobPriority)) {
+            priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
+        }
         return catalogManager.getJobManager()
-                .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null, jobScheduledStartTime, token);
+                .submit(study, toolId, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
+                        jobScheduledStartTime, dryRun, token);
     }
 
     public Response createPendingResponse() {

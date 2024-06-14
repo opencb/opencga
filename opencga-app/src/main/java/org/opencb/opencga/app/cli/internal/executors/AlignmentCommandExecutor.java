@@ -50,6 +50,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private AlignmentCommandOptions alignmentCommandOptions;
     private String jobId;
+    private boolean dryRun;
 //    private AlignmentStorageEngine alignmentStorageManager;
 
     public AlignmentCommandExecutor(AlignmentCommandOptions options) {
@@ -65,6 +66,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         configure();
 
         jobId = alignmentCommandOptions.internalJobOptions.jobId;
+        dryRun = alignmentCommandOptions.internalJobOptions.dryRun;
 
         switch (subCommandString) {
             case "index-run":
@@ -119,7 +121,8 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory,
+                alignmentCommandOptions.internalJobOptions.jobId, alignmentCommandOptions.internalJobOptions.dryRun);
 
         alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
     }
@@ -162,7 +165,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         ).toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(AlignmentQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(AlignmentQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void geneCoverageStatsRun() throws ToolException {
@@ -176,7 +179,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         ).toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
 //    private void statsRun() throws ToolException {
@@ -239,7 +242,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.windowSize
         ).toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(AlignmentCoverageAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void delete() {
@@ -264,7 +267,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.bwaParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(BwaWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(BwaWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // Samtools
@@ -279,7 +282,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.samtoolsParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // Deeptools
@@ -293,7 +296,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.deeptoolsParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // FastQC
@@ -307,7 +310,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.fastqcParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(FastqcWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(FastqcWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     // Picard
@@ -321,7 +324,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.picardParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(PicardWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+        toolRunner.execute(PicardWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     //-------------------------------------------------------------------------

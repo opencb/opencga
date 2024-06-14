@@ -235,10 +235,10 @@ public class VariantOperationsTest {
                         .setFile(file.getId())
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
-                Paths.get(opencga.createTmpOutdir("_index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", token);
+                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -320,7 +320,7 @@ public class VariantOperationsTest {
                     new VariantIndexParams()
                             .setForceReload(false)
                             .setFile(file.getId()),
-                    Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                    Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
             fail("Should have thrown an exception");
         } catch (ToolException e) {
             assertEquals(StorageEngineException.class, e.getCause().getClass());
@@ -331,7 +331,7 @@ public class VariantOperationsTest {
                 new VariantIndexParams()
                         .setForceReload(true)
                         .setFile(file.getId()),
-                Paths.get(opencga.createTmpOutdir()), "index_reload", token);
+                Paths.get(opencga.createTmpOutdir()), "index_reload", false, token);
 
     }
 
@@ -346,7 +346,7 @@ public class VariantOperationsTest {
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
-                Paths.get(opencga.createTmpOutdir()), "annotation_index", token);
+                Paths.get(opencga.createTmpOutdir()), "annotation_index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
@@ -374,7 +374,7 @@ public class VariantOperationsTest {
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(ParamConstants.ALL)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -392,7 +392,7 @@ public class VariantOperationsTest {
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
                 new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
-                Paths.get(opencga.createTmpOutdir()), "", catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
+                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
@@ -464,7 +464,7 @@ public class VariantOperationsTest {
                 new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
                         .setSample(Arrays.asList(daughter)),
-                Paths.get(opencga.createTmpOutdir()), "index", token);
+                Paths.get(opencga.createTmpOutdir()), "index", false, token);
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -487,7 +487,7 @@ public class VariantOperationsTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
 
         List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);

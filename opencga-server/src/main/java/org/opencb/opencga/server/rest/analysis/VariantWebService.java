@@ -1033,7 +1033,7 @@ public class VariantWebService extends AnalysisWebService {
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
             mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir, null,
-                    token);
+                    false, token);
             mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
             mutationalSignatureAnalysis.setSignatureParams(params);
 

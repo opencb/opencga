@@ -66,6 +66,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
     private String jobId;
+    private boolean dryRun;
 
     private static final Map<String, String> statsMap = new HashMap<>();
 
@@ -78,12 +79,13 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
-    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId, boolean dryRun) {
         super(catalogManager, storageEngineFactory);
 
         // TODO: Create this alignmentStorageEngine by reflection
         this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
         this.jobId = jobId;
+        this.dryRun = dryRun;
 
         initStatsMap();
     }
@@ -96,7 +98,7 @@ public class AlignmentStorageManager extends StorageManager {
         ObjectMap params = new ObjectMap();
 
         AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
-        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
+        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, dryRun, token);
 
         indexOperation.setStudy(study);
         indexOperation.setInputFile(inputFile);
