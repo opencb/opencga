@@ -622,6 +622,10 @@ public class MigrationManager {
                              String token) throws MigrationException {
         Migration annotation = getMigrationAnnotation(runnableMigration);
 
+        if (StringUtils.isNotEmpty(annotation.deprecatedSince())) {
+            throw MigrationException.deprecatedMigration(annotation);
+        }
+
         MigrationTool migrationTool;
         try {
             migrationTool = runnableMigration.newInstance();

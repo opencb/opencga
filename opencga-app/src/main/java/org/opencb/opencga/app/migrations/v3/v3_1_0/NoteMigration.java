@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v3_1_0;
+package org.opencb.opencga.app.migrations.v3.v3_1_0;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.MongoCollection;
