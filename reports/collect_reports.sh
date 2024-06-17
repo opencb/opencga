@@ -11,7 +11,7 @@ INPUT_FILE="$1"
 ROOT_DIR=$(pwd)
 REPORTS_DIR="$ROOT_DIR/reports"
 TEST_DIR="$REPORTS_DIR/test"
-IMAGES_DIR="$REPORTS_DIR/images"
+IMAGES_DIR="images"
 LOGO_URL="$IMAGES_DIR/Group-3.webp"
 
 # Get the execution date
@@ -161,6 +161,7 @@ cat <<EOL > "$INDEX_FILE"
     <main>
         <nav>
             <ul>
+            <li><a href="#" onclick="document.getElementById('content').innerHTML='<iframe src=\'summary.html\'></iframe>'">SUMMARY</a></li>
 EOL
 
 # Read the input file again to generate the menu
@@ -190,7 +191,7 @@ done < "$INPUT_FILE"
 
 # Add the closing tags to the index.html file
 cat <<EOL >> "$INDEX_FILE"
-            <li><a href="#" onclick="document.getElementById('content').innerHTML='<iframe src='summary.html'></iframe>'">SUMMARY</a></li>
+
             </ul>
         </nav>
         <div id="content">
@@ -200,6 +201,6 @@ cat <<EOL >> "$INDEX_FILE"
 </body>
 </html>
 EOL
-cp -r "$IMAGES_DIR" "$TEST_DIR/images/"
+cp -r "$REPORTS_DIR/$IMAGES_DIR" "$TEST_DIR/images/"
 echo "Reports have been collected and index.html has been created in $TEST_DIR"
 echo "Open $INDEX_FILE in your browser to see the reports."
