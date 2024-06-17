@@ -190,6 +190,7 @@ done < "$INPUT_FILE"
 
 # Add the closing tags to the index.html file
 cat <<EOL >> "$INDEX_FILE"
+            <li><a href="#" onclick="document.getElementById('content').innerHTML='<iframe src='summary.html'></iframe>'">SUMMARY</a></li>
             </ul>
         </nav>
         <div id="content">

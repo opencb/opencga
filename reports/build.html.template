@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { text-align: center; }
+        .section { margin: 20px; padding: 20px; border: 1px solid #ccc; }
+        pre { background-color: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Build Report</h1>
+    <div class="section">
+        <h2>Log Summary</h2>
+        <pre>#PARAM_SUMMARY</pre>
+    </div>
+    <div class="section">
+        <h2>Log Summary</h2>
+        <pre>#LOG_SUMMARY</pre>
+    </div>
+    <div class="section">
+        <h2>Version Summary</h2>
+        <pre>#VERSION_SUMMARY</pre>
+    </div>
+    <div class="section">
+        <h2>Execution Time</h2>
+        <pre>#EXECUTION_TIME</pre>
+    </div>
+</body>
+</html>

@@ -11,7 +11,7 @@ set -o nounset
 # Variables to store start time
 START_TIME=$(date +%s)
 START_DATE=$(date +"%Y-%m-%d %H:%M:%S")
-
+TIME_SUMMARY=""
 # Log file path
 LOG_FILE="build.log"
 # Check and delete the file if it exists
@@ -317,6 +317,7 @@ function build_opencga_enterprise() {
         print_log_summary
         exit 1
       else
+        "$OPENCGA_ENTERPRISE_HOME_DIR"/reports/collect_reports.sh "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
         local BRANCH="$(git branch --show-current)"
         local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
         log_version_summary "opencga-enterprise,$VERSION,$BRANCH"
@@ -331,7 +332,6 @@ function publish_reports() {
   if [ "$SAVE_REPORTS" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    "$OPENCGA_ENTERPRISE_HOME_DIR"/reports/collect_reports.sh "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
     azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
     VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
     azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
@@ -371,8 +371,6 @@ function log_summary() {
   LOG_SUMMARY="$LOG_SUMMARY""INFO: $(date +"%Y-%m-%d %H:%M:%S")  $@"
 }
 
-
-
 # Function to add messages to the log summary
 function log_version_summary() {
   if [ -n "$VERSION_SUMMARY" ]; then
@@ -381,6 +379,22 @@ function log_version_summary() {
   VERSION_SUMMARY="$VERSION_SUMMARY""$@"
 }
 
+
+# Function to add messages to the log summary
+function log_time_summary() {
+  if [ -n "$TIME_SUMMARY" ]; then
+    TIME_SUMMARY="$TIME_SUMMARY""\n"
+  fi
+  TIME_SUMMARY="$TIME_SUMMARY""$@"
+}
+
+# Function to add messages to the log summary
+function log_param_summary() {
+  if [ -n "$PARAM_SUMMARY" ]; then
+    PARAM_SUMMARY="$PARAM_SUMMARY""\n"
+  fi
+  PARAM_SUMMARY="$PARAM_SUMMARY""$@"
+}
 
 # Función para calcular y registrar el tiempo de ejecución
 function log_execution_time() {
@@ -393,18 +407,26 @@ function log_execution_time() {
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     local BRANCH="$(git branch --show-current)"
     local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
-    echo " " >> "$LOG_FILE"
-    echo "===========================" >> "$LOG_FILE"
-    echo " " >> "$LOG_FILE"
-    echo "End Xetabase-$VERSION $COMMAND for branch $BRANCH " >> "$LOG_FILE"
-    echo " " >> "$LOG_FILE"
-    echo "Script execution started at: $START_DATE" >> "$LOG_FILE"
-    echo "Script execution finished at: $END_DATE" >> "$LOG_FILE"
-    echo "Total execution time: ${HOURS}h ${MINUTES}m ${SECONDS}s" >> "$LOG_FILE"
-    echo " " >> "$LOG_FILE"
-    echo "===========================" >> "$LOG_FILE"
+
+    log_time_summary ""
+    log_time_summary "==========================="
+    log_time_summary ""
+    log_time_summary "End Xetabase-$VERSION $COMMAND for branch $BRANCH "
+    log_time_summary " "
+    log_time_summary "Script execution started at: $START_DATE"
+    log_time_summary "Script execution finished at: $END_DATE"
+    log_time_summary "Total execution time: ${HOURS}h ${MINUTES}m ${SECONDS}s"
+    log_time_summary ""
+    log_time_summary "==========================="
 }
 
+# Function to print all the log summary
+function print_time_summary() {
+    echo ""
+    echo "==========================" >> "$LOG_FILE"
+    echo -e "$TIME_SUMMARY" >> "$LOG_FILE"
+    echo "==========================" >> "$LOG_FILE"
+}
 # Function to print all the log summary
 function print_log_summary() {
     echo ""
@@ -424,23 +446,19 @@ if [[ -n "$value" ]]; then
 
 # Function to log parameters and global variables
 function log_initial_state() {
-    echo "===========================" >> "$LOG_FILE"
-    echo "Script execution started at $(date)" >> "$LOG_FILE"
-    echo "Parameters:" >> "$LOG_FILE"
-    echo "COMMAND: $COMMAND" >> "$LOG_FILE"
-    echo "DB_CELLBASE: $DB_CELLBASE" >> "$LOG_FILE"
-    echo "OPENCGA_HOME_DIR: $OPENCGA_HOME_DIR" >> "$LOG_FILE"
-    echo "STORAGE_HADOOP_DEPS: $STORAGE_HADOOP_DEPS" >> "$LOG_FILE"
-    echo "TEST_TAG: $TEST_TAG" >> "$LOG_FILE"
-    echo "TESTS_DIR: $TESTS_DIR" >> "$LOG_FILE"
-    echo "LOG_FILE: $LOG_FILE" >> "$LOG_FILE"
-    echo "TASK_REFERENCE: $TASK_REFERENCE" >> "$LOG_FILE"
-    echo "SAVE_REPORTS: $(yes_no "$SAVE_REPORTS")" >> "$LOG_FILE"
-    echo "FAIL_NEVER: $(yes_no "$FAIL_NEVER")" >> "$LOG_FILE"
-    echo "PREPARE_BRANCHES: $(yes_no "$PREPARE_BRANCHES")" >> "$LOG_FILE"
-    echo "DEBUG: $(yes_no "$DEBUG")" >> "$LOG_FILE"
-    echo "DOCKER: $(yes_no "$DOCKER")" >> "$LOG_FILE"
-    echo "" >> "$LOG_FILE"
+    log_param_summary "COMMAND,$COMMAND"
+    log_param_summary "DB_CELLBASE,$DB_CELLBASE"
+    log_param_summary "OPENCGA_HOME_DIR,$OPENCGA_HOME_DIR"
+    log_param_summary "STORAGE_HADOOP_DEPS,$STORAGE_HADOOP_DEPS"
+    log_param_summary "TEST_TAG,$TEST_TAG"
+    log_param_summary "TESTS_DIR,$TESTS_DIR"
+    log_param_summary "LOG_FILE,$LOG_FILE"
+    log_param_summary "TASK_REFERENCE,$TASK_REFERENCE"
+    log_param_summary "SAVE_REPORTS,$(yes_no "$SAVE_REPORTS")"
+    log_param_summary "FAIL_NEVER,$(yes_no "$FAIL_NEVER")"
+    log_param_summary "PREPARE_BRANCHES,$(yes_no "$PREPARE_BRANCHES")"
+    log_param_summary "DEBUG,$(yes_no "$DEBUG")"
+    log_param_summary "DOCKER,$(yes_no "$DOCKER")"
 }
 
 # Función para imprimir el resumen de versiones en formato de tabla
@@ -453,6 +471,70 @@ function print_version_summary() {
     done
 }
 
+# Función para imprimir el resumen de versiones en formato de tabla
+function print_param_summary() {
+    echo ""  >> "$LOG_FILE"
+    printf "%-25s %-20s \n" "Repository" "Version" >> "$LOG_FILE"
+    printf "%-25s %-20s \n" "---------" "-------" >> "$LOG_FILE"
+    echo -e "$PARAM_SUMMARY" | while IFS=',' read -r param value; do
+        printf "%-25s %-20s \n" "$param" "$value" >> "$LOG_FILE"
+    done
+}
+# Function to generate an HTML table from VERSION_SUMMARY
+function generate_param_table() {
+
+    # Start the table with headers
+    local table_html="<table style=\"width:100%; border-collapse: collapse;\">
+        <thead style=\"background-color: #aaa; color: white;\">
+            <tr>
+                <th style=\"padding: 8px; border: 1px solid #ddd;\">PARAMETER</th>
+                <th style=\"padding: 8px; border: 1px solid #ddd;\">VALUE</th>
+            </tr>
+        </thead>
+        <tbody>"
+
+    # Iterate over the version summary data
+    table_html=$table_html$(echo -e "$PARAM_SUMMARY" | while IFS=',' read -r param value; do
+        # Add row to the table
+        echo "<tr>"
+        echo "<td style=\"padding: 8px; border: 1px solid #ddd;\">$param</td>"
+        echo "<td style=\"padding: 8px; border: 1px solid #ddd;\">$value</td>"
+        echo "</tr>"
+    done)
+
+    # Close the table
+    table_html="$table_html</tbody></table>"
+    echo "$table_html"
+}
+
+# Function to generate an HTML table from VERSION_SUMMARY
+function generate_version_table() {
+
+    # Start the table with headers
+    local table_html="<table style=\"width:100%; border-collapse: collapse;\">
+        <thead style=\"background-color: #aaa; color: white;\">
+            <tr>
+                <th style=\"padding: 8px; border: 1px solid #ddd;\">Repository</th>
+                <th style=\"padding: 8px; border: 1px solid #ddd;\">Version</th>
+                <th style=\"padding: 8px; border: 1px solid #ddd;\">Branch</th>
+            </tr>
+        </thead>
+        <tbody>"
+
+    # Iterate over the version summary data
+    table_html=$table_html$(echo -e "$VERSION_SUMMARY" | while IFS=',' read -r repository version branch; do
+        # Add row to the table
+        echo "<tr>"
+        echo "<td style=\"padding: 8px; border: 1px solid #ddd;\">$repository</td>"
+        echo "<td style=\"padding: 8px; border: 1px solid #ddd;\">$version</td>"
+        echo "<td style=\"padding: 8px; border: 1px solid #ddd;\">$branch</td>"
+        echo "</tr>"
+    done)
+
+    # Close the table
+    table_html="$table_html</tbody></table>"
+    echo "$table_html"
+}
 
 ###################################
 ####### Script starts here  #######
@@ -475,6 +557,7 @@ DOCKER=""
 COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
+PARAM_SUMMARY=""
 
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -574,15 +657,48 @@ if [ "$DEBUG" == "true" ];then
   log_summary "SKIP_TESTS $SKIP_TESTS"
 fi
 
+# Function to generate the final HTML report
+function generate_html_report() {
+
+    local log_summary=$(echo -e "$LOG_SUMMARY")
+    # Generate the version summary html table
+    local param_summary=$(generate_param_table)
+    local version_summary=$(generate_version_table)
+    local execution_time=$(echo -e "$TIME_SUMMARY")
+    local template_file="reports/build.html.template"
+    local output_file="reports/test/summary.html"
+
+    # Read the template content
+    local template_content=$(<"$template_file")
+
+    # Replace placeholders with actual content
+    template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
+    template_content="${template_content//#LOG_SUMMARY/$log_summary}"
+    template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
+    template_content="${template_content//#EXECUTION_TIME/$execution_time}"
+
+    # Ensure the output directory exists
+    mkdir -p "$(dirname "$output_file")"
+
+    # Write the final content to the output file
+    echo "$template_content" > "$output_file"
+}
+
+
 function print_log() {
-    # Print log summary
-    print_log_summary
-    # Print version table summary
-    print_version_summary
-    # Log execution time
-    log_execution_time
-    #Print in console the log file
-    cat "$LOG_FILE"
+  # Print log parameters
+  print_param_summary
+  # Print log summary
+  print_log_summary
+  # Print version table summary
+  print_version_summary
+  # Log execution time
+  log_execution_time
+  print_time_summary
+  # Generate html log file
+  generate_html_report
+  #Print in console the log file
+  cat "$LOG_FILE"
 }
 
 ## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
