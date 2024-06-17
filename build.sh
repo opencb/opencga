@@ -660,8 +660,7 @@ fi
 # Function to generate the final HTML report
 function generate_html_report() {
 
-    local log_summary=$(echo -e "$LOG_SUMMARY")
-    # Generate the version summary html table
+    # Generate the html report log
     local param_summary=$(generate_param_table)
     local version_summary=$(generate_version_table)
     local execution_time=$(echo -e "$TIME_SUMMARY")
@@ -673,7 +672,6 @@ function generate_html_report() {
 
     # Replace placeholders with actual content
     template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
-    template_content="${template_content//#LOG_SUMMARY/$log_summary}"
     template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
     template_content="${template_content//#EXECUTION_TIME/$execution_time}"
 
