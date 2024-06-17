@@ -8,6 +8,18 @@ set -o nounset
 ####### Declare all functions first #######
 ###########################################
 
+# Variables to store start time
+START_TIME=$(date +%s)
+START_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Log file path
+LOG_FILE="build.log"
+# Check and delete the file if it exists
+if [ -f "$LOG_FILE" ]; then
+    rm "$LOG_FILE"
+fi
+touch "$LOG_FILE"
+
 # Function to log messages
 function log() {
 
@@ -91,31 +103,41 @@ function manage_dependency() {
       exit 1
    fi
   fi
-  log_summary "Version of $REPO to download correct $REPO_VERSION should be in $BRANCH_NAME"
+
   git checkout "$BRANCH_NAME"
-  if [ "$COMMAND" == "build" ];then
-    log "Building $REPO branch $BRANCH_NAME."
-    mvn clean install -T 2 -DskipTests --no-transfer-progress
-    if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
-    else
-      log_summary "$COMMAND $REPO with $REPO_VERSION branch $BRANCH_NAME Test Successful!!!"
+
+
+  local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+  if [ "$VERSION" == "$REPO_VERSION" ];then
+    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
+    if [ "$COMMAND" == "build" ];then
+      log "Building $REPO branch $BRANCH_NAME."
+      mvn clean install -T 2 -DskipTests --no-transfer-progress
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
+      else
+        log_summary "$COMMAND $REPO with $REPO_VERSION branch $BRANCH_NAME Test Successful!!!"
+      fi
+    elif [ "$COMMAND" == "test" ]; then
+      log "Testing $REPO branch $BRANCH_NAME."
+      local pwd=$(pwd)
+      echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+      if [ "$REPO" == "cellbase" ]; then
+        log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
+        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
+      else
+        mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
+      fi
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
+      else
+        log_summary "$COMMAND $REPO with $VERSION branch $BRANCH_NAME Test Successful!!!"
+      fi
     fi
-  elif [ "$COMMAND" == "test" ]; then
-    log "Testing $REPO branch $BRANCH_NAME."
-    local pwd=$(pwd)
-    echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-    if [ "$REPO" == "cellbase" ]; then
-      log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress"
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress
-    else
-      mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress
-    fi
-    if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
-    else
-      log_summary "$COMMAND $REPO with $REPO_VERSION branch $BRANCH_NAME Test Successful!!!"
-    fi
+  else
+      log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
@@ -169,14 +191,6 @@ function validate() {
     exit 1
   fi
 
-  if [ "$COMMAND" == "test" ]; then
-    ## Clean tests dir
-    if [ -d "${TESTS_DIR:?}" ]; then
-      rm -rf "${TESTS_DIR:?}"
-    fi
-    mkdir -p "$TESTS_DIR"
-  fi
-
   OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=opencga.version -q -DforceStdout)"
   OPENCGA_CURRENT_VERSION="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
 
@@ -205,8 +219,8 @@ function validate() {
 
   ## Validate that if the current branch is a task, the reference branch must be the same
   local CURRENT_BRANCH="$(git branch --show-current)"
-  log_summary "CURRENT_BRANCH $CURRENT_BRANCH"
-  log_summary "TASK_REFERENCE $TASK_REFERENCE"
+  log_summary "opencga-enterprise CURRENT_BRANCH $CURRENT_BRANCH"
+  log_summary "opencga-enterprise TASK_REFERENCE $TASK_REFERENCE"
 
   if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
     if [[ -n $TASK_REFERENCE ]]; then
@@ -249,34 +263,31 @@ function build_opencga() {
       log "Compiling opencga... $(pwd)"
       mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
-        log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+        log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
         exit 1
       else
-        log_summary "$COMMAND opencga Success!"
+        local BRANCH="$(git branch --show-current)"
+        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+        log_version_summary "opencga,$VERSION,$BRANCH"
+        log_summary "$COMMAND opencga build Success!"
       fi
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
-        log_summary "[ERROR] $COMMAND opencga FAILED!!!!!"
+        log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
         exit 1
       else
-        log_summary "$COMMAND opencga Success!"
+        local BRANCH="$(git branch --show-current)"
+        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+        log_version_summary "opencga,$VERSION,$BRANCH"
+        log_summary "$COMMAND opencga test Success!"
       fi
   fi
 }
-
-function create_index_html() {
-  INDEX_FILE="$TESTS_DIR/index.html"
-  echo "<html><body><h1>Test Reports</h1><ul>" > "$INDEX_FILE"
-  echo "<li><a href=\"opencga/index.html\">opencga surefire-report</a></li>" >> "$INDEX_FILE"
-  echo "<li><a href=\"opencga-enterprise/index.html\">opencga-enterprise surefire-report</a></li>" >> "$INDEX_FILE"
-  echo "</ul></body></html>" >> "$INDEX_FILE"
-}
-
 
 # Function to build or/and test the opencga-enterprise
 function build_opencga_enterprise() {
@@ -287,11 +298,14 @@ function build_opencga_enterprise() {
     mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
     -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
-        log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+        log_summary "[ERROR] $COMMAND opencga-enterprise build FAILED!!!!!"
         print_log_summary
         exit 1
       else
-        log_summary "$COMMAND opencga-enterprise Success!"
+        local BRANCH="$(git branch --show-current)"
+        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+        log_version_summary "opencga-enterprise,$VERSION,$BRANCH"
+        log_summary "$COMMAND opencga-enterprise build Success!"
       fi
   elif [ "$COMMAND" == "test" ]; then
       local pwd=$(pwd)
@@ -299,11 +313,14 @@ function build_opencga_enterprise() {
       mvn clean install -B verify surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
-        log_summary "[ERROR] $COMMAND opencga-enterprise FAILED!!!!!"
+        log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
         exit 1
       else
-        log_summary "$COMMAND opencga-enterprise Success!"
+        local BRANCH="$(git branch --show-current)"
+        local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+        log_version_summary "opencga-enterprise,$VERSION,$BRANCH"
+        log_summary "$COMMAND opencga-enterprise test Success!"
       fi
   fi
 }
@@ -315,20 +332,15 @@ function publish_reports() {
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
     "$OPENCGA_ENTERPRISE_HOME_DIR"/reports/collect_reports.sh "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-#    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
-#    if [[ -n $TASK_REFERENCE ]]; then
-#      BRANCH_FOLDER=$TASK_REFERENCE
-#    else
-#      BRANCH_FOLDER=$(git branch --show-current)
-#    fi
-#    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-#    COMMIT=$(git show -q | grep commit | cut -d " " -f 2)
-#    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/test-data/opencga-enterprise/$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT --recursive
-#    if [[ "$?" -ne 0 ]] ; then
-#      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
-#    else
-#      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/$BRANCH_FOLDER/$COMMIT "
-#    fi
+    azcopy login --service-principal --application-id $AZCOPY_SPA_APPLICATION_ID
+    VERSION_FOLDER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+    azcopy copy "$TESTS_DIR" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
+    azcopy copy "$LOG_FILE" https://zettatest.blob.core.windows.net/reports/opencga-enterprise/$VERSION_FOLDER/ --recursive
+    if [[ "$?" -ne 0 ]] ; then
+      log_summary "[ERROR] AZ_COPY FAILED!!!!!"
+    else
+      log_summary "Test reports uploaded correctly to /$VERSION_FOLDER/"
+    fi
   fi
 }
 
@@ -356,15 +368,91 @@ function log_summary() {
   if [ -n "$LOG_SUMMARY" ]; then
     LOG_SUMMARY="$LOG_SUMMARY""\n"
   fi
-  LOG_SUMMARY="$LOG_SUMMARY""$@"
+  LOG_SUMMARY="$LOG_SUMMARY""INFO: $(date +"%Y-%m-%d %H:%M:%S")  $@"
+}
+
+
+
+# Function to add messages to the log summary
+function log_version_summary() {
+  if [ -n "$VERSION_SUMMARY" ]; then
+    VERSION_SUMMARY="$VERSION_SUMMARY""\n"
+  fi
+  VERSION_SUMMARY="$VERSION_SUMMARY""$@"
+}
+
+
+# Función para calcular y registrar el tiempo de ejecución
+function log_execution_time() {
+    local END_TIME=$(date +%s)
+    local END_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+    local DURATION=$((END_TIME - START_TIME))
+    local SECONDS=$((DURATION % 60))
+    local MINUTES=$((DURATION / 60 % 60))
+    local HOURS=$((DURATION / 3600))
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    local BRANCH="$(git branch --show-current)"
+    local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+    echo " " >> "$LOG_FILE"
+    echo "===========================" >> "$LOG_FILE"
+    echo " " >> "$LOG_FILE"
+    echo "End Xetabase-$VERSION $COMMAND for branch $BRANCH " >> "$LOG_FILE"
+    echo " " >> "$LOG_FILE"
+    echo "Script execution started at: $START_DATE" >> "$LOG_FILE"
+    echo "Script execution finished at: $END_DATE" >> "$LOG_FILE"
+    echo "Total execution time: ${HOURS}h ${MINUTES}m ${SECONDS}s" >> "$LOG_FILE"
+    echo " " >> "$LOG_FILE"
+    echo "===========================" >> "$LOG_FILE"
 }
 
 # Function to print all the log summary
 function print_log_summary() {
-  echo "=========================="
-  echo -e "$LOG_SUMMARY"
-  echo "=========================="
+    echo ""
+    echo "==========================" >> "$LOG_FILE"
+    echo -e "$LOG_SUMMARY" >> "$LOG_FILE"
+    echo "==========================" >> "$LOG_FILE"
 }
+
+function yes_no() {
+  local value=$1
+if [[ -n "$value" ]]; then
+        echo "YES"
+    else
+        echo "NO"
+    fi
+}
+
+# Function to log parameters and global variables
+function log_initial_state() {
+    echo "===========================" >> "$LOG_FILE"
+    echo "Script execution started at $(date)" >> "$LOG_FILE"
+    echo "Parameters:" >> "$LOG_FILE"
+    echo "COMMAND: $COMMAND" >> "$LOG_FILE"
+    echo "DB_CELLBASE: $DB_CELLBASE" >> "$LOG_FILE"
+    echo "OPENCGA_HOME_DIR: $OPENCGA_HOME_DIR" >> "$LOG_FILE"
+    echo "STORAGE_HADOOP_DEPS: $STORAGE_HADOOP_DEPS" >> "$LOG_FILE"
+    echo "TEST_TAG: $TEST_TAG" >> "$LOG_FILE"
+    echo "TESTS_DIR: $TESTS_DIR" >> "$LOG_FILE"
+    echo "LOG_FILE: $LOG_FILE" >> "$LOG_FILE"
+    echo "TASK_REFERENCE: $TASK_REFERENCE" >> "$LOG_FILE"
+    echo "SAVE_REPORTS: $(yes_no "$SAVE_REPORTS")" >> "$LOG_FILE"
+    echo "FAIL_NEVER: $(yes_no "$FAIL_NEVER")" >> "$LOG_FILE"
+    echo "PREPARE_BRANCHES: $(yes_no "$PREPARE_BRANCHES")" >> "$LOG_FILE"
+    echo "DEBUG: $(yes_no "$DEBUG")" >> "$LOG_FILE"
+    echo "DOCKER: $(yes_no "$DOCKER")" >> "$LOG_FILE"
+    echo "" >> "$LOG_FILE"
+}
+
+# Función para imprimir el resumen de versiones en formato de tabla
+function print_version_summary() {
+    echo ""  >> "$LOG_FILE"
+    printf "%-25s %-20s %-20s\n" "Repository" "Version" "Branch" >> "$LOG_FILE"
+    printf "%-25s %-20s %-20s\n" "---------" "-------" "------" >> "$LOG_FILE"
+    echo -e "$VERSION_SUMMARY" | while IFS=',' read -r repository version branch; do
+        printf "%-25s %-20s %-20s\n" "$repository" "$version" "$branch" >> "$LOG_FILE"
+    done
+}
+
 
 ###################################
 ####### Script starts here  #######
@@ -381,12 +469,13 @@ FAIL_NEVER=""
 PREPARE_BRANCHES=""
 DEBUG=""
 SKIP_TESTS=false
-TESTS_DIR="$PWD/tests"
-LOG_FILE=""
+TESTS_DIR="$PWD/reports/test"
 TASK_REFERENCE=""
 DOCKER=""
 COMMAND="build"
 SAVE_REPORTS="false"
+VERSION_SUMMARY=""
+
 ## 2. Read and parse CLI options
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -468,8 +557,12 @@ done
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
-rm "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+# Check and delete the file if it exists
+if [ -f "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt" ]; then
+    rm "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+fi
 touch "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+
 ## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
   log_summary "OPENCGA_ENTERPRISE_HOME_DIR $OPENCGA_ENTERPRISE_HOME_DIR"
@@ -481,7 +574,21 @@ if [ "$DEBUG" == "true" ];then
   log_summary "SKIP_TESTS $SKIP_TESTS"
 fi
 
+function print_log() {
+    # Print log summary
+    print_log_summary
+    # Print version table summary
+    print_version_summary
+    # Log execution time
+    log_execution_time
+    #Print in console the log file
+    cat "$LOG_FILE"
+}
+
 ## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
+
+# Log initial state of global variables
+log_initial_state
 
 # Validate input parameters
 validate
@@ -501,5 +608,5 @@ publish_reports
 # Publish Docker images
 publish_docker
 
-# Print log summary
-print_log_summary
+# Print final log summary
+print_log
