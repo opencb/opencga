@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.*;
 
 @Tool(id = VariantFileIndexJobLauncherTool.ID, description = VariantFileIndexJobLauncherTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
 
     public static final String ID = "variant-index-job-launcher";

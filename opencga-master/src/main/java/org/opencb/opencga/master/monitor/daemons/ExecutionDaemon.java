@@ -105,6 +105,7 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
+import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -163,6 +164,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final QueryOptions queryOptions;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final JobScheduler jobScheduler = new JobScheduler();
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>() {{

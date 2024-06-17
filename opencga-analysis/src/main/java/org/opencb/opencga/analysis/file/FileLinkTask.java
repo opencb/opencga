@@ -18,7 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@Tool(id = FileLinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = FileLinkTask.DESCRIPTION)
+@Tool(id = FileLinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = FileLinkTask.DESCRIPTION,
+        priority = Enums.Priority.HIGH)
 public class FileLinkTask extends OpenCgaToolScopeStudy {
 
     public static final String ID = "file-link";

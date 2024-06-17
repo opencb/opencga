@@ -6,7 +6,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 @Tool(id = VariantPruneOperationTool.ID, description = VariantPruneOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantPruneOperationTool extends OperationTool {
 
     public static final String DESCRIPTION = "Prune orphan variants from studies in a project.";

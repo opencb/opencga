@@ -41,7 +41,7 @@ import java.util.Set;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.*;
 
 @Tool(id = VariantIndexOperationTool.ID, description = VariantIndexOperationTool.DESCRIPTION,
-        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
 public class VariantIndexOperationTool extends OperationTool {
     public static final String ID = "variant-index";
     public static final String DESCRIPTION = "Index variant files into the variant storage";

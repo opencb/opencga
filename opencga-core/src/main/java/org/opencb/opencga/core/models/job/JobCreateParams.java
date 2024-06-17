@@ -271,9 +271,17 @@ public class JobCreateParams {
     public Job toJob() {
         return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority,
                 internal != null ? new org.opencb.opencga.core.models.job.JobInternal(internal.getStatus()) : null,
+<<<<<<< Updated upstream
                 outDir != null ? outDir.toFile() : null, getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                 getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(), null, null, false,
                 tags, result, false, stdout != null ? stdout.toFile() : null, stderr != null ? stderr.toFile() : null, 1, null, attributes);
+=======
+                outDir != null ? outDir.toFile() : null,
+                getInput() != null ? getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()) : Collections.emptyList(),
+                getOutput() != null ? getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()) : Collections.emptyList(),
+                Collections.emptyList(), null, null, tags, result, false, stdout != null ? stdout.toFile() : null,
+                stderr != null ? stderr.toFile() : null, 1, null, attributes);
+>>>>>>> Stashed changes
     }
 
     public static class JobInternal {
