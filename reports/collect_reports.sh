@@ -42,7 +42,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     PROJECT_NAME=$(echo "$line" | cut -d ' ' -f 2)
 
     # Find all site directories and copy them to the test directory
-    find "$PROJECT_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/reports/*' ! -path '*/opencga-home/*' | while read -r site_dir; do
+    find "$PROJECT_DIR" -maxdepth 5 -type d -path '*/target/site' ! -path '*/reports/*' | while read -r site_dir; do
         module_dir=$(dirname "$(dirname "$site_dir")")
         module_name=$(basename "$module_dir")
         dest_dir="$TEST_DIR/${PROJECT_NAME}dir-$module_name-site"
