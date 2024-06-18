@@ -61,7 +61,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String SAMTOOLS_STATS_STEP = "samtools-stats";
     public static final String SAMTOOLS_FLAGSTATS_STEP = "samtools-flagstats";
-    private static final String PLOT_BAMSTATS_STEP = "plot-bamstats";
+    public static final String PLOT_BAMSTATS_STEP = "plot-bamstats";
     public static final String FASTQC_METRICS_STEP = "fastqc-metrics";
 
     @ToolParams
@@ -87,11 +87,12 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         try {
             catalogBamFile = AnalysisUtils.getCatalogFile(alignmentQcParams.getBamFile(), study, catalogManager.getFileManager(), token);
+            fileQc = catalogBamFile.getQualityControl();
         } catch (CatalogException e) {
             throw new ToolException("Error accessing to the BAM file '" + alignmentQcParams.getBamFile() + "'", e);
         }
 
-        // Prepare skip flags
+        // Prepare flags from skip and overwrite
         String skip = null;
         if (StringUtils.isNotEmpty(alignmentQcParams.getSkip())) {
             skip = alignmentQcParams.getSkip().toLowerCase().replace(" ", "");
@@ -113,6 +114,26 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             if (skipValues.contains(AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE)) {
                 runFastqcMetricsStep = false;
                 String msg = "Skipping FastQC metrics by user";
+                addWarning(msg);
+                logger.warn(msg);
+            }
+        }
+        if (!alignmentQcParams.isOverwrite() && fileQc != null && fileQc.getAlignment() != null) {
+            if (runSamtoolsStatsStep && fileQc.getAlignment().getSamtoolsStats() != null) {
+                runSamtoolsStatsStep = false;
+                String msg = "Skipping Samtools stats (and plots) because they already exist and the overwrite flag is not set";
+                addWarning(msg);
+                logger.warn(msg);
+            }
+            if (runSamptoolsFlagstatsStep && fileQc.getAlignment().getSamtoolsFlagStats() != null) {
+                runSamptoolsFlagstatsStep = false;
+                String msg = "Skipping Samtools flag stats because they already exist and the overwrite flag is not set";
+                addWarning(msg);
+                logger.warn(msg);
+            }
+            if (runFastqcMetricsStep && fileQc.getAlignment().getFastQcMetrics() != null) {
+                runFastqcMetricsStep = false;
+                String msg = "Skipping FastQC metrics because they already exist and the overwrite flag is not set";
                 addWarning(msg);
                 logger.warn(msg);
             }
@@ -164,7 +185,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             FileUpdateParams fileUpdateParams = new FileUpdateParams().setQualityControl(fileQc);
             catalogManager.getFileManager().update(study, catalogBamFile.getId(), fileUpdateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            throw new ToolException(e);
+            throw new ToolException("Error updating alignment quality control", e);
         }
 
         // Unset the executor info since it is executed by different executors, it will be indicated in the
@@ -202,16 +223,16 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         try {
             lines = readLines(stdoutFile, Charset.defaultCharset());
         } catch (IOException e) {
-            throw new ToolException("Error reading running Samtools flagstat results.", e);
+            throw new ToolException("Error reading running Samtools flagstat results", e);
         }
         if (CollectionUtils.isNotEmpty(lines) && lines.get(0).contains("QC-passed")) {
             try {
                 FileUtils.copyFile(stdoutFile, flagStatsFile.toFile());
             } catch (IOException e) {
-                throw new ToolException("Error copying Samtools flagstat results.", e);
+                throw new ToolException("Error copying Samtools flagstat results", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running Samtools flagstat analysis.");
+            throw new ToolException("Something wrong happened running Samtools flagstat analysis");
         }
 
         // Check results and update QC file
@@ -254,16 +275,16 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         try {
             lines = readLines(stdoutFile, Charset.defaultCharset());
         } catch (IOException e) {
-            throw new ToolException("Error reading running samtools-stats results.", e);
+            throw new ToolException("Error reading running samtools-stats results", e);
         }
         if (CollectionUtils.isNotEmpty(lines) && lines.get(0).startsWith("# This file was produced by samtools stats")) {
             try {
             FileUtils.copyFile(stdoutFile, statsFile.toFile());
             } catch (IOException e) {
-                throw new ToolException("Error copying Samtools stats results.", e);
+                throw new ToolException("Error copying Samtools stats results", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running Samtools stats analysis.");
+            throw new ToolException("Something wrong happened running Samtools stats analysis");
         }
 
         // Check results and update QC file
@@ -271,15 +292,22 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         try {
             samtoolsStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile());
         } catch (IOException e) {
-            throw new ToolException("Error parsing Samtools stats results.");
+            throw new ToolException("Error parsing Samtools stats results", e);
         }
 
         // Link the stats file to the OpenCGA catalog to be used by the plot-batmstats later
         try {
-            catalogStatsFile = catalogManager.getFileManager().link(study, new FileLinkParams(statsFile.toUri().toString(), "", "", "",
-                    null, null, null, null, null), false, token).first();
+            String path;
+            if (outPath.startsWith(configuration.getJobDir())) {
+                path = outPath.toString().substring(configuration.getJobDir().length() + 1);
+            } else {
+                path = outPath.toString();
+                logger.warn("Using path {} to link {} to OpenCGA catalog", outPath, catalogStatsFile.getName());
+            }
+            catalogStatsFile = catalogManager.getFileManager().link(study, new FileLinkParams(statsFile.toUri().toString(), path, "", "",
+                    null, null, null, null, null), true, token).first();
         } catch (CatalogException e) {
-            throw new ToolException("Error linking the Samtools stats results to OpenCGA catalog");
+            throw new ToolException("Error linking the Samtools stats results to OpenCGA catalog", e);
         }
 
         fileQc.getAlignment().setSamtoolsStats(samtoolsStats);
