@@ -138,8 +138,6 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                     casInitParameters = new HashMap<>();
                     casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
                     casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
-                    casInitParameters.put(ConfigurationKeys.IGNORE_URL_PATTERN_TYPE.getName(), "REGEX");
-                    casInitParameters.put(ConfigurationKeys.IGNORE_PATTERN.getName(), "/webservices/rest/*/meta/about");
                     casAuthenticationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
 
