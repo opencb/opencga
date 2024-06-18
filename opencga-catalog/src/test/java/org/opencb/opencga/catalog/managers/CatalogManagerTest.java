@@ -687,6 +687,49 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, normalToken2));
         assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
         assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        // Remove orgAdminUser1 from the administrators group of the organization
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(OrganizationDBAdaptor.QueryParams.ADMINS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getOrganizationManager().update(organizationId, new OrganizationUpdateParams()
+                .setAdmins(Collections.singletonList(orgAdminUserId1)), options, ownerToken);
+
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+
+        // Create a third study
+        catalogManager.getStudyManager().create(project1, new Study().setId("study_3"), null, ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the third study
+        catalogManager.getStudyManager().updateGroup("study_3", ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the second study
+        catalogManager.getStudyManager().updateGroup(studyFqn2, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
+                () -> catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1));
+        assertTrue(catalogAuthorizationException.getCause().getMessage().contains(studyFqn));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains(studyFqn2));
+        assertFalse(catalogAuthorizationException.getCause().getMessage().contains("study_3"));
+
+        // Add orgAdminUser1 to the administrators group of the remaining study
+        catalogManager.getStudyManager().updateGroup(studyFqn, ParamConstants.ADMINS_GROUP, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(orgAdminUserId1)), ownerToken);
+        catalogManager.getProjectManager().update(project1, params, INCLUDE_RESULT, orgAdminToken1);
     }
 
     @Test
