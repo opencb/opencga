@@ -32,16 +32,19 @@ import java.util.*;
 @Tool(id = FastqcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = FastqcWrapperAnalysis.DESCRIPTION)
 public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
 
-    public final static String ID = "fastqc";
-    public final static String DESCRIPTION = "A high throughput sequence QC analysis tool";
+    public static final String ID = "fastqc";
+    public static final String DESCRIPTION = "A high throughput sequence QC analysis tool";
 
-    public final static Set<String> FILE_PARAM_NAMES = new HashSet<>(Arrays.asList("l", "limits", "a", "adapters", "c", "contaminants"));
+    protected static final Set<String> FILE_PARAM_NAMES = new HashSet<>(Arrays.asList("l", "limits", "a", "adapters", "c", "contaminants"));
+
+    public static final String FASTQC_DOCKER_CLI_KEY = "FASTQC_DOCKER_CLI";
 
     @ToolParams
     protected final FastqcWrapperParams analysisParams = new FastqcWrapperParams();
 
     private String inputFilePath = null;
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
