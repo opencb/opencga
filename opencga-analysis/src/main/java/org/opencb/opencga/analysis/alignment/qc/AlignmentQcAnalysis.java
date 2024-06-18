@@ -16,40 +16,42 @@
 
 package org.opencb.opencga.analysis.alignment.qc;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
+import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
+import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
-import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_QC_DESCRIPTION;
-import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentQcAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
 public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
@@ -63,9 +65,16 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String FASTQC_METRICS_STEP = "fastqc-metrics";
 
     @ToolParams
-    protected final AlignmentQcParams analysisParams = new AlignmentQcParams();
+    protected final AlignmentQcParams alignmentQcParams = new AlignmentQcParams();
+
+    private ToolRunner toolRunner;
+
+    private boolean runSamtoolsStatsStep = true;
+    private boolean runSamptoolsFlagstatsStep = true;
+    private boolean runFastqcMetricsStep = true;
 
     private File catalogBamFile;
+    private File catalogStatsFile;
     private FileQualityControl fileQc = null;
 
     @Override
@@ -77,19 +86,60 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         try {
-            catalogBamFile = AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, catalogManager.getFileManager(), token);
+            catalogBamFile = AnalysisUtils.getCatalogFile(alignmentQcParams.getBamFile(), study, catalogManager.getFileManager(), token);
         } catch (CatalogException e) {
-            throw new ToolException("Error accessing to the BAM file '" + analysisParams.getBamFile() + "'", e);
+            throw new ToolException("Error accessing to the BAM file '" + alignmentQcParams.getBamFile() + "'", e);
+        }
+
+        // Prepare skip flags
+        String skip = null;
+        if (StringUtils.isNotEmpty(alignmentQcParams.getSkip())) {
+            skip = alignmentQcParams.getSkip().toLowerCase().replace(" ", "");
+        }
+        if (StringUtils.isNotEmpty(skip)) {
+            Set<String> skipValues = new HashSet<>(Arrays.asList(skip.split(",")));
+            if (skipValues.contains(AlignmentQcParams.STATS_SKIP_VALUE)) {
+                runSamtoolsStatsStep = false;
+                String msg = "Skipping Samtools stats (and plot) by user";
+                addWarning(msg);
+                logger.warn(msg);
+            }
+            if (skipValues.contains(AlignmentQcParams.FLAGSTATS_SKIP_VALUE)) {
+                runSamptoolsFlagstatsStep = false;
+                String msg = "Skipping Samtools flagstats by user";
+                addWarning(msg);
+                logger.warn(msg);
+            }
+            if (skipValues.contains(AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE)) {
+                runFastqcMetricsStep = false;
+                String msg = "Skipping FastQC metrics by user";
+                addWarning(msg);
+                logger.warn(msg);
+            }
         }
     }
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(SAMTOOLS_STATS_STEP, SAMTOOLS_FLAGSTATS_STEP, PLOT_BAMSTATS_STEP, FASTQC_METRICS_STEP);
+        List<String> steps = new ArrayList<>();
+        if (runSamtoolsStatsStep) {
+            steps.add(SAMTOOLS_STATS_STEP);
+            steps.add(PLOT_BAMSTATS_STEP);
+        }
+        if (runSamptoolsFlagstatsStep) {
+            steps.add(SAMTOOLS_FLAGSTATS_STEP);
+        }
+        if (runFastqcMetricsStep) {
+            steps.add(FASTQC_METRICS_STEP);
+        }
+        return steps;
     }
 
     @Override
     protected void run() throws ToolException {
+        // Create the tool runner
+        toolRunner = new ToolRunner(opencgaHome, catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+
         // Get alignment QC metrics to update
         if (catalogBamFile.getQualityControl() != null) {
             fileQc = catalogBamFile.getQualityControl();
@@ -98,10 +148,16 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             fileQc = new FileQualityControl();
         }
 
-        step(SAMTOOLS_FLAGSTATS_STEP, this::runSamtoolsFlagStats);
-        step(SAMTOOLS_STATS_STEP, this::runSamtoolsStats);
-        step(PLOT_BAMSTATS_STEP, this::runPlotBamStats);
-        step(FASTQC_METRICS_STEP, this::runFastQcMetrics);
+        if (runSamtoolsStatsStep) {
+            step(SAMTOOLS_STATS_STEP, this::runSamtoolsStats);
+            step(PLOT_BAMSTATS_STEP, this::runPlotBamstats);
+        }
+        if (runSamptoolsFlagstatsStep) {
+            step(SAMTOOLS_FLAGSTATS_STEP, this::runSamtoolsFlagstats);
+        }
+        if (runFastqcMetricsStep) {
+            step(FASTQC_METRICS_STEP, this::runFastqcMetrics);
+        }
 
         // Finally, update file quality control
         try {
@@ -116,7 +172,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         getErm().setExecutorInfo(null);
     }
 
-    private void runSamtoolsFlagStats() throws ToolException {
+    private void runSamtoolsFlagstats() throws ToolException {
         Path outPath = getOutDir().resolve(SAMTOOLS_FLAGSTATS_STEP);
         try {
             FileUtils.forceMkdir(outPath.toFile());
@@ -124,18 +180,20 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Error creating SAMtools flagstat output folder: " + outPath, e);
         }
 
-        SamtoolsWrapperAnalysisExecutor executor = getToolExecutor(SamtoolsWrapperAnalysisExecutor.class,
-                SamtoolsWrapperAnalysisExecutor.ID)
-                .setCommand("flagstat")
-                .setInputFile(catalogBamFile.getUri().getPath());
+        // Prepare parameters
+        SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams("flagstat", catalogBamFile.getId(), null,
+                new HashMap<>());
 
-        ExecutionResultManager erm = new ExecutionResultManager(SamtoolsWrapperAnalysisExecutor.ID, outPath);
-        ObjectMap params = new ObjectMap();
-        executor.setUp(erm, params, outPath);
+        // Execute the Samtools flag stats analysis and add its step attributes if exist
+        ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
+                null, token);
+        addStepAttributes(executionResult);
 
-        // Execute
-        executor.execute();
-        getErm().addStepAttribute("CLI", executor.getCommandLine());
+        // Check execution status
+        if (executionResult.getStatus().getName() != Status.Type.DONE) {
+            throw new ToolException("Something wrong happened running the Samtools flagstat analysis. Execution status = "
+                    + executionResult.getStatus().getName());
+        }
 
         // Check results and update QC file
         Path flagStatsFile = AlignmentFlagStatsAnalysis.getResultPath(outPath.toAbsolutePath().toString(), catalogBamFile.getName());
@@ -144,16 +202,16 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         try {
             lines = readLines(stdoutFile, Charset.defaultCharset());
         } catch (IOException e) {
-            throw new ToolException("Error reading running samtools-flagstat results.", e);
+            throw new ToolException("Error reading running Samtools flagstat results.", e);
         }
-        if (lines.size() > 0 && lines.get(0).contains("QC-passed")) {
+        if (CollectionUtils.isNotEmpty(lines) && lines.get(0).contains("QC-passed")) {
             try {
                 FileUtils.copyFile(stdoutFile, flagStatsFile.toFile());
             } catch (IOException e) {
-                throw new ToolException("Error copying samtools-flagstat results.", e);
+                throw new ToolException("Error copying Samtools flagstat results.", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running samtools-flagstat.");
+            throw new ToolException("Something wrong happened running Samtools flagstat analysis.");
         }
 
         // Check results and update QC file
@@ -169,24 +227,25 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Error creating SAMtools stats output folder: " + outPath, e);
         }
 
-        SamtoolsWrapperAnalysisExecutor executor = getToolExecutor(SamtoolsWrapperAnalysisExecutor.class,
-                SamtoolsWrapperAnalysisExecutor.ID)
-                .setCommand("stats")
-                .setInputFile(catalogBamFile.getUri().getPath());
-
-        ExecutionResultManager erm = new ExecutionResultManager(SamtoolsWrapperAnalysisExecutor.ID, outPath);
-        ObjectMap params = new ObjectMap();
-        params.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
+        // Prepare parameters
+        Map<String, String> statsParams = new HashMap<>();
         // Filter flag:
         //   - not primary alignment (0x100)
         //   - read fails platform/vendor quality checks (0x200)
         //   - supplementary alignment (0x800)
-        params.put("F", "0xB00");
-        executor.setUp(erm, params, outPath);
+        statsParams.put("F", "0xB00");
+        SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams("stats", catalogBamFile.getId(), null, statsParams);
 
-        // Execute
-        executor.execute();
-        getErm().addStepAttribute("CLI", executor.getCommandLine());
+        // Execute the Samtools stats analysis and add its step attributes if exist
+        ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
+                null, token);
+        addStepAttributes(executionResult);
+
+        // Check execution status
+        if (executionResult.getStatus().getName() != Status.Type.DONE) {
+            throw new ToolException("Something wrong happened running the Samtools stats analysis. Execution status = "
+                    + executionResult.getStatus().getName());
+        }
 
         // Check results
         Path statsFile = AlignmentStatsAnalysis.getResultPath(outPath.toAbsolutePath().toString(), catalogBamFile.getName());
@@ -197,14 +256,14 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         } catch (IOException e) {
             throw new ToolException("Error reading running samtools-stats results.", e);
         }
-        if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
+        if (CollectionUtils.isNotEmpty(lines) && lines.get(0).startsWith("# This file was produced by samtools stats")) {
             try {
             FileUtils.copyFile(stdoutFile, statsFile.toFile());
             } catch (IOException e) {
-                throw new ToolException("Error copying samtools-stats results.", e);
+                throw new ToolException("Error copying Samtools stats results.", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running samtools-stats.");
+            throw new ToolException("Something wrong happened running Samtools stats analysis.");
         }
 
         // Check results and update QC file
@@ -212,12 +271,21 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         try {
             samtoolsStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile());
         } catch (IOException e) {
-            throw new ToolException("Error parsing samtools-stats results.");
+            throw new ToolException("Error parsing Samtools stats results.");
         }
+
+        // Link the stats file to the OpenCGA catalog to be used by the plot-batmstats later
+        try {
+            catalogStatsFile = catalogManager.getFileManager().link(study, new FileLinkParams(statsFile.toUri().toString(), "", "", "",
+                    null, null, null, null, null), false, token).first();
+        } catch (CatalogException e) {
+            throw new ToolException("Error linking the Samtools stats results to OpenCGA catalog");
+        }
+
         fileQc.getAlignment().setSamtoolsStats(samtoolsStats);
     }
 
-    private void runPlotBamStats() throws ToolException {
+    private void runPlotBamstats() throws ToolException {
         Path outPath = getOutDir().resolve(PLOT_BAMSTATS_STEP);
         try {
             FileUtils.forceMkdir(outPath.toFile());
@@ -225,23 +293,22 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Error creating plot-bamstats output folder: " + outPath, e);
         }
 
-        Path statsFile = AlignmentStatsAnalysis.getResultPath(getOutDir().resolve(SAMTOOLS_STATS_STEP).toString(),
-                catalogBamFile.getName());
-        SamtoolsWrapperAnalysisExecutor executor = getToolExecutor(SamtoolsWrapperAnalysisExecutor.class,
-                SamtoolsWrapperAnalysisExecutor.ID)
-                .setCommand("plot-bamstats")
-                .setInputFile(statsFile.toString());
+        // Prepare parameters
+        SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams("plot-bamstats", catalogStatsFile.getId(), null,
+                new HashMap<>());
 
-        ExecutionResultManager erm = new ExecutionResultManager(SamtoolsWrapperAnalysisExecutor.ID, outPath);
-        ObjectMap params = new ObjectMap();
-        params.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
-        executor.setUp(erm, params, outPath);
+        // Execute the plot-bamstats analysis and add its step attributes if exist
+        ExecutionResult executionResult = toolRunner.execute(SamtoolsWrapperAnalysis.class, study, samtoolsWrapperParams, outPath,
+                null, token);
+        addStepAttributes(executionResult);
 
-        // Execute
-        executor.execute();
-        getErm().addStepAttribute("CLI", executor.getCommandLine());
+        // Check execution status
+        if (executionResult.getStatus().getName() != Status.Type.DONE) {
+            throw new ToolException("Something wrong happened running the plot-bamstats analysis. Execution status = "
+                    + executionResult.getStatus().getName());
+        }
 
-        // Check results and update QC file
+        // Add images from plot-bamstats to the QC alignment
         List<String> images = new ArrayList<>();
         for (java.io.File file : outPath.toFile().listFiles()) {
             if (file.getName().endsWith("png")) {
@@ -255,7 +322,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         fileQc.getAlignment().getSamtoolsStats().setFiles(images);
     }
 
-    private void runFastQcMetrics() throws ToolException {
+    private void runFastqcMetrics() throws ToolException {
         Path outPath = getOutDir().resolve(FASTQC_METRICS_STEP);
         try {
             FileUtils.forceMkdir(outPath.toFile());
@@ -263,18 +330,20 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Error creating FastQC output folder: " + outPath, e);
         }
 
-        FastqcWrapperAnalysisExecutor executor = getToolExecutor(FastqcWrapperAnalysisExecutor.class, FastqcWrapperAnalysisExecutor.ID)
-                .setInputFile(catalogBamFile.getUri().getPath());
+        // Prepare parameters
+        Map<String, String> fastQcParams = new HashMap<>();
+        fastQcParams.put("extract", "true");
+        FastqcWrapperParams fastqcWrapperParams = new FastqcWrapperParams(catalogBamFile.getId(), null, fastQcParams);
 
-        ExecutionResultManager erm = new ExecutionResultManager(FastqcWrapperAnalysisExecutor.ID, outPath);
-        ObjectMap params = new ObjectMap();
-        params.put(EXECUTOR_ID, FastqcWrapperAnalysisExecutor.ID);
-        params.put("extract", "true");
-        executor.setUp(erm, params, outPath);
+        // Execute the FastQC analysis and add its step attributes if exist
+        ExecutionResult executionResult = toolRunner.execute(FastqcWrapperAnalysis.class, study, fastqcWrapperParams, outPath, null, token);
+        addStepAttributes(executionResult);
 
-        // Execute
-        executor.execute();
-        getErm().addStepAttribute("CLI", executor.getCommandLine());
+        // Check execution status
+        if (executionResult.getStatus().getName() != Status.Type.DONE) {
+            throw new ToolException("Something wrong happened running the FastQC analysis. Execution status = "
+                    + executionResult.getStatus().getName());
+        }
 
         // Check results and update QC file
         FastQcMetrics fastQcMetrics = AlignmentFastQcMetricsAnalysis.parseResults(outPath, configuration.getJobDir());
