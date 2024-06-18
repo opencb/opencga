@@ -17,6 +17,9 @@
 package org.opencb.opencga.analysis.alignment;
 
 import htsjdk.samtools.util.BufferedLineReader;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hdfs.server.diskbalancer.command.ExecuteCommand;
+import org.apache.tools.ant.taskdefs.Exec;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -24,13 +27,18 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -39,14 +47,19 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ToolStep;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -62,8 +75,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.opencb.opencga.core.models.alignment.AlignmentQcParams.*;
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @RunWith(Parameterized.class)
@@ -89,6 +104,8 @@ public class AlignmentAnalysisTest {
     private static String cancer_sample = "AR2.10039966-01T";
     private static String germline_sample = "AR2.10039966-01G";
 
+    private String bamFilename = "HG00096.chrom20.small.bam";
+    private String baiFilename = "HG00096.chrom20.small.bam.bai";
 
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
@@ -148,75 +165,10 @@ public class AlignmentAnalysisTest {
 
             setUpCatalogManager();
 
-//            file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
-//            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
-
-//            for (int i = 0; i < file.getSampleIds().size(); i++) {
-//                String id = file.getSampleIds().get(i);
-//                if (id.equals(son)) {
-//                    SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-//                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
-//                }
-//                if (i % 2 == 0) {
-//                    SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-//                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
-//                }
-//            }
-
-//            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
-//                            .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
-//                    null, null, null, token);
-//            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
-//                            .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
-//                    null, null, null, token);
-
-//            Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
-//            Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
-//            List<Individual> individuals = new ArrayList<>(4);
-//
-//            // Father
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Mother
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Son
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            // Daughter
-//            individuals.add(catalogManager.getIndividualManager()
-//                    .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
-//                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
-//            catalogManager.getFamilyManager().create(
-//                    STUDY,
-//                    new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
-//                    individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
-//                    token);
-//
-//            // Cancer (SV)
-//            ObjectMap config = new ObjectMap();
-////            config.put(VariantStorageOptions.ANNOTATE.key(), true);
-//            config.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
-//
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T.copynumber.caveman.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.pindel.vcf.gz", token);
-//            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-//
-//            SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
-//            catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
-
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
-//            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-//                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
-//            }
         }
+
         // Reset engines
         opencga.getStorageEngineFactory().close();
         catalogManager = opencga.getCatalogManager();
@@ -233,7 +185,7 @@ public class AlignmentAnalysisTest {
         opencga.after();
     }
 
-    public void setUpCatalogManager() throws CatalogException {
+    public void setUpCatalogManager() throws CatalogException, IOException {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId("test"), null, opencga.getAdminToken());
         catalogManager.getUserManager().create(new User().setId(USER).setName("User Name").setEmail("mail@ebi.ac.uk").setOrganization("test"),
                 PASSWORD, opencga.getAdminToken());
@@ -245,28 +197,12 @@ public class AlignmentAnalysisTest {
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
 
-        // Create 10 samples not indexed
-//        for (int i = 0; i < 10; i++) {
-//            Sample sample = new Sample().setId("SAMPLE_" + i);
-//            if (i % 2 == 0) {
-//                sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
-//            }
-//            catalogManager.getSampleManager().create(STUDY, sample, null, token);
-//        }
-//
-//        // Cancer
-//        List<Sample> samples = new ArrayList<>();
-//        catalogManager.getStudyManager().create(projectId, CANCER_STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
-//        Sample sample = new Sample().setId(cancer_sample).setSomatic(true);
-//        samples.add(sample);
-////        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
-//        sample = new Sample().setId(germline_sample);
-//        samples.add(sample);
-////        catalogManager.getSampleManager().create(CANCER_STUDY, sample, null, token);
-//        Individual individual = catalogManager.getIndividualManager()
-//                .create(CANCER_STUDY, new Individual("AR2.10039966-01", "AR2.10039966-01", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
-//                        samples, false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.emptyList(), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
-//        assertEquals(2, individual.getSamples().size());
+
+        // BAM and BAI files
+        catalogManager.getFileManager().link(STUDY, new FileLinkParams(opencga.getResourceUri("biofiles/" + bamFilename).toString(),
+                "", "", "", null, null, null, null, null), false, token).first();
+        catalogManager.getFileManager().link(STUDY, new FileLinkParams(opencga.getResourceUri("biofiles/" + baiFilename).toString(),
+                "", "", "", null, null, null, null, null), false, token).first();
     }
 
 
@@ -275,11 +211,12 @@ public class AlignmentAnalysisTest {
         Path outdir = Paths.get(opencga.createTmpOutdir("_genecoveragestats"));
 
         // setup BAM files
-        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
-        String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
+//        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
+//        String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
         //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null, null), false, token).first();
+//        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
+//                null, null), false, token).first();
+        File bamFile = getCatalogFile(bamFilename);
         assertEquals(0, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
 
         AlignmentGeneCoverageStatsParams params = new AlignmentGeneCoverageStatsParams();
@@ -289,8 +226,7 @@ public class AlignmentAnalysisTest {
 
         toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, null, token);
 
-        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null, null), false, token).first();
+        bamFile = getCatalogFile(bamFilename);
         assertEquals(1, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().size());
         assertEquals(geneName, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getGeneName());
         assertEquals(10, bamFile.getQualityControl().getCoverage().getGeneCoverageStats().get(0).getStats().size());
@@ -298,77 +234,206 @@ public class AlignmentAnalysisTest {
 
     @Test
     public void testAlignmentQc() throws IOException, ToolException, CatalogException {
-        Path outdir = Paths.get(opencga.createTmpOutdir("_alignment_qc"));
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc"));
 
-        // setup BAM files
-        String bamFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam").toString();
-        //String baiFilename = opencga.getResourceUri("biofiles/HG00096.chrom20.small.bam.bai").toString();
-        //String bamFilename = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        File bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null, null), false, token).first();
-
-        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
 
         AlignmentQcParams params = new AlignmentQcParams();
         params.setBamFile(bamFile.getId());
 
-        toolRunner.execute(AlignmentQcAnalysis.class, params, new ObjectMap(), outdir,
-                "test-alignment-qc-job-id", token);
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, params, new ObjectMap(), outDir, null, token);
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_FLAGSTATS_STEP));
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_STATS_STEP));
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.PLOT_BAMSTATS_STEP));
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
 
-        bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
-                null, null), false, token).first();
-
-        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
-        System.out.println("outdir = " + outdir);
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        checkSamtoolsFlagstats(bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        checkSamtoolsStats(bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        checkFastQcMetrics(bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+        System.out.println("outdir = " + outDir);
     }
-
 
     @Test
-    public void testBlobFuse2() throws IOException {
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/tata.txt"));
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/toto.txt"));
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/titi.txt"));
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir"));
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir/helloworld.txt"));
-        displayAttributes(Paths.get("/home/jtarraga/data/blobfuse2-test1/jobdir/kk.txt"));
+    public void testAlignmentQcSamtoolsFlagstat() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_samtools_flagstat"));
+
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
+        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_FLAGSTATS_STEP));
+
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        checkSamtoolsFlagstats(bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+        System.out.println("outdir = " + outDir);
     }
 
-    public void displayAttributes(Path path) throws IOException {
-        System.out.println();
-        System.out.println(path);
+    @Test
+    public void testAlignmentQcSamtoolsStatsPlots() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_samtools_stats_plots"));
 
-        if (Files.exists(path)) {
-            System.out.println("\t- Exists");
-        }
-//        try (BufferedReader reader = new BufferedLineReader(path).newBufferedReader(path)) {
-//            System.out.println("\t- Exists by using FileUtils.newBufferedReader");
-//        }
-//        try (BufferedWriter writer = FileUtils.newBufferedWriter(path)) {
-//            System.out.println("\t- Exists by using FileUtils.newBufferedWriter");
-//        }
-        if (Files.isDirectory(path)) {
-            System.out.println("\t- Directory");
-        }
-        if (Files.isRegularFile(path)) {
-            System.out.println("\t- Regular file");
-        }
-        if (Files.isReadable(path)) {
-            System.out.println("\t- Readable");
-        }
-        if (Files.isWritable(path)) {
-            System.out.println("\t- Writable");
-        }
-        if (Files.isSymbolicLink(path)) {
-            System.out.println("\t- Symbolic link");
-        }
-//
-//
-//        FileSystemProvider provider = FileSystems.getDefault().provider()getFileSystem(new URI(path.toAbsolutePath().toString())).provider();
-//        BasicFileAttributes basicFileAttributes = provider.readAttributes(path, BasicFileAttributes.class);
-//        System.out.println("basicFileAttributes = " + basicFileAttributes);
-//        System.out.println("basicFileAttributes.isRegularFile() = " + basicFileAttributes.isRegularFile());
-//        System.out.println("basicFileAttributes.isDirectory() = " + basicFileAttributes.isDirectory());
-//        System.out.println("basicFileAttributes.isSymbolicLink() = " + basicFileAttributes.isSymbolicLink());
-//        System.out.println("basicFileAttributes.creationTime() = " + basicFileAttributes.creationTime());
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
+        System.out.println("bamFile.getQualityControl().getAlignment() = " + bamFile.getQualityControl().getAlignment());
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(FLAGSTATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.SAMTOOLS_STATS_STEP));
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.PLOT_BAMSTATS_STEP));
+
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        checkSamtoolsStats(bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+        System.out.println("outdir = " + outDir);
+    }
+
+    @Test
+    public void testAlignmentQcFastqc() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc"));
+
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executionResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
+
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        checkFastQcMetrics(bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+        System.out.println("outdir = " + outDir);
+    }
+
+    @Test
+    public void testAlignmentQcFastqcAndOverwrite() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_and_overwrite"));
+
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
+
+        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
+
+        outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_overwrite_and_overwrite_2"));
+        params.setOverwrite(true);
+        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
+
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        checkFastQcMetrics(bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+        System.out.println("outdir = " + outDir);
+    }
+
+    @Test
+    public void testAlignmentQcFastqcAndDoNotOverwrite() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_and_do_not_overwrite"));
+
+        File bamFile = getCatalogFile(bamFilename);
+        resetAlignemntQc(bamFile);
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(bamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
+
+        ExecutionResult executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertTrue(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
+
+        // Check
+        bamFile = catalogManager.getFileManager().get(STUDY, bamFile.getId(), QueryOptions.empty(), token).first();
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsStats());
+        assertEquals(null, bamFile.getQualityControl().getAlignment().getSamtoolsFlagStats());
+        checkFastQcMetrics(bamFile.getQualityControl().getAlignment().getFastQcMetrics());
+
+        outDir = Paths.get(opencga.createTmpOutdir("_alignment_qc_fastqc_and_do_not_overwrite_2"));
+
+        executeResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        assertFalse(executeResult.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList()).contains(AlignmentQcAnalysis.FASTQC_METRICS_STEP));
+
+        System.out.println("outdir = " + outDir);
+    }
+
+    private void checkSamtoolsStats(SamtoolsStats stats) {
+        System.out.println("stats = " + stats);
+        assertTrue(stats != null);
+        assertEquals(108, stats.getSequences());
+        assertEquals(55, stats.getLastFragments());
+        assertEquals(0, stats.getReadsDuplicated());
+        assertEquals(0, stats.getReadsQcFailed());
+        assertEquals(10800, stats.getTotalLength());
+        assertEquals(10047, stats.getBasesMappedCigar());
+        assertEquals(49, stats.getMismatches());
+        assertEquals(31.0, stats.getAverageQuality(), 0.001f);
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals3.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("coverage.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("insert-size.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("gc-content.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("acgt-cycles.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals2.png")).collect(Collectors.toList()).size());
+    }
+
+    private void checkSamtoolsFlagstats(SamtoolsFlagstats flagstats) {
+        System.out.println("flagstats = " + flagstats);
+        assertTrue(flagstats != null);
+        assertEquals(108, flagstats.getTotalReads());
+        assertEquals(0, flagstats.getSecondaryAlignments());
+        assertEquals(53, flagstats.getRead1());
+        assertEquals(55, flagstats.getRead2());
+        assertEquals(104, flagstats.getProperlyPaired());
+    }
+
+    private void checkFastQcMetrics(FastQcMetrics metrics) {
+        System.out.println("metrics = " + metrics);
+        assertTrue(metrics != null);
+        assertEquals("PASS", metrics.getSummary().getBasicStatistics());
+        assertEquals("FAIL", metrics.getSummary().getPerSeqGcContent());
+        assertEquals("WARN", metrics.getSummary().getOverrepresentedSeqs());
+        assertEquals(7, metrics.getBasicStats().size());
+        assertEquals("108", metrics.getBasicStats().get("Total Sequences"));
+        assertEquals("100", metrics.getBasicStats().get("Sequence length"));
+        assertEquals("46", metrics.getBasicStats().get("%GC"));
+        assertEquals(8, metrics.getFiles().size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_sequence_quality.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("duplication_levels.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_base_quality.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("adapter_content.png")).collect(Collectors.toList()).size());
+    }
+
+    private File getCatalogFile(String name) throws CatalogException {
+        return catalogManager.getFileManager().search(STUDY, new Query("name", name), QueryOptions.empty(), token).first();
+    }
+
+    private void resetAlignemntQc(File bamFile) throws CatalogException {
+        FileUpdateParams updateParams = new FileUpdateParams();
+        updateParams.setQualityControl(new FileQualityControl());
+        catalogManager.getFileManager().update(STUDY, new Query("id", bamFile.getId()), updateParams, QueryOptions.empty(), token);
     }
 }
