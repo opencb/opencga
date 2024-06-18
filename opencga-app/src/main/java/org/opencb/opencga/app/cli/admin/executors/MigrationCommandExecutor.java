@@ -6,7 +6,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
-import org.opencb.opencga.app.migrations.v3_0_0.OrganizationMigration;
+import org.opencb.opencga.app.migrations.v3.v3_0_0.OrganizationMigration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
