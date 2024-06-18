@@ -26,7 +26,7 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -369,8 +369,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public VariantQueryResult<Variant> dbAdaptorQuery(Query query, QueryOptions options) {
-        query = variantStorageEngine.preProcessQuery(query, options);
-        return dbAdaptor.get(query, options);
+        ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
+        return dbAdaptor.get(variantQuery);
     }
 
     @Test
@@ -463,26 +463,26 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         VariantQuery query = new VariantQuery().study(STUDY_NAME_5).sample("NA19600");
 //        System.out.println("query = " + query.toJson());
         List<Variant> variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(2, variants.size());
 
         query.region("1:2000200-5500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(2, variants.size());
 
         query.region("1:200-2500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(1, variants.size());
         assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
 
         query.region("1:2000200-2500000");
 //        System.out.println("query = " + query.toJson());
         variants = sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions())
-                .toDataResult().getResults();
+                .toList();
         assertEquals(1, variants.size());
         assertEquals("1:1000001-4000000:-:<DUP>", variants.get(0).toString());
     }
@@ -668,10 +668,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
-        DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                .iterator(indexQuery).toDataResult();
+        List<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                .iterator(indexQuery).toList();
 //        System.out.println("result.getResults() = " + result.getResults());
-        List<String> onlyIndex = result.getResults().stream().map(Variant::toString).sorted().collect(toList());
+        List<String> onlyIndex = result.stream().map(Variant::toString).sorted().collect(toList());
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");
@@ -815,7 +815,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     System.out.println("Count = " + actualCount);
 
                     stopWatch = StopWatch.createStarted();
-                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toDataResult().getNumResults();
+                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toList().size();
                     System.out.println("---");
                     System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCountIterator);
@@ -1200,24 +1200,24 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private void testSampleIndexOnlyVariantQueryExecutor(VariantQuery query, QueryOptions options, Class<?> expected,
                                                          Function<Variant, Variant> mapper) {
-        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(
-                query,
-                options);
-        assertEquals(expected, variantQueryExecutor.getClass());
-
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
 
+        VariantQueryExecutor variantQueryExecutor = variantStorageEngine.getVariantQueryExecutor(variantQuery);
+        assertEquals(expected, variantQueryExecutor.getClass());
+
+
         List<Variant> expectedVariants = new ArrayList<>(1000);
-        dbAdaptor.iterator(variantQuery, new QueryOptions(options))
+        dbAdaptor.iterator(variantQuery)
                 .forEachRemaining(expectedVariants::add);
 
         List<Variant> actualVariants = new ArrayList<>(1000);
-        variantQueryExecutor.iterator(variantQuery.getQuery(), options)
+        variantQueryExecutor.iterator(variantStorageEngine.parseQuery(variantQuery.getQuery(), options))
                 .forEachRemaining(actualVariants::add);
 
-        VariantQueryResult<Variant> result = variantQueryExecutor.get(variantQuery.getQuery(), new QueryOptions(options)
+        ParsedVariantQuery limitedQuery = variantStorageEngine.parseQuery(variantQuery.getQuery(), new QueryOptions(options)
                 .append(QueryOptions.LIMIT, 10)
                 .append(QueryOptions.COUNT, true));
+        VariantQueryResult<Variant> result = variantQueryExecutor.get(limitedQuery);
         assertEquals(10, result.getNumResults());
         assertEquals(10, result.getResults().size());
         long count = result.getNumMatches();

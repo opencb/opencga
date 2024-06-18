@@ -217,6 +217,10 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("File " + quote(file) + " not found in study '" + study + "'");
     }
 
+    public static VariantQueryException fileNotIndexed(Object file, Object study) {
+        return new VariantQueryException("File " + quote(file) + " not indexed in study '" + study + "'");
+    }
+
     public static VariantQueryException scoreNotFound(Object score, Object study) {
         return new VariantQueryException("Variant Score " + quote(score) + " not found in study '" + study + "'");
     }

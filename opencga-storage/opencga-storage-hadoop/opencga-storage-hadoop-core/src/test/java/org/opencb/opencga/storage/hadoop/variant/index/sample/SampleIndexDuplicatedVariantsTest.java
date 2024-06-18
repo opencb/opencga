@@ -63,7 +63,7 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
 
         SampleIndexOnlyVariantQueryExecutor queryExecutor = new SampleIndexOnlyVariantQueryExecutor(dbAdaptor, sampleIndexDBAdaptor, "", new ObjectMap());
         List<Variant> expectedVariants = new ArrayList<>();
-        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(expectedVariants::add);
+        queryExecutor.iterator(variantStorageEngine.parseQuery(new VariantQuery().sample("s1"), new QueryOptions())).forEachRemaining(expectedVariants::add);
 
         int studyId = engine.getMetadataManager().getStudyId(STUDY_NAME);
         String actualSampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId);
@@ -81,7 +81,7 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
 
         List<Variant> actualVariants = new ArrayList<>();
-        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(actualVariants::add);
+        queryExecutor.iterator(variantStorageEngine.parseQuery(new VariantQuery().sample("s1"), new QueryOptions())).forEachRemaining(actualVariants::add);
 
         Assert.assertEquals(expectedVariants, actualVariants);
 
@@ -105,7 +105,7 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
 
         SampleIndexOnlyVariantQueryExecutor queryExecutor = new SampleIndexOnlyVariantQueryExecutor(dbAdaptor, sampleIndexDBAdaptor, "", new ObjectMap());
         List<Variant> expectedVariants = new ArrayList<>();
-        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(expectedVariants::add);
+        queryExecutor.iterator(variantStorageEngine.parseQuery(new VariantQuery().sample("s1"), new QueryOptions())).forEachRemaining(expectedVariants::add);
 
         int studyId = engine.getMetadataManager().getStudyId(STUDY_NAME);
         String actualSampleIndexTableName = sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId);
@@ -123,7 +123,7 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
 
         List<Variant> actualVariants = new ArrayList<>();
-        queryExecutor.iterator(new VariantQuery().sample("s1"), new QueryOptions()).forEachRemaining(actualVariants::add);
+        queryExecutor.iterator(variantStorageEngine.parseQuery(new VariantQuery().sample("s1"), new QueryOptions())).forEachRemaining(actualVariants::add);
 
         Assert.assertEquals(expectedVariants, actualVariants);
 
