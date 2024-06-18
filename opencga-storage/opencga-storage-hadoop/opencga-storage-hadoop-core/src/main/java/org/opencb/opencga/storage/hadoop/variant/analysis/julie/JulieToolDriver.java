@@ -68,6 +68,7 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
             for (Integer studyId : metadataManager.getStudies().values()) {
                 List<Integer> studyCohorts = new LinkedList<>();
                 cohorts.put(studyId, studyCohorts);
+                // Only READY cohort stats are used for JulieTool
                 for (CohortMetadata c : metadataManager.getCalculatedCohorts(studyId)) {
                     studyCohorts.add(c.getId());
                 }
@@ -78,6 +79,8 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         Scan scan = new Scan();
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
         for (Map.Entry<Integer, List<Integer>> entry : cohorts.entrySet()) {
             Integer studyId = entry.getKey();

@@ -26,8 +26,8 @@ public class AlleleCodec {
     }
 
     public static byte encode(String ref, String alt) {
-        byte refCode = encode(ref);
-        byte altCode = encode(alt);
+        byte refCode = encode(ref.charAt(0));
+        byte altCode = encode(alt.charAt(0));
         return join(refCode, altCode);
     }
 
@@ -38,8 +38,8 @@ public class AlleleCodec {
         };
     }
 
-    public static byte encode(String allele) {
-        switch (allele.charAt(0)) {
+    public static byte encode(char allele) {
+        switch (allele) {
             case 'A':
                 return 0b00; // 0
             case 'C':

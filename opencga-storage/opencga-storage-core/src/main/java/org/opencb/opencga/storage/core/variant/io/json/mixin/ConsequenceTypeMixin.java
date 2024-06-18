@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.cellbase.client.rest.ParentRestClient;
 
 import java.util.List;
 
 @JsonDeserialize(
-        converter = ParentRestClient.ConsequenceTypeMixin.ConsequenceTypeConverter.class
+        converter = ConsequenceTypeMixin.ConsequenceTypeConverter.class
 )
 public interface ConsequenceTypeMixin {
     class ConsequenceTypeConverter extends StdConverter<ConsequenceType, ConsequenceType> {

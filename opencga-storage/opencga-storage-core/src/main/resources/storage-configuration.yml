@@ -18,10 +18,8 @@ cellbase:
 server:
   rest:
     port: ${OPENCGA.SERVER.REST.PORT}
-    logFile: null
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
-    logFile: null
 
 ## Solr Search Configuration
 search:

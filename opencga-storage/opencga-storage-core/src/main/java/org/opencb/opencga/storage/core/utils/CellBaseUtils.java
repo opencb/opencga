@@ -343,6 +343,7 @@ public class CellBaseUtils extends CellBaseValidator {
         List<Variant> variants = new ArrayList<>(variantsStr.size());
         List<CellBaseDataResult<Variant>> response = null;
         try {
+            // FIXME: This method should call genomic/variant/snp/search
             response = checkNulls(cellBaseClient.getVariantClient().get(variantsStr,
                     new QueryOptions(QueryOptions.INCLUDE,
                             VariantField.CHROMOSOME.fieldName() + ","

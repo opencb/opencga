@@ -20,8 +20,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -31,7 +34,7 @@ import java.util.*;
 public class ConfigurationTest {
 
     @Test
-    public void testDefault() {
+    public void testDefault() throws IOException {
         Configuration configuration = new Configuration();
 
         configuration.setLogLevel("INFO");
@@ -71,7 +74,7 @@ public class ConfigurationTest {
         configuration.setAudit(audit);
 
         ServerConfiguration serverConfiguration = new ServerConfiguration();
-        RestServerConfiguration rest = new RestServerConfiguration(1000, 100, 1000);
+        RestServerConfiguration rest = new RestServerConfiguration(1000);
         GrpcServerConfiguration grpc = new GrpcServerConfiguration(1001);
         serverConfiguration.setGrpc(grpc);
         serverConfiguration.setRest(rest);
@@ -90,11 +93,10 @@ public class ConfigurationTest {
 //        catalogConfiguration.getStorageEngines().add(storageEngineConfiguration1);
 //        catalogConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
-        try {
-            configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Path outdir = Paths.get("target/test-data", "junit-opencga-" +
+                new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss.SSS").format(new Date()));
+        Files.createDirectories(outdir);
+        configuration.serialize(Files.newOutputStream(outdir.resolve("configuration-test.yml").toFile().toPath()));
     }
 
     @Test
