@@ -73,12 +73,20 @@ authentication:
 server:
   rest:
     port: ${OPENCGA.SERVER.REST.PORT}
-    logFile: null
-    defaultLimit: 2000
-    maxLimit: 5000
+    httpConfiguration:
+      # The size in bytes of the output buffer used to aggregate HTTP output
+      outputBufferSize: 32768
+      # The maximum size in bytes for HTTP output to be aggregated
+      outputAggregationSize: 8192
+      # The maximum allowed size in bytes for a HTTP request header
+      requestHeaderSize: 8192
+      # The maximum allowed size in bytes for a HTTP response header
+      responseHeaderSize: 8192
+      # The maximum allowed size in bytes for a HTTP header field cache
+      headerCacheSize: 4096
+
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
-    logFile: null
 
 optimizations:
   simplifyPermissions: ${OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS}
@@ -140,7 +148,8 @@ analysis:
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5
-      variant-secondary-index: 2
+      variant-secondary-annotation-index: 2
+      variant-secondary-sample-index: 2
     options:
       ## Job reuse policy. Do not create a new job if an equivalent PENDING or QUEUED job exists.
       jobs.reuse.enabled: true
@@ -150,6 +159,7 @@ analysis:
         - "variant-stats-index"
         - "variant-annotation-index"
         - "variant-secondary-annotation-index"
+        - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
       ## Azure Batch Service configuration example

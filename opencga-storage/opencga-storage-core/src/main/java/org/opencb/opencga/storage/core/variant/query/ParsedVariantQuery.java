@@ -1,53 +1,76 @@
 package org.opencb.opencga.storage.core.variant.query;
 
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ID_INTERSECT;
 
 public class ParsedVariantQuery {
 
     private Query inputQuery;
     private QueryOptions inputOptions;
-    private Query query;
+    private VariantQuery query;
     private boolean optimized = false;
+
+    private List<Event> events = new ArrayList<>();
 
     private VariantQueryProjection projection;
 
     private final VariantStudyQuery studyQuery;
-//    private VariantAnnotationQuery annotationQuery;
+    private Integer limit;
+    private int skip;
+    private boolean count;
+    private int approximateCountSamplingSize;
+    private List<Region> geneRegions;
+    private List<Region> regions;
+    private List<List<String>> clinicalCombination;
+    private List<String> clinicalCombinationList;
+    //    private VariantAnnotationQuery annotationQuery;
 
 
     public ParsedVariantQuery() {
         this.inputQuery = new Query();
         this.inputOptions = new QueryOptions();
-        this.query = new Query();
+        this.query = new VariantQuery();
         studyQuery = new VariantStudyQuery();
     }
 
     public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
         this.inputQuery = inputQuery;
         this.inputOptions = inputOptions;
-        this.query = inputQuery;
+        this.query = new VariantQuery(inputQuery);
         studyQuery = new VariantStudyQuery();
     }
 
     public ParsedVariantQuery(ParsedVariantQuery other) {
         this.inputQuery = new Query(other.inputQuery);
         this.inputOptions = new QueryOptions(other.inputOptions);
-        this.query = new Query(other.query);
+        this.query = new VariantQuery(other.query);
         this.projection = other.projection;
-        this.studyQuery = other.studyQuery;
+        this.studyQuery = new VariantStudyQuery(other.getStudyQuery());
         this.optimized = other.optimized;
+        this.limit = other.limit;
+        this.skip = other.skip;
+        this.count = other.count;
+        this.approximateCountSamplingSize = other.approximateCountSamplingSize;
+        this.geneRegions = new ArrayList<>(other.geneRegions);
+        this.regions = new ArrayList<>(other.regions);
+        this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
+        this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
     }
 
     public Query getInputQuery() {
@@ -59,11 +82,11 @@ public class ParsedVariantQuery {
         return this;
     }
 
-    public Query getQuery() {
+    public VariantQuery getQuery() {
         return query;
     }
 
-    public ParsedVariantQuery setQuery(Query query) {
+    public ParsedVariantQuery setQuery(VariantQuery query) {
         this.query = query;
         return this;
     }
@@ -74,6 +97,15 @@ public class ParsedVariantQuery {
 
     public ParsedVariantQuery setOptimized(boolean optimized) {
         this.optimized = optimized;
+        return this;
+    }
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public ParsedVariantQuery setEvents(List<Event> events) {
+        this.events = events;
         return this;
     }
 
@@ -107,6 +139,24 @@ public class ParsedVariantQuery {
         return VariantQueryParser.parseXrefs(query);
     }
 
+    public List<Region> getRegions() {
+        return regions;
+    }
+
+    public ParsedVariantQuery setRegions(List<Region> regions) {
+        this.regions = regions;
+        return this;
+    }
+
+    public List<Region> getGeneRegions() {
+        return geneRegions;
+    }
+
+    public ParsedVariantQuery setGeneRegions(List<Region> geneRegions) {
+        this.geneRegions = geneRegions;
+        return this;
+    }
+
     public List<String> getConsequenceTypes() {
         return VariantQueryUtils.parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()));
     }
@@ -117,6 +167,76 @@ public class ParsedVariantQuery {
 
     public List<String> getTranscriptFlags() {
         return query.getAsStringList(VariantQueryParam.ANNOT_TRANSCRIPT_FLAG.key());
+    }
+
+    public Integer getLimit() {
+        return limit;
+    }
+
+    public int getLimitOr(int defaultValue) {
+        return limit == null ? defaultValue : limit;
+    }
+
+    public ParsedVariantQuery setLimit(Integer limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    public int getSkip() {
+        return skip;
+    }
+
+    public ParsedVariantQuery setSkip(int skip) {
+        this.skip = skip;
+        return this;
+    }
+
+    public boolean getCount() {
+        return count;
+    }
+
+    public ParsedVariantQuery setCount(boolean count) {
+        this.count = count;
+        return this;
+    }
+
+    public int getApproximateCountSamplingSize() {
+        return approximateCountSamplingSize;
+    }
+
+    public ParsedVariantQuery setApproximateCountSamplingSize(int approximateCountSamplingSize) {
+        this.approximateCountSamplingSize = approximateCountSamplingSize;
+        return this;
+    }
+
+    public ParsedQuery<KeyOpValue<String, Float>> getPopulationFrequencyAlt() {
+        return VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY);
+    }
+
+    public ParsedQuery<KeyOpValue<String, Float>> getPopulationFrequencyRef() {
+        return VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY);
+    }
+
+    public ParsedQuery<KeyOpValue<String, Float>> getPopulationFrequencyMaf() {
+        return VariantQueryParser.parseFreqFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+    }
+
+    public List<List<String>> getClinicalCombinations() {
+        return clinicalCombination;
+    }
+
+    public ParsedVariantQuery setClinicalCombination(List<List<String>> clinicalCombination) {
+        this.clinicalCombination = clinicalCombination;
+        return this;
+    }
+
+    public List<String> getClinicalCombinationsList() {
+        return clinicalCombinationList;
+    }
+
+    public ParsedVariantQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
+        this.clinicalCombinationList = clinicalCombinationList;
+        return this;
     }
 
     public static class VariantStudyQuery {
@@ -131,6 +251,13 @@ public class ParsedVariantQuery {
         public VariantStudyQuery() {
         }
 
+        public VariantStudyQuery(VariantStudyQuery studyQuery) {
+            this.studies = studyQuery.studies;
+            this.genotypes = studyQuery.genotypes;
+            this.sampleDataQuery = studyQuery.sampleDataQuery;
+            this.defaultStudy = studyQuery.defaultStudy;
+        }
+
         public ParsedQuery<String> getStudies() {
             return studies;
         }
@@ -138,6 +265,14 @@ public class ParsedVariantQuery {
         public VariantStudyQuery setStudies(ParsedQuery<String> studies) {
             this.studies = studies;
             return this;
+        }
+
+        public String getStudyOrFail() {
+            if (studies == null || studies.size() != 1) {
+                throw new VariantQueryException("Require exactly one study");
+            } else {
+                return studies.get(0);
+            }
         }
 
         public ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> getGenotypes() {
@@ -225,6 +360,17 @@ public class ParsedVariantQuery {
 
         public boolean isEmpty() {
             return genes.isEmpty() && variants.isEmpty() && ids.isEmpty() && otherXrefs.isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("VariantQueryXref{");
+            sb.append("genes=").append(genes);
+            sb.append(", variants=").append(variants);
+            sb.append(", ids=").append(ids);
+            sb.append(", otherXrefs=").append(otherXrefs);
+            sb.append('}');
+            return sb.toString();
         }
     }
 }
