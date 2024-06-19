@@ -22,6 +22,7 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.organizations.TokenConfiguration;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
