@@ -63,6 +63,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
     public static final String SAMTOOLS_FLAGSTATS_STEP = "samtools-flagstats";
     public static final String PLOT_BAMSTATS_STEP = "plot-bamstats";
     public static final String FASTQC_METRICS_STEP = "fastqc-metrics";
+    public static final String UPDATE_FILE_ALIGNMENT_QC_STEP = "update-file-alignment-qc";
 
     @ToolParams
     protected final AlignmentQcParams alignmentQcParams = new AlignmentQcParams();
@@ -72,6 +73,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
     private boolean runSamtoolsStatsStep = true;
     private boolean runSamptoolsFlagstatsStep = true;
     private boolean runFastqcMetricsStep = true;
+    private boolean updateQcStep = true;
 
     private File catalogBamFile;
     private File catalogStatsFile;
@@ -138,6 +140,8 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                 logger.warn(msg);
             }
         }
+
+        updateQcStep = (runSamptoolsFlagstatsStep || runSamtoolsStatsStep || runFastqcMetricsStep) ? true : false;
     }
 
     @Override
@@ -153,13 +157,17 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         if (runFastqcMetricsStep) {
             steps.add(FASTQC_METRICS_STEP);
         }
+        if (updateQcStep) {
+            steps.add(UPDATE_FILE_ALIGNMENT_QC_STEP);
+        }
         return steps;
     }
 
     @Override
     protected void run() throws ToolException {
         // Create the tool runner
-        toolRunner = new ToolRunner(opencgaHome, catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+        toolRunner = new ToolRunner(getOpencgaHome().toString(), catalogManager,
+                StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
 
         // Get alignment QC metrics to update
         if (catalogBamFile.getQualityControl() != null) {
@@ -179,13 +187,8 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         if (runFastqcMetricsStep) {
             step(FASTQC_METRICS_STEP, this::runFastqcMetrics);
         }
-
-        // Finally, update file quality control
-        try {
-            FileUpdateParams fileUpdateParams = new FileUpdateParams().setQualityControl(fileQc);
-            catalogManager.getFileManager().update(study, catalogBamFile.getId(), fileUpdateParams, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new ToolException("Error updating alignment quality control", e);
+        if (updateQcStep) {
+            step(UPDATE_FILE_ALIGNMENT_QC_STEP, this::updateAlignmentQc);
         }
     }
 
@@ -372,5 +375,15 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         // Check results and update QC file
         FastQcMetrics fastQcMetrics = AlignmentFastQcMetricsAnalysis.parseResults(outPath, configuration.getJobDir());
         fileQc.getAlignment().setFastQcMetrics(fastQcMetrics);
+    }
+
+    private void updateAlignmentQc() throws ToolException {
+        // Finally, update file quality control
+        try {
+            FileUpdateParams fileUpdateParams = new FileUpdateParams().setQualityControl(fileQc);
+            catalogManager.getFileManager().update(study, catalogBamFile.getId(), fileUpdateParams, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException("Error updating alignment quality control", e);
+        }
     }
 }
