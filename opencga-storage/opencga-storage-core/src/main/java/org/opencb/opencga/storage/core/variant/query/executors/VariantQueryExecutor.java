@@ -1,18 +1,15 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-
-import java.util.Collections;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_MAX_TIMEOUT;
@@ -22,7 +19,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUER
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantQueryExecutor implements VariantIterable {
+public abstract class VariantQueryExecutor {
 
     protected final VariantStorageMetadataManager metadataManager;
     protected final String storageEngineId;
@@ -34,19 +31,17 @@ public abstract class VariantQueryExecutor implements VariantIterable {
         this.options = options;
     }
 
-    public final VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public final VariantQueryResult<Variant> get(ParsedVariantQuery query) {
         try {
-            return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+            return (VariantQueryResult<Variant>) getOrIterator(query, false);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);
         }
     }
 
-    @Override
-    public final VariantDBIterator iterator(Query query, QueryOptions options) {
+    public final VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
         try {
-//            query = parser.preProcessQuery(query, options);
-            return (VariantDBIterator) getOrIterator(query, options, true);
+            return (VariantDBIterator) getOrIterator(variantQuery, true);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);
         }
@@ -77,19 +72,7 @@ public abstract class VariantQueryExecutor implements VariantIterable {
      */
     public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
 
-    @Deprecated
-    public DataResult<Long> count(Query query) {
-        VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 0));
-        return new DataResult<>(
-                result.getTime(),
-                result.getEvents(),
-                1,
-                Collections.singletonList(result.getNumMatches()),
-                result.getNumMatches(),
-                result.getAttributes());
-    }
-
-    protected abstract Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException;
+    protected abstract Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) throws StorageEngineException;
 
     protected VariantStorageMetadataManager getMetadataManager() {
         return metadataManager;

@@ -464,7 +464,7 @@ public abstract class OpenCgaTool {
             } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
-                throw new ToolException("Exception from step " + stepId, e);
+                throw new ToolException("Exception from step '" + stepId + "'", e);
             }
         } else {
             privateLogger.info("------- Skip step " + stepId + " -------");

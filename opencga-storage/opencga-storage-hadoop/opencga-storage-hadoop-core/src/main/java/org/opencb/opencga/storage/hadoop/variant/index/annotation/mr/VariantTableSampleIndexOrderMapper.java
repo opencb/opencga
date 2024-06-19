@@ -51,11 +51,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                     // Current result does not start in the previous position.
                     // Sort buffer
                     if (buffer.size() > 1) {
-                        buffer.sort((o1, o2) -> {
-                            Variant v1 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o1.getSecond().getRow());
-                            Variant v2 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o2.getSecond().getRow());
-                            return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
-                        });
+                        sortBuffer(buffer);
                     }
 
                     if (!buffer.isEmpty()) {
@@ -82,6 +78,9 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                 }
             }
             countBufferSize(context, buffer.size(), chromosome, position);
+            if (buffer.size() > 1) {
+                sortBuffer(buffer);
+            }
             for (Pair<ImmutableBytesWritable, Result> pair : buffer) {
                 this.map(pair.getFirst(), pair.getSecond(), context);
             }
@@ -90,6 +89,14 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
         } finally {
             this.cleanup(context);
         }
+    }
+
+    private static void sortBuffer(List<Pair<ImmutableBytesWritable, Result>> buffer) {
+        buffer.sort((o1, o2) -> {
+            Variant v1 = VariantPhoenixKeyFactory.extractVariantFromResult(o1.getSecond());
+            Variant v2 = VariantPhoenixKeyFactory.extractVariantFromResult(o2.getSecond());
+            return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
+        });
     }
 
     private void countBufferSize(Context context, int size, String chromosome, int position) {

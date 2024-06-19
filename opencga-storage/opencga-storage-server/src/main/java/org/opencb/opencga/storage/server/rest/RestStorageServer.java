@@ -16,11 +16,15 @@
 
 package org.opencb.opencga.storage.server.rest;
 
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.opencga.core.config.RestServerConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.server.common.AbstractStorageServer;
 import org.slf4j.LoggerFactory;
@@ -60,7 +64,14 @@ public class RestStorageServer extends AbstractStorageServer {
         ServletHolder sh = new ServletHolder("opencga", sc);
 
         logger.info("Server in port : {}", port);
-        server = new Server(port);
+        server = new Server();
+
+        HttpConfiguration httpConfig = getHttpConfiguration();
+
+        ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+        httpConnector.setPort(port);
+
+        server.addConnector(httpConnector);
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
@@ -101,6 +112,27 @@ public class RestStorageServer extends AbstractStorageServer {
 
         // AdminWSServer server needs a reference to this class to cll to .stop()
         AdminRestWebService.setServer(this);
+    }
+
+    private HttpConfiguration getHttpConfiguration() {
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        RestServerConfiguration.HttpConfiguration restHttpConf = storageConfiguration.getServer().getRest().getHttpConfiguration();
+        if (restHttpConf.getOutputBufferSize() > 0) {
+            httpConfig.setOutputBufferSize(restHttpConf.getOutputBufferSize());
+        }
+        if (restHttpConf.getOutputAggregationSize() > 0) {
+            httpConfig.setOutputAggregationSize(restHttpConf.getOutputAggregationSize());
+        }
+        if (restHttpConf.getRequestHeaderSize() > 0) {
+            httpConfig.setRequestHeaderSize(restHttpConf.getRequestHeaderSize());
+        }
+        if (restHttpConf.getResponseHeaderSize() > 0) {
+            httpConfig.setResponseHeaderSize(restHttpConf.getResponseHeaderSize());
+        }
+        if (restHttpConf.getHeaderCacheSize() > 0) {
+            httpConfig.setHeaderCacheSize(restHttpConf.getHeaderCacheSize());
+        }
+        return httpConfig;
     }
 
     @Override

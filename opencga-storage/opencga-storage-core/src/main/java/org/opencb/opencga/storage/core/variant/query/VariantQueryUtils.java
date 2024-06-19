@@ -28,12 +28,13 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
-import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -467,6 +468,33 @@ public final class VariantQueryUtils {
     }
 
     /**
+     * Determines if the given value might be a known transcript or not.
+     * Ensembl transcripts start with `ENST`
+     * RefSeq transcripts start with `NM_` and `XM_`
+     * See <a href="https://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/?report=objectonly">...</a>
+     *
+     * @param value Value to check
+     * @return If is a known transcript
+     */
+    public static boolean isTranscript(String value) {
+        return value.startsWith("ENST") || value.startsWith("NM_")  || value.startsWith("XM_");
+    }
+
+    /**
+     * Determines if the given value is a HGVS.
+     *
+     * @param value Value to check
+     * @return If is a known accession
+     */
+    public static boolean isHGVS(String value) {
+        // Check regex ':[cnpg].'
+        // HGVC examples :
+        //  - "1:g.65325832G>A"
+        //  - "1:g.65325832_65325833insA"
+        return value.contains(":c.") || value.contains(":n.") || value.contains(":p.") || value.contains(":g.");
+    }
+
+    /**
      * Determines if the given value is a known clinical accession or not.
      * <p>
      * ClinVar accession starts with 'VCV', 'RCV' or 'SCV'
@@ -492,6 +520,18 @@ public final class VariantQueryUtils {
      */
     public static boolean isGeneAccession(String value) {
         return isHpo(value) || value.startsWith("OMIM:") || value.startsWith("umls:");
+    }
+
+    /**
+     * Determines if the given value is a valid protein feature id.
+     * <p>
+     *     Protein feature id starts with 'PRO_', 'VAR_' or 'VSP_'
+     *
+     * @param value Value to check
+     * @return If is a known accession
+     */
+    public static boolean isProteinFeatureId(String value) {
+        return value.startsWith("PRO_") |  value.startsWith("VAR_") |  value.startsWith("VSP_");
     }
 
     /**
@@ -552,6 +592,14 @@ public final class VariantQueryUtils {
         return variant;
     }
 
+    public static Variant toVariant(String variantStr, boolean normalize) {
+        Variant variant = toVariant(variantStr);
+        if (normalize && variant != null) {
+            return VariantQueryParser.normalizeVariant(variant);
+        }
+        return variant;
+    }
+
     public static String[] splitStudyResource(String value) {
         int idx = value.lastIndexOf(STUDY_RESOURCE_SEPARATOR);
         if (idx <= 0 || idx == value.length() - 1) {
@@ -580,37 +628,6 @@ public final class VariantQueryUtils {
             return numStudies > 1;
         } else {
             return studies.size() > 1;
-        }
-    }
-
-    public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(DataResult<T> result, Query query, QueryOptions options,
-                                                                          VariantStorageMetadataManager variantStorageMetadataManager) {
-        return addSamplesMetadataIfRequested(new VariantQueryResult<>(result, null), query, options, variantStorageMetadataManager);
-    }
-
-    public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(VariantQueryResult<T> result, Query query, QueryOptions options,
-                                                                   VariantStorageMetadataManager variantStorageMetadataManager) {
-        if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
-            int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
-            Map<String, List<String>> samplesMetadata = VariantQueryProjectionParser
-                    .getIncludeSampleNames(query, options, variantStorageMetadataManager);
-            if (numTotalSamples < 0 && numSamples < 0) {
-                numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
-                VariantQueryProjectionParser.skipAndLimitSamples(query, samplesMetadata);
-                numSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
-            }
-            return result.setNumSamples(numSamples)
-                    .setNumTotalSamples(numTotalSamples)
-                    .setSamples(samplesMetadata);
-        } else {
-            int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
-            int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
-            if (numTotalSamples >= 0 && numSamples >= 0) {
-                return result.setNumSamples(numSamples)
-                        .setNumTotalSamples(numTotalSamples);
-            }
-            return result;
         }
     }
 
@@ -1570,6 +1587,13 @@ public final class VariantQueryUtils {
                 Object geneRegions = query.get(ANNOT_GENE_REGIONS.key());
                 if (geneRegions instanceof Collection) {
                     query.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
+                }
+            }
+            if (isValidParam(query, ID_INTERSECT)) {
+                query = new Query(query);
+                Object idIntersect = query.get(ID_INTERSECT.key());
+                if (idIntersect instanceof Collection) {
+                    query.put(ID_INTERSECT.key(), "numIdIntersect : " + ((Collection<?>) idIntersect).size());
                 }
             }
             try {
