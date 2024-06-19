@@ -97,7 +97,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                         if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
                             int index = imgFile.getAbsolutePath().indexOf("JOBS/");
                             String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath);
+                            genomePlot = new GenomePlot(getGenomePlotParams().getId(), getGenomePlotParams().getDescription(), plotConfig, relativeFilePath);
                             break;
                         }
                     }
@@ -116,25 +116,16 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 
-    public static GenomePlot parseResults(Path outDir, String description, GenomePlotConfig plotConfig) throws IOException {
+    public static GenomePlot parseResults(Path outDir, String id, String description, GenomePlotConfig plotConfig) throws IOException {
         // Get image file
         for (java.io.File imgFile : outDir.toFile().listFiles()) {
             if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
                 int index = imgFile.getAbsolutePath().indexOf("JOBS/");
                 String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                return new GenomePlot("", description, plotConfig, relativeFilePath);
+                return new GenomePlot(id, description, plotConfig, relativeFilePath);
             }
         }
         return null;
-    }
-
-    public String getStudy() {
-        return study;
-    }
-
-    public GenomePlotAnalysis setStudy(String study) {
-        this.study = study;
-        return this;
     }
 
     public GenomePlotAnalysisParams getGenomePlotParams() {
