@@ -363,6 +363,11 @@ function publish_docker() {
   fi
 }
 
+
+
+## FUNCTIONS TO MANAGE LOGS AND PRINTS ##
+
+
 # Function to add messages to the log summary
 function log_summary() {
   if [ -n "$LOG_SUMMARY" ]; then
@@ -371,7 +376,7 @@ function log_summary() {
   LOG_SUMMARY="$LOG_SUMMARY""INFO: $(date +"%Y-%m-%d %H:%M:%S")  $@"
 }
 
-# Function to add messages to the log summary
+# Function to add messages to the version summary
 function log_version_summary() {
   if [ -n "$VERSION_SUMMARY" ]; then
     VERSION_SUMMARY="$VERSION_SUMMARY""\n"
@@ -380,7 +385,7 @@ function log_version_summary() {
 }
 
 
-# Function to add messages to the log summary
+# Function to add messages to the time summary
 function log_time_summary() {
   if [ -n "$TIME_SUMMARY" ]; then
     TIME_SUMMARY="$TIME_SUMMARY""\n"
@@ -388,7 +393,7 @@ function log_time_summary() {
   TIME_SUMMARY="$TIME_SUMMARY""$@"
 }
 
-# Function to add messages to the log summary
+# Function to add messages to the param summary
 function log_param_summary() {
   if [ -n "$PARAM_SUMMARY" ]; then
     PARAM_SUMMARY="$PARAM_SUMMARY""\n"
@@ -396,7 +401,7 @@ function log_param_summary() {
   PARAM_SUMMARY="$PARAM_SUMMARY""$@"
 }
 
-# Función para calcular y registrar el tiempo de ejecución
+# Function to log the execution time
 function log_execution_time() {
     local END_TIME=$(date +%s)
     local END_DATE=$(date +"%Y-%m-%d %H:%M:%S")
@@ -461,7 +466,7 @@ function log_initial_state() {
     log_param_summary "DOCKER,$(yes_no "$DOCKER")"
 }
 
-# Función para imprimir el resumen de versiones en formato de tabla
+# Function to print the version summary
 function print_version_summary() {
     echo ""  >> "$LOG_FILE"
     printf "%-25s %-20s %-20s\n" "Repository" "Version" "Branch" >> "$LOG_FILE"
@@ -471,10 +476,10 @@ function print_version_summary() {
     done
 }
 
-# Función para imprimir el resumen de versiones en formato de tabla
+# Function to print the parameters summary
 function print_param_summary() {
     echo ""  >> "$LOG_FILE"
-    printf "%-25s %-20s \n" "Repository" "Version" >> "$LOG_FILE"
+    printf "%-25s %-20s \n" "Parameter" "Value" >> "$LOG_FILE"
     printf "%-25s %-20s \n" "---------" "-------" >> "$LOG_FILE"
     echo -e "$PARAM_SUMMARY" | while IFS=',' read -r param value; do
         printf "%-25s %-20s \n" "$param" "$value" >> "$LOG_FILE"
@@ -534,6 +539,49 @@ function generate_version_table() {
     # Close the table
     table_html="$table_html</tbody></table>"
     echo "$table_html"
+}
+
+
+# Function to generate the final HTML report
+function generate_html_report() {
+
+    # Generate the html report log
+    local param_summary=$(generate_param_table)
+    local version_summary=$(generate_version_table)
+    local execution_time=$(echo -e "$TIME_SUMMARY")
+    local template_file="reports/build.html.template"
+    local output_file="reports/test/summary.html"
+
+    # Read the template content
+    local template_content=$(<"$template_file")
+
+    # Replace placeholders with actual content
+    template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
+    template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
+    template_content="${template_content//#EXECUTION_TIME/$execution_time}"
+
+    # Ensure the output directory exists
+    mkdir -p "$(dirname "$output_file")"
+
+    # Write the final content to the output file
+    echo "$template_content" > "$output_file"
+}
+
+
+function print_log() {
+  # Print log parameters
+  print_param_summary
+  # Print log summary
+  print_log_summary
+  # Print version table summary
+  print_version_summary
+  # Log execution time
+  log_execution_time
+  print_time_summary
+  # Generate html log file
+  generate_html_report
+  #Print in console the log file
+  cat "$LOG_FILE"
 }
 
 ###################################
@@ -657,47 +705,6 @@ if [ "$DEBUG" == "true" ];then
   log_summary "SKIP_TESTS $SKIP_TESTS"
 fi
 
-# Function to generate the final HTML report
-function generate_html_report() {
-
-    # Generate the html report log
-    local param_summary=$(generate_param_table)
-    local version_summary=$(generate_version_table)
-    local execution_time=$(echo -e "$TIME_SUMMARY")
-    local template_file="reports/build.html.template"
-    local output_file="reports/test/summary.html"
-
-    # Read the template content
-    local template_content=$(<"$template_file")
-
-    # Replace placeholders with actual content
-    template_content="${template_content//#PARAM_SUMMARY/$param_summary}"
-    template_content="${template_content//#VERSION_SUMMARY/$version_summary}"
-    template_content="${template_content//#EXECUTION_TIME/$execution_time}"
-
-    # Ensure the output directory exists
-    mkdir -p "$(dirname "$output_file")"
-
-    # Write the final content to the output file
-    echo "$template_content" > "$output_file"
-}
-
-
-function print_log() {
-  # Print log parameters
-  print_param_summary
-  # Print log summary
-  print_log_summary
-  # Print version table summary
-  print_version_summary
-  # Log execution time
-  log_execution_time
-  print_time_summary
-  # Generate html log file
-  generate_html_report
-  #Print in console the log file
-  cat "$LOG_FILE"
-}
 
 ## 5. Sequential call to functions so that the script does everything it should do based on the parameters received
 
