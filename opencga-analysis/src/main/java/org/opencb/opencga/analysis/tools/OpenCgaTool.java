@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -44,6 +45,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.ToolStep;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
@@ -67,7 +70,7 @@ public abstract class OpenCgaTool {
     protected VariantStorageManager variantStorageManager;
 
     private String jobId;
-    private String opencgaHome;
+    protected String opencgaHome;
     protected String token;
 
     protected final ObjectMap params;
@@ -505,6 +508,20 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
+    protected final void addStepAttributes(ExecutionResult executionResult) throws ToolException {
+        if (executionResult != null) {
+            if (CollectionUtils.isNotEmpty(executionResult.getSteps())) {
+                for (ToolStep step : executionResult.getSteps()) {
+                    if (MapUtils.isNotEmpty(step.getAttributes())) {
+                        for (Map.Entry<String, Object> entry : step.getAttributes().entrySet()) {
+                            erm.addStepAttribute(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
         File file;
         try {
@@ -604,6 +621,7 @@ public abstract class OpenCgaTool {
         }
         return executorParams;
     }
+
     // TODO can this method be removed?
 //    protected final Analyst getAnalyst(String token) throws ToolException {
 //        try {
