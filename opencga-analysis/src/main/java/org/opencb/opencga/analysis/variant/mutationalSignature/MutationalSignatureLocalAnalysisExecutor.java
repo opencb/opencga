@@ -77,6 +77,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     @Override
     public void run() throws ToolException, CatalogException, IOException, StorageEngineException {
         opencgaHome = Paths.get(getExecutorParams().getString("opencgaHome"));
+        addStepParams();
 
         // Check genome context file for that sample, and create it if necessary
         if (StringUtils.isNotEmpty(getSkip())
@@ -456,8 +457,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     + " /jobdir/" + inputFile.getName()
                     + " /jobdir/" + outputFile.getName();
 
-            // Execute R script in docker
-            DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, inputBindings, outputBinding, rParams, null);
+            // Execute R script in docker and save the CLI as attribute
+            String cmdline = DockerUtils.run(MutationalSignatureLocalAnalysisExecutor.R_DOCKER_IMAGE, inputBindings, outputBinding, rParams,
+                    null);
+            addAttribute(SV_CLUSTERING_CLI_KEY, cmdline);
+            logger.info("Docker command line: {}", cmdline);
         } catch (Exception e) {
             throw new ToolException(e);
         }
@@ -634,8 +638,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
         }
 
+        // Execute docker and save the cli as attribute
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams.toString(),
                 null);
+        addAttribute(SIGNATURE_FIT_CLI_KEY, cmdline);
         logger.info("Docker command line: {}", cmdline);
 
         // Check fitting file before parsing and creating the mutational signature fitting data model

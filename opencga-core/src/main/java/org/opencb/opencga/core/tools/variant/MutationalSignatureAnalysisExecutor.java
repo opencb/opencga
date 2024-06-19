@@ -57,6 +57,26 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     public MutationalSignatureAnalysisExecutor() {
     }
 
+    protected void addStepParams() throws ToolException {
+        addAttribute("STUDY", study);
+        addAttribute("SAMPLE", sample);
+        addAttribute("ASSEMBLY", assembly);
+        addAttribute("SIGNATURE_ID", queryId);
+        addAttribute("SIGNATURE_DESCRIPTION", queryDescription);
+        addAttribute("SIGNATURE_QUERY", query);
+        addAttribute("FIT_ID", fitId);
+        addAttribute("FIT_METHOD", fitMethod);
+        addAttribute("FIT_N_BOOT", nBoot);
+        addAttribute("FIT_SIG_VERSION", sigVersion);
+        addAttribute("FIT_ORGAN", organ);
+        addAttribute("FIT_THRESHOLD_PERC", thresholdPerc);
+        addAttribute("FIT_THRESHOLD_PVAL", thresholdPval);
+        addAttribute("FIT_MAX_RARE_SIGS", maxRareSigs);
+        addAttribute("FIT_SIGNATURES_FILE", signaturesFile);
+        addAttribute("FIT_RARE_SIGNATURES_FILE", rareSignaturesFile);
+        addAttribute("SKIP", skip);
+    }
+
     protected static Map<String, Map<String, Integer>> initCountMap() {
         Map<String, Map<String, Integer>> map = new LinkedHashMap<>();
         for (String firstKey : FIRST_LEVEL_KEYS) {
