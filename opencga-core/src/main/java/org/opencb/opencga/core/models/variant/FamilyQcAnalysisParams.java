@@ -16,26 +16,39 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION;
+import static org.opencb.biodata.models.constants.FieldConstants.RELATEDNESS_REPORT_MAF_DESCRIPTION;
+
 public class FamilyQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor "
-            + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G
+    public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method based on the PLINK/IBD method."
+        + " Minor allele frequency (MAF) is used to filter variants before computing relatedness, e.g.: " + ParamConstants.POP_FREQ_1000G
             + ":CEU>0.35 or cohort:ALL>0.05";
+
+    @DataField(id = "family", description = FieldConstants.FAMILY_ID_DESCRIPTION)
     private String family;
-    private String relatednessMethod;
+
+    @DataField(id = "relatednessMaf", description = RELATEDNESS_REPORT_MAF_DESCRIPTION)
     private String relatednessMaf;
 
+    @DataField(id = "haploidCallMode", description = RELATEDNESS_REPORT_HAPLOID_CALL_MODE_DESCRIPTION)
+    private String haploidCallMode;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public FamilyQcAnalysisParams() {
     }
 
-    public FamilyQcAnalysisParams(String family, String relatednessMethod, String relatednessMaf, String outdir) {
+    public FamilyQcAnalysisParams(String family, String relatednessMaf, String haploidCallMode, String outdir) {
         this.family = family;
-        this.relatednessMethod = relatednessMethod;
         this.relatednessMaf = relatednessMaf;
+        this.haploidCallMode = haploidCallMode;
         this.outdir = outdir;
     }
 
@@ -43,8 +56,8 @@ public class FamilyQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyQcAnalysisParams{");
         sb.append("family='").append(family).append('\'');
-        sb.append(", relatednessMethod='").append(relatednessMethod).append('\'');
         sb.append(", relatednessMaf='").append(relatednessMaf).append('\'');
+        sb.append(", haploidCallMode='").append(haploidCallMode).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -59,21 +72,21 @@ public class FamilyQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public FamilyQcAnalysisParams setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
-        return this;
-    }
-
     public String getRelatednessMaf() {
         return relatednessMaf;
     }
 
     public FamilyQcAnalysisParams setRelatednessMaf(String relatednessMaf) {
         this.relatednessMaf = relatednessMaf;
+        return this;
+    }
+
+    public String getHaploidCallMode() {
+        return haploidCallMode;
+    }
+
+    public FamilyQcAnalysisParams setHaploidCallMode(String haploidCallMode) {
+        this.haploidCallMode = haploidCallMode;
         return this;
     }
 
