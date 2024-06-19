@@ -70,7 +70,7 @@ public abstract class OpenCgaTool {
     protected VariantStorageManager variantStorageManager;
 
     private String jobId;
-    protected String opencgaHome;
+    private String opencgaHome;
     protected String token;
 
     protected final ObjectMap params;
