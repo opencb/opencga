@@ -25,6 +25,7 @@ from pyopencga.rest_clients.study_client import Study
 from pyopencga.rest_clients.variant_operation_client import VariantOperation
 from pyopencga.rest_clients.user_client import User
 from pyopencga.rest_clients.variant_client import Variant
+from pyopencga.rest_clients.organization_client import Organization
 
 
 class OpencgaClient(object):
@@ -71,6 +72,7 @@ class OpencgaClient(object):
             sys.stdout.write('{}{}{}'.format(ansi_yellow, msg, ansi_reset))
 
     def _create_clients(self):
+        self.organizations = Organization(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.users = User(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.projects = Project(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Study(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
@@ -91,7 +93,7 @@ class OpencgaClient(object):
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [
-            self.users, self.projects, self.studies, self.files, self.jobs,
+            self.organizations, self.users, self.projects, self.studies, self.files, self.jobs,
             self.samples, self.individuals, self.families, self.cohorts,
             self.disease_panels, self.alignments, self.variants, self.clinical,
             self.variant_operations, self.meta, self.ga4gh, self.admin
@@ -256,6 +258,9 @@ class OpencgaClient(object):
                             param['desc']
                         )]
         sys.stdout.write('\n'.join(help_txt) + '\n')
+
+    def get_organization_client(self):
+        return self.organizations
 
     def get_user_client(self):
         return self.users
