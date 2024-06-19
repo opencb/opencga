@@ -122,7 +122,8 @@ public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor 
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
+            String rScriptPath = Paths.get(getExecutorParams().getString("opencgaHome")).resolve("analysis/" + GenomePlotAnalysis.ID)
+                    .toAbsolutePath().toString();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
