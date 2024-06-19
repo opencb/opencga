@@ -349,15 +349,6 @@ public abstract class OpenCgaTool {
         return this.getClass().getAnnotation(Tool.class).resource();
     }
 
-    public ExecutionResultManager getErm() {
-        return erm;
-    }
-
-    public OpenCgaTool setErm(ExecutionResultManager erm) {
-        this.erm = erm;
-        return this;
-    }
-
     /**
      * Method called internally to obtain the list of steps.
      *

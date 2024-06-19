@@ -187,10 +187,6 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         } catch (CatalogException e) {
             throw new ToolException("Error updating alignment quality control", e);
         }
-
-        // Unset the executor info since it is executed by different executors, it will be indicated in the
-        // tool step attributes
-        getErm().setExecutorInfo(null);
     }
 
     private void runSamtoolsFlagstats() throws ToolException {
