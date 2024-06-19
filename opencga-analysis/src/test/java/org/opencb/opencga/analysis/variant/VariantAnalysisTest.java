@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -35,11 +36,13 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.hrdetect.HRDetectAnalysis;
@@ -130,8 +133,10 @@ public class VariantAnalysisTest {
     private static String daughter = "NA19600";
 
     public static final String CANCER_STUDY = "cancer";
-    private static String cancer_sample = "AR2.10039966-01T";
-    private static String germline_sample = "AR2.10039966-01G";
+    private static String cancer_sample = "HCC1954"; // "AR2.10039966-01T";
+    private static String germline_sample = "HCC1954BL"; //""AR2.10039966-01G";
+
+    private static String genomePlotConfigFilename = "genome-plot-config.json";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -234,15 +239,20 @@ public class VariantAnalysisTest {
             config.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
             File file;
-            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz", token);
+            file = opencga.createFile(CANCER_STUDY, "cancer-rearrs.vcf.gz", token);
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T.copynumber.caveman.vcf.gz", token);
+            file = opencga.createFile(CANCER_STUDY, "cancer-cnvs.vcf.gz", token);
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
-            file = opencga.createFile(CANCER_STUDY, "AR2.10039966-01T_vs_AR2.10039966-01G.annot.pindel.vcf.gz", token);
+            file = opencga.createFile(CANCER_STUDY, "cancer-indels.vcf.gz", token);
+            variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
+            file = opencga.createFile(CANCER_STUDY, "cancer-snvs.vcf.gz", token);
             variantStorageManager.index(CANCER_STUDY, file.getId(), opencga.createTmpOutdir("_index"), config, token);
 
             SampleUpdateParams updateParams = new SampleUpdateParams().setSomatic(true);
             catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
+
+            opencga.createFile(CANCER_STUDY, genomePlotConfigFilename, token);
+            assertEquals(genomePlotConfigFilename, catalogManager.getFileManager().get(CANCER_STUDY, genomePlotConfigFilename, QueryOptions.empty(), token).first().getName());
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -834,18 +844,7 @@ public class VariantAnalysisTest {
         VariantQuery query = new VariantQuery()
                 .sample(cancer_sample)
                 .type(VariantType.SV.name())
-                //.file("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz");
-                .fileData("AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz:BAS>=0;BKDIST>=-1")
                 .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
-
-        //https://ws.opencb.org/opencga-test/webservices/rest/v2/analysis/variant/mutationalSignature/query
-        // ?study=serena@cancer38:test38
-        // &fitting=false
-        // &sample=AR2.10039966-01T
-        // &fileData=AR2.10039966-01T_vs_AR2.10039966-01G.annot.brass.vcf.gz:BAS>=0;BKDIST>=-1;EXT_PS_SOM>=4;EXT_RC_SOM>=0
-        // &region=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y
-        // &type=SV
-
 
         params.setQuery(query.toJson());
         params.setSkip("fitting");
@@ -1028,7 +1027,7 @@ public class VariantAnalysisTest {
                     System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
                 }
                 if (hrDetect.getScores().containsKey("del.mh.prop")) {
-                    Assert.assertEquals(-1.5702984, hrDetect.getScores().getFloat("del.mh.prop"), 0.00001f);
+                    Assert.assertEquals(-2.6106846, hrDetect.getScores().getFloat("del.mh.prop"), 0.00001f);
                     return;
                 }
             }
@@ -1111,6 +1110,262 @@ public class VariantAnalysisTest {
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().search(CANCER_STUDY, query, QueryOptions.empty(),
                 token).first();
         Assert.assertEquals(ca2Id, clinicalAnalysis.getId());
+    }
+
+    @Test
+    public void testSampleQcVS() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_variant_stats"));
+
+        String sampleId = file.getSampleIds().get(0);
+        Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(sampleId);
+        params.setVsQuery(new AnnotationVariantQueryParams().setRegion("1,2"));
+        params.setVsId("regions-1-2");
+        params.setVsDescription("Sample variant stats on regions 1,2");
+        params.setSkip(SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE + "," + SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE);
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getVariantStats().stream().map(SampleQcVariantStats::getId).collect(Collectors.toList()).contains(params.getVsId()));
+        assertTrue(sample.getQualityControl().getVariant().getVariantStats().stream().map(SampleQcVariantStats::getDescription).collect(Collectors.toList()).contains(params.getVsDescription()));
+    }
+
+    @Test
+    public void testSampleQcVSSignatureGenomePlotNoSomatic() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_variant_stats"));
+
+        String sampleId = file.getSampleIds().get(0);
+        Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(sampleId);
+        params.setVsQuery(new AnnotationVariantQueryParams().setRegion("2,1"));
+        params.setVsId("regions-2-1");
+        params.setVsDescription("Sample variant stats on regions 2,1");
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        // Expected three events with the message "is not somatic" (for catalogue, fitting and genome plot)
+        Assert.assertEquals(3, result.getEvents().stream().map(Event::getMessage).filter(msg -> msg.contains(SampleQcAnalysis.getSampleIsNotSomaticMsg(sampleId))).collect(Collectors.toList()).size());
+
+        sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getVariantStats().stream().map(SampleQcVariantStats::getId).collect(Collectors.toList()).contains(params.getVsId()));
+        assertTrue(sample.getQualityControl().getVariant().getVariantStats().stream().map(SampleQcVariantStats::getDescription).collect(Collectors.toList()).contains(params.getVsDescription()));
+    }
+
+    @Test
+    public void testSampleQcVSError() throws IOException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_variant_stats_error"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setVsQuery(new AnnotationVariantQueryParams().setRegion("1,2"));
+        params.setVsId("regions-1-2");
+        params.setVsDescription("Sample variant stats on regions 1,2");
+        params.setSkip(SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE + "," + SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE);
+
+        ExecutionResult result = null;
+        try {
+            result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        } catch (ToolException e) {
+            System.out.println("result = " + result);
+            e.printStackTrace();
+            System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+            System.out.println("outDir = " + outDir);
+            return;
+        }
+        fail();
+    }
+
+    @Test
+    public void testSampleQcMutationalSignatureCatalogueSNV() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_mutational_signature_catalogue_snv"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setMsId("catalogue-snv-1");
+        params.setMsDescription("Catalogue SNV #1");
+        VariantQuery query = new VariantQuery()
+                .sample(cancer_sample)
+                .type(VariantType.SNV.name())
+                .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
+        params.setMsQuery(query.toJson());
+
+        params.setSkip(StringUtils.join(Arrays.asList(
+                SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE,
+                SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE,
+                SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE), ","));
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getId).collect(Collectors.toList()).contains(params.getMsId()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getDescription).collect(Collectors.toList()).contains(params.getMsDescription()));
+    }
+
+    @Test
+    public void testSampleQcMutationalSignatureCatalogueSV() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_mutational_signature_catalogue_sv"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setMsId("catalogue-sv-1");
+        params.setMsDescription("Catalogue SV #1");
+        VariantQuery query = new VariantQuery()
+                .sample(cancer_sample)
+                .type(VariantType.SV.name())
+                .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
+        params.setMsQuery(query.toJson());
+
+        params.setSkip(StringUtils.join(Arrays.asList(
+                SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE,
+                SampleQcAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE,
+                SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE), ","));
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getId).collect(Collectors.toList()).contains(params.getMsId()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getDescription).collect(Collectors.toList()).contains(params.getMsDescription()));
+    }
+
+    @Test
+    public void testSampleQcMutationalSignatureCatalogueFittingSV() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_mutational_signature_catalogue_fitting_sv"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setMsId("catalogue-sv-2");
+        params.setMsDescription("Catalogue SV #2");
+        VariantQuery query = new VariantQuery()
+                .sample(cancer_sample)
+                .type(VariantType.SV.name())
+                .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
+        params.setMsQuery(query.toJson());
+        params.setMsFitId("fitting-2");
+        params.setMsFitMethod("FitMS");
+        params.setMsFitSigVersion("RefSigv2");
+        params.setMsFitOrgan("Breast");
+        params.setMsFitNBoot(200);
+        params.setMsFitThresholdPerc(5.0f);
+        params.setMsFitThresholdPval(0.05f);
+        params.setMsFitMaxRareSigs(1);
+//        params.setMsFitSignaturesFile(signatureFileId);
+//        params.setMsFitRareSignaturesFile(signatureFileId);
+
+        params.setSkip(StringUtils.join(Arrays.asList(
+                SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE,
+                SampleQcAnalysisParams.GENOME_PLOT_SKIP_VALUE), ","));
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getId).collect(Collectors.toList()).contains(params.getMsId()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getDescription).collect(Collectors.toList()).contains(params.getMsDescription()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().flatMap(s -> s.getFittings().stream().map(SignatureFitting::getId)).collect(Collectors.toList()).contains(params.getMsFitId()));
+    }
+
+    @Test
+    public void testSampleQcGenomePlot() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_genome_plot"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        File genomePlotConfigFile = catalogManager.getFileManager().get(CANCER_STUDY, genomePlotConfigFilename, QueryOptions.empty(), token).first();
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+        params.setGpId("genome-plot1");
+        params.setGpDescription("Genome plot description 1");
+        params.setGpConfigFile(genomePlotConfigFile.getId());
+
+        params.setSkip(StringUtils.join(Arrays.asList(
+                SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE,
+                SampleQcAnalysisParams.SIGNATURE_SKIP_VALUE), ","));
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertEquals(params.getGpId(), sample.getQualityControl().getVariant().getGenomePlot().getId());
+        assertEquals(params.getGpDescription(), sample.getQualityControl().getVariant().getGenomePlot().getDescription());
+    }
+
+    @Test
+    public void testSampleQcMutationalSignatureCatalogueFittingSVGenomePlot() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_qc_mutational_signature_catalogue_fitting_sv"));
+
+        Sample sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+
+        File genomePlotConfigFile = catalogManager.getFileManager().get(CANCER_STUDY, genomePlotConfigFilename, QueryOptions.empty(), token).first();
+
+        SampleQcAnalysisParams params = new SampleQcAnalysisParams();
+        params.setSample(cancer_sample);
+
+        // Mutational signature
+        params.setMsId("catalogue-sv-3");
+        params.setMsDescription("Catalogue SV #3");
+        VariantQuery query = new VariantQuery()
+                .sample(cancer_sample)
+                .type(VariantType.SV.name())
+                .region("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y");
+        params.setMsQuery(query.toJson());
+        params.setMsFitId("fitting-2");
+        params.setMsFitMethod("FitMS");
+        params.setMsFitSigVersion("RefSigv2");
+        params.setMsFitOrgan("Breast");
+        params.setMsFitNBoot(200);
+        params.setMsFitThresholdPerc(5.0f);
+        params.setMsFitThresholdPval(0.05f);
+        params.setMsFitMaxRareSigs(1);
+
+        // Genome plot params
+        params.setGpId("genome-plot3");
+        params.setGpDescription("Genome plot description 3");
+        params.setGpConfigFile(genomePlotConfigFile.getId());
+
+        params.setSkip(SampleQcAnalysisParams.VARIANT_STATS_SKIP_VALUE);
+
+        ExecutionResult result = toolRunner.execute(SampleQcAnalysis.class, CANCER_STUDY, params, outDir, null, token);
+        System.out.println("outDir = " + outDir);
+
+        sample = catalogManager.getSampleManager().get(CANCER_STUDY, cancer_sample, new QueryOptions(), token).first();
+        System.out.println("sample.getQualityControl() = " + sample.getQualityControl());
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getId).collect(Collectors.toList()).contains(params.getMsId()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().map(Signature::getDescription).collect(Collectors.toList()).contains(params.getMsDescription()));
+        assertTrue(sample.getQualityControl().getVariant().getSignatures().stream().flatMap(s -> s.getFittings().stream().map(SignatureFitting::getId)).collect(Collectors.toList()).contains(params.getMsFitId()));
+        assertEquals(params.getGpId(), sample.getQualityControl().getVariant().getGenomePlot().getId());
+        assertEquals(params.getGpDescription(), sample.getQualityControl().getVariant().getGenomePlot().getDescription());
     }
 
     @Test
