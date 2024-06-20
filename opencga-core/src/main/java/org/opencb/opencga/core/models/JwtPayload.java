@@ -19,6 +19,8 @@ public class JwtPayload {
     private final Date expirationTime;  // Expiration time of the JWT.
     private final String token;
 
+    public static final String AUTH_ORIGIN = "authOrigin";
+
     public JwtPayload(String userId, String organization, AuthenticationOrigin.AuthenticationType authOrigin, String issuer, Date issuedAt,
                       Date expirationTime, String token) {
         this.token = token;
@@ -60,8 +62,8 @@ public class JwtPayload {
             this.organization = claimsMap.getString("aud");
             this.issuer = claimsMap.getString("iss");
 
-            if (claimsMap.containsKey("authOrigin")) {
-                this.authOrigin = AuthenticationOrigin.AuthenticationType.valueOf(claimsMap.getString("authOrigin"));
+            if (claimsMap.containsKey(AUTH_ORIGIN)) {
+                this.authOrigin = AuthenticationOrigin.AuthenticationType.valueOf(claimsMap.getString(AUTH_ORIGIN));
             } else {
                 this.authOrigin = null;
             }

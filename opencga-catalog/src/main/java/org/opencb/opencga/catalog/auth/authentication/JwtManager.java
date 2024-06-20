@@ -30,6 +30,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.models.JwtPayload.AUTH_ORIGIN;
+
 public class JwtManager {
 
     private SignatureAlgorithm algorithm;
@@ -41,8 +43,6 @@ public class JwtManager {
 
     // 32 characters to ensure it is at least 256 bits long
     public static final int SECRET_KEY_MIN_LENGTH = 32;
-
-    public static final String AUTH_ORIGIN = "authOrigin";
 
     public JwtManager(String algorithm) {
         this(algorithm, null, null);
