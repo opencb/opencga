@@ -59,7 +59,7 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.ct] - List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases
     *     'loss_of_function' and 'protein_altering'.
     * @param {String} [params.xref] - List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC,
-    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
+    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...
     * @param {String} [params.biotype] - List of biotypes, e.g. protein_coding.
     * @param {String} [params.proteinSubstitution] - Protein substitution scores include SIFT and PolyPhen. You can query using the score
     *     {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
@@ -105,8 +105,7 @@ export default class Variant extends OpenCGAParentClass {
 
     /** Query variant annotations from any saved versions
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.id] - List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g.
-    *     rs116600158,19:7177679:C:T.
+    * @param {String} [params.id] - List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
     * @param {String} [params.region] - List of regions, these can be just a single chromosome name or regions in the format chr:start-end,
     *     e.g.: 2,3:100000-200000.
     * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
@@ -521,8 +520,7 @@ export default class Variant extends OpenCGAParentClass {
     * @param {Number} [params.approximateCountSamplingSize] - Sampling size to get the approximate count. Larger values increase accuracy
     *     but also increase execution time.
     * @param {String} [params.savedFilter] - Use a saved filter at User level.
-    * @param {String} [params.id] - List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g.
-    *     rs116600158,19:7177679:C:T.
+    * @param {String} [params.id] - List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.
     * @param {String} [params.region] - List of regions, these can be just a single chromosome name or regions in the format chr:start-end,
     *     e.g.: 2,3:100000-200000.
     * @param {String} [params.type] - List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS,
@@ -597,7 +595,7 @@ export default class Variant extends OpenCGAParentClass {
     * @param {String} [params.ct] - List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases
     *     'loss_of_function' and 'protein_altering'.
     * @param {String} [params.xref] - List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC,
-    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
+    *     Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...
     * @param {String} [params.biotype] - List of biotypes, e.g. protein_coding.
     * @param {String} [params.proteinSubstitution] - Protein substitution scores include SIFT and PolyPhen. You can query using the score
     *     {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.

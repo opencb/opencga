@@ -247,6 +247,12 @@
                     <include>template.zip</include>
                 </includes>
             </testResource>
+            <testResource>
+                <directory>../opencga-core/src/test/resources</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
+                </includes>
+            </testResource>
         </testResources>
         <plugins>
             <plugin>

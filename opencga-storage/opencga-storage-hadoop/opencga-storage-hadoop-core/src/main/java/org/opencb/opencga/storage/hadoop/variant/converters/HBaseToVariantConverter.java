@@ -48,8 +48,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.*;
 
 /**
  * Created on 20/11/15.
@@ -210,7 +209,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
         @Override
         public Variant convert(Result result) {
-            Variant variant = extractVariantFromVariantRowKey(result.getRow());
+            Variant variant = extractVariantFromResult(result);
             try {
                 Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
                 if (cell != null && cell.getValueLength() > 0) {

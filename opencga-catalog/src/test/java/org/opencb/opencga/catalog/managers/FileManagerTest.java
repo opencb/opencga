@@ -40,11 +40,17 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -187,6 +193,32 @@ public class FileManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogIOException.class);
         thrown.expectMessage("read VariantSource");
         fileManager.link(studyFqn, new FileLinkParams().setUri(file.getPath()), false, ownerToken);
+    }
+
+    @Test
+    public void filterByFormatTest() throws CatalogException {
+        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, search.getNumResults());
+
+        query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "plain");
+        search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(0, search.getNumResults());
+
+        // Case sensitive search in lower case
+        query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^pla/");
+        search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(0, search.getNumResults());
+
+        // Case sensitive in upper case
+        query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^PLA/");
+        search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, search.getNumResults());
+
+        // Case insensitive search
+        query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^pla/i");
+        search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, search.getNumResults());
     }
 
     @Test
@@ -677,6 +709,7 @@ public class FileManagerTest extends AbstractManagerTest {
         file = catalogManager.getFileManager().update(studyFqn, "A/B/C/D/hello2.txt", new FileUpdateParams().setSampleIds(Collections.singletonList("sam2")), INCLUDE_RESULT, ownerToken).first();
         fileMap.put(file.getUid(), file);
         file = catalogManager.getFileManager().update(studyFqn, "A/B/C/D/hello3.txt", new FileUpdateParams().setSampleIds(Collections.singletonList("sam3")), INCLUDE_RESULT, ownerToken).first();
+
         fileMap.put(file.getUid(), file);
 
         Map<String, Integer> sampleVersionMap = new HashMap<>();
@@ -766,6 +799,7 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getFileManager().move(studyFqn, "A/C/D/hello3.txt", "A/C/D/otherName.txt", QueryOptions.empty(), ownerToken);
         assertThrows(CatalogException.class, () -> catalogManager.getFileManager().get(studyFqn, "A/C/D/hello3.txt", QueryOptions.empty(), ownerToken));
         file = catalogManager.getFileManager().get(studyFqn, "A/C/D/otherName.txt", QueryOptions.empty(), ownerToken).first();
+
         assertTrue(file.getId().endsWith(":otherName.txt"));
         assertTrue(file.getPath().endsWith("/otherName.txt"));
         assertTrue(file.getUri().toString().endsWith("/otherName.txt"));
@@ -1027,7 +1061,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We send the unlink command again
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not unlink");
         fileManager.unlink(studyFqn, "myDirectory/data/test/folder/test_0.5K.txt", ownerToken);
     }
 
@@ -2033,6 +2067,97 @@ public class FileManagerTest extends AbstractManagerTest {
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertFalse("File uri: " + fileTmp.getUri() + " should not exist", ioManager.exists(fileTmp.getUri()));
         }
+    }
+
+    @Test
+    public void deleteFileInClinicalAnalysis() throws CatalogException, IOException {
+        // START DATA PREPARATION FOR TEST !!!
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        File file = fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null, null), false, ownerToken).first();
+
+        Family family1 = DummyModelUtils.getDummyFamily("familyId1");
+        catalogManager.getFamilyManager().create(studyFqn, family1, QueryOptions.empty(), ownerToken);
+
+        // Associate BAM file to sample
+        String sampleId = family1.getMembers().get(0).getSamples().get(0).getId();
+        catalogManager.getFileManager().update(studyFqn, file.getId(), new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)),
+                QueryOptions.empty(), ownerToken);
+
+        Panel myPanel = DummyModelUtils.getDummyPanel("myPanel");
+        catalogManager.getPanelManager().create(studyFqn, myPanel, QueryOptions.empty(), ownerToken);
+
+        Family copy = JacksonUtils.copy(family1, Family.class);
+        for (Individual member : copy.getMembers()) {
+            // Only use the first sample
+            member.setSamples(Collections.singletonList(member.getSamples().get(0)));
+        }
+
+        ClinicalAnalysis clinicalAnalysis1 = DummyModelUtils.getDummyClinicalAnalysis(copy.getMembers().get(0), copy, Collections.singletonList(myPanel));
+        clinicalAnalysis1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis1, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(1, clinicalAnalysis1.getFiles().size());
+        assertEquals(file.getPath(), clinicalAnalysis1.getFiles().get(0).getPath());
+        assertFalse(clinicalAnalysis1.isLocked());
+
+        ClinicalAnalysis clinicalAnalysis2 = DummyModelUtils.getDummyClinicalAnalysis(copy.getMembers().get(0), copy, Collections.singletonList(myPanel));
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis2, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(1, clinicalAnalysis2.getFiles().size());
+        assertEquals(file.getPath(), clinicalAnalysis2.getFiles().get(0).getPath());
+        assertFalse(clinicalAnalysis2.isLocked());
+
+        // Lock clinicalAnalysis2
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis2.getId(),
+                new ClinicalAnalysisUpdateParams().setLocked(true), INCLUDE_RESULT, ownerToken).first();
+        assertTrue(clinicalAnalysis2.isLocked());
+        // END DATA PREPARATION FOR TEST !!!
+
+        // Mark as pending delete
+        catalogManager.getFileManager().getFileDBAdaptor(organizationId).update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE), QueryOptions.empty());
+        CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getFileManager().unlink(studyFqn, file.getId(), ownerToken));
+        assertTrue(catalogException.getMessage().contains("Could not unlink"));
+        assertTrue(catalogException.getCause().getMessage().contains("clinical analyses"));
+
+        // Unlock clinicalAnalysis2
+        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis2.getId(),
+                new ClinicalAnalysisUpdateParams().setLocked(false), INCLUDE_RESULT, ownerToken).first();
+        assertFalse(clinicalAnalysis2.isLocked());
+
+        // Unlink file
+        catalogManager.getFileManager().unlink(studyFqn, file.getId(), ownerToken);
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId, QueryOptions.empty(), ownerToken).first();
+        assertEquals(0, sample.getFileIds().size());
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
+        assertEquals(2, search.getNumResults());
+        for (ClinicalAnalysis clinicalAnalysis : search.getResults()) {
+            assertEquals(0, clinicalAnalysis.getFiles().size());
+            assertEquals("OPENCGA", clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getAuthor());
+            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove file references from case"));
+        }
+    }
+
+    @Test
+    public void deleteFileUserInRelatedFilesTest() throws CatalogException {
+        fileManager.update(studyFqn, "data/test/folder/test_1K.txt.gz",
+                new FileUpdateParams().setRelatedFiles(Collections.singletonList(
+                        new SmallRelatedFileParams("data/test/folder/test_0.5K.txt", FileRelatedFile.Relation.PART_OF_PAIR))),
+                null, ownerToken);
+        File file = fileManager.get(studyFqn, "data/test/folder/test_1K.txt.gz", QueryOptions.empty(), ownerToken).first();
+        assertFalse(file.getRelatedFiles().isEmpty());
+        assertEquals(1, file.getRelatedFiles().size());
+        assertEquals("data/test/folder/test_0.5K.txt", file.getRelatedFiles().get(0).getFile().getPath());
+
+        file = fileManager.get(studyFqn, "data/test/folder/test_0.5K.txt", FileManager.INCLUDE_FILE_IDS, ownerToken).first();
+
+        // Mark as pending delete
+        catalogManager.getFileManager().getFileDBAdaptor(organizationId).update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE), QueryOptions.empty());
+        // Delete test_0.5K file
+        QueryOptions options = new QueryOptions(Constants.SKIP_TRASH, true);
+        fileManager.delete(studyFqn, Collections.singletonList("data/test/folder/test_0.5K.txt"), options, ownerToken);
+
+        // Ensure there are no more references to test_0.5K file
+        file = fileManager.get(studyFqn, "data/test/folder/test_1K.txt.gz", QueryOptions.empty(), ownerToken).first();
+        assertTrue(file.getRelatedFiles().isEmpty());
     }
 
     private File createBasicDirectoryFileTestEnvironment(List<File> folderFiles) throws CatalogException {

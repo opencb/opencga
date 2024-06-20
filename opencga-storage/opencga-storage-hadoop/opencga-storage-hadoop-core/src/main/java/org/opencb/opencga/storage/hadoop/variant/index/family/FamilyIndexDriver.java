@@ -226,7 +226,8 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 }
             }
         }
-//        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
 
 
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
