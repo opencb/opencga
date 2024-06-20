@@ -17,35 +17,24 @@
 package com.zettagenomics.opencga.enterprise.server;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jasig.cas.client.configuration.ConfigurationKeys;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.server.AbstractStorageServer;
+import org.opencb.opencga.server.RestServer;
 
 import javax.servlet.DispatcherType;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * Created by imedina on 02/01/16.
  */
-public class EnterpriseRestServer extends AbstractStorageServer {
+public class EnterpriseRestServer extends RestServer {
 
-    private static Server server;
     private final EnterpriseConfiguration enterpriseConfiguration;
-    private boolean exit;
-
-    public EnterpriseRestServer(Path opencgaHome) {
-        this(opencgaHome, 0);
-    }
 
     public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
@@ -53,62 +42,10 @@ public class EnterpriseRestServer extends AbstractStorageServer {
     }
 
     @Override
-    public void start() throws Exception {
-        server = new Server(port);
-
-        WebAppContext webapp = new WebAppContext();
-        Optional<Path> warPath;
-        try (Stream<Path> stream = Files.list(opencgaHome)) {
-            warPath = stream
-                    .filter(path -> path.toString().endsWith("war"))
-                    .findFirst();
-        } catch (IOException e) {
-            throw new Exception("Error accessing OpenCGA Home: " + opencgaHome.toString(), e);
-        }
-        // Check is a war file has been found in opencgaHome
-        if (!warPath.isPresent()) {
-            throw new Exception("No war file found at " + opencgaHome.toString());
-        }
-
-        String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
-        webapp.setContextPath("/" + opencgaVersion);
-        webapp.setWar(warPath.get().toString());
-        webapp.setClassLoader(this.getClass().getClassLoader());
-        webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
-        webapp.getServletContext().setAttribute("OPENCGA_HOME", opencgaHome.toFile().toString());
-//        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
-        server.setHandler(webapp);
-
-        addSingleSignOnFilters(webapp);
-
-        server.start();
-        logger.info("REST server started, listening on {}", server.getURI());
-
-        // A hook is added in case the JVM is shutting down
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                if (server.isRunning()) {
-                    stopJettyServer();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }));
-
-        // A separated thread is launched to shut down the server
-        new Thread(() -> {
-            try {
-                while (true) {
-                    if (exit) {
-                        stopJettyServer();
-                        break;
-                    }
-                    Thread.sleep(500);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
+    protected WebAppContext initWebApp(Path warPath) throws Exception {
+        WebAppContext webAppContext = super.initWebApp(warPath);
+        addSingleSignOnFilters(webAppContext);
+        return webAppContext;
     }
 
     private void addSingleSignOnFilters(WebAppContext webapp) throws Exception {
@@ -188,27 +125,6 @@ public class EnterpriseRestServer extends AbstractStorageServer {
                             + "' found. Supported protocols are 'CAS' and 'SAML1'");
             }
         }
-    }
-
-    @Override
-    public void stop() throws Exception {
-        // By setting exit to true the monitor thread will close the Jetty server
-        exit = true;
-    }
-
-    @Override
-    public void blockUntilShutdown() throws InterruptedException {
-        if (server != null) {
-            // Blocking the main thread
-            server.join();
-        }
-    }
-
-    private void stopJettyServer() throws Exception {
-        // By setting exit to true the monitor thread will close the Jetty server
-        logger.info("Shutting down Jetty server");
-        server.stop();
-        logger.info("Enterprise REST server shutdown");
     }
 
 }
