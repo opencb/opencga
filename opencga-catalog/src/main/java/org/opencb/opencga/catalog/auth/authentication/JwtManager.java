@@ -134,7 +134,7 @@ public class JwtManager {
     }
 
     private AuthenticationOrigin.AuthenticationType getAuthOrigin(Claims claims) {
-        String o = claims.get("authOrigin", String.class);
+        String o = claims.get(AUTH_ORIGIN, String.class);
         if (o != null) {
             return AuthenticationOrigin.AuthenticationType.valueOf(o);
         } else {
