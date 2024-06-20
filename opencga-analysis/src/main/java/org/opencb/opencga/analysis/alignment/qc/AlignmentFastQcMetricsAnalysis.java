@@ -22,6 +22,7 @@ import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -124,7 +125,8 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                 }
                 fastQcMetrics.setFiles(relativePaths);
             } else {
-                throw new ToolException("Something wrong happened: FastQC file " + fastQcPath.getFileName() + " not found!");
+                String msg = DockerWrapperAnalysisExecutor.getStdErrMessage("Something wrong happened running FastQC analysis.", outDir);
+                throw new ToolException(msg);
             }
         } catch (IOException e) {
             new ToolException("Error parsing Alignment FastQC Metrics file: " + e.getMessage());

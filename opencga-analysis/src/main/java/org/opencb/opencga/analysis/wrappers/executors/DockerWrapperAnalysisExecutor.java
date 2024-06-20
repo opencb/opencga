@@ -13,11 +13,14 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.apache.commons.io.FileUtils.readLines;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
 
@@ -210,6 +213,25 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
         }
 
         return inputFilenames;
+    }
+
+    public static String getStdErrMessage(String title, Path outPath) {
+        List<String> errMessages = new ArrayList<>();
+        errMessages.add(title);
+
+        java.io.File stderrFile = outPath.resolve(DockerWrapperAnalysisExecutor.STDERR_FILENAME).toFile();
+        if (Files.exists(stderrFile.toPath())) {
+            try {
+                errMessages.addAll(readLines(stderrFile, Charset.defaultCharset()));
+            } catch (IOException e) {
+                errMessages.add("It could not read the stderr file '" + stderrFile + "' to retrieve error messages:");
+                errMessages.addAll(Arrays.stream(e.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList()));
+            }
+        } else {
+            errMessages.add("The stderr file '" + stderrFile + "' does not exist in order to retrieve error messages.");
+        }
+
+        return StringUtils.join(errMessages, "\n");
     }
 
     protected static boolean skipParameter(String param) {

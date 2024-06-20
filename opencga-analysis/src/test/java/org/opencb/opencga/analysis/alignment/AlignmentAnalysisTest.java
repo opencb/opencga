@@ -365,61 +365,98 @@ public class AlignmentAnalysisTest {
         System.out.println("outdir = " + outDir);
     }
 
-    private void checkSamtoolsStats(SamtoolsStats stats) {
-        System.out.println("stats = " + stats);
-        assertTrue(stats != null);
-        assertEquals(108, stats.getSequences());
-        assertEquals(55, stats.getLastFragments());
-        assertEquals(0, stats.getReadsDuplicated());
-        assertEquals(0, stats.getReadsQcFailed());
-        assertEquals(10800, stats.getTotalLength());
-        assertEquals(10047, stats.getBasesMappedCigar());
-        assertEquals(49, stats.getMismatches());
-        assertEquals(31.0, stats.getAverageQuality(), 0.001f);
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals3.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("coverage.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("insert-size.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("gc-content.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("acgt-cycles.png")).collect(Collectors.toList()).size());
-        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals2.png")).collect(Collectors.toList()).size());
+    @Test
+    public void testFailureOnAlignmentQcSamtoolsFlagstat() throws IOException, ToolException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_failure_on_alignment_qc_samtools_flagstat"));
+
+        File bamFile = getCatalogFile(bamFilename);
+
+        Path tmpDir = Files.createDirectories(outDir.resolve("tmp"));
+        if (!Files.exists(tmpDir)) {
+            throw new IOException("It could not create the directory " + tmpDir);
+        }
+        Path newBamFilePath = Files.copy(Paths.get(bamFile.getUri()), tmpDir.resolve(bamFile.getName()));
+        File newBamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(newBamFilePath.toString(), "bam_to_file_on_flagstats", "", "", null, null, null,
+                null, null), true, token).first();
+
+        Paths.get(newBamFile.getUri()).toFile().delete();
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(newBamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult;
+        try {
+            System.out.println("outdir = " + outDir);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        } catch (ToolException e) {
+            assertTrue(e.getMessage().contains("Cannot open input file"));
+            return;
+        }
+        fail();
     }
 
-    private void checkSamtoolsFlagstats(SamtoolsFlagstats flagstats) {
-        System.out.println("flagstats = " + flagstats);
-        assertTrue(flagstats != null);
-        assertEquals(108, flagstats.getTotalReads());
-        assertEquals(0, flagstats.getSecondaryAlignments());
-        assertEquals(53, flagstats.getRead1());
-        assertEquals(55, flagstats.getRead2());
-        assertEquals(104, flagstats.getProperlyPaired());
+    @Test
+    public void testFailureOnAlignmentQcSamtoolsStats() throws IOException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_failure_on_alignment_qc_samtools_stats"));
+
+        File bamFile = getCatalogFile(bamFilename);
+
+        Path tmpDir = Files.createDirectories(outDir.resolve("tmp"));
+        if (!Files.exists(tmpDir)) {
+            throw new IOException("It could not create the directory " + tmpDir);
+        }
+        Path newBamFilePath = Files.copy(Paths.get(bamFile.getUri()), tmpDir.resolve(bamFile.getName()));
+        File newBamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(newBamFilePath.toString(), "bam_to_file_on_stats", "", "", null, null, null,
+                null, null), true, token).first();
+
+        Paths.get(newBamFile.getUri()).toFile().delete();
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(newBamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(FLAGSTATS_SKIP_VALUE, FASTQC_METRICS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult;
+        try {
+            System.out.println("outdir = " + outDir);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        } catch (ToolException e) {
+            assertTrue(e.getMessage().contains("No such file or directory"));
+            return;
+        }
+        fail();
     }
 
-    private void checkFastQcMetrics(FastQcMetrics metrics) {
-        System.out.println("metrics = " + metrics);
-        assertTrue(metrics != null);
-        assertEquals("PASS", metrics.getSummary().getBasicStatistics());
-        assertEquals("FAIL", metrics.getSummary().getPerSeqGcContent());
-        assertEquals("WARN", metrics.getSummary().getOverrepresentedSeqs());
-        assertEquals(7, metrics.getBasicStats().size());
-        assertEquals("108", metrics.getBasicStats().get("Total Sequences"));
-        assertEquals("100", metrics.getBasicStats().get("Sequence length"));
-        assertEquals("46", metrics.getBasicStats().get("%GC"));
-        assertEquals(8, metrics.getFiles().size());
-        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_sequence_quality.png")).collect(Collectors.toList()).size());
-        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("duplication_levels.png")).collect(Collectors.toList()).size());
-        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_base_quality.png")).collect(Collectors.toList()).size());
-        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("adapter_content.png")).collect(Collectors.toList()).size());
-    }
+    @Test
+    public void testFailureOnAlignmentQcFastQc() throws IOException, CatalogException {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_failure_on_alignment_qc_fastqc"));
 
-    private File getCatalogFile(String name) throws CatalogException {
-        return catalogManager.getFileManager().search(STUDY, new Query("name", name), QueryOptions.empty(), token).first();
-    }
+        File bamFile = getCatalogFile(bamFilename);
 
-    private void resetAlignemntQc(File bamFile) throws CatalogException {
-        FileUpdateParams updateParams = new FileUpdateParams();
-        updateParams.setQualityControl(new FileQualityControl());
-        catalogManager.getFileManager().update(STUDY, new Query("id", bamFile.getId()), updateParams, QueryOptions.empty(), token);
+        Path tmpDir = Files.createDirectories(outDir.resolve("tmp"));
+        if (!Files.exists(tmpDir)) {
+            throw new IOException("It could not create the directory " + tmpDir);
+        }
+        Path newBamFilePath = Files.copy(Paths.get(bamFile.getUri()), tmpDir.resolve(bamFile.getName()));
+        File newBamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(newBamFilePath.toString(), "bam_to_file_on_fastqc", "", "", null, null, null,
+                null, null), true, token).first();
+
+        Paths.get(newBamFile.getUri()).toFile().delete();
+
+        AlignmentQcParams params = new AlignmentQcParams();
+        params.setBamFile(newBamFile.getId());
+        params.setSkip(StringUtils.join(Arrays.asList(STATS_SKIP_VALUE, FLAGSTATS_SKIP_VALUE), ","));
+
+        ExecutionResult executionResult;
+        try {
+            System.out.println("outdir = " + outDir);
+            executionResult = toolRunner.execute(AlignmentQcAnalysis.class, STUDY, params, outDir, null, token);
+        } catch (ToolException e) {
+            assertTrue(e.getMessage().contains("which didn't exist"));
+            System.out.println("e.getMessage() = " + e.getMessage());
+            return;
+        }
+        fail();
     }
 
     @Test
@@ -566,5 +603,66 @@ public class AlignmentAnalysisTest {
         Assert.assertEquals(FileRelatedFile.Relation.ALIGNMENT, bwFile.getRelatedFiles().get(0).getRelation());
 
         Runtime.getRuntime().exec("chmod 777 " + readOnlyDir.toAbsolutePath());
+    }
+
+    //-------------------------------------------------------------------------
+    // U T I L S
+    //-------------------------------------------------------------------------
+
+    private void checkSamtoolsStats(SamtoolsStats stats) {
+        System.out.println("stats = " + stats);
+        assertTrue(stats != null);
+        assertEquals(108, stats.getSequences());
+        assertEquals(55, stats.getLastFragments());
+        assertEquals(0, stats.getReadsDuplicated());
+        assertEquals(0, stats.getReadsQcFailed());
+        assertEquals(10800, stats.getTotalLength());
+        assertEquals(10047, stats.getBasesMappedCigar());
+        assertEquals(49, stats.getMismatches());
+        assertEquals(31.0, stats.getAverageQuality(), 0.001f);
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals3.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("coverage.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("insert-size.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("gc-content.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("acgt-cycles.png")).collect(Collectors.toList()).size());
+        assertEquals(1, stats.getFiles().stream().filter(n -> n.endsWith("quals2.png")).collect(Collectors.toList()).size());
+    }
+
+    private void checkSamtoolsFlagstats(SamtoolsFlagstats flagstats) {
+        System.out.println("flagstats = " + flagstats);
+        assertTrue(flagstats != null);
+        assertEquals(108, flagstats.getTotalReads());
+        assertEquals(0, flagstats.getSecondaryAlignments());
+        assertEquals(53, flagstats.getRead1());
+        assertEquals(55, flagstats.getRead2());
+        assertEquals(104, flagstats.getProperlyPaired());
+    }
+
+    private void checkFastQcMetrics(FastQcMetrics metrics) {
+        System.out.println("metrics = " + metrics);
+        assertTrue(metrics != null);
+        assertEquals("PASS", metrics.getSummary().getBasicStatistics());
+        assertEquals("FAIL", metrics.getSummary().getPerSeqGcContent());
+        assertEquals("WARN", metrics.getSummary().getOverrepresentedSeqs());
+        assertEquals(7, metrics.getBasicStats().size());
+        assertEquals("108", metrics.getBasicStats().get("Total Sequences"));
+        assertEquals("100", metrics.getBasicStats().get("Sequence length"));
+        assertEquals("46", metrics.getBasicStats().get("%GC"));
+        assertEquals(8, metrics.getFiles().size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_sequence_quality.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("duplication_levels.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("per_base_quality.png")).collect(Collectors.toList()).size());
+        assertEquals(1, metrics.getFiles().stream().filter(n -> n.endsWith("adapter_content.png")).collect(Collectors.toList()).size());
+    }
+
+    private File getCatalogFile(String name) throws CatalogException {
+        return catalogManager.getFileManager().search(STUDY, new Query("name", name), QueryOptions.empty(), token).first();
+    }
+
+    private void resetAlignemntQc(File bamFile) throws CatalogException {
+        FileUpdateParams updateParams = new FileUpdateParams();
+        updateParams.setQualityControl(new FileQualityControl());
+        catalogManager.getFileManager().update(STUDY, new Query("id", bamFile.getId()), updateParams, QueryOptions.empty(), token);
     }
 }

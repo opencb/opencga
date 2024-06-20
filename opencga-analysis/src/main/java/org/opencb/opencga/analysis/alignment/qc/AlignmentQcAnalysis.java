@@ -231,7 +231,9 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Error copying Samtools flagstat results", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running Samtools flagstat analysis");
+            String msg = DockerWrapperAnalysisExecutor.getStdErrMessage("Something wrong happened running Samtools flagstat analysis.",
+                    outPath);
+            throw new ToolException(msg);
         }
 
         // Check results and update QC file
@@ -283,7 +285,9 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Error copying Samtools stats results", e);
             }
         } else {
-            throw new ToolException("Something wrong happened running Samtools stats analysis");
+            String msg = DockerWrapperAnalysisExecutor.getStdErrMessage("Something wrong happened running Samtools stats analysis.",
+                    outPath);
+            throw new ToolException(msg);
         }
 
         // Check results and update QC file
